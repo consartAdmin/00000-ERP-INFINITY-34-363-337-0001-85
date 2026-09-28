@@ -3,7 +3,7 @@
 // ║ Subsegmentos de clientes                                                 ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-import customerSubSegmentsApi from '../services/apis/customerSubSegmentsApi.js';
+import customerSubSegmentsApi from '../repositories/customerSubSegments/customerSubSegments.index.js';
 
 const {
   ensureTable,

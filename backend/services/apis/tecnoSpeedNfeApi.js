@@ -20,7 +20,7 @@ dotenv.config({ path: process.env.ENV_PATH || 'backend/.env' });
 import axios from 'axios';
 import pool from '../../config/db.js';
 import paymentMethodsApi from './paymentMethodsApi.js';
-import customersApi from './customersApi.js';
+import customersApi from '../../repositories/customers/customers.index.js';
 import * as stockFromOrdersService from '../stockFromOrdersService.js';
 import { cancelarNFe } from './cancelarNfeApi.js';
 

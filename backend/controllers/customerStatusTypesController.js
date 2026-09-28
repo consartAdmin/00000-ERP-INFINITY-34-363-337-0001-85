@@ -3,7 +3,7 @@
 // ║ Regras de negócio + HTTP handlers                                 ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import * as customerStatusTypesApi from '../services/apis/customerStatusTypesApi.js';
+import * as customerStatusTypesApi from '../repositories/customerStatusTypes/customerStatusTypes.index.js';
 
 const parseBoolOrNull = (v) => {
   if (v === undefined || v === null || v === '') return null;

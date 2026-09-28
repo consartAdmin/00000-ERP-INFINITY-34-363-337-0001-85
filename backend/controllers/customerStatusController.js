@@ -3,7 +3,7 @@
 // ║ Usa customerStatusApi (UPSERT por customer_id)                    ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import * as customerStatusApi from '../services/apis/customerStatusApi.js';
+import * as customerStatusApi from '../repositories/customerStatus/customerStatus.index.js';
 
 const parseIntOrNull = (v) => {
   const n = Number(v);

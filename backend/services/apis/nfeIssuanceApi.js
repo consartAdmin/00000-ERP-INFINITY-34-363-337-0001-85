@@ -11,7 +11,7 @@
 
 import { getBudgetObjectById } from '../../controllers/budgetsController.js';
 import pool from '../../config/db.js';
-import customersApi from './customersApi.js';
+import customersApi from '../../repositories/customers/customers.index.js';
 import * as tecnospeedNfeApi from './tecnoSpeedNfeApi.js';
 import invoicesIssuedApi from './invoicesIssued/invoicesIssuedApi.js';
 import {

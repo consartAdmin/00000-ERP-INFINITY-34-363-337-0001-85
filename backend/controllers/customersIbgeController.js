@@ -12,7 +12,7 @@
 // ║  DELETE /api/customers-ibge/:customerId                            ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import customersIbgeApi from '../services/apis/customersIbgeApi.js';
+import customersIbgeApi from '../repositories/customersIbge/customersIbge.index.js';
 
 const ok = (res, data, status = 200) => res.status(status).json({ ok: true, ...data });
 const fail = (res, error, status = 400) =>

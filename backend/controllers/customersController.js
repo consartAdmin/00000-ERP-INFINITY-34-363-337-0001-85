@@ -6,7 +6,7 @@
 // ║ ✔ Proteção por chave (.env)                                       ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import customersApi from '../services/apis/customersApi.js';
+import customersApi from '../repositories/customers/customers.index.js';
 import { generateCustomersPdf } from '../generationPdf/generationCustomersPdf.js';
 import { generateCustomersExcel } from '../generationExcel/generationCustomersExcel.js';
 

@@ -1,4 +1,4 @@
-import * as api from '../services/apis/customerPriceTablesApi.js';
+import * as api from '../repositories/customerPriceTables/customerPriceTables.index.js';
 
 function parsePositiveInteger(value, fieldName) {
   const parsed = Number(value);

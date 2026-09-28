@@ -9,7 +9,7 @@
 
 import pool from '../../config/db.js';
 import perfApi from './crmDealsPerformanceApi.js';
-import { applyCrmOutcomeToCustomerActivity } from './customerActivityApi.js';
+import { applyCrmOutcomeToCustomerActivity } from '../../repositories/customerActivity/customerActivity.index.js';
 
 perfApi.ensureTable?.()
   .then((r) => {

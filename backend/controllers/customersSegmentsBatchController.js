@@ -5,7 +5,7 @@
 // ║ - POST /api/customers/segments/unlink                                       ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
-import * as csbApi from '../services/apis/customersSegmentsBatchApi.js';
+import * as csbApi from '../repositories/customersSegmentsBatch/customersSegmentsBatch.index.js';
 
 const toBool = (v) => {
   if (v === '' || v == null) return undefined;

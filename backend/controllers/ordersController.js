@@ -10,7 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import ordersApi from '../services/apis/orders/ordersApi.js';
-import customersApi from '../services/apis/customersApi.js'; // 🔗 hidratar dados do cliente
+import customersApi from '../repositories/customers/customers.index.js'; // 🔗 hidratar dados do cliente
 import tecnospeedNfeApi from '../services/apis/tecnoSpeedNfeApi.js';
 import {
   debitOrderStock,

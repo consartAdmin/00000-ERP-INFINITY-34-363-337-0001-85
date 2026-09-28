@@ -11,7 +11,7 @@ import {
   create,
   update,
   remove
-} from '../services/apis/customerSegmentsApi.js';
+} from '../repositories/customerSegments/customerSegments.index.js';
 
 // ======================================================================
 // Bootstrap

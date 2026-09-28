@@ -1,6 +1,6 @@
 // customersCreditController.js — Express controller (ESM)
 
-import customersCreditApi from '../services/apis/customersCreditApi.js';
+import customersCreditApi from '../repositories/customersCredit/customersCredit.index.js';
 
 const errorStatus = (error) => {
   if (/required|invalid|must be/i.test(error.message)) return 400;

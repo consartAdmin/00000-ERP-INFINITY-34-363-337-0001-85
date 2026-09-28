@@ -1,5 +1,5 @@
 // ╔════════════════════════════════════════════════════════════════════╗
-// ║ repositories/customers — ponto de entrada único                    ║
+// ║ customers.index.js — ponto de entrada único do módulo customers    ║
 // ║ Mantém a mesma API pública do antigo services/apis/customersApi.js ║
 // ╚════════════════════════════════════════════════════════════════════╝
 

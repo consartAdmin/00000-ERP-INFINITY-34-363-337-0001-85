@@ -16,7 +16,7 @@ import {
   recalculateCustomerActivityStatuses,
   getCustomerActivitySummary,
   applyCrmOutcomeToCustomerActivity,
-} from '../services/apis/customerActivityApi.js';
+} from '../repositories/customerActivity/customerActivity.index.js';
 
 function toInt(value, fallback = null) {
   const n = Number(value);

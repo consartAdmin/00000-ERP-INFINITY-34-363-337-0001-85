@@ -62,7 +62,7 @@ router.get('/customerSegments', async (req, res) => {
       Number.isFinite(Number(offset)) ? Number(offset) : 0
     );
 
-    const data = await import('../services/apis/customerSegmentsApi.js')
+    const data = await import('../repositories/customerSegments/customerSegments.index.js')
       .then(m => m.list({ q, active, limit: parsedLimit, offset: parsedOffset }));
 
     return res.json({
