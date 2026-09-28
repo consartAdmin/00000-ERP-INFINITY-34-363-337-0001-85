@@ -3,7 +3,7 @@
 // ║ CONSART ERP | ESM                                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as api from '../services/apis/usoConsumoApi.js';
+import * as api from '../repositories/usoConsumo/usoConsumo.index.js';
 
 function ok(res, data = {}, extra = {}) {
   return res.json({

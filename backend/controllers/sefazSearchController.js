@@ -3,7 +3,7 @@
 // ║ CONSART ERP — Camada HTTP (Express)                                  ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import sefazApi from '../services/apis/sefazApi.js';
+import sefazApi from '../repositories/sefaz/sefaz.index.js';
 
 function onlyDigits(v = '') {
   return String(v).replace(/\D+/g, '');

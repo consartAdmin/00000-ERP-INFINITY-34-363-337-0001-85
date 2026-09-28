@@ -1,35 +1,11 @@
-// ╔══════════════════════════════════════════════════════════════════════╗
-// ║ cnpjPublicApi.js — Cliente da API Pública de CNPJ                   ║
-// ║ CONSART ERP / CONSART-PJ                                            ║
-// ║ - Consulta dados cadastrais básicos pelo CNPJ                       ║
-// ║ - Usa API pública (sem autenticação)                                ║
-// ╚══════════════════════════════════════════════════════════════════════╝
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ cnpjPublicClient.repository.js — Cliente HTTP da API pública CNPJ  ║
+// ║ Usa API pública (sem autenticação)                                 ║
+// ╚════════════════════════════════════════════════════════════════════╝
 
 import axios from 'axios';
-
-/**
- * Base da API pública de CNPJ.
- * Deixe em .env para poder trocar se precisar:
- *   CNPJ_PUBLIC_API_BASE=https://publica.cnpj.ws/cnpj
- */
-const CNPJ_PUBLIC_API_BASE =
-  process.env.CNPJ_PUBLIC_API_BASE || 'https://publica.cnpj.ws/cnpj';
-
-/**
- * Normaliza CNPJ: remove tudo que não for dígito.
- */
-function sanitizeCnpj(cnpj) {
-  if (!cnpj) return '';
-  return String(cnpj).replace(/\D/g, '');
-}
-
-/**
- * Valida formato básico do CNPJ (apenas tamanho 14).
- * Se quiser, depois você coloca uma validação mais rígida.
- */
-function isValidCnpj(cnpjDigits) {
-  return cnpjDigits.length === 14;
-}
+import { CNPJ_PUBLIC_API_BASE } from './cnpjPublic.constants.js';
+import { sanitizeCnpj, isValidCnpj } from './cnpjPublic.sanitizers.js';
 
 /**
  * Consulta CNPJ na API pública.

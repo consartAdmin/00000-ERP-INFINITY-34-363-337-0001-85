@@ -1,4 +1,4 @@
-import * as api from '../services/apis/nfeOperationTypesApi.js';
+import * as api from '../repositories/nfeOperationTypes/nfeOperationTypes.index.js';
 
 function status(result) {
     if (result?.ok) return 200;

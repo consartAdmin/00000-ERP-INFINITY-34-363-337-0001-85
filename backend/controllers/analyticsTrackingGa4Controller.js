@@ -6,7 +6,7 @@
 // ║ • Summary: métricas agregadas (7 dias) + screenPageViews             ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import * as ga4 from '../services/apis/analyticsTrackingGa4Api.js';
+import * as ga4 from '../repositories/analyticsTrackingGa4/analyticsTrackingGa4.index.js';
 
 // ---------------------------------------------------------------------
 // Helpers

@@ -17,7 +17,7 @@
 // ║  POST   /api/ibge-locations/import/state  (IBGE → Banco por UF)      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as IBGE from '../services/apis/ibgeLocationsApi.js';
+import * as IBGE from '../repositories/ibgeLocations/ibgeLocations.index.js';
 
 const okData = (res, data, status = 200) => res.status(status).json({ ok: true, data });
 const fail = (res, error, status = 400) =>

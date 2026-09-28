@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import { Router } from 'express';
-import { consultarCnpjPublic } from '../services/apis/cnpjPublicApi.js';
+import { consultarCnpjPublic } from '../repositories/cnpjPublic/cnpjPublic.index.js';
 
 const router = Router();
 
