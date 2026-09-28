@@ -12,7 +12,7 @@ import invoicesIssuedApi from '../repositories/invoicesIssued/invoicesIssued.ind
 
 import { generateDanfeFromXml } from '../services/danfeConsartService.js';
 
-import ordersApi from '../services/apis/orders/ordersApi.js';
+import ordersApi from '../repositories/orders/orders.index.js';
 
 import { createAuditLog } from '../repositories/auditLogs/auditLogs.index.js';
 

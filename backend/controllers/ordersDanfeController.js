@@ -16,7 +16,7 @@
 
 import axios from 'axios';
 
-import ordersApi from '../services/apis/orders/ordersApi.js';
+import ordersApi from '../repositories/orders/orders.index.js';
 import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 // ✅ IMPORT CERTO (bate com o seu arquivo)

@@ -6,7 +6,7 @@
 import {
   issueOrderNfe as issueOrderNfeFromAttempts,
   reconcileOrderNfe as reconcileOrderNfeFromAttempts,
-} from '../../services/apis/ordersNfeAttempts/ordersNfeAttemptsApi.js';
+} from '../ordersNfeAttempts/ordersNfeAttempts.index.js';
 
 // ============================================================================
 // ORDER — ENTRADAS PÚBLICAS COMPATÍVEIS

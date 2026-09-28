@@ -9,7 +9,7 @@ import PDFDocument from 'pdfkit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import ordersApi from '../services/apis/orders/ordersApi.js';
+import ordersApi from '../repositories/orders/orders.index.js';
 import customersApi from '../repositories/customers/customers.index.js'; // 🔗 hidratar dados do cliente
 import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 import {

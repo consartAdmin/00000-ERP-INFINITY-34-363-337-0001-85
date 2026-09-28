@@ -5,7 +5,7 @@
 
 'use strict';
 
-import * as ordersNfeAttemptsApi from '../services/apis/ordersNfeAttempts/ordersNfeAttemptsApi.js';
+import * as ordersNfeAttemptsApi from '../repositories/ordersNfeAttempts/ordersNfeAttempts.index.js';
 
 function errorMessage(error) {
   return (

@@ -12,7 +12,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import ordersBillingApi from '../repositories/ordersBilling/ordersBilling.index.js';
-import ordersApi from '../services/apis/orders/ordersApi.js';
+import ordersApi from '../repositories/orders/orders.index.js';
 
 // ======================================================================
 // Bootstrap opcional — chama no server.js

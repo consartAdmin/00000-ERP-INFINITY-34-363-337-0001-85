@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
-import ordersApi from '../services/apis/orders/ordersApi.js';
+import ordersApi from '../repositories/orders/orders.index.js';
 
 // -----------------------------------------------------------------------
 // Helper: verifica se a resposta indica NF-e CANCELADA na TecnoSpeed/SEFAZ

@@ -21,7 +21,7 @@ import {
 
 import { previewOrderPdf }
   from '../controllers/ordersPreviewPdfController.js';
-import ordersApi from '../services/apis/orders/ordersApi.js';
+import ordersApi from '../repositories/orders/orders.index.js';
 import { queueErrorEmail } from '../errorEmailReporter.js';
 
 function reportOrdersError(...args) {

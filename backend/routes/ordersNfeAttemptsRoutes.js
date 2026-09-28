@@ -18,7 +18,7 @@ import { getOrderDanfe }
 import tecnospeedNfeApi
     from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 import * as ordersNfeAttemptsApi
-    from '../services/apis/ordersNfeAttempts/ordersNfeAttemptsApi.js';
+    from '../repositories/ordersNfeAttempts/ordersNfeAttempts.index.js';
 import { queueErrorEmail } from '../errorEmailReporter.js';
 
 const router = Router();

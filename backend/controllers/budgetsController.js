@@ -12,7 +12,7 @@
 
 import pool from '../config/db.js';
 import budgetsApi from '../services/apis/budgets/budgetsApi.js';
-import ordersApi from '../services/apis/orders/ordersApi.js';
+import ordersApi from '../repositories/orders/orders.index.js';
 import paymentMethodsApi from '../repositories/paymentMethods/paymentMethods.index.js';
 import budgetsPaymentsApi from '../repositories/budgetsPayments/budgetsPayments.index.js';
 import budgetsPaymentInstallmentsApi from '../repositories/budgetsPaymentInstallments/budgetsPaymentInstallments.index.js';

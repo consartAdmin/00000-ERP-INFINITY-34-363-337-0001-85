@@ -2,7 +2,7 @@
 // ║ nfesDiagnosticsController.js — Diagnóstico direto da PlugNotas       ║
 // ║ Retorna erro de schema diretamente na resposta da API                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
-import ordersApi from '../services/apis/orders/ordersApi.js';
+import ordersApi from '../repositories/orders/orders.index.js';
 import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 export async function debugEmit(req, res) {

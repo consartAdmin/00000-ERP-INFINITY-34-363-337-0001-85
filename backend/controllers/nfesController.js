@@ -11,7 +11,7 @@ import axios from 'axios';
 import nfesApi from '../repositories/nfes/nfes.index.js';
 
 // Conciliação / Emissão:
-import ordersApi from '../services/apis/orders/ordersApi.js';
+import ordersApi from '../repositories/orders/orders.index.js';
 import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 import pool from '../config/db.js';
