@@ -15,7 +15,7 @@ import pool from '../config/db.js';
 import axios from 'axios';
 
 // 🔹 NOVO: API de nfeWebhookEvents
-import nfeWebhookEventsApi from '../services/apis/nfeWebhookEventsApi.js';
+import nfeWebhookEventsApi from '../repositories/nfeWebhookEvents/nfeWebhookEvents.index.js';
 
 const TB_LOGS   = 'public.integrations_plugnotas_webhook_logs';
 const TB_ORDERS = 'public."orders"';

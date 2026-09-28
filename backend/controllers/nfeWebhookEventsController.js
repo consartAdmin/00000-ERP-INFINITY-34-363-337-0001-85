@@ -12,7 +12,7 @@
 
 import axios from 'axios';
 import pool from '../config/db.js';
-import nfeWebhookEventsApi from '../services/apis/nfeWebhookEventsApi.js';
+import nfeWebhookEventsApi from '../repositories/nfeWebhookEvents/nfeWebhookEvents.index.js';
 
 const PLUG_BASE = process.env.PLUGNOTAS_BASE_URL || 'https://api.plugnotas.com.br';
 const PLUG_KEY = process.env.PLUGNOTAS_API_KEY || '';

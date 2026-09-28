@@ -8,7 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
-import painelNotasFiscaisApi from '../services/apis/painelNotasFiscaisApi.js';
+import painelNotasFiscaisApi from '../repositories/painelNotasFiscais/painelNotasFiscais.index.js';
 
 // ───────────────────────────────────────────────────────────────────────────
 // Logs

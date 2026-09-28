@@ -1,154 +1,15 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ FILE: nfeCceApi.js                                                  ║
-// ║ MODULE: NF-e | Carta de Correção Eletrônica (CC-e)                  ║
-// ║ DESCRIPTION: Serviços de emissão e consulta de CC-e (PlugNotas)     ║
-// ║ CONSART ERP · Node.js · Axios · ESM                                 ║
+// ║ nfeCceDocuments.repository.js — PDF e XML da CC-e                    ║
+// ║ Resolve a URL via consulta de status e baixa o arquivo               ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-'use strict';
-
 import axios from 'axios';
-
-/* =========================================================================
- * 🔧 CONFIG
- * ========================================================================= */
-
-function getAmbiente() {
-  return (process.env.NFE_AMBIENTE || 'producao').toLowerCase();
-}
-
-function getBaseUrl() {
-  if (process.env.PLUGNOTAS_BASE_URL) {
-    return process.env.PLUGNOTAS_BASE_URL;
-  }
-
-  return getAmbiente() === 'sandbox'
-    ? 'https://api.sandbox.plugnotas.com.br'
-    : 'https://api.plugnotas.com.br';
-}
-
-function getApiKey() {
-  return (
-    process.env.PLUGNOTAS_API_KEY ||
-    process.env.PLUGNOTAS_API_KEY_REAL ||
-    process.env.PLUGNOTAS_API_KEY_SANDBOX ||
-    process.env.TECNOSPEED_TOKEN ||
-    process.env.TECNOSPEED_TOKEN_SH
-  );
-}
-
-const TIMEOUT = Number(process.env.PLUGNOTAS_TIMEOUT || 20000);
-
-/* =========================================================================
- * 🔐 AXIOS
- * ========================================================================= */
-
-const api = axios.create({
-  baseURL: getBaseUrl(),
-  timeout: TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-function refreshApiConfig() {
-  api.defaults.baseURL = getBaseUrl();
-
-  const key = getApiKey();
-  api.defaults.headers['X-API-KEY'] = key;
-  api.defaults.headers['x-api-key'] = key;
-}
-
-/* =========================================================================
- * 🧼 HELPERS
- * ========================================================================= */
-
-function normalizeCorrecaoText(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
-}
-
-/* =========================================================================
- * 📤 EMITIR CC-e
- * ========================================================================= */
-
-export async function emitirCCe(idOuChave, correcao) {
-  refreshApiConfig();
-
-  const id = String(idOuChave || '').trim();
-  const texto = normalizeCorrecaoText(correcao);
-
-  if (!id) {
-    return {
-      ok: false,
-      status: 400,
-      error: 'Id, chave ou protocolo da NF-e não informado.',
-    };
-  }
-
-  if (!texto) {
-    return {
-      ok: false,
-      status: 400,
-      error: 'Texto da carta de correção não informado.',
-    };
-  }
-
-  try {
-    const res = await api.post(`/nfe/${encodeURIComponent(id)}/cce`, {
-      correcao: texto,
-    });
-
-    return {
-      ok: true,
-      status: res.status,
-      data: res.data,
-    };
-  } catch (err) {
-    return {
-      ok: false,
-      status: err.response?.status || 400,
-      error: err.response?.data || err.message,
-    };
-  }
-}
-
-/* =========================================================================
- * 🔍 CONSULTAR STATUS CC-e
- * ========================================================================= */
-
-export async function consultarStatusCCe(
-  idOuChaveOuProtocolo,
-  listaCce = false
-) {
-  refreshApiConfig();
-
-  try {
-    const res = await api.get(
-      `/nfe/${encodeURIComponent(idOuChaveOuProtocolo)}/cce/status`,
-      {
-        params: listaCce ? { listaCce: true } : {},
-      }
-    );
-
-    return {
-      ok: true,
-      status: res.status,
-      data: res.data,
-    };
-  } catch (err) {
-    return {
-      ok: false,
-      status: err.response?.status || 400,
-      error: err.response?.data || err.message,
-    };
-  }
-}
+import { TIMEOUT, getApiKey, refreshApiConfig } from './nfeCceClient.repository.js';
+import { consultarStatusCCe } from './nfeCceQuery.repository.js';
 
 /* =========================================================================
  * 📄 PDF CC-e
  * ========================================================================= */
-
-// nfeCceApi.js
 
 export async function obterPdfCCe(idOuChaveOuProtocolo) {
   refreshApiConfig();
@@ -321,16 +182,3 @@ export async function obterXmlCCe(idOuChaveOuProtocolo) {
     };
   }
 }
-
-/* =========================================================================
- * 📋 EXPORT DEFAULT
- * ========================================================================= */
-
-const nfeCceApi = {
-  emitirCCe,
-  consultarStatusCCe,
-  obterPdfCCe,
-  obterXmlCCe,
-};
-
-export default nfeCceApi;

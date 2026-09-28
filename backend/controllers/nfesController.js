@@ -8,7 +8,7 @@
 'use strict';
 
 import axios from 'axios';
-import nfesApi from '../services/apis/nfesApi.js';
+import nfesApi from '../repositories/nfes/nfes.index.js';
 
 // Conciliação / Emissão:
 import ordersApi from '../services/apis/orders/ordersApi.js';
@@ -24,7 +24,7 @@ import {
 } from '../repositories/accountsReceivable/accountsReceivable.index.js';
 
 // ✅ NOVO: service de e-mail NF-e
-import { createNfesEmailApi } from '../services/apis/nfesEmailApi.js';
+import { createNfesEmailApi } from '../repositories/nfesEmail/nfesEmail.index.js';
 
 import asaasApi, { getPayment as getAsaasPayment } from '../repositories/asaas/asaas.index.js';
 

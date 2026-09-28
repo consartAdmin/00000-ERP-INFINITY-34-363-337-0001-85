@@ -12,7 +12,7 @@ import {
   cancelarNFe,
   consultarResumoNFeParaCancelamento,
   consultarStatusCancelamentoNFe,
-} from '../services/apis/cancelarNfeApi.js';
+} from '../repositories/cancelarNfe/cancelarNfe.index.js';
 
 import {
   getByProviderId,

@@ -22,7 +22,7 @@ import pool from '../../config/db.js';
 import paymentMethodsApi from '../../repositories/paymentMethods/paymentMethods.index.js';
 import customersApi from '../../repositories/customers/customers.index.js';
 import * as stockFromOrdersService from '../stockFromOrdersService.js';
-import { cancelarNFe } from './cancelarNfeApi.js';
+import { cancelarNFe } from '../../repositories/cancelarNfe/cancelarNfe.index.js';
 
 import {
   resolveFeature,

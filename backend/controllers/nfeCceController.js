@@ -9,7 +9,7 @@
 
 import pool from '../config/db.js';
 import tecnoSpeedNfeApi from '../services/apis/tecnoSpeedNfeApi.js';
-import nfeCceApi from '../services/apis/nfeCceApi.js';
+import nfeCceApi from '../repositories/nfeCce/nfeCce.index.js';
 
 /* =========================================================================
  * 🧱 Bootstrap da tabela de eventos CC-e

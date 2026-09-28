@@ -12,7 +12,7 @@ import pool from '../config/db.js';
 import {
   listAllXmlItems,
   publicPathToAbsolute,
-} from '../services/apis/painelNotasFiscaisApi.js';
+} from '../repositories/painelNotasFiscais/painelNotasFiscais.index.js';
 
 import {
   generateDanfeFromXml,

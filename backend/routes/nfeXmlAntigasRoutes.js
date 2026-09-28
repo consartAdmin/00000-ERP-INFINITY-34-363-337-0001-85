@@ -13,7 +13,7 @@ import {
   getNfeXmlAntigasByAccessKey,
   uploadNfeXmlAntigasFiles,
   deleteNfeXmlAntigasByAccessKey
-} from '../services/apis/nfeXmlAntigasApi.js';
+} from '../repositories/nfeXmlAntigas/nfeXmlAntigas.index.js';
 
 const router = express.Router();
 

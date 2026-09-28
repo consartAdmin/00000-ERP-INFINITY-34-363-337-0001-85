@@ -3,7 +3,7 @@
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import pool from '../config/db.js';
-import plugnotasNfceApi from '../services/apis/plugnotasNfceApi.js';
+import plugnotasNfceApi from '../repositories/plugnotasNfce/plugnotasNfce.index.js';
 
 // -------------------------------------------------------------------
 // 1. Garantir tabela nfceWebhookEvents (caso ainda não exista)

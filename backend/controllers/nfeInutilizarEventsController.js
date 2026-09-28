@@ -14,7 +14,7 @@
 // ║ ✔ FIX: Bloqueio de faixa sobreposta                                 ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import nfeInutilizarEventsApi from '../services/apis/nfeInutilizarEventsApi.js';
+import nfeInutilizarEventsApi from '../repositories/nfeInutilizarEvents/nfeInutilizarEvents.index.js';
 import tecnospeedNfeApi from '../services/apis/tecnoSpeedNfeApi.js';
 
 /* =======================================================================

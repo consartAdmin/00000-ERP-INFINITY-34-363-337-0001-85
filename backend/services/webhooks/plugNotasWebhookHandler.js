@@ -7,7 +7,7 @@
 // ║ - Salva / atualiza em public."nfeWebhookEvents"                     ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as nfeWebhookEventsApi from '../apis/nfeWebhookEventsApi.js';
+import * as nfeWebhookEventsApi from '../../repositories/nfeWebhookEvents/nfeWebhookEvents.index.js';
 
 /* --------------------------------------------------------------------- */
 /* Helpers para extrair dados do payload PlugNotas                       */
