@@ -10,7 +10,7 @@ import customersApi from '../repositories/customers/customers.index.js';
 import { generateCustomersPdf } from '../generationPdf/generationCustomersPdf.js';
 import { generateCustomersExcel } from '../generationExcel/generationCustomersExcel.js';
 
-import asaasApi from '../services/apis/asaasApi.js';
+import asaasApi from '../repositories/asaas/asaas.index.js';
 
 /* =========================================================================
    Helpers

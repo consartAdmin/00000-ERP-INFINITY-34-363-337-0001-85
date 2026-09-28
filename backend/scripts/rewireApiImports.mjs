@@ -19,9 +19,10 @@ const SKIP = new Set(['node_modules', 'public', '.git']);
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {
-    if (SKIP.has(entry)) continue;
+    if (SKIP.has(entry) || entry.startsWith("__orig_")) continue;
     const full = path.join(dir, entry);
-    const st = statSync(full);
+    let st;
+    try { st = statSync(full); } catch { continue; } // arquivo removido durante a varredura
     if (st.isDirectory()) yield* walk(full);
     else if (/\.(m?js)$/.test(entry)) yield full;
   }

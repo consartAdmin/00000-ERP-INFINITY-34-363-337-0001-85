@@ -1,6 +1,6 @@
 // 📦 backend/controllers/asaasController.js
 
-import asaasApi from '../services/apis/asaasApi.js';
+import asaasApi from '../repositories/asaas/asaas.index.js';
 
 const LIMITE_SINCRONIZACAO = 100;
 

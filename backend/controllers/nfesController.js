@@ -21,12 +21,12 @@ import { sendAndLogEmail } from '../services/email/emailOutboundsService.js';
 // ✅ seu helper de boleto (accountsReceivableApi)
 import {
   getExistingBoletoDownloadInfoByAccountsReceivableId,
-} from '../services/apis/accountsReceivableApi.js';
+} from '../repositories/accountsReceivable/accountsReceivable.index.js';
 
 // ✅ NOVO: service de e-mail NF-e
 import { createNfesEmailApi } from '../services/apis/nfesEmailApi.js';
 
-import asaasApi, { getPayment as getAsaasPayment } from '../services/apis/asaasApi.js';
+import asaasApi, { getPayment as getAsaasPayment } from '../repositories/asaas/asaas.index.js';
 
 import { generateReportNfesPdf } from '../generationPdf/generationReportNfesPdf.js';
 

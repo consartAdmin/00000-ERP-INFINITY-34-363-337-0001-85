@@ -9,7 +9,7 @@
 import pool from '../config/db.js';
 
 import ordersApi from './apis/orders/ordersApi.js';
-import asaasApi, { ensureAsaasCustomerForEcommerce } from './apis/asaasApi.js';
+import asaasApi, { ensureAsaasCustomerForEcommerce } from '../repositories/asaas/asaas.index.js';
 
 import { assertBoletoFaturadoOrExplain } from './nfeAsaasPaymentHelper.js';
 

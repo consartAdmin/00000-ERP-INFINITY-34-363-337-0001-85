@@ -17,7 +17,7 @@
 'use strict';
 
 import pool from '../../config/db.js';
-import * as asaasApi from './asaasApi.js';
+import * as asaasApi from '../../repositories/asaas/asaas.index.js';
 
 const TB_AR = 'public."accountsReceivable"';
 const TB_BRIDGE = 'public."accountsReceivableAsaas"';

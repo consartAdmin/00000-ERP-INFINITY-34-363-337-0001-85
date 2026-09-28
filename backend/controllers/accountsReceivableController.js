@@ -29,9 +29,9 @@ import {
   listCashDocumentTypes,
   listChartOfAccounts,
   listBankAccounts,
-} from '../services/apis/accountsReceivableApi.js';
+} from '../repositories/accountsReceivable/accountsReceivable.index.js';
 
-import { getBoletoPdf } from '../services/apis/asaasApi.js';
+import { getBoletoPdf } from '../repositories/asaas/asaas.index.js';
 import { generateAccountsReceivablePdf } from '../generationPdf/generationAccountsReceivablePdf.js';
 
 import ExcelJS from 'exceljs';

@@ -11,7 +11,7 @@ import { readFile } from 'node:fs/promises';
 import archiver from 'archiver';
 
 import pool from '../config/db.js';
-import * as asaasApi from '../services/apis/asaasApi.js';
+import * as asaasApi from '../repositories/asaas/asaas.index.js';
 import { sendMailByAccount } from '../services/email/sendMailByAccount.js';
 
 function safe(value) {

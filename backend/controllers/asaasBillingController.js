@@ -10,7 +10,7 @@ import pool from '../config/db.js'; // ajuste o path se for outro
 import {
   ensureAsaasCustomerForEcommerce,
   createCharge,
-} from '../services/apis/asaasApi.js'; // ajuste o path se for outro
+} from '../repositories/asaas/asaas.index.js'; // ajuste o path se for outro
 
 // ----------------------------------------------------------------------
 // POST /api/asaas/boletos
