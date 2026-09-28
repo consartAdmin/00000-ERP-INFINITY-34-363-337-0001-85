@@ -19,7 +19,7 @@ dotenv.config({ path: envPath });
 console.log(`[ENV] Carregado: ${envPath}`);
 
 import { buildNFeFromOrder, emitirNFe } from '../../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
-import * as ordersApi from './ordersApi.js';
+import * as ordersApi from '../../repositories/orders/orders.index.js';
 
 async function main() {
   const orderId = process.argv[2];
