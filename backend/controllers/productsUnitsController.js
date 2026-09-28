@@ -15,7 +15,7 @@ import ProductsUnitsAPI from '../repositories/productsUnits/productsUnits.index.
 
 // ✅ NOVO: sync barcode -> productsBarCode
 import pool from '../config/db.js';
-import { productsBarCodeApi } from '../services/apis/productsBarCode/productsBarCodeApi.js';
+import { productsBarCodeApi } from '../repositories/productsBarCode/productsBarCode.index.js';
 
 /* ────────────────────────────────────────────────────────────────────────────
    Helpers: parse/normalize

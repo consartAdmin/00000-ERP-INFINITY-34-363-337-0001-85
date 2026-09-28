@@ -2,7 +2,7 @@
 // ║ productsFiscalV2Controller.js — Express Controller (ESM)                ║
 // ╚═════════════════════════════════════════════════════════════════════════╝
 
-import * as svc from '../services/apis/productsFiscalV2/productsFiscalV2Api.js';
+import * as svc from '../repositories/productsFiscalV2/productsFiscalV2.index.js';
 
 // ============================================================================
 // HELPERS

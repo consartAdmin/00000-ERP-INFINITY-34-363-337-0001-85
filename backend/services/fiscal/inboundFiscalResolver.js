@@ -1,6 +1,6 @@
 'use strict';
 
-import productFiscalCostRulesApi from '../apis/productFiscalCostRules/productFiscalCostRulesApi.js';
+import productFiscalCostRulesApi from '../../repositories/productFiscalCostRules/productFiscalCostRules.index.js';
 import { calculateInboundFiscal } from './inboundFiscalCalculator.js';
 
 const present = (v) => v !== null && v !== undefined && v !== '';

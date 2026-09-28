@@ -11,7 +11,7 @@ import {
     resolveForItem,
     upsertFromFiscalRule,
     remove,
-} from '../services/apis/productsFiscalOrigins/productsFiscalOriginsApi.js';
+} from '../repositories/productsFiscalOrigins/productsFiscalOrigins.index.js';
 
 function clean(value) {
     if (value == null) return '';

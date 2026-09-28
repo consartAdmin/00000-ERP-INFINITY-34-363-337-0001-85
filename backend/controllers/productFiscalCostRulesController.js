@@ -15,7 +15,7 @@ import {
     remove,
     resolve as resolveFiscalCostRuleApi,
     generateProductRule,
-} from '../services/apis/productFiscalCostRules/productFiscalCostRulesApi.js';
+} from '../repositories/productFiscalCostRules/productFiscalCostRules.index.js';
 
 function clean(value) {
     if (value == null) return '';

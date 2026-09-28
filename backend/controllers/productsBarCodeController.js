@@ -5,7 +5,7 @@
 'use strict';
 
 import pool from '../config/db.js';
-import { productsBarCodeApi } from '../services/apis/productsBarCode/productsBarCodeApi.js';
+import { productsBarCodeApi } from '../repositories/productsBarCode/productsBarCode.index.js';
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */

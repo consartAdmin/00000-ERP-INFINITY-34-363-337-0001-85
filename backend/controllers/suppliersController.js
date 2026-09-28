@@ -3,7 +3,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import suppliersAttachmentsApi from '../repositories/suppliersAttachments/suppliersAttachments.index.js';
-import { ensureSuppliersTable, list, search, getById, create, update, remove } from '../services/apis/suppliers/suppliersApi.js';
+import { ensureSuppliersTable, list, search, getById, create, update, remove } from '../repositories/suppliers/suppliers.index.js';
 import { generateReportsSuppliersExcel } from '../generationExcel/generationReportsSuppliersExcel.js';
 import { generateReportsSuppliersPdf } from '../generationPdf/generationReportsSuppliersPdf.js';
 

@@ -6,10 +6,10 @@
 import pool from '../../config/db.js';
 import {
   calculateForProduct as calculateProductFiscalCostRule,
-} from '../../services/apis/productFiscalCostRules/productFiscalCostRulesApi.js';
+} from '../productFiscalCostRules/productFiscalCostRules.index.js';
 import {
   resolveForItem as resolveStoredProductFiscalOrigin,
-} from '../../services/apis/productsFiscalOrigins/productsFiscalOriginsApi.js';
+} from '../productsFiscalOrigins/productsFiscalOrigins.index.js';
 import { ICMS_ST_CANDIDATE_LIMIT } from './nfeIssuance.constants.js';
 import { positiveInteger, normalizeCst, toNumberOrNull, roundTo, budgetItemBaseQuantity } from './nfeIssuance.utils.js';
 import { normalizeInboundIcmsSt, calculateRetainedIcmsSt } from './nfeIssuance.icmsSt.js';
