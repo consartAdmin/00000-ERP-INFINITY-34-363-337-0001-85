@@ -15,7 +15,7 @@ import {
     listLicitations,
     updateLicitation,
     updateLicitationStatus,
-} from '../services/apis/licitationsApi.js';
+} from '../repositories/licitations/licitations.index.js';
 
 function parseId(value) {
     const id = Number.parseInt(value, 10);

@@ -2,7 +2,7 @@
 // ║ suppliersController.js — HTTP Controller de Fornecedores (CONSART ERP)   ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-import suppliersAttachmentsApi from '../services/apis/suppliersAttachmentsApi.js';
+import suppliersAttachmentsApi from '../repositories/suppliersAttachments/suppliersAttachments.index.js';
 import { ensureSuppliersTable, list, search, getById, create, update, remove } from '../services/apis/suppliers/suppliersApi.js';
 import { generateReportsSuppliersExcel } from '../generationExcel/generationReportsSuppliersExcel.js';
 import { generateReportsSuppliersPdf } from '../generationPdf/generationReportsSuppliersPdf.js';

@@ -5,7 +5,7 @@
 // ║ Descrição: controller HTTP para CRUD manual do módulo Google Ads.   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as googleAdsApi from '../services/apis/googleAdsApi.js';
+import * as googleAdsApi from '../repositories/googleAds/googleAds.index.js';
 
 /* ============================================================================
  * HELPERS

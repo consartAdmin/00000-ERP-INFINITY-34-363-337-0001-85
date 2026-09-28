@@ -5,7 +5,7 @@
 // ║ CONSART ERP | ESM                                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as api from '../services/apis/manufacturesOrdersApi.js';
+import * as api from '../repositories/manufacturesOrders/manufacturesOrders.index.js';
 
 import {
   buildOrdersManufacturesPdfStream,

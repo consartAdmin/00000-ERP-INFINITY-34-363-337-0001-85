@@ -3,7 +3,7 @@
 // ║ ✅ FIX: normaliza level + logs detalhados + validações               ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { getCustomer } from './apis/googleAdsApi.js';
+import { getCustomer } from '../repositories/googleAds/googleAds.index.js';
 
 function nowIso() { return new Date().toISOString(); }
 

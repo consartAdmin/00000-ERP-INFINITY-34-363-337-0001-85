@@ -20,7 +20,7 @@ import crypto from 'crypto';
 import multer from 'multer';
 import { Storage } from '@google-cloud/storage';
 
-import * as api from '../services/apis/mobilizedApi.js';
+import * as api from '../repositories/mobilized/mobilized.index.js';
 import { generateMobilizedPdf } from '../generationPdf/generateMobilizedPdf.js'; // ✅ precisa existir e retornar Buffer
 import { generateMobilizedAllPdf } from '../generationPdf/generateMobilizedAllPdf.js';
 

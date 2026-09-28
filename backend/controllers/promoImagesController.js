@@ -4,7 +4,7 @@
 // ║ CONSART ERP | ESM                                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import promoImagesApi from '../services/apis/promoImagesApi.js';
+import promoImagesApi from '../repositories/promoImages/promoImages.index.js';
 
 function sendError(res, error, fallback = 'Erro interno no módulo de promoções.') {
   console.error('[promoImagesController][ERROR]', {

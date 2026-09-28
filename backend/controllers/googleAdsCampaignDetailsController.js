@@ -8,7 +8,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../config/db.js';
-import * as CampaignApi from '../services/apis/googleAdsCampaignDetailsApi.js';
+import * as CampaignApi from '../repositories/googleAdsCampaignDetails/googleAdsCampaignDetails.index.js';
 
 import {
   mustRange,

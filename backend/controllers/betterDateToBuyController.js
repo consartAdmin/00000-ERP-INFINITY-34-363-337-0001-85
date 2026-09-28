@@ -4,7 +4,7 @@
 // ║ CONSART ERP                                                        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as api from '../services/apis/betterDateToBuyApi.js';
+import * as api from '../repositories/betterDateToBuy/betterDateToBuy.index.js';
 
 
 // ──────────────────────────────────────────────────────────────────────
