@@ -14,7 +14,7 @@ import {
   deleteDeliveryRoute,
   listDeliveryRoutes,
   setDeliveryRouteActive,
-} from '../services/apis/deliveryRoutesApi.js';
+} from '../repositories/deliveryRoutes/deliveryRoutes.index.js';
 
 // ======================================================================
 // Helpers de resposta

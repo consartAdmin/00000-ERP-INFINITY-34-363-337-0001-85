@@ -12,13 +12,13 @@ import {
   createFromOrder,
   createFromBudget,
   createFromInvoice,
-} from '../services/apis/deliveryLabelsApi.js';
+} from '../repositories/deliveryLabels/deliveryLabels.index.js';
 
 import {
   DEFAULT_LABEL_SETTINGS,
   getLabelSettings,
   saveLabelSettings,
-} from '../services/apis/deliveryLabelSettingsApi.js';
+} from '../repositories/deliveryLabelSettings/deliveryLabelSettings.index.js';
 
 import {
   generateDeliveryLabelsPdf,

@@ -11,7 +11,7 @@
 // ║   - DELETE /api/signatures-deliveries/:id                            ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import signaturesDeliveriesApi from '../services/apis/signaturesDeliveriesApi.js';
+import signaturesDeliveriesApi from '../repositories/signaturesDeliveries/signaturesDeliveries.index.js';
 
 /* =======================================================================
  * Bootstrap

@@ -14,7 +14,7 @@ import {
   deleteDeliveryRouteStop,
   setDeliveryRouteStopStatus,
   reorderDeliveryRouteStops,
-} from '../services/apis/deliveryRouteStopsApi.js';
+} from '../repositories/deliveryRouteStops/deliveryRouteStops.index.js';
 
 // ======================================================================
 // Helpers

@@ -11,7 +11,7 @@ import pool from '../config/db.js';
 import {
   getLabelSettings,
   sanitizeLabelSettings,
-} from '../services/apis/deliveryLabelSettingsApi.js';
+} from '../repositories/deliveryLabelSettings/deliveryLabelSettings.index.js';
 
 const MM_TO_PT = 2.834645669;
 
