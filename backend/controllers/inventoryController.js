@@ -14,7 +14,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import XLSX from 'xlsx';
 
-import * as svc from '../services/apis/inventoryApi.js';
+import * as svc from '../repositories/inventory/inventory.index.js';
 
 import generateInventoryImportReportPdf from '../generationPdf/generationInventoryReportsPdf.js';
 

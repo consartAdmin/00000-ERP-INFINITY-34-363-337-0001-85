@@ -9,7 +9,7 @@
 import {
     getSalesStockSummary,
     listSalesStockReconciliation,
-} from '../services/apis/conciliationSalesxStockApi.js';
+} from '../repositories/conciliationSalesxStock/conciliationSalesxStock.index.js';
 
 import {
     generateConciliationSalesxStockPdf,

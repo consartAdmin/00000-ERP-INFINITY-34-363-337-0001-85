@@ -25,7 +25,7 @@ import {
 import {
   insertFiscalApuracaoDocument,
   insertFiscalApuracaoItem
-} from '../services/apis/fiscalApuracaoApi.js';
+} from '../repositories/fiscalApuracao/fiscalApuracao.index.js';
 
 import { parseFiscalApuracaoXml } from '../services/xml/fiscalApuracaoXmlParser.js';
 

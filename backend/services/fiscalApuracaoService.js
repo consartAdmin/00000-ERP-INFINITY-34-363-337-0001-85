@@ -21,7 +21,7 @@ import {
   getFiscalApuracaoSummaryByApuracaoId,
   listFiscalApuracaoReconciliation,
   deleteFiscalApuracaoById
-} from './apis/fiscalApuracaoApi.js';
+} from '../repositories/fiscalApuracao/fiscalApuracao.index.js';
 
 
 /* ======================================================================

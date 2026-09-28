@@ -6,7 +6,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../config/db.js';
-import * as productsFiscalApi from '../services/apis/productsFiscalApi.js';
+import * as productsFiscalApi from '../repositories/productsFiscal/productsFiscal.index.js';
 
 const TB_PRODUCTS        = 'public."products"';
 const TB_PRODUCTS_FISCAL = 'public."productsFiscal"';
