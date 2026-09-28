@@ -29,7 +29,7 @@ import {
 } from '../repositories/budgetSettings/budgetSettings.index.js';
 import {
   resolveProductsStockMode,
-} from '../services/apis/productsStock/productsStock.manager.js';
+} from '../repositories/productsStock/productsStock.manager.js';
 import {
   issueBudgetStockOverrideToken,
   validateBudgetStockOverrideForItem,

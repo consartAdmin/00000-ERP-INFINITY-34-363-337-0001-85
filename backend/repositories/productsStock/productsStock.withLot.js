@@ -7,11 +7,11 @@
 // ║ ✅ Recalcula productsStock.stock_qty automaticamente                 ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import pool from '../../../config/db.js';
+import pool from '../../config/db.js';
 
 import {
   resolveInboundFiscal,
-} from '../../fiscal/inboundFiscalResolver.js';
+} from '../../services/fiscal/inboundFiscalResolver.js';
 
 const TB_LOTS = 'public."productsStockLots"';
 const TB_STOCK = 'public."productsStock"';

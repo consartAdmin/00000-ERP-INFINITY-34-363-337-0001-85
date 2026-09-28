@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import productsStockApi from '../../services/apis/productsStock/productsStock.manager.js';
+import productsStockApi from '../productsStock/productsStock.manager.js';
 import { TB_ORDERS, TB_ITEMS } from './manufacturesOrders.constants.js';
 
 export async function generateOrderNumber(client) {

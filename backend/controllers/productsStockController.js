@@ -9,7 +9,7 @@
 
 import PDFDocument from 'pdfkit';
 
-import productsStockApi from '../services/apis/productsStock/productsStock.manager.js';
+import productsStockApi from '../repositories/productsStock/productsStock.manager.js';
 
 export async function filterOptions(req, res) {
   try {

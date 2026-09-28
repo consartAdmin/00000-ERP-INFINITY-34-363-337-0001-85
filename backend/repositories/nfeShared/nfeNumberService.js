@@ -5,7 +5,7 @@
 
 'use strict';
 
-import pool from '../../../config/db.js';
+import pool from '../../config/db.js';
 
 const ALLOWED_ATTEMPT_TABLES = new Set([
     'public."budgetsNfeAttempts"',

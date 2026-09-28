@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import productsStockManager from '../../services/apis/productsStock/productsStock.manager.js';
+import productsStockManager from '../productsStock/productsStock.manager.js';
 import { resolveSort, buildFilters } from './conciliationSalesxStock.utils.js';
 import { reportCte } from './conciliationSalesxStock.sql.js';
 

@@ -3,7 +3,7 @@
 // ║ CONSART ERP | Node.js ESM | price_id fixo: 1                      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import pool from '../../../config/db.js';
+import pool from '../../config/db.js';
 
 const TB =
   'public."productsPrices"';

@@ -3,7 +3,7 @@
 // ║ CONSART ERP | Node.js ESM                                          ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import productsPricesManager from '../services/apis/productsPrices/productsPrices.manager.js';
+import productsPricesManager from '../repositories/productsPrices/productsPrices.manager.js';
 
 const DEFAULT_SCOPE_TYPE = 'GLOBAL';
 const DEFAULT_SCOPE_ID = 1;

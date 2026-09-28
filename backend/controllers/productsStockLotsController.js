@@ -4,7 +4,7 @@
 // ║ Usa PRODUCT_STOCK_MODE para liberar ou bloquear operações com lote  ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import productsStockManager from '../services/apis/productsStock/productsStock.manager.js';
+import productsStockManager from '../repositories/productsStock/productsStock.manager.js';
 
 const DEFAULT_SCOPE_TYPE = 'GLOBAL';
 const DEFAULT_SCOPE_ID = 1;

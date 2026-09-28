@@ -4,7 +4,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../config/db.js';
-import productsStockManager from './apis/productsStock/productsStock.manager.js';
+import productsStockManager from '../repositories/productsStock/productsStock.manager.js';
 
 // Colunas candidatas para SKU na tabela products
 const SKU_CANDIDATES = [

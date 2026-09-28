@@ -3,7 +3,7 @@
 // ║ CONSART ERP | Node.js ESM                                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import pool from '../../../config/db.js';
+import pool from '../../config/db.js';
 
 const TB = 'public."productsPrices"';
 

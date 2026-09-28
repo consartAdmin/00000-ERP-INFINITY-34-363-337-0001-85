@@ -3,8 +3,8 @@
 // ║ resolveBudgetPriceMode / resolveBudgetStockMode                      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { resolveProductsPricesMode } from '../../services/apis/productsPrices/productsPrices.manager.js';
-import { resolveProductsStockMode } from '../../services/apis/productsStock/productsStock.manager.js';
+import { resolveProductsPricesMode } from '../productsPrices/productsPrices.manager.js';
+import { resolveProductsStockMode } from '../productsStock/productsStock.manager.js';
 
 export const SINGLE_PRICE_ID = 1;
 

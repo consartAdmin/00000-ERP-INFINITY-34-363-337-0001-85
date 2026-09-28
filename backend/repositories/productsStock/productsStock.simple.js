@@ -7,7 +7,7 @@
 // ║ ✅ Lista para Sugestão de Compra PDF                                   ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-import pool from '../../../config/db.js';
+import pool from '../../config/db.js';
 
 const TB_STOCK = 'public."productsStock"';
 const TB_PRODUCTS = 'public."products"';
