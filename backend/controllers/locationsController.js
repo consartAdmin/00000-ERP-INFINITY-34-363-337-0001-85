@@ -4,8 +4,8 @@
 // ║ Uses: locationsApi.js + productsLocationsApi.js + pg pool             ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import locationsApi from '../services/apis/locationsApi.js';
-import productsLocationsApi from '../services/apis/productsLocationsApi.js';
+import locationsApi from '../repositories/locations/locations.index.js';
+import productsLocationsApi from '../repositories/productsLocations/productsLocations.index.js';
 import pool from '../config/db.js';
 
 /* --------------------------------------------------------------------- */

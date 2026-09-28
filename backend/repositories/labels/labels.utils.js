@@ -1,11 +1,11 @@
 // ╔═══════════════════════════════════════════════════════════════════════════╗
-// ║ 🔖 labelsApi.js — Client API for Product Labels (CONSART ERP | ESM)     ║
+// ║ labels.utils.js — Base da API (mutável), toParams e request             ║
 // ║ - Uses apiBase.js (window.apiBase / getApiBase) when available          ║
-// ║ - Endpoints: /api/labels/...                                            ║
 // ║ - Standard response: { ok, data, error, status }                        ║
 // ╚═══════════════════════════════════════════════════════════════════════════╝
 
 // 🌐 Default base (fallback — real base comes from apiBase.js in browser)
+// Obs.: apiBase e setApiBase ficam no mesmo arquivo (binding ESM mutável).
 export let apiBase = 'http://localhost:8080';
 
 /**
@@ -43,7 +43,7 @@ export function setApiBase(base) {
 }
 
 // Base path for this module
-function labelsBase() {
+export function labelsBase() {
   return `${getBase()}/api/labels`;
 }
 
@@ -51,13 +51,13 @@ function labelsBase() {
    Utils
 ────────────────────────────────────────────────────────────────────────── */
 
-const toParams = (obj = {}) =>
+export const toParams = (obj = {}) =>
   Object.entries(obj)
     .filter(([, v]) => v !== undefined && v !== null && v !== '')
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join('&');
 
-async function request(url, { method = 'GET', body, headers } = {}) {
+export async function request(url, { method = 'GET', body, headers } = {}) {
   try {
     const res = await fetch(url, {
       method,
@@ -98,63 +98,3 @@ async function request(url, { method = 'GET', body, headers } = {}) {
     };
   }
 }
-
-/* ──────────────────────────────────────────────────────────────────────────
-   Product Labels Endpoints
-────────────────────────────────────────────────────────────────────────── */
-
-/**
- * Generate labels for products.
- *
- * Expected payload:
- * {
- *   items: [
- *     { product_code: "ABC123", quantity: 6 },
- *     { product_code: "XYZ001", quantity: 12 }
- *   ],
- *   templateId: "default-product-label",
- *   format: "pdf"
- * }
- */
-export async function generateProductLabels(payload = {}) {
-  const body = {
-    format: 'pdf',
-    ...payload,
-  };
-
-  return request(`${labelsBase()}/products`, {
-    method: 'POST',
-    body,
-  });
-}
-
-/**
- * List label generation jobs (optional feature).
- * @param {Object} qp { page=1, limit=20 }
- */
-export async function listLabelJobs(qp = {}) {
-  const qs = toParams(qp);
-  const url = `${labelsBase()}/jobs${qs ? `?${qs}` : ''}`;
-  return request(url);
-}
-
-/**
- * Get details of a label job (optional).
- * @param {string|number} jobId
- */
-export async function getLabelJob(jobId) {
-  const id = encodeURIComponent(jobId);
-  return request(`${labelsBase()}/jobs/${id}`);
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   Default Export
-────────────────────────────────────────────────────────────────────────── */
-
-export default {
-  apiBase,
-  setApiBase,
-  generateProductLabels,
-  listLabelJobs,
-  getLabelJob,
-};

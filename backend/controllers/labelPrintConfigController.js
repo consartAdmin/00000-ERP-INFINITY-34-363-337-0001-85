@@ -3,7 +3,7 @@
 // ║ CONSART ERP | ESM                                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import labelPrintConfigApi from '../services/apis/labelPrintConfigApi.js';
+import labelPrintConfigApi from '../repositories/labelPrintConfig/labelPrintConfig.index.js';
 
 export async function getLabelConfig(req, res, next) {
   try {

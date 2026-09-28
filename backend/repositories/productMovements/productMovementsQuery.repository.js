@@ -1,28 +1,13 @@
 // ╔══════════════════════════════════════════════════════════════╗
-// ║ productMovementsApi.js — Registros/Movimentações do Produto ║
-// ║ CONSART ERP | ESM                                           ║
+// ║ productMovementsQuery.repository.js — listByProductCode     ║
 // ║ ✅ productMovements como fonte principal                    ║
 // ║ ✅ auditLogs somente como fallback histórico                ║
 // ║ ✅ NF-e, estoque antes/depois, grade e lote                  ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-'use strict';
-
 import pool from '../../config/db.js';
-
-const MAX_ROWS = 500;
-
-function normalizeProductCode(value) {
-  const code = String(value ?? '').trim();
-  if (!code) {
-    const error = new Error('productCode is required');
-    error.status = 400;
-    error.statusCode = 400;
-    error.code = 'PRODUCT_CODE_REQUIRED';
-    throw error;
-  }
-  return code;
-}
+import { MAX_ROWS } from './productMovements.constants.js';
+import { normalizeProductCode } from './productMovements.sanitizers.js';
 
 export async function listByProductCode(productCode) {
   const sku = normalizeProductCode(productCode);
@@ -147,7 +132,3 @@ export async function listByProductCode(productCode) {
   const { rows } = await pool.query(sql, [sku]);
   return rows;
 }
-
-export default {
-  listByProductCode,
-};

@@ -1,6 +1,6 @@
 // ╔══════════════════════════════════════════════════════════════╗
-// ║ FILE: reportsProductsStockApi.js                            ║
-// ║ MODULE: Relatório Posição de Estoque                        ║
+// ║ reportsProductsStockQuery.repository.js                     ║
+// ║ Relatório Posição de Estoque: getReportData / summary       ║
 // ╚══════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
@@ -83,15 +83,15 @@ export async function getStockPositionSummary() {
   const { rows } = await pool.query(`
     SELECT
       COUNT(*) FILTER (WHERE COALESCE(ps.stock_qty, 0) > 0) AS total_produtos,
-      COALESCE(SUM(CASE 
-        WHEN COALESCE(ps.stock_qty, 0) > 0 
-        THEN COALESCE(ps.stock_qty, 0) 
-        ELSE 0 
+      COALESCE(SUM(CASE
+        WHEN COALESCE(ps.stock_qty, 0) > 0
+        THEN COALESCE(ps.stock_qty, 0)
+        ELSE 0
       END), 0) AS total_estoque,
-      COALESCE(SUM(CASE 
-        WHEN COALESCE(ps.stock_qty, 0) > 0 
+      COALESCE(SUM(CASE
+        WHEN COALESCE(ps.stock_qty, 0) > 0
         THEN COALESCE(ps.stock_qty, 0) * COALESCE(p.cost_price, 0)
-        ELSE 0 
+        ELSE 0
       END), 0) AS valor_estoque,
       COUNT(*) FILTER (
         WHERE COALESCE(ps.stock_qty, 0) > 0

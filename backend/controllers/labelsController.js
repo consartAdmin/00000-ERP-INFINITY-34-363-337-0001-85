@@ -12,7 +12,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bwipjs from 'bwip-js';
 
-import labelParametersApi from '../services/apis/labelParametersApi.js';
+import labelParametersApi from '../repositories/labelParameters/labelParameters.index.js';
 
 // ESM __dirname
 const __filename = fileURLToPath(import.meta.url);

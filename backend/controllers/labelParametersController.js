@@ -4,7 +4,7 @@
 // ║ UPDATE: simplified model + layout_json support                      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import labelParametersApi from '../services/apis/labelParametersApi.js';
+import labelParametersApi from '../repositories/labelParameters/labelParameters.index.js';
 
 /**
  * GET /api/label-parameters

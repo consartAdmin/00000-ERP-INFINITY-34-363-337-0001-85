@@ -6,7 +6,7 @@
 'use strict';
 
 import pool from '../config/db.js';
-import locationsBarCodeApi from '../services/apis/locationsBarCodeApi.js';
+import locationsBarCodeApi from '../repositories/locationsBarCode/locationsBarCode.index.js';
 
 function ok(res, data = null, extra = {}) {
   return res.json({

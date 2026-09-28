@@ -19,7 +19,7 @@ import { PRODUCTS_TABLE } from './../services/apis/products/catalog_schema.produ
 import productsGroupsApi from '../services/apis/productsGroupsApi.js';
 import productsManufacturersApi from '../services/apis/productsManufacturersApi.js';
 import productsSuppliersApi from '../services/apis/productsSuppliersApi.js';
-import * as productMovementsApi from '../services/apis/productMovementsApi.js';
+import * as productMovementsApi from '../repositories/productMovements/productMovements.index.js';
 
 import { generateStockPositionPdf as buildStockPositionPdf } from '../generationPdf/generateStockPositionPdf.js';
 import { generateReportsProductsStockExcel } from '../generationExcel/generationReportsProductsStockExcel.js';

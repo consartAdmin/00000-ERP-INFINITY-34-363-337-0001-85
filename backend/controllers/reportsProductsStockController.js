@@ -7,7 +7,7 @@ import pool from '../config/db.js';
 import {
   getReportData,
   getStockPositionSummary
-} from '../services/apis/reportsProductsStockApi.js';
+} from '../repositories/reportsProductsStock/reportsProductsStock.index.js';
 
 import { generateReportsProductsStockExcel } from '../generationExcel/generationReportsProductsStockExcel.js';
 

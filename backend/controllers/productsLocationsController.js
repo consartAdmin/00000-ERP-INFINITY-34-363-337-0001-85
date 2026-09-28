@@ -16,7 +16,7 @@
 import pool from '../config/db.js';
 
 // ✅ NEW: use your DAL that now searches SKU/description/barcode
-import productsLocationsApi from '../services/apis/productsLocationsApi.js';
+import productsLocationsApi from '../repositories/productsLocations/productsLocations.index.js';
 
 const TB = 'public."productsLocations"';
 

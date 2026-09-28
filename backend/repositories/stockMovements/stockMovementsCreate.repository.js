@@ -1,12 +1,9 @@
-// services/apis/stockMovementsApi.js
 // ╔══════════════════════════════════════════════════════════════╗
-// ║ stockMovementsApi.js — Movimentações de Estoque            ║
-// ║ CONSART ERP | ESM                                          ║
+// ║ stockMovementsCreate.repository.js — createStockMovement   ║
+// ║ Tabela: public."stockMovements" (usa client da transação)  ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-import pool from '../../config/db.js';
-
-const TB = 'public."stockMovements"';
+import { TB } from './stockMovements.constants.js';
 
 export async function createStockMovement(client, payload) {
   const sql = `
@@ -43,5 +40,3 @@ export async function createStockMovement(client, payload) {
   const { rows } = await client.query(sql, params);
   return rows[0];
 }
-
-export default { createStockMovement };

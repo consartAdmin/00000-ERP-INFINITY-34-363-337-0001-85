@@ -3,7 +3,7 @@
 // ║ CRUD + busca por segundo código de barras                           ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import ProductBarCodeSecondAPI from '../services/apis/productBarCodeSecondApi.js';
+import ProductBarCodeSecondAPI from '../repositories/productBarCodeSecond/productBarCodeSecond.index.js';
 
 // Helper padrão para erros HTTP
 function handleError(res, err) {
