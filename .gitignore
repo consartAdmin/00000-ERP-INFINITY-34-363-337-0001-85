@@ -165,3 +165,9 @@ backend/**/*.b64
 *.swp
 *.swo
 *~
+# ============================================================
+# LOCAL COPIES OF BUCKET FILES (live only in GCS)
+# ============================================================
+
+backend/doc.contabil/
+backend/employees/
