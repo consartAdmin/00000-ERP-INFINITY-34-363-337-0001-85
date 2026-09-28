@@ -3,7 +3,7 @@
 // ║ PlugNotas primeiro; fallback pelo banco (orders) + hidratação        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import tecnoSpeedApi from '../../services/apis/tecnoSpeedNfeApi.js';
+import tecnoSpeedApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 import pool from '../../config/db.js';
 import { TB_ORDERS } from './nfes.constants.js';
 import { isTruthy } from './nfes.utils.js';

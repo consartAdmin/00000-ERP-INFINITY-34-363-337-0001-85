@@ -6,7 +6,7 @@
 import pool from '../../config/db.js';
 import {
   consultarNFe,
-} from '../../services/apis/tecnoSpeedNfeApi.js';
+} from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 export async function refreshNfeStatus(usoConsumoId) {
   const id = Number(usoConsumoId);

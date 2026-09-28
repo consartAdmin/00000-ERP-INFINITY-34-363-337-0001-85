@@ -18,7 +18,7 @@ const envPath = path.resolve(__dirname, '../../.env');
 dotenv.config({ path: envPath });
 console.log(`[ENV] Carregado: ${envPath}`);
 
-import { buildNFeFromOrder, emitirNFe } from './tecnoSpeedNfeApi.js';
+import { buildNFeFromOrder, emitirNFe } from '../../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 import * as ordersApi from './ordersApi.js';
 
 async function main() {

@@ -9,7 +9,7 @@
 
 import {
     buildNFeFromOrder,
-} from './apis/tecnoSpeedNfeApi.js';
+} from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 import {
     generateDanfeFromXml,

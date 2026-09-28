@@ -4,7 +4,7 @@
 
 // Carregado antes de ler process.env: tecnoSpeedNfeApi.js roda dotenv.config()
 // (no original ele era o primeiro import, antes de LIST_DEBUG ser avaliado).
-import '../../services/apis/tecnoSpeedNfeApi.js';
+import '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 export const TB_ORDERS = 'public."orders"';
 export const TB_ORDER_ITEMS = 'public."order_items"';

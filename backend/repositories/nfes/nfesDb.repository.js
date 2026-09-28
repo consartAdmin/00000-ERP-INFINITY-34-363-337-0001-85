@@ -3,7 +3,7 @@
 // ║ Tabelas: orders / order_items / customers + hidratação PlugNotas     ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import tecnoSpeedApi from '../../services/apis/tecnoSpeedNfeApi.js';
+import tecnoSpeedApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 import pool from '../../config/db.js';
 import { TB_ORDERS, TB_ORDER_ITEMS, TB_CUSTOMERS, LIST_DEBUG } from './nfes.constants.js';
 import { mapPlugNotasToNfe, rowDbToNfe } from './nfes.mappers.js';

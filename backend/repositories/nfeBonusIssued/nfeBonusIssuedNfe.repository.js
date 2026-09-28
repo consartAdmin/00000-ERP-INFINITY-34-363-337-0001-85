@@ -7,7 +7,7 @@ import pool from '../../config/db.js';
 import { createAuditLog } from '../../repositories/auditLogs/auditLogs.index.js';
 import customersApi from '../../repositories/customers/customers.index.js';
 import invoicesIssuedApi from '../../repositories/invoicesIssued/invoicesIssued.index.js';
-import * as tecnospeedNfeApi from '../../services/apis/tecnoSpeedNfeApi.js';
+import * as tecnospeedNfeApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 import { TB_BONUS, TB_BONUS_ITEMS, TB_PRODUCTS, TB_STOCK, TB_STOCK_LOTS } from './nfeBonusIssued.constants.js';
 import { normalizePositiveInteger, normalizeUserId } from './nfeBonusIssued.sanitizers.js';
 import { withTransaction } from './nfeBonusIssued.utils.js';

@@ -2,7 +2,7 @@
 // ║ nfes.mappers.js — PlugNotas / linha do banco → NF-e da tela          ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import tecnoSpeedApi from '../../services/apis/tecnoSpeedNfeApi.js';
+import tecnoSpeedApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 import { findDeepValue } from './nfes.utils.js';
 
 /* =====================================================================

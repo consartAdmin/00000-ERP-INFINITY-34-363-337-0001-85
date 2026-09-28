@@ -15,7 +15,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import nfeInutilizarEventsApi from '../repositories/nfeInutilizarEvents/nfeInutilizarEvents.index.js';
-import tecnospeedNfeApi from '../services/apis/tecnoSpeedNfeApi.js';
+import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 /* =======================================================================
  * Helpers

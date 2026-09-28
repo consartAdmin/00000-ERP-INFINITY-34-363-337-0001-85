@@ -3,7 +3,7 @@
 // ║ Fonte: TecnoSpeed/PlugNotas via tecnoSpeedNfeApi.listarNFe           ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import tecnoSpeedApi from '../../services/apis/tecnoSpeedNfeApi.js';
+import tecnoSpeedApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 import { LIST_DEBUG } from './nfes.constants.js';
 import { mapPlugNotasToNfe } from './nfes.mappers.js';
 

@@ -12,7 +12,7 @@ import nfesApi from '../repositories/nfes/nfes.index.js';
 
 // Conciliação / Emissão:
 import ordersApi from '../services/apis/orders/ordersApi.js';
-import tecnospeedNfeApi from '../services/apis/tecnoSpeedNfeApi.js';
+import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 import pool from '../config/db.js';
 

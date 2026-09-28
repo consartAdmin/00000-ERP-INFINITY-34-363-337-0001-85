@@ -3,7 +3,7 @@
 // ║ Retorna erro de schema diretamente na resposta da API                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 import ordersApi from '../services/apis/orders/ordersApi.js';
-import tecnospeedNfeApi from '../services/apis/tecnoSpeedNfeApi.js';
+import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 export async function debugEmit(req, res) {
   try {
