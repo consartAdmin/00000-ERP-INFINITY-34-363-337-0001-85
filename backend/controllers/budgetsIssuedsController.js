@@ -11,7 +11,7 @@ import {
     reconcileBudgetNfe,
     getBudgetNfeXml,
     getBudgetNfeDanfe,
-} from '../services/apis/nfeIssuanceApi.js';
+} from '../repositories/nfeIssuance/nfeIssuance.index.js';
 import { generateBudgetNfePreviewPdf } from '../services/budgetsNfePreviewService.js';
 
 function setNoCache(res) {
