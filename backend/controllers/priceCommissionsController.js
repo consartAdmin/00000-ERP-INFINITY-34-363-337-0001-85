@@ -4,7 +4,7 @@
 // ║ Path: /backend/controllers/priceCommissionsController.js             ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import priceCommissionsApi from '../services/apis/priceCommissionsApi.js';
+import priceCommissionsApi from '../repositories/priceCommissions/priceCommissions.index.js';
 
 export async function initPriceCommissionsController() {
   try {

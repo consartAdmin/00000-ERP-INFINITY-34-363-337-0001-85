@@ -9,7 +9,7 @@ import {
     diagnosticsSalesCommissionsFromInvoices,
     listSalesCommissionsFromInvoices,
     getSalesCommissionsFromInvoicesPdfData,
-} from '../services/apis/salesCommissionsFromInvoicesApi.js';
+} from '../repositories/salesCommissionsFromInvoices/salesCommissionsFromInvoices.index.js';
 
 import generateSalesCommissionsFromInvoicesPdf
     from '../generationPdf/generationSalesCommissionsFromInvoicesPdf.js';

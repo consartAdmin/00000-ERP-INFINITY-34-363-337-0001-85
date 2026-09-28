@@ -16,7 +16,7 @@ import {
   getSalesSummary,
   getSalesOrders,
   getSalesOrderItems,
-} from '../services/apis/salesReportApi.js';
+} from '../repositories/salesReport/salesReport.index.js';
 
 // Mesmas tabelas do módulo de pedidos
 const TB_ORDERS = 'public."orders"';

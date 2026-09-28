@@ -1,0 +1,22 @@
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ salesCommissionsFromInvoices.constants.js — Tabelas e defaults     ║
+// ╚════════════════════════════════════════════════════════════════════╝
+
+export const TB_SCI = 'public."salesCommissionsFromInvoices"';
+export const TB_INVOICES = 'public."invoicesIssued"';
+export const TB_ORDERS = 'public."orders"';
+export const TB_ORDER_ITEMS = 'public."orderItems"';
+export const TB_PRICES = 'public."prices"';
+export const TB_PC = 'public."priceCommissions"';
+export const TB_SELLERS = 'public."sellers"';
+export const TB_BUDGETS = 'public."budgets"';
+export const TB_SELLER_BY_BUDGETS = 'public."sellerByBudgets"';
+/*
+ * Itens do orçamento: tabela ATUAL (budgetsItems).
+ * Antes apontava para a legada "budgetItens", congelada no orçamento 160 —
+ * o price_id do orçamento não era encontrado para nada recente.
+ * A coluna de SKU lá é product_code (a legada usava sku).
+ */
+export const TB_BUDGET_ITEMS = 'public."budgetsItems"';
+
+export const DEFAULT_PRICE_ID = 1;

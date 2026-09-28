@@ -11,7 +11,7 @@ import {
   listSalesPerformanceMovements,
   listSalesPerformanceByStatus,
   getLeadsAttendedDashboard
-} from '../services/apis/salesPerformanceApi.js';
+} from '../repositories/salesPerformance/salesPerformance.index.js';
 
 import generateSalesPerformancePdf from '../generationPdf/generationSalesPerformancePdf.js';
 

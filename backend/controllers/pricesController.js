@@ -18,7 +18,7 @@ import {
   softDelete,
   permanentDelete,
   restore,
-} from '../services/apis/pricesApi.js';
+} from '../repositories/prices/prices.index.js';
 
 const ok = (res, data = {}) => res.json({ ok: true, ...data });
 const bad = (res, message = 'Erro', code = 400, extra = {}) =>

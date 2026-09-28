@@ -3,7 +3,7 @@
 // ║ CONSART ERP                                                        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { loadSalesAnalytics } from '../services/apis/salesAnalyticsApi.js';
+import { loadSalesAnalytics } from '../repositories/salesAnalytics/salesAnalytics.index.js';
 
 
 export async function getSalesAnalytics(req, res) {

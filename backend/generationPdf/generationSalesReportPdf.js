@@ -12,7 +12,7 @@
 'use strict';
 
 import PDFDocument from 'pdfkit';
-import { getFullSalesReport } from '../services/apis/salesReportApi.js';
+import { getFullSalesReport } from '../repositories/salesReport/salesReport.index.js';
 
 // ----------------------------------------------------------------------
 // Helpers básicos
