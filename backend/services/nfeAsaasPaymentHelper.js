@@ -4,8 +4,8 @@
 // ║ Saída: isBoleto, tpag, label (texto amigável)                        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import paymentFormsApi   from './apis/paymentFormsApi.js';
-import paymentMethodsApi from './apis/paymentMethodsApi.js';
+import paymentFormsApi   from '../repositories/paymentForms/paymentForms.index.js';
+import paymentMethodsApi from '../repositories/paymentMethods/paymentMethods.index.js';
 
 /* =======================================================================
  * Helpers internos

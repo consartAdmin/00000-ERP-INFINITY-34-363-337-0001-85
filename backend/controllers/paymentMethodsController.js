@@ -2,7 +2,7 @@
 // ║ paymentMethodsController.js — Express Controllers (ESM)         ║
 // ╚═════════════════════════════════════════════════════════════════╝
 
-import * as api from '../services/apis/paymentMethodsApi.js';
+import * as api from '../repositories/paymentMethods/paymentMethods.index.js';
 
 const num = (value, fallback = 0) => {
   const parsed = Number(value);

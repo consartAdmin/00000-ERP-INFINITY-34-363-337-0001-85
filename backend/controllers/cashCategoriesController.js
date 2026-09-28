@@ -7,8 +7,8 @@
 
 'use strict';
 
-import caixaCategoriasApi from '../services/apis/cashCategoriesApi.js';
-import caixaSubcategoriasApi from '../services/apis/cashSubcategoriesApi.js';
+import caixaCategoriasApi from '../repositories/cashCategories/cashCategories.index.js';
+import caixaSubcategoriasApi from '../repositories/cashSubcategories/cashSubcategories.index.js';
 
 /* ──────────────────────────────────────────────────────────────
    Helpers

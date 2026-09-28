@@ -15,7 +15,7 @@ import {
     setCashDocumentTypeActive,
     toggleCashDocumentTypeActive,
     updateCashDocumentType,
-} from '../services/apis/cashDocumentTypesApi.js';
+} from '../repositories/cashDocumentTypes/cashDocumentTypes.index.js';
 
 function sendError(res, error, fallbackMessage) {
     const status = Number(error?.statusCode) || 500;

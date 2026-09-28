@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import moment from 'moment';
 
-import * as caixa from '../services/apis/cashMovimentsApi.js';
+import * as caixa from '../repositories/cashMoviments/cashMoviments.index.js';
 import { generateCaixaPdf } from '../generationPdf/generationCashMovimentsPdf.js';
 
 import {

@@ -9,7 +9,7 @@ import {
   parseNfeXmlToExpenseEntryDraft,
 } from '../services/apis/expenseEntriesApi.js';
 
-import caixaApi from '../services/apis/cashMovimentsApi.js';
+import caixaApi from '../repositories/cashMoviments/cashMoviments.index.js';
 
 function ok(res, data, extra = {}) {
   return res.json({ ok: true, ...extra, data });
