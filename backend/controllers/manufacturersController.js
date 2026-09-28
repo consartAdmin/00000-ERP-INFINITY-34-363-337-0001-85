@@ -22,7 +22,7 @@ import {
   create as createApi,
   update as updateApi,
   remove as removeApi,
-} from '../services/apis/manufacturersApi.js';
+} from '../repositories/manufacturers/manufacturers.index.js';
 
 // ---------------------------------------------------------------------------
 // Helper centralizado para respostas

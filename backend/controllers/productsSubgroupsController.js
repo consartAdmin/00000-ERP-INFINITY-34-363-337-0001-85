@@ -4,7 +4,7 @@
 // ║ Usa ProductsSubgroupsAPI (camada de banco)                           ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import ProductsSubgroupsAPI from '../services/apis/productsSubgroupsApi.js';
+import ProductsSubgroupsAPI from '../repositories/productsSubgroups/productsSubgroups.index.js';
 
 function sendError(res, err, context = 'productsSubgroups') {
   const status = err?.status || 500;

@@ -4,7 +4,7 @@
 // ║ CONSART ERP | ESM                                           ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-import productsNotesApi from '../services/apis/productsNotesApi.js';
+import productsNotesApi from '../repositories/productsNotes/productsNotes.index.js';
 
 function sendError(res, error, fallback = 'Erro interno no módulo de anotações do produto.') {
   console.error('[productsNotesController][ERROR]', {

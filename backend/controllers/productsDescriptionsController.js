@@ -4,7 +4,7 @@
 
 'use strict';
 
-import * as api from '../services/apis/productsDescriptionsApi.js';
+import * as api from '../repositories/productsDescriptions/productsDescriptions.index.js';
 
 function sendError(res, err, fallbackMsg) {
   const status = err?.status || 500;

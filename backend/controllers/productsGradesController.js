@@ -3,7 +3,7 @@
 // ║ CONSART ERP                                                 ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-import * as api from '../services/apis/productsGradesApi.js';
+import * as api from '../repositories/productsGrades/productsGrades.index.js';
 
 export async function list(req, res) {
   try {

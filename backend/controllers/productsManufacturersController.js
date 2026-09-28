@@ -4,7 +4,7 @@
 
 import ProductsManufacturersAPI, {
   ensureProductsManufacturersTable,
-} from '../services/apis/productsManufacturersApi.js';
+} from '../repositories/productsManufacturers/productsManufacturers.index.js';
 
 ensureProductsManufacturersTable()
   .then(() => {

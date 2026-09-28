@@ -4,7 +4,7 @@
 //║ - Usa: services/apis/productsKeyApi.js                                    ║
 //╚════════════════════════════════════════════════════════════════════════════╝
 
-import productsKeyApi from '../services/apis/productsKeyApi.js';
+import productsKeyApi from '../repositories/productsKey/productsKey.index.js';
 
 function toInt(v, def = undefined) {
   if (v === undefined || v === null || v === '') return def;

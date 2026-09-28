@@ -4,7 +4,7 @@ import {
   findAllProductsLmRef,
   findProductLmRefById,
   updateProductLmRef,
-} from '../services/apis/productsLmRefApi.js';
+} from '../repositories/productsLmRef/productsLmRef.index.js';
 
 const parsePositiveInteger = (value) => {
   const parsed = Number.parseInt(value, 10);

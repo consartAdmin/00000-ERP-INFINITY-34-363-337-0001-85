@@ -4,7 +4,7 @@
 
 import ProductsSuppliersAPI, {
   ensureProductsSuppliersTable,
-} from '../services/apis/productsSuppliersApi.js';
+} from '../repositories/productsSuppliers/productsSuppliers.index.js';
 
 ensureProductsSuppliersTable()
   .then(() => {

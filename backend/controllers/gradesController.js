@@ -3,7 +3,7 @@
 // ║ CONSART ERP — ESM                                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as gradesApi from '../services/apis/gradesApi.js';
+import * as gradesApi from '../repositories/grades/grades.index.js';
 
 function httpError(res, e, fallbackStatus = 500) {
   const status = Number(e?.statusCode || e?.status || fallbackStatus);

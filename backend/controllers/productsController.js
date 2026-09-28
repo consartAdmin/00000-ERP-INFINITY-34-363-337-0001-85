@@ -16,9 +16,9 @@ import { Storage } from '@google-cloud/storage';
 import productsApi, { ProductsApiError } from './../services/apis/products/productsApi.js';
 import { PRODUCTS_TABLE } from './../services/apis/products/catalog_schema.products.js';
 
-import productsGroupsApi from '../services/apis/productsGroupsApi.js';
-import productsManufacturersApi from '../services/apis/productsManufacturersApi.js';
-import productsSuppliersApi from '../services/apis/productsSuppliersApi.js';
+import productsGroupsApi from '../repositories/productsGroups/productsGroups.index.js';
+import productsManufacturersApi from '../repositories/productsManufacturers/productsManufacturers.index.js';
+import productsSuppliersApi from '../repositories/productsSuppliers/productsSuppliers.index.js';
 import * as productMovementsApi from '../repositories/productMovements/productMovements.index.js';
 
 import { generateStockPositionPdf as buildStockPositionPdf } from '../generationPdf/generateStockPositionPdf.js';

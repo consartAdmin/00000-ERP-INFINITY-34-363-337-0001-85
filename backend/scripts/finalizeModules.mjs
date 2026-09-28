@@ -20,6 +20,11 @@ let failed = false;
 
 // 1) verificar todos antes de mexer em qualquer import
 for (const [api, dir] of pairs) {
+  // a ferramenta de escrita converte escapes \u em caracteres literais; reverte antes de verificar
+  if (existsSync(`repositories/${dir}`)) {
+    const fixed = run(`node scripts/restoreUnicodeEscapes.mjs repositories/${dir}`);
+    if (!fixed.includes('0 arquivo(s)')) console.log(`   escapes restaurados em ${dir}`);
+  }
   if (!existsSync(`repositories/${dir}/${dir}.index.js`)) {
     console.log(`MISSING repositories/${dir}/${dir}.index.js`);
     failed = true;
