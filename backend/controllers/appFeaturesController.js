@@ -7,7 +7,7 @@ import {
     removeFeatureAssignment,
     resolveFeature,
     upsertFeatureAssignment,
-} from '../services/apis/appFeatures/appFeaturesApi.js';
+} from '../repositories/appFeatures/appFeatures.index.js';
 
 function isTrue(value) {
     return value === true || String(value).toLowerCase() === 'true';

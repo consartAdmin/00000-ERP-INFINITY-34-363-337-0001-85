@@ -7,7 +7,7 @@
 
 import {
   resolveFeature,
-} from '../../services/apis/appFeatures/appFeaturesApi.js';
+} from '../appFeatures/appFeatures.index.js';
 
 export const INBOUND_STOCK_FEATURE_CODE = 'PRODUCT_STOCK_MODE';
 

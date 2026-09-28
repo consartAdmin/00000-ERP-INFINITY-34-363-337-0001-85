@@ -3,7 +3,7 @@
 // ║ CONSART ERP | Node.js ESM                                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { resolveFeature } from '../appFeatures/appFeaturesApi.js';
+import { resolveFeature } from '../../../repositories/appFeatures/appFeatures.index.js';
 import * as productsPricesSingle from './productsPrices.single.js';
 import * as productsPricesMultiple from './productsPrices.multiple.js';
 

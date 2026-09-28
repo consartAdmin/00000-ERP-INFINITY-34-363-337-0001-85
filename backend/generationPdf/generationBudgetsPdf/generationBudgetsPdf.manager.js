@@ -1,6 +1,6 @@
 'use strict';
 
-import { resolveFeature } from '../../services/apis/appFeatures/appFeaturesApi.js';
+import { resolveFeature } from '../../repositories/appFeatures/appFeatures.index.js';
 import {
   generateBudgetPdf as generateBudgetPdfSimple,
 } from './generationBudgetsPdf.simple.js.js';

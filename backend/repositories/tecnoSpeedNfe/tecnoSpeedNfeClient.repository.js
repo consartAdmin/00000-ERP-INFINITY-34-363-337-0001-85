@@ -11,7 +11,7 @@ import '../paymentMethods/paymentMethods.index.js';
 import '../customers/customers.index.js';
 import '../../services/stockFromOrdersService.js';
 import '../cancelarNfe/cancelarNfe.index.js';
-import '../../services/apis/appFeatures/appFeaturesApi.js';
+import '../appFeatures/appFeatures.index.js';
 
 import axios from 'axios';
 import {

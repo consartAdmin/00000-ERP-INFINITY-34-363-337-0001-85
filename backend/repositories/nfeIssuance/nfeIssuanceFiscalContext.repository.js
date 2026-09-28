@@ -8,7 +8,7 @@ import pool from '../../config/db.js';
 import customersApi from '../../repositories/customers/customers.index.js';
 import {
   resolveFeature,
-} from '../../services/apis/appFeatures/appFeaturesApi.js';
+} from '../appFeatures/appFeatures.index.js';
 import { positiveInteger, digits, unwrapCustomer } from './nfeIssuance.utils.js';
 
 export async function resolveActiveStockMode() {

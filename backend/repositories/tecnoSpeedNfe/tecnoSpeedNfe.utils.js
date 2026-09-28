@@ -4,7 +4,7 @@
 // ║ ✔ IBGE da cidade + config da empresa (ENV)                           ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { resolveFeature } from '../../services/apis/appFeatures/appFeaturesApi.js';
+import { resolveFeature } from '../appFeatures/appFeatures.index.js';
 
 /* =========================================================================
  * 🔧 Helpers gerais

@@ -1234,7 +1234,7 @@ app.use('/api', fiscalApuracaoRoutes);
 // ║                 APP FEATURES                            ║
 // ╚══════════════════════════════════════════════════════════╝
 import appFeaturesRoutes from './routes/appFeaturesRoutes.js';
-import { configureAppFeaturesDb } from './services/apis/appFeatures/appFeaturesApi.js';
+import { configureAppFeaturesDb } from './repositories/appFeatures/appFeatures.index.js';
 
 configureAppFeaturesDb(pool);
 app.use('/api/app-features', appFeaturesRoutes);
