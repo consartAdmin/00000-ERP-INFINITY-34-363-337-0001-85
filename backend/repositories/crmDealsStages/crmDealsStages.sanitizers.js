@@ -27,7 +27,7 @@ export function normalizeText(value, fallback = '') {
 export function buildCodeFromStageName(stageName = '') {
   return String(stageName)
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9\s_-]/g, '')
     .trim()
     .replace(/\s+/g, '_')

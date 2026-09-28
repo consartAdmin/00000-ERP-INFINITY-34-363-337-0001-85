@@ -17,7 +17,7 @@ export function safeFileName(value) {
 
   return base
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9._() -]+/g, '_')
     .replace(/\s+/g, ' ')
     .trim()
@@ -27,7 +27,7 @@ export function safeFileName(value) {
 export function safeSlug(value) {
   return String(value || 'DOCUMENTO')
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9._-]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '')
