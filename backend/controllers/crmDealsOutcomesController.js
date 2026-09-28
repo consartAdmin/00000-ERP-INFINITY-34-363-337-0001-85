@@ -25,7 +25,7 @@ import {
   listCrmDealsOutcomesSummary,
   listOperationsByOutcomeCode,
   listOperationsByOutcomeId
-} from '../services/apis/crmDealsOutcomesApi.js';
+} from '../repositories/crmDealsOutcomes/crmDealsOutcomes.index.js';
 
 /* =======================================================================
  * HELPERS

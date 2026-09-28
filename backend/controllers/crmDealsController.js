@@ -7,7 +7,7 @@
 // ║ ✅ Catálogos: Lead Sources + Deal Outcomes                          ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import crmDealsApi from '../services/apis/crmDealsApi.js';
+import crmDealsApi from '../repositories/crmDeals/crmDeals.index.js';
 import sellerByUserApi from '../services/apis/sellerByUserApi.js';
 
 function sendError(res, statusCode = 500, error = 'UNKNOWN_ERROR') {

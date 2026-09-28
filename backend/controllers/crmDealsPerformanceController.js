@@ -8,7 +8,7 @@
 // ║                    &limit&offset                                     ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import perfApi from '../services/apis/crmDealsPerformanceApi.js';
+import perfApi from '../repositories/crmDealsPerformance/crmDealsPerformance.index.js';
 
 function toInt(v, def = undefined) {
   if (v === undefined || v === null || v === '') return def;

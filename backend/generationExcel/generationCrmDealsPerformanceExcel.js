@@ -19,7 +19,7 @@
 import ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 
-import perfApi from '../services/apis/crmDealsPerformanceApi.js';
+import perfApi from '../repositories/crmDealsPerformance/crmDealsPerformance.index.js';
 
 /* ===========================
    Helpers

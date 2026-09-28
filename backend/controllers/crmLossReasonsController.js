@@ -6,7 +6,7 @@
   || CONSART ERP                                               ||
   ||============================================================||*/
 
-import crmLossReasonsApi from '../services/apis/crmLossReasonsApi.js';
+import crmLossReasonsApi from '../repositories/crmLossReasons/crmLossReasons.index.js';
 
 /*================================================
  * HELPERS

@@ -11,7 +11,7 @@ import {
   createStage,
   updateStage,
   removeStage,
-} from '../services/apis/crmDealsStagesApi.js';
+} from '../repositories/crmDealsStages/crmDealsStages.index.js';
 
 /* ========================================================================== */
 /* HELPERS                                                                    */

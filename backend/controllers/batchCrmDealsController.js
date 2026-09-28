@@ -3,7 +3,7 @@
 // ║ CONSART ERP | ESM                                           ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-import batchCrmDealsApi from '../services/apis/batchCrmDealsApi.js';
+import batchCrmDealsApi from '../repositories/batchCrmDeals/batchCrmDeals.index.js';
 
 function text(value) {
   return String(value ?? '').trim();

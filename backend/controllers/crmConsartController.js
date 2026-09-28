@@ -14,7 +14,7 @@
 // ║   GET    /api/crm/reativacao/outcomes/summary                       ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import crmConsartReativacaoApi from '../services/apis/crmConsartApi.js';
+import crmConsartReativacaoApi from '../repositories/crmConsart/crmConsart.index.js';
 
 function sendError(res, statusCode = 500, error = 'UNKNOWN_ERROR') {
   return res.status(statusCode).json({ ok: false, error });
