@@ -1,40 +1,12 @@
-// ╔══════════════════════════════════════════════════════════════════════╗
-// ║ sellerForCustomerApi.js — Link Sellers ↔ Customers (Postgres CRUD)  ║
-// ║ CONSART ERP — ESM                                                   ║
-// ║ ✅ Tabela real: public."SellerForCustomer"                           ║
-// ║ ✅ Joins corretos: public.sellers + public."customers"               ║
-// ║ ✅ Suporte a BULK por customer_ids                                   ║
-// ╚══════════════════════════════════════════════════════════════════════╝
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ sellerForCustomerQuery.repository.js — list / bulk / getById /     ║
+// ║ helpers por vendedor/cliente / ping                                ║
+// ║ Tabela: public."SellerForCustomer" (JOIN sellers + customers)      ║
+// ╚════════════════════════════════════════════════════════════════════╝
 
-import pool from '../../config/db.js';
-
-const TB = 'public."SellerForCustomer"';
-
-async function q(text, params = []) {
-  return pool.query(text, params);
-}
-
-function parseOrder(orderBy, allowed = []) {
-  if (!orderBy) return 'ORDER BY sfc.created_at DESC';
-  const [col, dirRaw] = String(orderBy).trim().split(/\s+/);
-  const colSafe = allowed.includes(col) ? col : null;
-  const dir = /^(asc|desc)$/i.test(dirRaw || '') ? dirRaw.toUpperCase() : 'ASC';
-  return colSafe ? `ORDER BY sfc.${colSafe} ${dir}` : 'ORDER BY sfc.created_at DESC';
-}
-
-function toInt(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-function toBool(v) {
-  if (v === undefined || v === null || v === '') return undefined;
-  if (typeof v === 'boolean') return v;
-  const s = String(v).toLowerCase();
-  if (['1', 'true', 't', 'yes', 'y'].includes(s)) return true;
-  if (['0', 'false', 'f', 'no', 'n'].includes(s)) return false;
-  return undefined;
-}
+import { TB } from './sellerForCustomer.constants.js';
+import { toInt, toBool } from './sellerForCustomer.sanitizers.js';
+import { q, parseOrder } from './sellerForCustomer.utils.js';
 
 /* =========================================================================
    LIST (com filtros + paginação)
@@ -186,102 +158,6 @@ export async function getSellerForCustomerById(id) {
 }
 
 /* =========================================================================
-   CREATE
-   ========================================================================= */
-
-export async function createSellerForCustomer(payload = {}) {
-  const sid = toInt(payload.seller_id);
-  const cid = toInt(payload.customer_id);
-
-  if (!sid || !cid) throw new Error('seller_id and customer_id are required');
-
-  const active = payload.active === undefined || payload.active === null ? true : !!payload.active;
-
-  const sql = `
-    INSERT INTO ${TB} (seller_id, customer_id, active)
-    VALUES ($1, $2, $3)
-    RETURNING *;
-  `;
-
-  try {
-    const res = await q(sql, [sid, cid, active]);
-    return res.rows[0];
-  } catch (err) {
-    if (err?.code === '23505') {
-      const e = new Error('This seller is already linked to this customer.');
-      e.code = 'DUPLICATE_RELATION';
-      throw e;
-    }
-    throw err;
-  }
-}
-
-/* =========================================================================
-   UPDATE
-   ========================================================================= */
-
-export async function updateSellerForCustomer(id, payload = {}) {
-  const iid = toInt(id);
-  if (!iid) throw new Error('invalid id');
-
-  const sets = [];
-  const params = [];
-  let i = 1;
-
-  if (payload.seller_id !== undefined) {
-    const sid = payload.seller_id === null ? null : toInt(payload.seller_id);
-    sets.push(`seller_id = $${i++}`);
-    params.push(sid);
-  }
-
-  if (payload.customer_id !== undefined) {
-    const cid = payload.customer_id === null ? null : toInt(payload.customer_id);
-    sets.push(`customer_id = $${i++}`);
-    params.push(cid);
-  }
-
-  if (payload.active !== undefined) {
-    sets.push(`active = $${i++}`);
-    params.push(payload.active === null ? null : !!payload.active);
-  }
-
-  if (!sets.length) return getSellerForCustomerById(iid);
-
-  sets.push(`updated_at = NOW()`);
-
-  const sql = `
-    UPDATE ${TB}
-       SET ${sets.join(', ')}
-     WHERE id = $${i}
-     RETURNING *;
-  `;
-
-  try {
-    const res = await q(sql, [...params, iid]);
-    return res.rows[0] || null;
-  } catch (err) {
-    if (err?.code === '23505') {
-      const e = new Error('This seller is already linked to this customer.');
-      e.code = 'DUPLICATE_RELATION';
-      throw e;
-    }
-    throw err;
-  }
-}
-
-/* =========================================================================
-   DELETE
-   ========================================================================= */
-
-export async function deleteSellerForCustomer(id) {
-  const iid = toInt(id);
-  if (!iid) return false;
-
-  const res = await q(`DELETE FROM ${TB} WHERE id = $1 RETURNING id`, [iid]);
-  return res.rowCount > 0;
-}
-
-/* =========================================================================
    HELPERS
    ========================================================================= */
 
@@ -331,15 +207,3 @@ export async function ping() {
   const r = await q('SELECT 1 AS ok');
   return r.rows?.[0]?.ok === 1;
 }
-
-export default {
-  listSellerForCustomer,
-  listByCustomerIds,
-  getSellerForCustomerById,
-  createSellerForCustomer,
-  updateSellerForCustomer,
-  deleteSellerForCustomer,
-  listCustomersBySeller,
-  listSellersByCustomer,
-  ping,
-};

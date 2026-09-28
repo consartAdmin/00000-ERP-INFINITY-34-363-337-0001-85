@@ -7,7 +7,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { createAuditLog } from '../../services/apis/auditLogsApi.js';
+import { createAuditLog } from '../auditLogs/auditLogs.index.js';
 
 import {
   INVOICES_ISSUED_TABLE as TB_INVOICES,

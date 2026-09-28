@@ -10,7 +10,7 @@ import {
   replaceUserDashboardAccess,
   deleteUserDashboardAccess,
   deleteAllUserDashboardAccess,
-} from '../services/apis/usersDashboardAccessApi.js';
+} from '../repositories/usersDashboardAccess/usersDashboardAccess.index.js';
 
 const ALLOWED_DASHBOARD_KEYS = new Set([
   'daily-nfce',

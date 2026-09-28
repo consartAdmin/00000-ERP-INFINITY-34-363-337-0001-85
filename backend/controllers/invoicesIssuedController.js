@@ -14,7 +14,7 @@ import { generateDanfeFromXml } from '../services/danfeConsartService.js';
 
 import ordersApi from '../services/apis/orders/ordersApi.js';
 
-import { createAuditLog } from '../services/apis/auditLogsApi.js';
+import { createAuditLog } from '../repositories/auditLogs/auditLogs.index.js';
 
 function getRequestUserId(req) {
   const value =

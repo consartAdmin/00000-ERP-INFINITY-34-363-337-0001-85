@@ -3,7 +3,7 @@
 // ║ CONTROLLER: Auditoria                                        ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-import * as auditLogsApi from '../services/apis/auditLogsApi.js';
+import * as auditLogsApi from '../repositories/auditLogs/auditLogs.index.js';
 
 export async function getAuditLogs(req, res) {
   try {

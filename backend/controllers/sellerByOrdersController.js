@@ -9,7 +9,7 @@ import {
   upsertForOrder,
   patchSeller,
   remove,
-} from '../services/apis/sellerByOrdersApi.js';
+} from '../repositories/sellerByOrders/sellerByOrders.index.js';
 
 const badReq = (res, msg, code = 400) => res.status(code).json({ ok: false, error: msg });
 

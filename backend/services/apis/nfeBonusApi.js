@@ -13,7 +13,7 @@
 'use strict';
 
 import pool from '../../config/db.js';
-import { createAuditLog } from './auditLogsApi.js';
+import { createAuditLog } from '../../repositories/auditLogs/auditLogs.index.js';
 
 
 // ======================================================================

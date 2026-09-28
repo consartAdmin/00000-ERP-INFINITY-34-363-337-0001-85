@@ -9,7 +9,7 @@ import {
   create,
   update,
   remove,
-} from '../services/apis/moduleSystemApi.js';
+} from '../repositories/moduleSystem/moduleSystem.index.js';
 
 function toBool(v) {
   if (typeof v === 'boolean') return v;

@@ -1,61 +1,11 @@
-// ╔══════════════════════════════════════════════════════════════════════╗
-// ║ sellerByOrdersApi.js — Service API (DB) Vendedor x Pedido | CONSART  ║
-// ║ Path: /backend/services/apis/sellerByOrdersApi.js                    ║
-// ╚══════════════════════════════════════════════════════════════════════╝
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ sellerByOrdersUpsert.repository.js — upsertForOrder / patchSeller  ║
+// ║ Tabela: public."sellerByOrders"                                    ║
+// ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-
-const TB = 'public."sellerByOrders"';
-const TB_ORDERS = 'public."orders"';
-
-const ok = (data = {}) => ({ ok: true, ...data });
-const bad = (error, extra = {}) => ({ ok: false, error, ...extra });
-
-export async function ensureTable() {
-  // Mantém simples: você já tem o SQL acima, mas isso evita crash em ambiente novo
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS ${TB} (
-      id BIGSERIAL PRIMARY KEY,
-      order_id BIGINT NOT NULL REFERENCES ${TB_ORDERS}(order_id) ON DELETE CASCADE,
-      seller_id BIGINT NOT NULL,
-      seller_name VARCHAR(200),
-      seller_email VARCHAR(180),
-      seller_phone VARCHAR(30),
-      role VARCHAR(30) NOT NULL DEFAULT 'PRINCIPAL',
-      commission_pct NUMERIC(7,3) NOT NULL DEFAULT 0,
-      commission_value NUMERIC(14,2) NOT NULL DEFAULT 0,
-      notes TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE(order_id, seller_id)
-    );
-  `);
-
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_sbo_order_id  ON ${TB}(order_id);`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_sbo_seller_id ON ${TB}(seller_id);`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_sbo_role      ON ${TB}(role);`);
-  return ok();
-}
-
-export async function listByOrder(orderId) {
-  const id = Number(orderId);
-  if (!Number.isFinite(id) || id <= 0) return bad('orderId inválido');
-
-  const { rows } = await pool.query(
-    `
-    SELECT
-      id, order_id, seller_id, seller_name, seller_email, seller_phone,
-      role, commission_pct, commission_value, notes,
-      created_at, updated_at
-    FROM ${TB}
-    WHERE order_id = $1
-    ORDER BY (role = 'PRINCIPAL') DESC, id ASC
-    `,
-    [id]
-  );
-
-  return ok({ rows });
-}
+import { TB } from './sellerByOrders.constants.js';
+import { ok, bad } from './sellerByOrders.utils.js';
 
 export async function upsertForOrder(orderId, payload = {}) {
   const id = Number(orderId);
@@ -137,19 +87,4 @@ export async function patchSeller(orderId, sellerId, patch = {}) {
 
   if (!rows?.length) return bad('NOT_FOUND');
   return ok({ row: rows[0] });
-}
-
-export async function remove(orderId, sellerId) {
-  const oid = Number(orderId);
-  const sid = Number(sellerId);
-  if (!Number.isFinite(oid) || oid <= 0) return bad('orderId inválido');
-  if (!Number.isFinite(sid) || sid <= 0) return bad('sellerId inválido');
-
-  const { rowCount } = await pool.query(
-    `DELETE FROM ${TB} WHERE order_id = $1 AND seller_id = $2`,
-    [oid, sid]
-  );
-
-  if (!rowCount) return bad('NOT_FOUND');
-  return ok({ removed: true });
 }

@@ -12,7 +12,7 @@ import {
   create,
   update,
   remove,
-} from '../services/apis/userEmailAccountsApi.js';
+} from '../repositories/userEmailAccounts/userEmailAccounts.index.js';
 
 const ok = (res, data = {}) => res.json({ ok: true, ...data });
 

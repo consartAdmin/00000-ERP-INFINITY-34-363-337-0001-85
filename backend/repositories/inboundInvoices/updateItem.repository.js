@@ -5,7 +5,7 @@
 
 'use strict';
 
-import { createAuditLog } from '../../services/apis/auditLogsApi.js';
+import { createAuditLog } from '../auditLogs/auditLogs.index.js';
 
 import {
   TB_III,

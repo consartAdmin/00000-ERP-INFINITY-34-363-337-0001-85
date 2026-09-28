@@ -4,7 +4,7 @@
 // ║ - Padrão de resposta: { ok, data?, error? }                     ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
-import sellersApi from '../services/apis/sellersApi.js';
+import sellersApi from '../repositories/sellers/sellers.index.js';
 
 /* ====================================================================
  * Helpers

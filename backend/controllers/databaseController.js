@@ -12,7 +12,7 @@ import {
   insertRow,
   updateRow,
   deleteRow,
-} from '../services/apis/databaseApi.js';
+} from '../repositories/database/database.index.js';
 
 function ok(res, data) {
   return res.json({

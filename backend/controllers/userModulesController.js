@@ -11,7 +11,7 @@ import {
   update,
   remove,
   listModulesForUser, // 🔹 JOIN com moduleSystem
-} from '../services/apis/userModulesApi.js';
+} from '../repositories/userModules/userModules.index.js';
 
 /* Garante existência da tabela ao subir o módulo (best effort) */
 ensureTable()

@@ -17,7 +17,7 @@ import {
   remove,
   toggleActive,
   setPrimary,
-} from '../services/apis/sellerByUserApi.js';
+} from '../repositories/sellerByUser/sellerByUser.index.js';
 
 const ok = (res, data = {}) => res.json({ ok: true, ...data });
 const bad = (res, msg = 'Erro', code = 400, extra = {}) =>

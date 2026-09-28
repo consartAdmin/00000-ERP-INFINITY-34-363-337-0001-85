@@ -4,7 +4,7 @@
 // ║ CONSART ERP · Uses sellerForCustomerApi (Postgres)                  ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as sellerForCustomerApi from '../services/apis/sellerForCustomerApi.js';
+import * as sellerForCustomerApi from '../repositories/sellerForCustomer/sellerForCustomer.index.js';
 
 /* =========================================================================
    LIST with filters + pagination

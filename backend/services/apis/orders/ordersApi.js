@@ -10,11 +10,11 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../../config/db.js';
-import * as sellerByOrdersApi from '../sellerByOrdersApi.js';
+import * as sellerByOrdersApi from '../../../repositories/sellerByOrders/sellerByOrders.index.js';
 import { ORDER_STATUS } from '../../shared/constants/orderStatus.js';
 import { NFE_STATUS } from '../../shared/constants/nfeStatus.js';
 
-import { createAuditLog } from '../auditLogsApi.js';
+import { createAuditLog } from '../../../repositories/auditLogs/auditLogs.index.js';
 
 import { queueErrorEmail } from '../../../errorEmailReporter.js';
 

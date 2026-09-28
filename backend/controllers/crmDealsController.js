@@ -8,7 +8,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import crmDealsApi from '../repositories/crmDeals/crmDeals.index.js';
-import sellerByUserApi from '../services/apis/sellerByUserApi.js';
+import sellerByUserApi from '../repositories/sellerByUser/sellerByUser.index.js';
 
 function sendError(res, statusCode = 500, error = 'UNKNOWN_ERROR') {
   return res.status(statusCode).json({ ok: false, error });
