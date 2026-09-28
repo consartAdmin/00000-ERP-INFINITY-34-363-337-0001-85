@@ -288,7 +288,9 @@ export async function listAccountsReceivable({
 export async function resumoMes({ year, month }) {
   const mm = String(month).padStart(2, '0');
   const inicio = `${year}-${mm}-01`;
-  const fim = `${year}-${mm}-31`;
+  // último dia real do mês (dia 0 do mês seguinte); "-31" quebrava em meses de 30 dias e fevereiro
+  const lastDay = new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate();
+  const fim = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`;
 
   const sql = `
     SELECT
