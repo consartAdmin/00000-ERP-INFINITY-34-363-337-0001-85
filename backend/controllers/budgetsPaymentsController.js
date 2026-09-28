@@ -7,7 +7,7 @@
 
 'use strict';
 
-import budgetsPaymentsApi from '../services/apis/budgetsPayments/budgetsPaymentsApi.js';
+import budgetsPaymentsApi from '../repositories/budgetsPayments/budgetsPayments.index.js';
 
 function ok(res, data = {}, message = 'OK', status = 200) {
   return res.status(status).json({

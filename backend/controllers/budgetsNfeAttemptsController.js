@@ -4,7 +4,7 @@
 
 'use strict';
 
-import budgetsNfeAttemptsApi from '../services/apis/budgetsNfeAttempts/budgetsNfeAttemptsApi.js';
+import budgetsNfeAttemptsApi from '../repositories/budgetsNfeAttempts/budgetsNfeAttempts.index.js';
 
 function parseBoolean(value) {
     if (value === undefined) return undefined;

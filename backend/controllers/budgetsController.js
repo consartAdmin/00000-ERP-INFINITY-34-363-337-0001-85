@@ -14,8 +14,8 @@ import pool from '../config/db.js';
 import budgetsApi from '../services/apis/budgets/budgetsApi.js';
 import ordersApi from '../services/apis/orders/ordersApi.js';
 import paymentMethodsApi from '../repositories/paymentMethods/paymentMethods.index.js';
-import budgetsPaymentsApi from '../services/apis/budgetsPayments/budgetsPaymentsApi.js';
-import budgetsPaymentInstallmentsApi from '../services/apis/budgetsPaymentInstallments/budgetsPaymentInstallmentsApi.js';
+import budgetsPaymentsApi from '../repositories/budgetsPayments/budgetsPayments.index.js';
+import budgetsPaymentInstallmentsApi from '../repositories/budgetsPaymentInstallments/budgetsPaymentInstallments.index.js';
 import enterpriseApi from '../repositories/enterprise/enterprise.index.js';
 import * as ordersKanbanApi from '../repositories/ordersKanban/ordersKanban.index.js';
 
