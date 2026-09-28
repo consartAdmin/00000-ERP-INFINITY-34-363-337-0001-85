@@ -2,7 +2,7 @@
 // ║ fiscalClassificationV2Controller.js — Express Controller (ESM)          ║
 // ╚═════════════════════════════════════════════════════════════════════════╝
 
-import * as svc from '../services/apis/fiscalClassificationV2/fiscalClassificationV2Api.js';
+import * as svc from '../repositories/fiscalClassificationV2/fiscalClassificationV2.index.js';
 
 const bool = (value) => value === undefined ? undefined : ['true', '1'].includes(String(value).toLowerCase());
 const pagination = (q) => ({ limit: Math.min(Math.max(Number(q.limit) || 100, 1), 500), offset: Math.max(Number(q.offset) || 0, 0) });

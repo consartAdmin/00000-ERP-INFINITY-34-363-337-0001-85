@@ -7,7 +7,7 @@
 
 'use strict';
 
-import chartOfAccountsApi from '../services/apis/chartOfAccounts/chartOfAccountsApi.js';
+import chartOfAccountsApi from '../repositories/chartOfAccounts/chartOfAccounts.index.js';
 
 function parseBoolean(value, fallback = undefined) {
   if (value === undefined || value === null || value === '') return fallback;

@@ -12,7 +12,7 @@ import {
   create,
   update,
   remove,
-} from '../services/apis/users/usersApi.js';
+} from '../repositories/users/users.index.js';
 
 /* Garante existência da tabela ao subir o módulo (best effort) */
 ensureTable()

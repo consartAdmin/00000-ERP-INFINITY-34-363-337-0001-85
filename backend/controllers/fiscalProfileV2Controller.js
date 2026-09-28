@@ -2,7 +2,7 @@
 // ║ fiscalProfileV2Controller.js — Express Controller (ESM)          ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
-import * as svc from '../services/apis/fiscalProfileV2/fiscalProfileV2Api.js';
+import * as svc from '../repositories/fiscalProfileV2/fiscalProfileV2.index.js';
 
 const bool = (value) => value === undefined ? undefined : ['true', '1'].includes(String(value).toLowerCase());
 const page = (query) => ({

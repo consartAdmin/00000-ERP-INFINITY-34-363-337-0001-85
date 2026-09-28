@@ -7,10 +7,10 @@
 
 'use strict';
 
-import { ensureDeliveryTables } from '../services/apis/deliveryTrips/deliveryTripsSchema.js';
-import * as driversApi from '../services/apis/deliveryTrips/driversApi.js';
-import * as vehiclesApi from '../services/apis/deliveryTrips/vehiclesApi.js';
-import * as tripsApi from '../services/apis/deliveryTrips/deliveryTripsApi.js';
+import { ensureDeliveryTables } from '../repositories/deliveryTrips/deliveryTrips.schema.js';
+import * as driversApi from '../repositories/drivers/drivers.index.js';
+import * as vehiclesApi from '../repositories/vehicles/vehicles.index.js';
+import * as tripsApi from '../repositories/deliveryTrips/deliveryTrips.index.js';
 
 // ======================================================================
 // Helpers de resposta

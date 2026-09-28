@@ -7,7 +7,7 @@ import {
     list,
     getById,
     getByCode,
-} from '../services/apis/nfeStatusMap/nfeStatusMapApi.js';
+} from '../repositories/nfeStatusMap/nfeStatusMap.index.js';
 
 
 function sendResult(res, result) {
