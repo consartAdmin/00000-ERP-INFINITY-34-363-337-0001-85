@@ -14,4 +14,5 @@ export const TABLES = Object.freeze({
   POSITIONS: 'public."locationPositions"',
   LOCALIZATION_PRODUCTS: 'public."localizationProducts"',
   PRODUCTS: 'public."products"', // 👈 NOVO
+  BARCODES: 'public."locationsBarCode"', // mesma tabela de repositories/locationsBarCode
 });

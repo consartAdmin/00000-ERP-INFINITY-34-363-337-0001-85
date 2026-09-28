@@ -51,24 +51,26 @@ export async function listProductLocations(pgPool, { productCode = null } = {}) 
 export async function getProductLocationById(pgPool, id) {
   const text = `
     SELECT
-      id,
-      product_code,
+      lp.id,
+      lp.product_code,
       p.description AS product_description,
-      local_id,
-      corridor_id,
-      shelf_id,
-      bin_id,
-      position_id,
-      local,
-      corridor,
-      shelf,
-      bin,
-      position,
-      notes,
-      created_at,
-      updated_at
-    FROM ${TABLES.LOCALIZATION_PRODUCTS}
-    WHERE id = $1;
+      lp.local_id,
+      lp.corridor_id,
+      lp.shelf_id,
+      lp.bin_id,
+      lp.position_id,
+      lp.local,
+      lp.corridor,
+      lp.shelf,
+      lp.bin,
+      lp.position,
+      lp.notes,
+      lp.created_at,
+      lp.updated_at
+    FROM ${TABLES.LOCALIZATION_PRODUCTS} lp
+    LEFT JOIN ${TABLES.PRODUCTS} p
+      ON p.product_code = lp.product_code
+    WHERE lp.id = $1;
   `;
   const { rows } = await pgPool.query(text, [id]);
   return rows[0] || null;
@@ -190,7 +192,6 @@ export async function deleteProductLocation(pgPool, id) {
   return { success: true };
 }
 
-// Obs.: TABLES.BARCODES não existe em TABLES (comportamento original mantido).
 export async function getLocationByBarcode(pgPool, barcode) {
   const sql = `
     SELECT
