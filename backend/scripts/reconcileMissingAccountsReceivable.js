@@ -11,7 +11,7 @@
 'use strict';
 
 import pool from '../config/db.js';
-import { syncAuthorizedBudgetNfe } from '../services/apis/nfeAsaasSyncApi.js';
+import { syncAuthorizedBudgetNfe } from '../repositories/nfeAsaasSync/nfeAsaasSync.index.js';
 
 const EPSILON = 0.01;
 

@@ -3,7 +3,7 @@
 // ║ CONSART ERP                                                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as Api from '../services/apis/supplierReturnsApi.js';
+import * as Api from '../repositories/supplierReturns/supplierReturns.index.js';
 
 import { generateDanfeFromXml } from '../services/danfeConsartService.js';
 

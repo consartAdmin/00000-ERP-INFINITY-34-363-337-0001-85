@@ -21,7 +21,7 @@ import {
 
 import {
   syncAuthorizedBudgetNfe,
-} from './nfeAsaasSyncApi.js';
+} from '../../repositories/nfeAsaasSync/nfeAsaasSync.index.js';
 
 import * as stockFromBudgetsService
   from '../stockFromBudgetsService.js';

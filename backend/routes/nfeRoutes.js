@@ -8,7 +8,7 @@
 
 import express from 'express';
 import tecnospeedNfeInutilizacaoApi
-  from '../services/apis/tecnoSpeedNfeInutilizacaoApi.js';
+  from '../repositories/tecnoSpeedNfeInutilizacao/tecnoSpeedNfeInutilizacao.index.js';
 
 const router = express.Router();
 

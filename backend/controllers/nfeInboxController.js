@@ -18,7 +18,7 @@ import archiver from 'archiver';
 import { parseStringPromise } from 'xml2js';
 
 import * as nfeInboxApi from '../services/apis/nfeInboxApi.js';
-import tecnoSpeedDfeApi from '../services/apis/tecnoSpeedDFeApi.js';
+import tecnoSpeedDfeApi from '../repositories/tecnoSpeedDFe/tecnoSpeedDFe.index.js';
 import { generateDanfeFromXml } from '../services/danfeConsartServiceToNfeInbox.js';
 
 let autoSyncTimer = null;
