@@ -4,7 +4,7 @@
 // ║ Identificação por: nfe_key ou nfe_number                            ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as api from '../repositories/nfeReceipts/index.js';
+import * as api from '../repositories/nfeReceipts/nfeReceipts.index.js';
 
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ Helpers                                                              ║

@@ -16,7 +16,7 @@ import { Storage } from '@google-cloud/storage';
 import { parseStringPromise } from 'xml2js';
 
 import pool from '../config/db.js';
-import inboundInvoicesApi from '../services/apis/inboundInvoicesApi.js';
+import inboundInvoicesApi from '../repositories/inboundInvoices/inboundInvoices.index.js';
 import { createFromSource as createAccountsPayableFromSource } from '../services/apis/accountsPayableApi.js';
 
 // ============================================================================

@@ -17,7 +17,7 @@ import {
 import {
   getByProviderId,
   cancel as cancelInvoiceIssued,
-} from '../services/apis/invoicesIssued/invoicesIssuedApi.js';
+} from '../repositories/invoicesIssued/invoicesIssued.index.js';
 
 function normalizeText(value) {
   const normalized = String(value ?? '').trim();

@@ -8,7 +8,7 @@ import axios from 'axios';
 
 import pool from '../config/db.js';
 
-import invoicesIssuedApi from '../services/apis/invoicesIssued/invoicesIssuedApi.js';
+import invoicesIssuedApi from '../repositories/invoicesIssued/invoicesIssued.index.js';
 
 import { generateDanfeFromXml } from '../services/danfeConsartService.js';
 

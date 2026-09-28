@@ -5,7 +5,7 @@ import pool from '../../config/db.js';
 
 import {
     findProductByLmRef,
-} from '../../services/apis/inboundInvoicesApi.js';
+} from '../../repositories/inboundInvoices/inboundInvoices.index.js';
 
 const DEFAULT_ISSUER = '44941950000196';
 const DEFAULT_CODES = ['333', '334', '371', '336', '337', '338', '340'];

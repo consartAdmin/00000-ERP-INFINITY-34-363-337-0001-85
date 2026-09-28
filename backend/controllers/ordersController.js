@@ -19,7 +19,7 @@ import {
 
 import ordersBillingApi from '../services/apis/ordersBillingApi.js';
 
-import invoicesIssuedApi from '../services/apis/invoicesIssued/invoicesIssuedApi.js';
+import invoicesIssuedApi from '../repositories/invoicesIssued/invoicesIssued.index.js';
 
 // 🔗 Novo bridge central NF-e ↔ Asaas
 import { sendOrderToAsaas } from '../services/nfeAsaasBridgeService.js';

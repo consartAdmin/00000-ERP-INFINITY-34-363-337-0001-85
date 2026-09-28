@@ -40,7 +40,7 @@
 //   original da NF-e, preservando a ordenação correta em "Registros do Produto".
 
 const { default: pool } = await import('../../config/db.js');
-const { default: invoicesIssuedApi } = await import('./invoicesIssuedApi.js');
+const { default: invoicesIssuedApi } = await import('../../repositories/invoicesIssued/invoicesIssued.index.js');
 
 /* =========================================================================
  * CLI

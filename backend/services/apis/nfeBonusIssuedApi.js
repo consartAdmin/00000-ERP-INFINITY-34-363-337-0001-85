@@ -15,7 +15,7 @@
 import pool from '../../config/db.js';
 import { createAuditLog } from './auditLogsApi.js';
 import customersApi from '../../repositories/customers/customers.index.js';
-import invoicesIssuedApi from './invoicesIssued/invoicesIssuedApi.js';
+import invoicesIssuedApi from '../../repositories/invoicesIssued/invoicesIssued.index.js';
 import * as tecnospeedNfeApi from './tecnoSpeedNfeApi.js';
 
 

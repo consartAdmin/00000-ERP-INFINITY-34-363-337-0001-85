@@ -31,7 +31,7 @@ import {
   deleteInstallment,
   ensureColumnsForPosting,
   findProductByLmRef,
-} from '../services/apis/inboundInvoicesApi.js';
+} from '../repositories/inboundInvoices/inboundInvoices.index.js';
 
 import { parseStringPromise } from 'xml2js';
 import pool from '../config/db.js';

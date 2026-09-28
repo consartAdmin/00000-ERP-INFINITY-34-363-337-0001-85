@@ -6,8 +6,8 @@
 
 'use strict';
 
-import transportersApi from './../repositories/transporters/transportersApi.js';
-import transportersAttachmentsApi from '../services/apis/transportersAttachmentsApi.js';
+import transportersApi from '../repositories/transporters/transporters.index.js';
+import transportersAttachmentsApi from '../repositories/transporters/transportersAttachments.repository.js';
 
 function getStatusFromError(error) {
   const message = String(error?.message || '').toLowerCase();

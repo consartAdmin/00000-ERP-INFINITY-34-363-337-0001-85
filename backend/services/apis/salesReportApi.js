@@ -7,7 +7,7 @@
 'use strict';
 
 import pool from '../../config/db.js';
-import invoicesIssuedApi from './invoicesIssued/invoicesIssuedApi.js';
+import invoicesIssuedApi from '../../repositories/invoicesIssued/invoicesIssued.index.js';
 
 const TB_INVOICES = 'public."invoicesIssued"';
 const TB_ORDERS = 'public."orders"';
