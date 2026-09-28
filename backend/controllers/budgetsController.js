@@ -16,7 +16,7 @@ import ordersApi from '../services/apis/orders/ordersApi.js';
 import paymentMethodsApi from '../repositories/paymentMethods/paymentMethods.index.js';
 import budgetsPaymentsApi from '../services/apis/budgetsPayments/budgetsPaymentsApi.js';
 import budgetsPaymentInstallmentsApi from '../services/apis/budgetsPaymentInstallments/budgetsPaymentInstallmentsApi.js';
-import enterpriseApi from '../services/apis/enterpriseApi.js';
+import enterpriseApi from '../repositories/enterprise/enterprise.index.js';
 import * as ordersKanbanApi from '../repositories/ordersKanban/ordersKanban.index.js';
 
 import {

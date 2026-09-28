@@ -4,7 +4,7 @@
 // ║ Projeto: CONSART ERP                                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import enterpriseApi from '../services/apis/enterpriseApi.js';
+import enterpriseApi from '../repositories/enterprise/enterprise.index.js';
 
 function parsePagination(req) {
   const limit = Math.max(1, Math.min(200, Number(req.query.limit || 20)));

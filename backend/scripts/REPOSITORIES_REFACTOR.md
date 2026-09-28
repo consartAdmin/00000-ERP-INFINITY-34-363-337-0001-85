@@ -35,7 +35,10 @@ Cada arquivo começa com o cabeçalho em caixa (╔═╗) como nas referências
 
 ## Verificação (obrigatória, por módulo)
 Rode com cwd = `backend/`:
-1. `node scripts/verifyRepoExports.mjs <X>Api <X>` → deve imprimir `OK`. (Para `productsBoxesApis` use `productsBoxesApis productsBoxes`.)
+1. `node scripts/verifyRepoExports.mjs <X>Api <X> HEAD` → deve imprimir `OK`. (Para `productsBoxesApis` use `productsBoxesApis productsBoxes HEAD`.)
+   Sempre compare com `HEAD` (o baseline antigo tem imports para arquivos que já foram movidos).
+1b. `node scripts/checkLineCoverage.mjs <X>Api <X>` → `COVERED`. Se listar `MISSING`, confira cada linha:
+   só é aceitável se for comentário de bloco, método de objeto convertido em função, ou nome de tabela trocado por constante.
 2. `node -e "import('./repositories/<X>/<X>.index.js').then(()=>{console.log('LOAD OK');process.exit(0)}).catch(e=>{console.error(e);process.exit(1)})"` → `LOAD OK` (linhas de log do DB são normais).
 
 ## NÃO fazer (o orquestrador faz, em série)

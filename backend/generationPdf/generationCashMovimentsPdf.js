@@ -11,7 +11,7 @@ import path from 'node:path';
 import moment from 'moment';
 import PDFDocument from 'pdfkit';
 import { fileURLToPath } from 'node:url';
-import enterpriseApi from '../services/apis/enterpriseApi.js';
+import enterpriseApi from '../repositories/enterprise/enterprise.index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

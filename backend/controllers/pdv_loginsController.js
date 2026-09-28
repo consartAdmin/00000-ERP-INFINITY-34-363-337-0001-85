@@ -14,7 +14,7 @@ import {
     setActive,
     remove,
     verifyCredentials,
-} from '../services/apis/pdv_loginsApi.js';
+} from '../repositories/pdv_logins/pdv_logins.index.js';
 
 ensureTable()
     .then(() => console.log('[pdv_loginsController] Tabela pdv_logins verificada.'))

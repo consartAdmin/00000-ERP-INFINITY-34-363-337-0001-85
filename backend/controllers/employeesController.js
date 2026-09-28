@@ -6,7 +6,7 @@
 // ║ ✅ Bucket/prefix corretos (docs.consart-demo-infinity / doc.employees)    ║
 // ╚═══════════════════════════════════════════════════════════════════════════╝
 
-import employeesApi from '../services/apis/employeesApi.js';
+import employeesApi from '../repositories/employees/employees.index.js';
 
 const ok = (res, body = {}) => res.json({ ok: true, ...body });
 const fail = (res, status, error, details) =>

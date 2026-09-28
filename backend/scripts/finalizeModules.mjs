@@ -29,6 +29,9 @@ for (const [api, dir] of pairs) {
   const line = r.stdout.split(/\r?\n/).find((l) => /^(OK|DIFF)/.test(l)) || lastLine(r.stderr);
   console.log(line);
   if (r.status !== 0) failed = true;
+  // cobertura de linhas: só informativo (métodos → funções e constantes geram falsos positivos)
+  const c = spawnSync('node', ['scripts/checkLineCoverage.mjs', api, dir, 'HEAD'], { encoding: 'utf8' });
+  if (c.status !== 0) console.log('   ' + c.stdout.trim().split(/\r?\n/).join('\n   '));
 }
 if (failed) {
   console.log('\nAbortado: corrija os módulos acima antes de finalizar.');
