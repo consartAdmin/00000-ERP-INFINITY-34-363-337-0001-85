@@ -5,7 +5,7 @@
   // ╚══════════════════════════════════════════════════════════════════════╝
 
   import pool from '../config/db.js';
-  import emailInboundsApi from '../services/apis/emailInboundsApi.js';
+  import emailInboundsApi from '../repositories/emailInbounds/emailInbounds.index.js';
 
   /* -------------------------------------------------------------------------- */
   /* Error Codes                                                                */

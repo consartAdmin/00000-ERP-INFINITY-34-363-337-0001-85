@@ -2,7 +2,7 @@
 // ║ shortCutsProgramationController.js                                      ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-import api from '../services/apis/shortCutsProgramationApi.js';
+import api from '../repositories/shortCutsProgramation/shortCutsProgramation.index.js';
 
 const sendError = (res, err, status = 500) => {
   console.error('[shortCutsProgramationController]', err);

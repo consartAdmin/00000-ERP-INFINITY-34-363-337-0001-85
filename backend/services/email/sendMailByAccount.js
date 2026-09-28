@@ -12,7 +12,7 @@
 
 import nodemailer from 'nodemailer';
 import pool from '../../config/db.js';
-import emailAccountsApi from '../apis/emailAccountsApi.js';
+import emailAccountsApi from '../../repositories/emailAccounts/emailAccounts.index.js';
 
 /* -------------------------------------------------------------------------- */
 /* Config                                                                      */

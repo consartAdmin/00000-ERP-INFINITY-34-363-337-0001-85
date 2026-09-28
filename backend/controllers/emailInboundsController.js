@@ -11,8 +11,8 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import { listenInboxHostinger } from '../services/email/imapHostingerClient.js';
-import emailInboundsApi from '../services/apis/emailInboundsApi.js';
-import emailAccountsApi from '../services/apis/emailAccountsApi.js';
+import emailInboundsApi from '../repositories/emailInbounds/emailInbounds.index.js';
+import emailAccountsApi from '../repositories/emailAccounts/emailAccounts.index.js';
 import pool from '../config/db.js';
 
 // 🔐 Lock por account (evita 2 listeners no mesmo processo)

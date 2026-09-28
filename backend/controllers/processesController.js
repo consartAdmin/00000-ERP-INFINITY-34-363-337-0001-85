@@ -3,7 +3,7 @@
 // ║ Rotas: /api/processes                                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import processesApi from '../services/apis/processesApi.js';
+import processesApi from '../repositories/processes/processes.index.js';
 import generateProcessesPdf from '../generationPdf/generationProcessesPdf.js'; // ✅ CAMINHO REAL
 
 /* ────────────────────────────────────────────────────────────── */

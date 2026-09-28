@@ -3,7 +3,7 @@
 // ║ Rotas: /api/processes-users                                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 
-import processesUsersApi from '../services/apis/processesUsersApi.js';
+import processesUsersApi from '../repositories/processesUsers/processesUsers.index.js';
 
 /* ────────────────────────────────────────────────────────────── */
 /* Listar permissões (GET /api/processes-users)                  */

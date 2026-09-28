@@ -11,7 +11,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import emailAccountsApi from '../apis/emailAccountsApi.js';
+import emailAccountsApi from '../../repositories/emailAccounts/emailAccounts.index.js';
 import { startEmailInboundsListener } from '../../controllers/emailInboundsController.js';
 import { listActiveListeners } from './emailListenerRegistry.js';
 

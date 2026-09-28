@@ -13,7 +13,7 @@ import {
   updateTask,
   finishTask,
   deleteTask,
-} from '../services/apis/tasksApi.js';
+} from '../repositories/tasks/tasks.index.js';
 
 export async function list(req, res) {
   try {

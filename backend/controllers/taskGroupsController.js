@@ -2,7 +2,7 @@
 // ║ taskGroupsController.js                                             ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import taskGroupsApi from '../services/apis/taskGroupsApi.js';
+import taskGroupsApi from '../repositories/taskGroups/taskGroups.index.js';
 
 function sendError(res, error) {
   console.error('[taskGroupsController]', error);

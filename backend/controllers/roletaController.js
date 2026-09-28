@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════╝
 
 import pool from '../config/db.js';
-import * as api from '../services/apis/roletaApi.js';
+import * as api from '../repositories/roleta/roleta.index.js';
 
 function nowUtc() {
   return new Date();

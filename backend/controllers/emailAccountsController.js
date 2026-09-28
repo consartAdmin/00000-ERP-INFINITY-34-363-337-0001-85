@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../config/db.js';
-import emailAccountsApi from '../services/apis/emailAccountsApi.js';
+import emailAccountsApi from '../repositories/emailAccounts/emailAccounts.index.js';
 
 const ERR = Object.freeze({
   VALIDATION: 'EMAIL_ACCOUNTS_VALIDATION',

@@ -12,14 +12,14 @@
 // ╚═══════════════════════════════════════════════════════════════════════════╝
 
 import pool from '../config/db.js';
-import emailOutboundsApi from '../services/apis/emailOutboundsApi.js';
+import emailOutboundsApi from '../repositories/emailOutbounds/emailOutbounds.index.js';
 import { importSentFromHostinger } from '../services/email/imapHostingerClient.js';
 
 // ✅ sender multi-account (busca credenciais no DB)
 import { sendMailByAccount } from '../services/email/sendMailByAccount.js';
 
 // ✅ para registrar o "from_address" correto no DB
-import emailAccountsApi from '../services/apis/emailAccountsApi.js';
+import emailAccountsApi from '../repositories/emailAccounts/emailAccounts.index.js';
 
 // (Opcional) LEGACY: usado SOMENTE se NÃO houver account_id (compatibilidade)
 import { sendHostingerMail } from '../services/email/smtpHostingerSender.js';

@@ -5,7 +5,7 @@
 
 import { sendEmail } from '../services/email/smtpHostingerClient.js';
 import pool from '../config/db.js';
-import emailOutboundsApi from '../services/apis/emailOutboundsApi.js';
+import emailOutboundsApi from '../repositories/emailOutbounds/emailOutbounds.index.js';
 import { buildEmailWithSignature } from '../services/email/defaultSignature.js';
 
 const DEFAULT_FROM = process.env.ROCHIN_AIR_EMAIL_USER || 'contato@rochinair.com.br';

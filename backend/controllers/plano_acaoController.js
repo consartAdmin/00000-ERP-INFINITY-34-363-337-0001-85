@@ -4,7 +4,7 @@
  * ║ - Valida entrada, chama DAL, padroniza respostas                      ║
  * ╚══════════════════════════════════════════════════════════════════════╝ */
 
-import * as api from '../services/apis/plano_acaoApi.js';
+import * as api from '../repositories/plano_acao/plano_acao.index.js';
 
 // ======================================================================
 // Helpers

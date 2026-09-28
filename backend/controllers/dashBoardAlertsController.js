@@ -4,7 +4,7 @@
  * ╚══════════════════════════════════════════════════════════════════╝ */
 
 import pool from '../config/db.js';
-import { getDashboardAlertsSummary } from '../services/apis/dashBoardAlertsApi.js';
+import { getDashboardAlertsSummary } from '../repositories/dashBoardAlerts/dashBoardAlerts.index.js';
 
 export async function getDashboardAlerts(req, res) {
   try {

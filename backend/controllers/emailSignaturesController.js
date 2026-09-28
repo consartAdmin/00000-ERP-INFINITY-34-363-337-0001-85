@@ -3,7 +3,7 @@
 // ║ CONSART ERP — CRUD + assinatura padrão                              ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import emailSignaturesApi from '../services/apis/emailSignaturesApi.js';
+import emailSignaturesApi from '../repositories/emailSignatures/emailSignatures.index.js';
 import pool from '../config/db.js';
 
 /* --------------------------------------------------------------------- */
