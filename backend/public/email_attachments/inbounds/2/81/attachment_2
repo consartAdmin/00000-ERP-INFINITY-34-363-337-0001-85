@@ -1,0 +1,124 @@
+X-Gm-Message-State: AOJu0YwHrswOTlzv7gHDVvDKjTvZXmcZeQSzD/uIiPixk14/xaGRaKgR
+	HGQ/s0FerYOF+m+0qvcbXtmJJO3baoL8rvwJ9Y59T8/Jh+x2v7PN/A7BkI05nWgc0gwCinKCDJp
+	ZBoUKxFlizOKJn7tHqbSMqECjr7YIid14NyAUse6GavmybXPVjPvJnnN+04N+/ukWrQMgVZiJ/5
+	cppYRQnAdf
+X-Gm-Gg: ATEYQzyJDpzsQcDKR1nTxnxhE5CurG+bBDqtlc3+Pmtp4RioBPSQ3lEFtoLAon8SEIB
+	ne+TMCs8S5g3dj6TcafZ5Q+Mx7PvLP9Q9m8Cu++hc2stY312IdPDTxJzfyi/dUVEdjPV+FRppd2
+	98B/PM/Owuzpmq11iKsA0EsDgZXMvtyJjnJUeS92C4UzdMSYTgxT5g5lP2IduXXiQcz81tXx9dk
+	5sXJuVZloJiq/jVDvPGAjhlZGA7p3Ny4z6o7/2htcZRw+ep04Ik1TK2s9HRK+IvPZIRNMW67FvF
+	XPbNDFWpz1qi9Skw7zJ+KQP6p8gTUG37bgv4ZgW0/dWa+bdoLrXlwlgZpHjaMxRvp788zVi+u/9
+	KCpH0Z5vji/At65UOraGnQCe3xM6q94RxOTJYxOMoZHGjH7ya69QlmUGqQvxO5IIzgMPOkA==
+X-Received: by 2002:a05:6102:1620:b0:603:2916:5960 with SMTP id ada2fe7eead31-604f92a31c9mr1697532137.29.1774634451703;
+        Fri, 27 Mar 2026 11:00:51 -0700 (PDT)
+X-Received: by 2002:a05:6102:1620:b0:603:2916:5960 with SMTP id ada2fe7eead31-604f92a31c9mr1697481137.29.1774634449552;
+        Fri, 27 Mar 2026 11:00:49 -0700 (PDT)
+ARC-Seal: i=2; a=rsa-sha256; t=1774634449; cv=pass;
+        d=google.com; s=arc-20240605;
+        b=SE+jn69IvXkL2csBOlD5WAq94ekOFBgGmK8MD86d1RpS0owSG7qVKjb2L7x2kbwCfS
+         OW5YT1hOik/SpHopWlrzMF1K2VOC52h6l+mJwei/O8A2YAfIf4vDvlTodP59DhNw+zYG
+         yN8wDM96kHG01wU0qOIbTLtVT+N4pqj20w8O2KrQK+33ED19/QbKd064OlsHPd2h6cvC
+         fZryKOCpXvBfMZEUf4tJ8ugsktJolJTNN2Ws9LxvAePJ9d3gM3y3ntWtrB2F8HAHDLF3
+         H8KbzIXNzOdUSbl0SNUxNFNtGfiwv4KBoICIhScjEI9UyIO68q7W0D0qJBEar9TP9w7V
+         GBjQ==
+ARC-Message-Signature: i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=date:to:subject:mime-version:message-id:from:dkim-signature;
+        bh=xwmrSAfG3DU/74ubhRj2+MJYkz7eG9xyTfX9AHC25pk=;
+        fh=3XxdbeUUZLM8msQvk9N2A43Xh/Y4r5u1+bVWRPVLunI=;
+        b=M/m/yscCDa//MVkquBP5/qHYvwG2lSsNnpmhzQDemqCnssdGBSQTYCFSNBDMqtAzmV
+         MHvVChtEKyyE+J9/bIl7aKPpcypFPQylAKo79M8iQ9lTxBD+3bXCuC5xqF/zyxGnqKcP
+         E6VTAS9Tk+5pXpwF9ohJ8AiJNv7utrqhwuwB0AmltBTQuEf+fMIbRL3YoBO0EYkLYFU8
+         txtz9OObWdNENwbX/dQhKjvv6mn/1LwOG0CYsQJfFgXX1nB4lHDjwhmlCxpU4SS7LISN
+         6ITM4l2AsQwQbUWSjtuTd+M33BMsR6eJV6GxKgNxA22YdSi8ki3OdOPGADGBStUNCNt4
+         NFcQ==;
+        dara=google.com
+ARC-Authentication-Results: i=2; mx.google.com;
+       dkim=pass header.i=@bh3distribuidora.com.br header.s=hostingermail-a header.b=KzAtmCnN;
+       arc=pass (i=1);
+       spf=pass (google.com: domain of vendas2@bh3distribuidora.com.br designates 148.222.55.9 as permitted sender) smtp.mailfrom=vendas2@bh3distribuidora.com.br
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: from fll1-mx02-ds01.m9network.com (fll1-mx02-ds01.m9network.com. [208.88.121.137])
+        by mx.google.com with ESMTPS id a1e0cc1a2514c-951be1a0d96si1532419241.85.2026.03.27.11.00.48
+        for <comprascotacoes@solumeng.com.br>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Fri, 27 Mar 2026 11:00:48 -0700 (PDT)
+Received-SPF: pass (google.com: domain of vendas2@bh3distribuidora.com.br designates 148.222.55.9 as permitted sender) client-ip=148.222.55.9;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@bh3distribuidora.com.br header.s=hostingermail-a header.b=KzAtmCnN;
+       arc=pass (i=1);
+       spf=pass (google.com: domain of vendas2@bh3distribuidora.com.br designates 148.222.55.9 as permitted sender) smtp.mailfrom=vendas2@bh3distribuidora.com.br
+Received: from 23.83.208.56 by supramail.com.br (Supramail 5.1.0-rworker);
+ Fri, 27 Mar 2026 15:01:45 -0300
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 57BE0761840
+	for <comprascotacoes@solumeng.com.br>; Fri, 27 Mar 2026 18:00:39 +0000 (UTC)
+Received: from de-fra-smtpout10.hostinger.io (100-115-97-34.trex-nlb.outbound.svc.cluster.local [100.115.97.34])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 9F0597619C5
+	for <comprascotacoes@solumeng.com.br>; Fri, 27 Mar 2026 18:00:37 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1774634438;
+	b=WPc0JTVTTnPr9y8t1MDL4b1WnNuoL1x8IFg6qt+k8wawKUr594rPOHp/VovPVzO2lg5+0J
+	htIEhDMp7icoMcsqhG05iDqsA/giyLPsNAYDervsHpzvv0icweZcW60UREgLYGBMCsX9QT
+	8aJoVOS+QbqcXYOGvFfoAcL1MArpJ5ivMoKxUE8ZSJoCaj2XYVG/TZJvdO9Ri9xCasTS8e
+	3DGf+JnWeoIaIY8NrcD3wLYldEdnLlvfZVUfeF01nhV9t7XODGELdcQ8T877Lbo33Pr7yg
+	QzSDQCxnRQXNBTzgxhDGcN9PkfnvaCB3Vmw5PF1jJeyrxASlLS3st45YNCUbBA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1774634438;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 dkim-signature; bh=xwmrSAfG3DU/74ubhRj2+MJYkz7eG9xyTfX9AHC25pk=;
+	b=PKNgloVD8LR+D2ggopyNnxOso4r8sp/D0NMt7FI2pd7dhNLUxKiUxvyT3meP4oteKQ4RLy
+	1m+a+q5jZ8yGy6PNiWlWsAFz8hEX9qOvODxkzRw+/Bo7M5CelNQZhhW/G9mYH23rwAcbj7
+	KSL9xIAYCFE0M/PLkWYFQlPmDrN7aRXSD77isDk284jZe2klBcNUuY1NgWSIxkRCLK6IZ4
+	EXIieNspgFHdnC9rNkAH4h65isC+nPwpWz5USrv6SCZ1K/Zgahl0R2HWHwM7Va9yrCRCmz
+	Yxt+NxvpgP/l3cdNotq68HvsMTpj2CGyE5+zbE1wdOjUnAgkSeregEL9l1rqlQ==
+ARC-Authentication-Results: i=1;
+	rspamd-7f98bb5847-658qp;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas2@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Good
+X-MailChannels-SenderId: 
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Invention-Cooperative: 2e52dca14e47e8b2_1774634438666_3568875076
+X-MC-Loop-Signature: 1774634438666:4163449609
+X-MC-Ingress-Time: 1774634438666
+Received: from de-fra-smtpout10.hostinger.io (de-fra-smtpout10.hostinger.io
+ [148.222.55.9])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.115.97.34 (trex/7.1.5);
+	Fri, 27 Mar 2026 18:00:38 +0000
+Received: from localhost (117.138.230.35.bc.googleusercontent.com [IPv6:2804:14c:5b75:9e22:2590:c240:a19:1345])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4fj7jH33RTz3wnK
+	for <comprascotacoes@solumeng.com.br>; Fri, 27 Mar 2026 18:00:35 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1774634436;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=xwmrSAfG3DU/74ubhRj2+MJYkz7eG9xyTfX9AHC25pk=;
+	b=KzAtmCnNSig6N46NR6rtslcbIKoAG0S5CqJYWfe/hvHrK4pjDCDNG+Fj6zo+wSY+g5m+WK
+	h+3ESzH8+KdQzejdTVZJTWEFdoxHn8dOZeFrml2gEZAqCHEe+XhzRAep27E7kQ5S45TIQ+
+	zJg8F9K/c6Nxw36qq4ROT4HY2afP8GjEaw8fg2Zu2hIxi/XtPiW5WliLfCEKCVKi+Scg4i
+	sdHE036ncVo931SH4WbnWwsX02/amyfROCTBi9raCuXr6sCHSf2tFNckRiOPFRbqHJq3BV
+	SnCrnf2gTDIX7p2OQIOGccUoJykBHMgfAU/onuO72zM6xytt3cj6vXD/MzaG7Q==
+Content-Type: multipart/related;
+ boundary=enmime-134430ed-5243-4af9-ac09-20c412d41dbb
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1774634434767541147.1774634434@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <comprascotacoes@solumeng.com.br>
+Date: Fri, 27 Mar 2026 18:00:35 +0000 (UTC)
+X-CM-Envelope: MS4xfBuquRCvh/FTcatEcJBm9irmTytU9Zse1lKOMj11iTlrTDp1jacPRJ/tq8Z/uLlxxfCvt5usLq/wxH9H5lkayjWAxt0ugZha0HZLec8mWfUV4BFxkihO C5HkHH1ST3Dg1D1TCPQE8UFBlBu+/xCGIi763s9/OZ4IEUKEs26nuApV1kgn3nzneCyG87of6hrZD51jTfUH57BafaXtc/QZ/TgEUXxzdlHfQ3oTloGYufgt mSsRKIXrnPLvJUxEVU2yg6VxvYLp58V2BaFyFgJdv28=
+X-CM-Analysis: v=2.4 cv=Ceda56rl c=1 sm=1 tr=0 ts=69c6c5c3 a=hF/nCOyOS0Sy2/LtZ4SR/g==:617 a=xqWC_Br6kY4A:10 a=R7QQ6CqMXZx-2PjCN8wA:9 a=pT_QGpuZIPVyGxV-:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10
+X-AuthUser: vendas2@bh3distribuidora.com.br
+X-MAV-Spam-Report: 23.83.208.56 299 8 3 152 58
+ 21a226da7b419b5153d4d88d76d7adeef064ad34
+X-SUPRAMAIL-VIA: e5320497be31fd59e5dd73a15d748882
+X-SUPRAMAIL-ID: 69c6c609e2298f37b070b32
+X-SUPRAMAIL-TIMESTAMP: 1774634505
+

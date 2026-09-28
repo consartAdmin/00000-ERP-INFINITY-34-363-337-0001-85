@@ -1,0 +1,121 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: by storagemail-cli-253.kinghost.net (Postfix, from userid 1000)
+	id C5AC1767D4; Tue, 24 Mar 2026 09:18:32 -0300 (-03)
+Received: from mx-worker-cli-16.kinghost.net (unknown [10.19.16.11])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by storagemail-cli-253.kinghost.net (Postfix) with ESMTPS id B4C86767D2
+	for <suprimentos@ultra.eng.br>; Tue, 24 Mar 2026 09:18:32 -0300 (-03)
+X-Policyd: dunno
+Received: from buffalo.birch.relay.mailchannels.net (buffalo.birch.relay.mailchannels.net [23.83.209.24])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-worker-cli-16.kinghost.net (Postfix) with ESMTPS id 6ED5D1BB9F3F2
+	for <suprimentos@ultra.eng.br>; Tue, 24 Mar 2026 09:18:27 -0300 (-03)
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 6C7BA6C242B
+	for <suprimentos@ultra.eng.br>; Tue, 24 Mar 2026 12:18:18 +0000 (UTC)
+Received: from fr-int-smtpout13.hostinger.io (trex-green-6.trex.outbound.svc.cluster.local [100.117.69.208])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 6645B6C217A
+	for <suprimentos@ultra.eng.br>; Tue, 24 Mar 2026 12:18:15 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1774354696;
+	b=BtWByYpFnGSehMFCpuAEoL71E0dhOMyWvyFdFGz6G4/9YAXZXClFgPESI47+BR1BHyEuz2
+	SMpOZugQiH9SGdfQ5ktDLVPzMI9Fk1fRX0ZKDOKx7wk6szW9xGLyQ/NCswW5uv6C+YOv8U
+	C/sAAv4E/c8dODmhi5Iy8RFQ7k0asIxLdOOfIJS6EF+42hjDpprwSX0cXaGnD063LEK8F4
+	Z3p2aCODkhpeMnKMirnLrPp05+2d6pPOBLi+0TdPUtl5N2XSuUHyloj35bPxN9JJyU9vdK
+	upPHah1kVBM+nicjzRwvlcpS9vKr1hS5op3n2QEtaT/Fcz8SFACa8ZY6Vy+Suw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1774354696;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 dkim-signature; bh=69yP9JGYDd213G7AK2rqDj8hlOt5w1lvcjSeo2ep6J8=;
+	b=dZlrYFk+lqoknIr5qtP3sP5/fi2tPQGJSjXlfYStcJbOcum0mr0Pfc/sMrOgkzBXBosby9
+	OcI3//JL604TSPZiGytlyLdIpYrybGkSuisuoLb9719BQHn1X14fgu8hMYIfgZGJlTzRfW
+	6Ygyurbcsgi51xv2ZEfBe61PAH78uGmfyLir7Un9gL1+T7K2eeWb+I2gjAEK6HTT1WAAvY
+	NPWDVz4CmXioSKoJyNMf0sg+rrdCwQ28qnKNMggCuPodMSDYRx1+myYmsvuh30V32eHozJ
+	zCTzUuKED5e/tDA0OfCXkwGCFoZreijOEaVgS/PCNnamJ0AlFPlZupMLiXRT0g==
+ARC-Authentication-Results: i=1;
+	rspamd-6d4cb6745-d7mnv;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas2@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Neutral
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Harmony-Minister: 54d8f7aa792175b3_1774354696423_3942568679
+X-MC-Loop-Signature: 1774354696423:51202976
+X-MC-Ingress-Time: 1774354696422
+Received: from fr-int-smtpout13.hostinger.io (fr-int-smtpout13.hostinger.io
+ [148.222.54.40])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.117.69.208 (trex/7.1.5);
+	Tue, 24 Mar 2026 12:18:16 +0000
+Received: from localhost (117.138.230.35.bc.googleusercontent.com [IPv6:2804:14c:5b75:9e22:556b:8497:ce93:fbdd])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4fg8Fd0cg0z100J
+	for <suprimentos@ultra.eng.br>; Tue, 24 Mar 2026 12:18:13 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1774354693;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=69yP9JGYDd213G7AK2rqDj8hlOt5w1lvcjSeo2ep6J8=;
+	b=haEaq1ADkie1Ee0jLg71yKFDjENQ9tbtjqqxpmOM9WXalxS3SMDQRTOsDmUxWthItbgTQJ
+	nxB+oIxFJQFVoNOdiFSM34QbVRbsMC3I14BZem0JLkGFJFKtpdZyO03D/1uN/QbuynGSny
+	P40MDvolJbd7imPayV9cdrYVtoIrpgMLqxaX+Mo/0hODEuADnz/gyfoGet+r7ffoM68CEx
+	hFbHWkhZC8W33jETbJXZBd2oaGHVRpDP/wDbXPIcqMiOPN1Bh3oitE7PVnlehG020n+um3
+	5av4FmVGpT0ezx9ixopWxaQLbHCdEUQ5S7veM5XXawmPsNpQfGVLDfoMy98j6w==
+Content-Type: multipart/related;
+ boundary=enmime-a3414cc2-073c-4bdb-b23a-a33131e3ac6f
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1774354692469268857.1774354692@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <suprimentos@ultra.eng.br>
+Date: Tue, 24 Mar 2026 12:18:13 +0000 (UTC)
+X-CM-Envelope: MS4xfD3Vwz5cOd0yueoydZQ2zw5eDceB7KHGINUZGpzqB/7+DwNHMG1zuQLt3FlFfhz8vI4SMXUKdSnu11IN/YFR3UHBZGRpeIBhQhETxM9vdM4MJlKoBkBa 8pWfF6iK1udVJBID+BCTj9qMtM6TszHAadwa7DC6d5tvrNad4mUPAQvIEHONd4AacRdEw0/opOxt4pdGK+h+A6mGYfNlvKgnK3mM46kKKk/6HbHceXEmJknk VwjL6kR4LXQlWVNNbGlSlCVeYl3v78ioU1nHE32agxI=
+X-CM-Analysis: v=2.4 cv=ZbRPNdVA c=1 sm=1 tr=0 ts=69c28105 a=doVUJHadO/sGVs4bkoZpoQ==:617 a=xqWC_Br6kY4A:10 a=R7QQ6CqMXZx-2PjCN8wA:9 a=IkzPbjzwALqaI2uL:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10
+X-AuthUser: vendas2@bh3distribuidora.com.br
+X-Queue-Id: 6ED5D1BB9F3F2
+X-Scan-Server: mx-worker-cli-16.kinghost.net
+X-Spaminator-Spectre: default: False [-7.81 / 15.00];
+	IP_REPUTATION_HAM(-2.05)[asn: 394256(-0.29), country: CA(-0.01), ip: 23.83.209.24(-0.73)];
+	NEURAL_HAM(-2.00)[-1.000];
+	SPF_REPUTATION_HAM(-1.63)[-0.81596405631128];
+	SUBJ_ALL_CAPS(1.58)[21];
+	SPFBL_SCORE_SERVER(-1.00)[24.209.83.23.score.spfbl.net : 127.0.1.100];
+	ARC_ALLOW(-1.00)[mailchannels.net:s=arc-2022:i=1];
+	BAYES_HAM(-1.00)[99.99%];
+	DMARC_POLICY_ALLOW(-0.50)[bh3distribuidora.com.br,none];
+	MV_CASE(0.50)[];
+	R_SPF_ALLOW(-0.20)[+ip4:23.83.208.0/20];
+	MIME_HTML_ONLY(0.20)[];
+	MX_GOOD(-0.20)[mx1.hostinger.com,mx2.hostinger.com];
+	RWL_MAILSPIKE_VERYGOOD(-0.20)[23.83.209.24:from];
+	R_DKIM_ALLOW(-0.20)[bh3distribuidora.com.br:s=hostingermail-a];
+	MIME_GOOD(-0.10)[multipart/related];
+	RCVD_TLS_LAST(0.00)[];
+	RCPT_COUNT_ONE(0.00)[1];
+	RECEIVED_HELO_LOCALHOST(0.00)[];
+	RCVD_COUNT_THREE(0.00)[4];
+	TO_MATCH_ENVRCPT_ALL(0.00)[];
+	SPFBL_WHITELIST_SERVER_BULK_SENDER(0.00)[23.83.209.24:from,buffalo.birch.relay.mailchannels.net:rdns];
+	FROM_EQ_ENVFROM(0.00)[];
+	MIME_TRACE(0.00)[0:+,1:~,2:~];
+	MID_RHS_MATCH_FROM(0.00)[];
+	PREVIOUSLY_DELIVERED(0.00)[suprimentos@ultra.eng.br];
+	TO_DN_NONE(0.00)[];
+	DKIM_TRACE(0.00)[bh3distribuidora.com.br:+];
+	RCVD_VIA_SMTP_AUTH(0.00)[];
+	ASN(0.00)[asn:394256, ipnet:23.83.208.0/21, country:CA];
+	GENERIC_REPUTATION(0.00)[-0.7991455872848];
+	MISSING_XM_UA(0.00)[];
+	FROM_NO_DN(0.00)[];
+	SUBJECT_ENDS_EXCLAIM(0.00)[]
+X-Rspamd-Action: no action

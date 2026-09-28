@@ -1,0 +1,46 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id DCAD56C298E
+	for <carlasoares@veritasengenharia.com>; Mon, 23 Mar 2026 17:03:04 +0000 (UTC)
+Received: from fr-int-smtpout27.hostinger.io (trex-green-5.trex.outbound.svc.cluster.local [100.121.82.175])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id D98996C2D11
+	for <carlasoares@veritasengenharia.com>; Mon, 23 Mar 2026 17:02:35 +0000 (UTC)
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Neutral
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Robust-Tank: 0ee50f221515e975_1774285376723_2808974325
+X-MC-Loop-Signature: 1774285376723:1947989014
+X-MC-Ingress-Time: 1774285376722
+Received: from fr-int-smtpout27.hostinger.io (fr-int-smtpout27.hostinger.io
+ [148.222.54.8])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.121.82.175 (trex/7.1.5);
+	Mon, 23 Mar 2026 17:02:56 +0000
+Received: from localhost (34.86.89.34.bc.googleusercontent.com [IPv6:2804:14c:5b75:9e22:a0e9:74de:8fcf:b426])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4fffc90KtFz34Lp
+	for <carlasoares@veritasengenharia.com>; Mon, 23 Mar 2026 17:02:33 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1774285354;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=xnKV8885rMj6S9AXSUQjqlIwoehjV8zM/nxRUqIoDvU=;
+	b=TEdfvz/OnYU0plrutZOrlNOhpNKqoJVOi7xzfgjkoICMFe0EJ9wmrCuzm6xaMdpr0TFxJp
+	LyJYpvqyrAlM+NnBpJnCBfxVQp460az4o3APaIW+hH9Vru9A7TfAWT6Nyh9a2WTKmmG00q
+	XGMUlG0uuyp6i3ncAyh2cVZfvs2Ci11XCJIQMFofRdbWG0OEDzvz74SyeRhFWdmEtZGzQ2
+	+1VxSrK5U0M18+9Na3FyJYJM+IRLYuMOmJFnuXVcQxm/M6vA7YyF8+h+5N8wikndApqkVp
+	5WlPOCwGa75iThTDNa/tR0ra3iRsnNg+qi8vRPjU1u/mN1WnK5Nqqf6AvlmUPw==
+Content-Type: multipart/related;
+ boundary=enmime-f7c9bdcb-47c4-44a0-a310-3ea4844045f4
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1774285352405729254.1774285352@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <carlasoares@veritasengenharia.com>
+Date: Mon, 23 Mar 2026 17:02:33 +0000 (UTC)
+X-CM-Analysis: v=2.4 cv=UN2PHzfy c=1 sm=1 tr=0 ts=69c17229 a=rWfVZmSrVlBG97+FN3d8LQ==:617 a=xqWC_Br6kY4A:10 a=R7QQ6CqMXZx-2PjCN8wA:9 a=pT_QGpuZIPVyGxV-:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10
+X-CM-Envelope: MS4xfI237A0AgcsbgD5HIYbF0Kttnrz0LyJVxuxibc297lS1tTd/YlhlORGixeoA+jCPrC/Uz0xDOv/L3CgbVVxqZ4aMXxRsOKFtFmnV67VLmg616mTIVjmw BIJk6i82GFbZjHgjSJKzM9K9S7e/FJJ27BMibs4WOWkMijjgpqPnodjwkDTTWyEgjfXoTSPtyRHsqiynwjt1OmwZx1kQcCOxbgLlBpSf7KQ6Tqqd275n/qDf vJyU4NBWGoASj9bi2LWWA0LbYlQeNLRTmx5/Pl1eRQ06fBIqkKQdU4R/ykR7bvaq
+X-AuthUser: vendas2@bh3distribuidora.com.br

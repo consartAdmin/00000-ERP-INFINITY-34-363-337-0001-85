@@ -1,0 +1,263 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ FILE: chartOfAccountsModal.css                                      ║
+   ║ MODULE: Chart Of Accounts                                           ║
+   ║ DESCRIPTION: Estilos do modal de criação/edição do Plano de Contas  ║
+   ║ CONSART ERP                                                         ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+body.coa-modal-open{
+  overflow: hidden;
+}
+
+.coa-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.coa-modal.hidden{
+  display: none;
+}
+
+.coa-modal__backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, .42);
+  backdrop-filter: blur(2px);
+}
+
+.coa-modal__dialog{
+  position: relative;
+  z-index: 1;
+  width: min(920px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  margin: 16px auto;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, .10);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(2, 6, 23, .20);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.coa-modal__header{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px 12px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.coa-modal__title{
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.1;
+  color: #111827;
+}
+
+.coa-modal__subtitle{
+  margin: 6px 0 0 0;
+  font-size: 12.5px;
+  color: #667085;
+}
+
+.coa-modal__close{
+  appearance: none;
+  border: 1px solid #d9dee7;
+  background: #ffffff;
+  color: #111827;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.coa-modal__close:hover{
+  background: #f8fafc;
+}
+
+.coa-modal__form{
+  padding: 16px 18px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: auto;
+}
+
+.coa-form-grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.coa-form-field{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.coa-form-field--span-2{
+  grid-column: span 2;
+}
+
+.coa-form-field--span-3{
+  grid-column: span 3;
+}
+
+.coa-form-field label{
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.coa-form-field input,
+.coa-form-field select,
+.coa-form-field textarea{
+  width: 100%;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  box-sizing: border-box;
+  font-size: 13px;
+}
+
+.coa-form-field input,
+.coa-form-field select{
+  height: 38px;
+  padding: 0 10px;
+}
+
+.coa-form-field textarea{
+  min-height: 104px;
+  padding: 10px;
+  resize: vertical;
+}
+
+.coa-form-field input:focus,
+.coa-form-field select:focus,
+.coa-form-field textarea:focus{
+  outline: none;
+  border-color: #9bb7f7;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
+}
+
+.coa-modal__error{
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff1f2;
+  border: 1px solid #ffd8dd;
+  color: #b42318;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.coa-modal__error.hidden{
+  display: none;
+}
+
+.coa-modal__footer{
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.coa-modal-btn{
+  appearance: none;
+  border: 1px solid #d9dee7;
+  background: #ffffff;
+  color: #111827;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .15s ease;
+}
+
+.coa-modal-btn:hover{
+  background: #f8fafc;
+}
+
+.coa-modal-btn--primary{
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.coa-modal-btn--primary:hover{
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+/* Select + botão de ação lado a lado (ex.: Conta Pai + "Nova") */
+.coa-field-with-action{
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.coa-field-with-action select{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.coa-field-action-btn{
+  flex: 0 0 auto;
+  white-space: nowrap;
+  color: #2563eb;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.coa-field-action-btn:hover{
+  color: #ffffff;
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Modal global "Nova Conta Pai" abre por cima do .coa-modal (z-index 9999) */
+#coaParentModal{
+  --modal-z-index: 10000;
+}
+
+.coa-modal-btn:disabled,
+.coa-modal__close:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 860px){
+  .coa-form-grid{
+    grid-template-columns: 1fr;
+  }
+
+  .coa-form-field--span-2,
+  .coa-form-field--span-3{
+    grid-column: span 1;
+  }
+
+  .coa-modal__dialog{
+    width: min(96vw, 96vw);
+    max-height: calc(100vh - 20px);
+    margin: 10px auto;
+  }
+
+  .coa-modal__footer{
+    flex-direction: column-reverse;
+  }
+
+  .coa-modal-btn{
+    width: 100%;
+  }
+}

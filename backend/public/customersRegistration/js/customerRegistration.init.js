@@ -1,0 +1,35 @@
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║ FILE: customerRegistration.init.js                                  ║
+// ║ MODULE: Customer Registration — Initialization                      ║
+// ║ CONSART ERP                                                         ║
+// ║ Registration page bootstrap and module orchestration                ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
+'use strict';
+
+import { bindActions } from './customerRegistration.actions.js';
+import { bindMasks } from './customerRegistration.masks.js';
+import { showError } from './customerRegistration.modal.js';
+import { loadSelects } from './customerRegistration.selects.js';
+import { initializeIbgeLocations } from './customerRegistration.ibge.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+  void boot();
+});
+
+async function boot() {
+  try {
+    bindActions();
+    bindMasks();
+    await Promise.all([
+      loadSelects(),
+      initializeIbgeLocations(),
+    ]);
+  } catch (error) {
+    console.error('[customerRegistration.boot]', error);
+    showError(
+      'Cadastro de clientes',
+      'Não foi possível iniciar o cadastro de clientes.'
+    );
+  }
+}

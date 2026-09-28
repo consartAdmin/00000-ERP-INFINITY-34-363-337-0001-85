@@ -1,0 +1,68 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 333798C2DE9
+	for <compras@prosinde.com.br>; Tue, 31 Mar 2026 19:02:46 +0000 (UTC)
+Received: from fr-int-smtpout15.hostinger.io (100-96-162-172.trex-nlb.outbound.svc.cluster.local [100.96.162.172])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id B15148C18C4
+	for <compras@prosinde.com.br>; Tue, 31 Mar 2026 19:02:44 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1774983765;
+	b=SniJUBkvApdnVJok/ulc13K1oZV/hvUrWc7gvLxTzdjG06pk+TFU88y+TZ9wd4mCMyR8Jn
+	qAv/qGg7r3qA1Rn1Ub9SHWC8L8goZ6pdUO8Gm2O9bN16fql7Gv4hTjPo5Pl0SKOp4XUxY8
+	9U1jLZAZihW9JclW0ebPspafD4hFizB5x46ufPO725E3TU+o5BEzYZ8xza1UU/V0VIVjtD
+	O6B7PWcNCwo1Wlzb9eVnt9feYr9NO+rQ4empLGHZPXNDuOuMjwHmOaHAxQkflKuMga0JGY
+	/4k6RhvJzTHeSHFGXVgjTWbcI6wHOa/RoHEOhdbHWKjDuZYD1ZXbnvRnr1MvbA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1774983765;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 dkim-signature; bh=9mGe9mpbHwwLbSUFM+Fl2WsSCcGYFIpKh7vw8nYhfOk=;
+	b=6ms6NALinDEFDOCwHGx+UPAXoJ5d+6QvmtTYiZcJUoEBbLly07UoMwEZbcQb1lGyyNJe8G
+	2tVJCppQgbCMirSY//T7hQkoapKgaWseyAd+f3ZuEkJO8sQl5RdFaZCZRr/5C8o/9xvc55
+	3+nnPRoZyzH2BaJwPUX12WiCnQS4MiIiT7oZN/bMIMtwDxPUW+1PYQxxN39rI3hfQ4EPSa
+	M2BIjYsUWGtydR3j3Be0LRFYdMBcdfbfEeb8IW+7emYStXGWrX+pmaldNEE1rYwwyOskxI
+	8zVDnn1h8y5Edy9EZylETXTIJm+AeFqRBVhV09L+9aypXM5E9Kd82uUKlK5Xzw==
+ARC-Authentication-Results: i=1;
+	rspamd-bd48b9d95-dfc29;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas2@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Neutral
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Descriptive-Stupid: 2d2aa4cf22353372_1774983765723_3295620127
+X-MC-Loop-Signature: 1774983765723:2577498621
+X-MC-Ingress-Time: 1774983765723
+Received: from fr-int-smtpout15.hostinger.io (fr-int-smtpout15.hostinger.io
+ [148.222.54.41])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.96.162.172 (trex/7.1.5);
+	Tue, 31 Mar 2026 19:02:45 +0000
+Received: from localhost (17.131.242.35.bc.googleusercontent.com [IPv6:2804:14c:5b75:9e22:8d1b:5107:4ee8:3996])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4flcv63VdVz1y2S
+	for <compras@prosinde.com.br>; Tue, 31 Mar 2026 19:02:42 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1774983763;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=9mGe9mpbHwwLbSUFM+Fl2WsSCcGYFIpKh7vw8nYhfOk=;
+	b=jhrWHnOr4npLmGpwn5Fxe7ZZtiKEmjasKVdVH7GTwsj0HXTCOrENBmapCt5d7WxToFZoGO
+	3Dr+lo3adWQ9SmJkzgiZ6+VH2/TywtgLr6z4vomiZzwP5lSFr12i+N409my6skunXwP4YL
+	+yHfioJ722oCTeSDkoz0KZZz3acv62ZXno25ng1heK9snW89PRc51LGLhdVRI83pJ8QhpE
+	27/kB5WeeX0rUMRKEHYpCfZRU7t99IXW8PXNdQRHVCS/6d29H/Rcwyf9VFMkoRefYUCTLq
+	S7shzuO+TTkuVdQ2Sh8Yz3Pz0lhx+SkdWtMdPsx7fWqB4c3b2woMT453TsYv0Q==
+Content-Type: multipart/related;
+ boundary=enmime-41ec1928-2890-4cef-ba84-1fd67f63357f
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1774983761871325815.1774983761@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <compras@prosinde.com.br>
+Date: Tue, 31 Mar 2026 19:02:42 +0000 (UTC)
+X-CM-Analysis: v=2.4 cv=ZbRPNdVA c=1 sm=1 tr=0 ts=69cc1a52 a=AiQ6xlG7ENp7Cz881x84wg==:617 a=xqWC_Br6kY4A:10 a=R7QQ6CqMXZx-2PjCN8wA:9 a=IkzPbjzwALqaI2uL:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10
+X-CM-Envelope: MS4xfC+fuNe3v9yqotqdcCq5qB1cTPhbsf9UWGou+QagC4EC4UFgytLVSbfTG8f2Ubpzeg9rohS9RTWj7pwr5HhkZtFLzNwkDJiQK2h20Q6+OBCm1hElVg3b G7FA0r5N2hZzxnJ+PxKi4hSvSf7qGzBOnC0TCHjd4v8DJZ8iKPrnJyA63+E1Mv35uGxP2HbDT179M9N+YALSxTfAESfdJCnsxhnOFc50+ZLEdovC9AvQPlaL i6npTkd2JcQgiNljOeL8d5cLH3BeUYb+49bRTVsRN/k=
+X-AuthUser: vendas2@bh3distribuidora.com.br

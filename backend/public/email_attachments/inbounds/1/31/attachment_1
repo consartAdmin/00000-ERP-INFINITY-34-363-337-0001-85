@@ -1,0 +1,163 @@
+Resent-From: <ricardo@grupomulticap.com.br>
+ARC-Seal: i=2; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=pass;
+ b=GQ328zqOz1m1M4cx5cJTIDJfyM/g5zOQ3/VkbxMxBxpxc2/G7DvqU38FwQLgmr2z3UdXPhvWMvUeD0/5eoC79IK1C3CA55FrwmAhdB/c88WH0R60PZP9051z5MAO2xzyIqUOwdNgYjGOPoOa1zlr+POiutxD/UcygCabQUmbgml/I6c1d89H83YS3UiyTP4vXXubl+/udlFqYVENE6HnNQGVmk4Q1efXjHLzoHFPV2bNTkgHFP+3acSKDbKrWvUUaNpAM4umJXA1lRnIYkyDsamshVxpcWLGBbEgszc39Z/K1QXMH6DCOjKjhw81O1XAp8UczWopzc6+QK7ZotT5Ug==
+ARC-Message-Signature: i=2; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector10001;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=ishuDQ3kK+4VP9IhxNG3rIyjO9gEsYEXn7hcU2F5hM8=;
+ b=uCy3MyfdQnpLeW0JGlOEO4GVTxmiCNjdNGMe/Ik8kj9wpUrcu7cDhhfX6PWgx4odepkNlkpci5XatQXJrbJSnBG5zeNNO2Au4fefuangi4bVUl1tKOK/F49dpre/coDY6c1SB8mRJPm0N41AYbAedjhTtJi0fJca4CZRsvwkbywf1v2+9cgxWdRbtv6GEkzUL3WFRD4aXjKp92MDS7xehRirij8lY9J0ZgG8jgBmCybsvvyBWgaZg5ylPkprNaGXea7ZoafUDOxUSWTTu2ny82vMVb9npS/noPb711l+6epcu5tZtbz6bLUoNXB8wtQKA2PMu3CmXYwgm2QU+wTKcw==
+ARC-Authentication-Results: i=2; mx.microsoft.com 1; spf=pass (sender ip is
+ 23.83.209.14) smtp.rcpttodomain=grupomulticap.com.br
+ smtp.mailfrom=bh3distribuidora.com.br; dmarc=pass (p=none sp=none pct=100)
+ action=none header.from=bh3distribuidora.com.br; dkim=pass (signature was
+ verified) header.d=bh3distribuidora.com.br; arc=pass (0 oda=0 ltdi=0 93)
+Received: from CP6P284CA0089.BRAP284.PROD.OUTLOOK.COM (2603:10d6:103:1a9::18)
+ by RIXP284MB3686.BRAP284.PROD.OUTLOOK.COM (2603:10d6:10:162::14) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.9520.12; Mon, 19 Jan
+ 2026 13:32:46 +0000
+Received: from CP1PEPF00007ADE.BRAP284.PROD.OUTLOOK.COM
+ (2603:10d6:103:1a9:cafe::44) by CP6P284CA0089.outlook.office365.com
+ (2603:10d6:103:1a9::18) with Microsoft SMTP Server (version=TLS1_3,
+ cipher=TLS_AES_256_GCM_SHA384) id 15.20.9520.12 via Frontend Transport; Mon,
+ 19 Jan 2026 13:32:46 +0000
+Authentication-Results: spf=pass (sender IP is 23.83.209.14)
+ smtp.mailfrom=bh3distribuidora.com.br; dkim=pass (signature was verified)
+ header.d=bh3distribuidora.com.br;dmarc=pass action=none
+ header.from=bh3distribuidora.com.br;
+Received-SPF: Pass (protection.outlook.com: domain of bh3distribuidora.com.br
+ designates 23.83.209.14 as permitted sender) receiver=protection.outlook.com;
+ client-ip=23.83.209.14; helo=bee.birch.relay.mailchannels.net; pr=C
+Received: from bee.birch.relay.mailchannels.net (23.83.209.14) by
+ CP1PEPF00007ADE.mail.protection.outlook.com (10.167.241.39) with Microsoft
+ SMTP Server (version=TLS1_3, cipher=TLS_AES_256_GCM_SHA384) id 15.20.9542.4
+ via Frontend Transport; Mon, 19 Jan 2026 13:32:45 +0000
+X-Sender-Id: hostingeremail|x-authuser|vendas1@bh3distribuidora.com.br
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id C93AF722D3B
+	for <ricardo@grupomulticap.com.br>; Mon, 19 Jan 2026 13:32:42 +0000 (UTC)
+Received: from de-fra-smtpout5.hostinger.io (trex-green-8.trex.outbound.svc.cluster.local [100.110.193.162])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id ED206722C73
+	for <ricardo@grupomulticap.com.br>; Mon, 19 Jan 2026 13:32:41 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1768829562;
+	b=BDLlBPlM/VsQidUz7TOeN+RlZ9/Ki0LBh8IulSbmjZHFF/Wih/OZ1BFn8LKc2sRCos35k9
+	djAcG7yP464fIQmXiStFNNJ4phYEzDnRE9z8xAjkbemBAMPvf5+on35d4w9sv0zl9NweXV
+	ZsdsHAwrsZWps/wRMXcfQuFalVtGbQ5R4NE0WX1AHOzzu3+yRLnJLiNgy7Q3Mi6N1mTu+F
+	NwbCYMxkSpjTrATx0reRinHqobkbcJTm73s0SVQbtosPPJF1u6FYp8m0yEr8hZHaXztzGB
+	1Uhcp1gXrAOdziAVZ2D1lCT45ywo57r+4uqpAfi07q3Er/sKchUWS56ZhC8NSA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1768829562;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:dkim-signature;
+	bh=ishuDQ3kK+4VP9IhxNG3rIyjO9gEsYEXn7hcU2F5hM8=;
+	b=M0sWo9PurTHgIl4QicNthHCe602LySVItycxcJcttgRzTLppBjAR8CJBIocyh7cz6UZ+G2
+	+i2EYtd2B1xpqIAQX7dezcmYfjg2QNArylEDWu1AOnadDMBKdPOFZSot++Rw2hH55qsryl
+	Q7+yQ2xv3nfzg2mAszIdL/4Gj3/wtucHeCN2uvq5WUhLW4QRh7/Cssd1BcEPcGSOAf4zg8
+	63GR8yqay1DjcIU95T/lyBcHsWDvxRbyFIhG45TPiKPJfYsyCc3uKH4+ItNKHBAMFR/wX3
+	5Px0bk3T52QDUGIB4MuBqTlo+UaksbtDZBzegTdWzxAF4bdCdK8qjFci2A7QJg==
+ARC-Authentication-Results: i=1;
+	rspamd-8f4d6bb8d-mvv9z;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas1@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas1@bh3distribuidora.com.br
+X-MC-Relay: Neutral
+X-MailChannels-SenderId: hostingeremail|x-authuser|vendas1@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Invention-Wide-Eyed: 52ff24ca4f3a765f_1768829562587_3308999679
+X-MC-Loop-Signature: 1768829562587:4255139683
+X-MC-Ingress-Time: 1768829562587
+Received: from de-fra-smtpout5.hostinger.io (de-fra-smtpout5.hostinger.io
+ [148.222.55.12])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.110.193.162 (trex/7.1.3);
+	Mon, 19 Jan 2026 13:32:42 +0000
+Received: from localhost (117.138.230.35.bc.googleusercontent.com [186.206.142.137])
+	(Authenticated sender: vendas1@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4dvrx40zc3z3whc
+	for <ricardo@grupomulticap.com.br>; Mon, 19 Jan 2026 13:32:40 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1768829560;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=ishuDQ3kK+4VP9IhxNG3rIyjO9gEsYEXn7hcU2F5hM8=;
+	b=LP7XD6up7aJrN4JASvUvHBK8tkaUHC7L11VpHgCSIdKr3eA3x1Atr8Ws1MaDqAcGMRaWQH
+	ZFv2dJtdAftiQgZMPc5hmhihi/sNJNA2B9Jarx9pDV6EKFfTlIjRxFS0sAC6GRAB3A7VBV
+	482DSXhRsbihNDrIzMok6cBhsT7W3VBDrByJb9g3pVjoDlmuKbhnIeNKacdJq71d0gk0P4
+	lrDeIgs6HpDwYjurz5NVDbMPqbJVnoii24gLzdQ2rLXweH06FWqyrp4yy2DGlxlE6cwYaO
+	YWPD/tDxi93XX1nmSAoccjnFEIc0r6e2ZNhXn6oV8BngXfRkoY2GyWNYRZloOw==
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=utf-8
+From: "vendas1@bh3distribuidora.com.br" <vendas1@bh3distribuidora.com.br>
+Message-ID: <1768829559402880375.1768829559@bh3distribuidora.com.br>
+MIME-Version: 1.0
+Subject: BH3 DISTRIBUIDORA
+To: <ricardo@grupomulticap.com.br>
+Date: Mon, 19 Jan 2026 13:32:40 +0000 (UTC)
+X-CM-Envelope: MS4xfFDUfDdTMKXqxZrbs7OttYxApf03y70IAvH1wDxz/mBctTPhmO0qlVvtk5kV3SnNPJuNbkmgEVx1zKjgZCPGAVWuEpGmooGpN9za60nAcqN59POQYM5j b/ilQOFUlCGoEdYX1kJqr46OBcn5edDIlIMRHd9O6QhAVaOzyY+RNfOPFj366KmK5Nmapgxl39DFnFxK1U5RIV78aTBRZpxCUPI=
+X-CM-Analysis: v=2.4 cv=etGNzZpX c=1 sm=1 tr=0 ts=696e3278 a=R3gqXsu7XzMd173jz4oz6A==:117 a=R3gqXsu7XzMd173jz4oz6A==:17 a=IkcTkHD0fZMA:10 a=7j0FZ4iXMVMA:10 a=R7QQ6CqMXZx-2PjCN8wA:9 a=-VszKEYpsd1y4bdw:21 a=QEXdDO2ut3YA:10
+X-AuthUser: vendas1@bh3distribuidora.com.br
+Return-Path: vendas1@bh3distribuidora.com.br
+X-EOPAttributedMessage: 0
+X-EOPTenantAttributedMessage: 0f5585a6-d446-439e-8ea5-13b1efb8febe:0
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: CP1PEPF00007ADE:EE_|RIXP284MB3686:EE_
+X-MS-Office365-Filtering-Correlation-Id: 19574913-8118-4300-dfe1-08de575f3b30
+X-LD-Processed: 0f5585a6-d446-439e-8ea5-13b1efb8febe,ExtFwd
+X-MS-Exchange-SenderADCheck: 0
+X-MS-Exchange-AntiSpam-Relay: 0
+X-Microsoft-Antispam:
+ BCL:0;ARA:13230040|9140799003|29132699027|376014|61400799027|48200799018|8096899003|14062099003|54012099003;
+X-Microsoft-Antispam-Message-Info:
+ =?us-ascii?Q?OX9TrpbJHZrtChWv5rLYOsHUw4ZX1cesu37V2osv7hdAFMg9xj9elRHON54B?=
+ =?us-ascii?Q?wF1BbbsrpW1IrRMnqdyv9brSiMfefVAvvapWdmEnn/v+iecLriJ8ZzEOIEm0?=
+ =?us-ascii?Q?8eZw2CQn5R1AFbmGgQ6lhTh7y1E2HJ5wXSWx+fGKStcjyzu0BRcMwLf0GTuT?=
+ =?us-ascii?Q?mulCAlGEIgI2gFDvyEBS1UXK8z6kXXQuM1ONnpLcskhlv1N1NuabIXmr8gSP?=
+ =?us-ascii?Q?dAD0Vu0OUNQNplA2Q0PRlZwz1sjeMru3XAG7XIlLyIb0APT1biPI5XMbhvYb?=
+ =?us-ascii?Q?wR6fiwsgkMn7HUzMV9gXgVhDNdH9lx6pHEeXQEoVcHvBcfJEIl+ITmhxPrGp?=
+ =?us-ascii?Q?M2lrG+QXS2NyQv7GKvJQlABft/4OojZtDhSOwsi3TD1RQHIPekkTMEj5EJlN?=
+ =?us-ascii?Q?RVQ2e42hUnYYh/QagHMF+aeSFKQ4/y961ox89A8ZOx1Igw1Q0MwqKyd9ZHvN?=
+ =?us-ascii?Q?KayuyzWEvxQ+3wmi75U3hxbHZeDT1LA/BXZwubc0gLNEIUrmGTC5zGPeCA9y?=
+ =?us-ascii?Q?I6h0Hr9ssgXe+CjPQ+/jF1fz3M4Repe6rLEC4+vOVqZ+QLG7hOx4oIusAcAw?=
+ =?us-ascii?Q?zGDN2xTWxpnONYsczln8Z2h69vCsB0gEoOEh6XaEgsxwyhITvGb++T8Bf+qi?=
+ =?us-ascii?Q?K7+mcyDRNPwrW8iDqOIKGahq+amUXLaMailXq6vAqVzRUocax5WUr/BMHDhq?=
+ =?us-ascii?Q?DQ5ACi6UD/34+L0/LF3ze//Gx1HyOEp3FTLOjZQ7EqhMPSpFvj0UEgLslnbX?=
+ =?us-ascii?Q?tuwnVYNFrddXAxAo/HmR5YzNv3lQrnzxmIv6Sm0ol2WVFViLvDKd3w5qF1Ju?=
+ =?us-ascii?Q?fGY/znte9dg+H1hnzTPXA+oA61TqDyx521tYXjKvdgG5+Ypz2vNE5S+0GkUy?=
+ =?us-ascii?Q?U+sgakK0qJfZp0QndUBkfSmSaWjoweGkSQuXoJ0mQSGUXp+iGZU8Ci/OvRNy?=
+ =?us-ascii?Q?m48oN8UzFMi26a2Ytrb7kzW35sOagOE8CLHFfr4yWFb/2cL2HMq8dccgS7Ln?=
+ =?us-ascii?Q?Nwm+46ckjEhOAVCotMl940nd6s9z40A6BdexhdKVkciX6BNCGP+rSC+Oin7F?=
+ =?us-ascii?Q?P0EPEUyMUW9S0+ZuwCqvoXN7ql1wB+CYsFlILgAEw8cyab0dkyDLQzutkHDG?=
+ =?us-ascii?Q?1yt0cBSIB4w6jM7xNaxUH3fc9ZtDi9FPO8DRXsxD/PM6AVzYUs3dajKp+vGj?=
+ =?us-ascii?Q?dOHdvxsRhFwu65okzgTPe/BSL0ZTtDzt8jXSQ7BP+LOppmsKirV0TQ3gQ75v?=
+ =?us-ascii?Q?B2penq2dfufScESfsMNrZ4eZUYOzvaE7gJdeqBuEZM8xXpUOAVEW6H8bRWwd?=
+ =?us-ascii?Q?INpoRwgTrU5cu/ALZLkFfH9gsFkj2v3c3XvXel+SHPBFaSkxHkpUlLiTr01J?=
+ =?us-ascii?Q?McY6xBg+J/4orCOWcNuB4dW9uEzWGRPTXpCZMviDOYC+mPq4Cylms4qndOrV?=
+ =?us-ascii?Q?SOtrxJX2EC7iHtsTradz1DPFsI57rsvEpE4ZTP5r4DgzHpZi6OmdwoYNG8c7?=
+ =?us-ascii?Q?f6M+UH2o7Ic3dA6FDxIhVZzxDMQg1CCAyyZpgdstYSMQU4Z7AR13h0o8ncsc?=
+ =?us-ascii?Q?Tmcg7rysnAMz8w/O/v61i8ws9J5uZufwD/qYtMIFpEfOzBrmUsG0hy4bx5IG?=
+ =?us-ascii?Q?pM7NuUpuVo5YQKqIqWBsrHYxskfefPrgx23qwMB7C9ahx5gTiPRo8xsz2WOh?=
+ =?us-ascii?Q?G49d3CvSfvKky9FvKpyVRUeaxuJbcgc17nq5y0ARfZtboIuoJl6WlCma6ysC?=
+ =?us-ascii?Q?wXttaNBBo8UdNDcANj+NcX6cTmZUzvzvYXgt4W/UZQGpKjWWHRI/qkS1Da7Y?=
+ =?us-ascii?Q?4hKcr6/vDiwpnFu49kkDqlhg4UDmVXm30Xl1IROgAzswbv1D8KdPMjC03Aqs?=
+ =?us-ascii?Q?LK0nfvxbUOIYNxbdA8qRLkciqLmLBOVOXVSZZXBJ3yw3YtKczgIR9US/QqXp?=
+ =?us-ascii?Q?FEJMAFUtlJsWcQ1ASNrLwnEnewjktAu7QQuag8kzHq+WAWMBm+cB/bfAW3vm?=
+ =?us-ascii?Q?A8WwOQQtPh7raaWMeGBp4H7gWA=3D=3D?=
+X-Forefront-Antispam-Report:
+ CIP:23.83.209.14;CTRY:CA;LANG:pt;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:bee.birch.relay.mailchannels.net;PTR:bee.birch.relay.mailchannels.net;CAT:NONE;SFS:(13230040)(9140799003)(29132699027)(376014)(61400799027)(48200799018)(8096899003)(14062099003)(54012099003);DIR:OUT;SFP:1102;
+X-ExternalRecipientOutboundConnectors: 0f5585a6-d446-439e-8ea5-13b1efb8febe
+X-MS-Exchange-ForwardingLoop:
+ ricardo@grupomulticap.com.br;0f5585a6-d446-439e-8ea5-13b1efb8febe
+
+<div><br></div><div><br></div><div class=3D"hmail-signature-prefix">Oi! Tud=
+o certo? Aqui =C3=A9 o Augusto da BH3 Distribuidora!</div><div>Passando pra=
+ saber se voc=C3=AA est=C3=A1 precisando de algum produto ou cota=C3=A7=C3=
+=A3o! =F0=9F=91=80=F0=9F=93=A6</div><div>Temos novidades incr=C3=ADveis e p=
+romo=C3=A7=C3=B5es especiais esse m=C3=AAs!</div><div><br></div><div>Qualqu=
+er coisa, me chama por aqui mesmo.</div><div>Vai ser um prazer te atender n=
+ovamente! =F0=9F=99=8C</div><div class=3D"hmail-signature"><p><br></p></div=
+><div><br></div>

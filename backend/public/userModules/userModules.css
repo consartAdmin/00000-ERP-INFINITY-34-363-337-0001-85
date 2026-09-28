@@ -1,0 +1,294 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ userModules.css — Estilo da tela de permissões de módulos           ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+/* ===== Cadeia flex: só a lista de módulos rola ========================= */
+
+.user-modules-shell {
+  overflow: hidden;
+}
+
+.user-modules-shell .table-layout-integrated,
+.user-modules-shell .table-layout-integrated__filter,
+.user-modules-shell .consart-layout-col,
+.user-modules-shell .filtros-permissoes,
+.user-modules-shell #permissoesForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.user-modules-shell .filtros-permissoes > *:not(#permissoesForm) {
+  flex: 0 0 auto;
+}
+
+/* ===== Cabeçalho dentro do card ======================================== */
+
+.filtros-header {
+  padding: 0 0 var(--gap-sm);   /* um leve respiro embaixo do título */
+  margin: 0;
+  gap: var(--gap-sm);
+  border-bottom: 1px solid var(--line-soft, var(--line));
+}
+
+.filtros-header h1 {
+  font-size: var(--fs-22);
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* ===== Card de filtros / conteúdo ====================================== */
+
+.filtros-permissoes {
+  gap: var(--gap);              /* entre header, filtros, toolbar e form */
+}
+
+.linha-filtros {
+  gap: var(--gap);
+  flex-wrap: wrap;
+}
+
+.filtros-permissoes .campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  min-width: 230px;
+}
+
+.filtros-permissoes label {
+  font-size: var(--fs-12);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.filtros-permissoes select,
+.filtros-permissoes input[type="text"] {
+  height: 36px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-soft, var(--line));
+  background: #f9fafb;
+  font-size: var(--fs-14);
+}
+
+/* ===== Toolbar / resumo ================================================= */
+
+.user-modules-toolbar {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md, 10px);
+  background: linear-gradient(
+    90deg,
+    rgba(226, 239, 255, 0.85),
+    rgba(235, 248, 255, 0.85)
+  );
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  gap: var(--gap-sm);
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.pill-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-12);
+  font-weight: 500;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+}
+
+.pill-counter--muted {
+  color: var(--muted);
+  border-style: dashed;
+}
+
+/* Chip com checkbox "mostrar apenas marcados" */
+.checkbox-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: rgba(15, 23, 42, 0.02);
+  cursor: pointer;
+  font-size: var(--fs-12);
+  white-space: nowrap;
+}
+
+.checkbox-chip input[type="checkbox"] {
+  accent-color: var(--primary, #2563eb);
+}
+
+/* ===== Container de módulos ============================================ */
+
+.modulos-container {
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: var(--radius-lg, 14px);
+  padding: var(--gap);
+  background: var(--card, #ffffff);
+  box-shadow: var(--shadow-md, 0 12px 32px rgba(15, 23, 42, 0.10));
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modulos-container.hidden {
+  display: none;
+}
+
+.modulos-header h2 {
+  margin: 0;
+  font-size: var(--fs-18);
+}
+
+/* Área rolável só na lista */
+.lista-modulos {
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--gap-sm);
+  align-content: start;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 2px 4px 4px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ===== Card de módulo =================================================== */
+
+.modulo-item {
+  position: relative;
+  border-radius: var(--radius-md, 12px);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  padding: 6px 8px;
+  background: linear-gradient(
+    135deg,
+    #f8fafc,
+    #f1f5f9
+  );
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease,
+    background 0.15s ease;
+}
+
+.modulo-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+}
+
+.modulo-item--checked {
+  border-color: rgba(37, 99, 235, 0.8);
+  background: linear-gradient(
+    135deg,
+    rgba(219, 234, 254, 1),
+    rgba(221, 243, 253, 1)
+  );
+}
+
+/* Label / conteúdo do card */
+.modulo-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+
+/* Topo do card: toggle + tag */
+.modulo-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+/* Tag “Módulo” */
+.modulo-tag {
+  font-size: var(--fs-11);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.02);
+}
+
+/* Nome e descrição */
+.modulo-nome {
+  font-size: var(--fs-13);
+}
+
+.modulo-descricao {
+  font-size: var(--fs-11);
+  line-height: 1.3;
+}
+
+/* Checkbox estilo “switch” simples (usa o input nativo mas com layout) */
+.modulo-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+.modulo-checkbox input[type="checkbox"] {
+  accent-color: var(--primary, #2563eb);
+}
+
+/* ===== Mensagem de ajuda =============================================== */
+
+.msg-ajuda {
+  font-size: var(--fs-14);
+  color: var(--muted);
+}
+
+.msg-ajuda.hidden {
+  display: none;
+}
+
+/* ===== Responsivo ======================================================= */
+
+@media (max-width: 900px) {
+  .user-modules-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .toolbar-right {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .lista-modulos {
+    grid-template-columns: 1fr;
+  }
+
+  .filtros-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

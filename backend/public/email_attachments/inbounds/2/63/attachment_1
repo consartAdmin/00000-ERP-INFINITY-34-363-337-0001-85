@@ -1,0 +1,46 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 48837923541
+	for <marcelo.machado@buildtech.com.br>; Wed, 25 Mar 2026 16:53:22 +0000 (UTC)
+Received: from de-fra-smtpout6.hostinger.io (trex-green-7.trex.outbound.svc.cluster.local [100.115.72.182])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 9090F922BE5
+	for <marcelo.machado@buildtech.com.br>; Wed, 25 Mar 2026 16:53:14 +0000 (UTC)
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Good
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Plucky-Shrill: 5f0a1b461d94e8f9_1774457602156_2679220276
+X-MC-Loop-Signature: 1774457602156:189178614
+X-MC-Ingress-Time: 1774457602156
+Received: from de-fra-smtpout6.hostinger.io (de-fra-smtpout6.hostinger.io
+ [148.222.55.17])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.115.72.182 (trex/7.1.5);
+	Wed, 25 Mar 2026 16:53:22 +0000
+Received: from localhost (34.86.89.34.bc.googleusercontent.com [201.80.171.191])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4fgtJS45L2z41GY
+	for <marcelo.machado@buildtech.com.br>; Wed, 25 Mar 2026 16:53:12 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1774457592;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=7XsAsC/sgNDpmXZ3rd+F3jNm8944k6dvQRs/I8KqKoc=;
+	b=nGYg3nJnVgA2RJTlj0TzHFndguZdhuzZwGSVp8zdfuauywCoRIcoyRJpgZU1TBPnm3RlS2
+	ShcCXLYf7yAZoSZSxKCbpRVY/Q2X00/5yoWTyQLUcGa+83gOE5lUhhE40zQEy7BXaf1XOq
+	ZiPZYgi2o7OH+MmppkfhMeFvIbW2tLjYNjTGkgik1KKfGK9TNeFdEE45zpHtIQn19vZYkK
+	1sfeHSg4RskmyXDIuhETeYhb0fJFbbXTXHJ2DDDWyO3xOB9VQaMOf32yOPQ03qL/Lkd6c+
+	TAacGqh1iTwcB6g8lY7TGQtDCa9Wnims+9JpgKch+91i128u7YGAe2QPt69a0Q==
+Content-Type: multipart/related;
+ boundary=enmime-a6c26855-03a2-4307-801d-12fc610971c8
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1774457592367314686.1774457592@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <marcelo.machado@buildtech.com.br>
+Date: Wed, 25 Mar 2026 16:53:12 +0000 (UTC)
+X-CM-Analysis: v=2.4 cv=ALriHGRn c=1 sm=1 tr=0 ts=69c412f8 a=R2ZaLEfC9qjI1KZi0jOIlA==:117 a=R2ZaLEfC9qjI1KZi0jOIlA==:17 a=R7QQ6CqMXZx-2PjCN8wA:9 a=8OkzostwN8Dbgy5w:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10
+X-CM-Envelope: MS4xfK9Tr40rMCvxg45Xp1LO0Gsv4XL3c/1qHtGhi/086cK88LGYY1RHvSNq/ROPvpxllA5+2N0PDehpkRjdR4N29e4wMcSUZXhwzutNH+EFM6kVCa3iwq5V QFvab4hkRUc76p7f3lmjmwP0BsPkwsemb91P40XHDTFafxh08mFPsB+GNmxjf6upa83pn53W0giNsLn+t6dJoh1SNqCcH2kgR/a2POTY8r1j3CX/K+vhbcYR
+X-AuthUser: vendas2@bh3distribuidora.com.br

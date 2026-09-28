@@ -1,0 +1,68 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 8A87A721A66
+	for <bp.rwbh@atlanticahotels.com.br>; Wed, 25 Mar 2026 11:40:59 +0000 (UTC)
+Received: from de-fra-smtpout3.hostinger.io (100-121-5-127.trex-nlb.outbound.svc.cluster.local [100.121.5.127])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 6AE3072152F
+	for <bp.rwbh@atlanticahotels.com.br>; Wed, 25 Mar 2026 11:40:58 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1774438859;
+	b=TbGXPfL5whSpIGeweuLjyr+OzDjJavDMBxmgcvXY4TlDbAKY4pZ/l0a15qasnA1Fkfrjua
+	Bk4eJD7i+P524+3sZl6ouvQp3AxuOxPBLhPtR6z6aOjQz/uF09tgLjJIRtOLgGCqzWg2eS
+	0fAONJ3JUOICuGxKH6Isja6EMltB21k5NVCDSIdGodTnYszv8uVettP1PrTNVh+wkOfo0r
+	ea1nGu1zls0B5XLuH9ajSdVybkX7sBPU7FjBJD78VSBHZnVmsxp8mH8TC94QW+FkAOvCQx
+	c4H7zMSEg4Hx4uRaZQIvZ7285CkL7itrzypzs7pddBrmLmhMeYChQAwhLfZ1Sw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1774438859;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 dkim-signature; bh=zQzJvmzHlAoKFYjFwh5s3P9lTnrS9SdXTeAdHLlXIC4=;
+	b=ul4O8hT6qu55KwBldvTbbyu982RqPkx3NO6YUE9+4MZKkO5fJHhd/wVStAL02VIefFg++7
+	dhg1jEZLySYRHJA1SvcqIcJ+1bvs9r1PsN4FXhaPchnorDi8qoRoOEjFnniPrqfzisFi1+
+	UPPF7k1AdANx85yHmfiUP4gymAVlTazq6jZLcUpVyU721wG0NbiJd3K3h2r74pA3vqaTb+
+	wenIMTXiWfY/R6K8xrJ+EFal4RQ70Cu8fI1lWLgv09B6l5vR4M/mLl4QXWCexx7UrqF/oj
+	PxK71AZRw6E5n6kqj63QVGqaimGZ8q8A5LqEkfUJ4orXryDWKPAI/GY3YSYScQ==
+ARC-Authentication-Results: i=1;
+	rspamd-6d4cb6745-rknlm;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas2@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Good
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Abiding-Bored: 4734bb1d4d064adb_1774438859462_2098151568
+X-MC-Loop-Signature: 1774438859462:875640375
+X-MC-Ingress-Time: 1774438859462
+Received: from de-fra-smtpout3.hostinger.io (de-fra-smtpout3.hostinger.io
+ [148.222.55.15])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.121.5.127 (trex/7.1.5);
+	Wed, 25 Mar 2026 11:40:59 +0000
+Received: from localhost (117.138.230.35.bc.googleusercontent.com [201.80.171.191])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4fglN844KHz40Rr
+	for <bp.rwbh@atlanticahotels.com.br>; Wed, 25 Mar 2026 11:40:56 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1774438856;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=zQzJvmzHlAoKFYjFwh5s3P9lTnrS9SdXTeAdHLlXIC4=;
+	b=qkfDPn73IzREO1H19oZGNnOALH7PSjz820yoJNMvlfBuRRWZMJBd5wl+A0aXKdBZJOYBDD
+	5OAEDveC1goaD27zoJU5DtSNTyn4awcCArtHfaIfupZw9+0Wb+5FbtanwHQrjHE1tTELeg
+	nb/0W2kacOAb/GT9aCffylSKNeiXfxK3jmb9XQowsMrEV2iPIqxkxSF9PwttN+6ij6LKvZ
+	j9UU2D4uYZfMwZMzvTC6HMKJLlpvwT86hbeC7DF3BUeQOMDGb6n3F/AzuCaMn2K6Ovwu0w
+	ll13+1A5pngK4dpv5Q9y69dbGQR+3g25pFL+AWpw9fjryXYBnTgf+AfeINZPFg==
+Content-Type: multipart/related;
+ boundary=enmime-18b051ec-5b73-47c6-b5ac-4e5fad82a52f
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1774438855883464889.1774438855@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <bp.rwbh@atlanticahotels.com.br>
+Date: Wed, 25 Mar 2026 11:40:56 +0000 (UTC)
+X-CM-Envelope: MS4xfK3xm4ibPABRH2jboqyksnWQW24no+Pe8pM1rlPhQoWmQp5YgzhegJDYPTvXrAJPGQl/TL6o/zWyPtMSpAyLpp6+oNhQEIibpjZ74M4PklYVD7qWV1JS pTP9aBcdraa7CdqcF8mlvTuxy0gp8q92rys4tvbuoD9mkUz6b9SqIXLWOObxWiPdv/xElld6DOlOZIsAMeZZy+LGQEcCEsXPdXE=
+X-CM-Analysis: v=2.4 cv=ALriHGRn c=1 sm=1 tr=0 ts=69c3c9c8 a=R2ZaLEfC9qjI1KZi0jOIlA==:117 a=R2ZaLEfC9qjI1KZi0jOIlA==:17 a=R7QQ6CqMXZx-2PjCN8wA:9 a=IkzPbjzwALqaI2uL:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10
+X-AuthUser: vendas2@bh3distribuidora.com.br

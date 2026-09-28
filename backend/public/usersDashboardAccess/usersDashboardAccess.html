@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Acesso aos Dashboards | CONSART ERP</title>
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png" />
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+
+  <link rel="stylesheet" href="/public/usersDashboardAccess/css/usersDashboardAccess.css" />
+</head>
+
+<body>
+  <main class="uda-page">
+    <section class="uda-panel">
+      <header class="uda-header">
+        <div>
+          <h1>Acesso aos Dashboards</h1>
+          <p>Defina quais indicadores cada usuário poderá visualizar na Home.</p>
+        </div>
+      </header>
+
+      <div class="uda-toolbar">
+        <div class="uda-field uda-field--user">
+          <label for="udaUserId">Usuário</label>
+
+          <div class="uda-user-row">
+            <input id="udaUserId" type="number" min="1" step="1" inputmode="numeric" placeholder="ID do usuário"
+              autocomplete="off" />
+
+            <button type="button" id="udaLoadButton" class="uda-btn uda-btn--primary">
+              Carregar
+            </button>
+          </div>
+        </div>
+
+        <div class="uda-toolbar-actions">
+          <button type="button" id="udaSelectAllButton" class="uda-btn" disabled>
+            Marcar todos
+          </button>
+
+          <button type="button" id="udaClearAllButton" class="uda-btn" disabled>
+            Desmarcar todos
+          </button>
+
+          <button type="button" id="udaSaveButton" class="uda-btn uda-btn--success" disabled>
+            Salvar acessos
+          </button>
+        </div>
+      </div>
+
+      <div id="udaStatus" class="uda-status" role="status" aria-live="polite"></div>
+
+      <div class="uda-table-wrapper">
+        <table class="uda-table">
+          <thead>
+            <tr>
+              <th>Dashboard</th>
+              <th>Chave</th>
+              <th class="uda-col-access">Acesso</th>
+            </tr>
+          </thead>
+
+          <tbody id="udaTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/public/usersDashboardAccess/js/usersDashboardAccess.js"></script>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+
+  </script>
+</body>
+
+</html>

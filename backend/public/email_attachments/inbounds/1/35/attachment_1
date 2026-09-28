@@ -1,0 +1,109 @@
+Return-Path: <vendas1@bh3distribuidora.com.br>
+Received: from 23.83.223.167_.trendmicro.com (unknown [192.168.193.71])
+	by inpost.tmes.trendmicro.com (Postfix) with SMTP id 4C7181000084C
+	for <manoelas@nipromed.com>; Wed, 21 Jan 2026 17:35:03 +0000 (UTC)
+X-TM-MAIL-RECEIVED-TIME: 1769016902.116000
+X-TM-MAIL-UUID: 661ac997-03b2-408f-b802-e726101345f9
+Received: from skyblue.cherry.relay.mailchannels.net (unknown [23.83.223.167])
+	by inpre01.tmes.trendmicro.com (Trend Micro Email Security) with ESMTPS id 1C9D310000085
+	for <manoelas@nipromed.com>; Wed, 21 Jan 2026 17:35:01 +0000 (UTC)
+X-Sender-Id: hostingeremail|x-authuser|vendas1@bh3distribuidora.com.br
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 4359E4514D4
+	for <manoelas@nipromed.com>; Wed, 21 Jan 2026 17:35:00 +0000 (UTC)
+Received: from de-fra-smtpout2.hostinger.io (100-117-113-78.trex-nlb.outbound.svc.cluster.local [100.117.113.78])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id E4AD8451467
+	for <manoelas@nipromed.com>; Wed, 21 Jan 2026 17:34:58 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1769016899;
+	b=H0La+bAm9JbXwXa44WcPRFVEZ1rN7Yc5m/SkDtQbm4F0M901wHpJehSXT77Z1kvXGCX2gK
+	XNo7NJBsj5A0iAdYAA6cMK+zGR3YkGHt6Y+XfMSqNR1qOU1bfOBimCRkzrInjMHjsdDYqD
+	DSi7eiOy0ZNtOPpygpAsdJd7P9+zsy6jAVDk0jtrN4FnP0YWTiwK3Bp3VzPpdeL2maHkLf
+	RwAngSUtpQFh4qR8j3dH1BShWkOgHBq6m1UQdtf2Enz0YvWWc+zvAfVb1jDdESWIdMomOM
+	gxU8yC3dP9k8yoxbLBH1eVIECfGssxp1UIH1jfDAqEr0toNbk7vKgfpt5F1OVA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1769016899;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:dkim-signature;
+	bh=ishuDQ3kK+4VP9IhxNG3rIyjO9gEsYEXn7hcU2F5hM8=;
+	b=TagsvVQBvkX2V2tuoie3/RSDjILfKQnq4TGQZPkUXXLhSo8+5UKOFE0XPrm+65pK5qijJ6
+	I6s3ndmI+b5xjVYAhuIcMoj+Mg+0/hyKFfmpxmYGKMcHUBG2GYg6dKyFPT2Y0YwX/C0ueG
+	2D4DFnevAq+h8mJZRH7HTvWnvorPKYhNzLf2NrsQvSdvhjmXKX2si8v+uxsOwZEXTpeOck
+	qhM2zxUPEvbv2uu4EpL8TRwrllmYRKc0tR2ylm7ctldNmqFhQzuzYrHcICCyUAcKyc/zNv
+	OHeMjHexZur5pK+pWQBJ/bLG+AaYbW1vGyLyJxVRCwjUthDfZ4+W+/cH0LSS7A==
+ARC-Authentication-Results: i=1;
+	rspamd-7699b4d5f4-kbcxx;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas1@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas1@bh3distribuidora.com.br
+X-MC-Relay: Neutral
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas1@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Harmony-Decisive: 53b3644411e6fa31_1769016899443_71211271
+X-MC-Loop-Signature: 1769016899443:827214789
+X-MC-Ingress-Time: 1769016899442
+Received: from de-fra-smtpout2.hostinger.io (de-fra-smtpout2.hostinger.io
+ [148.222.55.5])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.117.113.78 (trex/7.1.3);
+	Wed, 21 Jan 2026 17:34:59 +0000
+Received: from localhost (117.138.230.35.bc.googleusercontent.com [186.206.142.137])
+	(Authenticated sender: vendas1@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4dxBCh5h43z3wkC
+	for <manoelas@nipromed.com>; Wed, 21 Jan 2026 17:34:38 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1769016897;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=ishuDQ3kK+4VP9IhxNG3rIyjO9gEsYEXn7hcU2F5hM8=;
+	b=XWqYLtCvBNZblKBM02Ls7rz2svPV7g4sH2DQ3NlBB4rHTBpG0Y6+pj4nWRu6o3nArklANb
+	dxORI1NDhDM4kwOgf23YYS4BiXy3joEt+g7nRnDJtcr1y71drK5RXv6HTbmlexV7QKKC1o
+	YCUQx23O74LujUkkuHfmrfvLKk5eM+BzXqSafkxKU4mgOX53TyL7Ecl/nSJyM2VMjJYoMU
+	9y22atoccqdDF5+w5q/XbYKM9AZYmEwU4f/0HgD7hXFO2RFHCMluHUgWxXJS+KzToW+vpA
+	/nu2ggxuOAhm8aJz6WgOJC/NLV7R0IdJhBJWDQdTwCgC0qeTgrEKlCxYrRGg+w==
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=utf-8
+From: "vendas1@bh3distribuidora.com.br" <vendas1@bh3distribuidora.com.br>
+Message-Id: <1769016877916649348.1769016877@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: BH3 DISTRIBUIDORA
+To: <manoelas@nipromed.com>
+Date: Wed, 21 Jan 2026 17:34:38 +0000 (UTC)
+X-CM-Analysis: v=2.4 cv=ALriHGRn c=1 sm=1 tr=0 ts=69710e40 a=R3gqXsu7XzMd173jz4oz6A==:117 a=R3gqXsu7XzMd173jz4oz6A==:17 a=IkcTkHD0fZMA:10 a=7j0FZ4iXMVMA:10 a=R7QQ6CqMXZx-2PjCN8wA:9 a=-VszKEYpsd1y4bdw:21 a=QEXdDO2ut3YA:10
+X-CM-Envelope: MS4xfCyLFqdz8bQozt82rFccW4iKWxpf3/IgRPNwQp160sP21A0R7bi71kw2UVF0DveimApXOiXxK+z5kfOgPJceDvcmwv81KMmi7GXtxS1UCJN2m3pqvSIX phxM3MAnVrlu2d/7AMpmhZIMxqf3kqHIyhVjqiCOS1KZXZxHbo7QDLy2yvuHOcsIHPZFVSj5Y/r0PSizlTg3VDgapRuLb8JCtx4=
+X-AuthUser: vendas1@bh3distribuidora.com.br
+X-TM-AS-ERS: 23.83.223.167-127.2.0.1
+X-TMASE-Version: StarCloud-1.3-9.2.1009-29712.001
+X-TMASE-Result: 10--5.745100-10.000000
+X-TMASE-MatchedRID: JAHwg85FwJDmXtv9h7OG2GMwpaRI9GOlAPorMXfLUKz2yFBR78gqmUvZ
+	pbGdBWqu+VaURKZ8wE60lP71irxxHXpxHjEJ0hswk7ewadUEicekrAYBPyfE9xFdDrad3t4eTPg
+	Edq/Err0mCmjdpQvSF3RrJHx0m8i7JKUKGirdcxca9QEJjg/BDpkp96WPKGpv5s+13ZPvXWbr70
+	ODTeOm9smHK/30p8QeHKgZhq5i0VbwaMIXsaQmMK4p3AFITaEyqvJX/aNGr9fKvNGNmG0SU6+eC
+	SMeOiOkbBkbaojY4GziNSGfbRrYbqDB8pdEcZQIczsmHym9FJ4mkrgX3CciJge98bp28iq661qO
+	EPS2IDqoyVG0oDpXupRMZUCEHkRt
+X-TMASE-SNAP-Result: 1.821001.0001-0-1-22:0,33:0,34:1,35:0,36:0,37:0,40:0-0
+X-TMASE-XGENCLOUD: 569b131c-4ad0-47a8-8893-f95ddea79303-0-0-200-0
+X-TM-RISKAI-PTN-VERSION: 1.24.0+20260121.18f6f41
+X-TM-RISKAI-MATCHEDFID: WyJGSUwwMDIiLCAiRklMMDI3IiwgIkZJTDAzMiIsICJGSUwwMzMi
+	LCAiRklMMDM2IiwgIkZJTDAzNyIsICJGSUwwNDAiLCAiRklMMDQxIiwgIkZJTDA0MiIsICJGSUw
+	wNTYiLCAiRklMMDc0IiwgIkZJTDA3NyIsICJGSUwwNzgiLCAiRklMMDgwIiwgIkZJTDA4MU4iLC
+	AiRklMMDgyIiwgIkZJTDA4NSIsICJGSUwwODciLCAiRklMMDk3IiwgIkZJTDA5OCIsICJGSUwxM
+	TkiLCAiRklMMTM1IiwgIkZJTDEzNiIsICJGSUwxMzciLCAiRklMMTk2IiwgIkZJTDE5NyIsICJG
+	SUwxOTgiLCAiRklMMTk5IiwgIkZJTDIwMiIsICJGSUwyODQiXQ==
+X-TM-Deliver-Signature: 32560A06F5694458F22DFB96671B3403
+X-TM-Addin-Auth: TZPAQQe7cNgXasrYxLhan2DEzdAA1at/Mf41pGfOKqWcCzT+TxOU8xRwp0h
+	ueuYcLOWV4rFLyJpke+P+PaxqYumWBvzSRqMjsoA8IP+RHdK4OGrxHiXcUw1mTVGY4OLkqJ+1jP
+	yOONIx+1InJyvXqItQr/K/a+fhUwBhJIbJ+5VLa0hDEgDue8jXBQbbkHJK1B6eQBQmKy3aX+J2i
+	0rSPvYjN/SgXXpjOedIsZW+GTfbpSPT+AtIFPXHKJubP2zLcQDrLOjsulrB4O0yN2IS/7ivnIXJ
+	RSo3v2liMVy1hz3xr1Urrj9VKuQ+gkJygTSs.qD661ICwYw9bLDLhvywqz1iAvvX79YwIlKEOPs
+	nGKGLgCOL2IlsqOQ92phBu2WlXxk6JTHS4vM9PM2pnRVW7gJzkVLiaUvJGJi0/DAzfXCkVoWwPp
+	jwqvkBagwxNIs8zRcnP7Ce6WlBVMod8X+PVZLbqKZhTHnGF4mXP+Qr46I3qwaE6nAcJMkd2hsTQ
+	7BpHGSGsUOqcWvZhmJX1AEY0V9hF6S2a5o8YM6E6stlzuaST2vimj2XvtY0pLJBzBGddxIEvxzo
+	szgKF7vy9nl96Oi/x3QJ0Mz2B1qw9Mar5BLLy2mGNtPXLBuirDzZ17PY/0mY9MY2Pos22ibbf1G
+	D8Qw==
+X-TM-Addin-ProductCode: EMS

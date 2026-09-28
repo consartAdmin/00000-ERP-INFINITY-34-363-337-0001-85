@@ -1,0 +1,68 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 10E737E1D92
+	for <jhonatan.barbosa@grupoautomax.com.br>; Thu, 16 Apr 2026 11:41:05 +0000 (UTC)
+Received: from de-fra-smtpout6.hostinger.io (trex-green-2.trex.outbound.svc.cluster.local [100.102.32.211])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id E8AFF7E28FB
+	for <jhonatan.barbosa@grupoautomax.com.br>; Thu, 16 Apr 2026 11:41:03 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1776339664;
+	b=3KZv+l2mGJqkBCWYjE2hVukURgjw0t369yFJGEYqvfDIID1oOebuR46RROX1O/ozlzrirt
+	S+VPNOrhWppO/cUyWqGedQpBEuizWkDQl/2plcCfPv3DTSM4T0VLJ4kKoWS0I6EuXZ4/Ln
+	JuSf7IBE1D5V5toQtllG5TDHox8RFQf+zUp3eRynpChgOVEAWweAj6xp4UBlxNbSDbj+uY
+	FDK7W009yG8aqamUNZu58ZgH83g2G/Kf80QsREZ51nMkcxMb2IzR+lR09uXWk3c34KlTUh
+	59Xxh/un8LjfNgyXzz/FB00aB77ohJ4qXqJL3jswOU52alWlaT0Ge8LJ9jv0GQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1776339664;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 dkim-signature; bh=dih6JBIqU/tvgwPi9P6+lm3Q0qCrh+b5X/R4oO9jXks=;
+	b=iu1XLteL3GzNpd14oXj6lBzygZBdjyh5yvKZ5dKjgodLAf46IHWc9gNGT7Sbnz1H2/tOgZ
+	Be26p4EduNEoG5NbTOJkM6M2HL31usHCWnHTbL1lWsreCg2U2qwnWNOY/02o6Oggp2Bm1P
+	yUGQxfT2ykAkmzoYSWWFQiVfTmhHZKLw/kTLBsWMxBygBTA697phpddMcJ81+4ydaGtZ2D
+	4djSZp5eJHAeTCvFwkh6NOqBc6e29gHAZcVchCwxcmqaXx5aNuRhoamUW7yD7YK/JkK495
+	MzMXk3tRatubF3/AkWyK2L64AUivmJrGR/ahrrgRKk984mscSGQklebs7St1mA==
+ARC-Authentication-Results: i=1;
+	rspamd-6c65dd77f-bbbmp;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas2@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Neutral
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Tangy-Slimy: 0caad4ca67f7ded3_1776339664988_3285944855
+X-MC-Loop-Signature: 1776339664988:2537828649
+X-MC-Ingress-Time: 1776339664988
+Received: from de-fra-smtpout6.hostinger.io (de-fra-smtpout6.hostinger.io
+ [148.222.55.17])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.102.32.211 (trex/7.1.5);
+	Thu, 16 Apr 2026 11:41:04 +0000
+Received: from localhost (17.131.242.35.bc.googleusercontent.com [IPv6:2804:14c:5b75:9e22:fc34:e6c5:4b16:69f3])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4fxGL56RV9z45fT
+	for <jhonatan.barbosa@grupoautomax.com.br>; Thu, 16 Apr 2026 11:41:01 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1776339662;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=dih6JBIqU/tvgwPi9P6+lm3Q0qCrh+b5X/R4oO9jXks=;
+	b=glUJz6rEmDr9N6MqARJIN8jIkBx1NKpNVZEFlXgbLBNiZjizaxbwINZyYqd/uvFJyeTXRz
+	RrYN5z9V9+B0c6WRi7Zj6ltCOfgf2pS35j3ugqfLa2FgnMLK85U8bOJkn3qRDM70rvJO+Y
+	zlchjyw6KvKas69VhQHIwwPtpaXcHlWorf1Qd6s4xEcl7ae22zsBgoU6W0ECjFCb+dFoRB
+	OGGAkbeETSp+qja7QI9YHlOkGmnhzvOH9FWA2rf68JXh+32SN1sZ+1LovkJimc/xAGUMyC
+	5TM7IxAUciIdGjQi6CsriWlND+j4WqSCNQlerqcrPn0FlP0oiQvto692IPldgw==
+Content-Type: multipart/related;
+ boundary=enmime-5373d6d0-1f40-4107-9108-f20debd0697f
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1776339661242589281.1776339661@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <jhonatan.barbosa@grupoautomax.com.br>
+Date: Thu, 16 Apr 2026 11:41:01 +0000 (UTC)
+X-CM-Envelope: MS4xfF8y38xhNOJIceC1lGPVKQla6XswoBcS1yQEEJNw+Z9WZaxocxM0SrVWh42XxDpby788hAC6vkHNFTGaOBjZ+Pyukbwwkxjx3R6ktsbGbTkD5acQW4Y5 WFJz9En0Cf5rhN8dTdVZKT3I3xlciFoV8JNCrF4LWAhQEysbgEvWK2vvCAKsF8cyxopbDtIcOB9wKUkcl3Gf2FWQrxhFycchDOG6mqVDM6miUFBOaBEU1IWu HLofwz85IdtpEyhlvIZosUlwU/2zyj5dIex7xVToMKza4K4wgp2UhTZ11Skqdv+6
+X-CM-Analysis: v=2.4 cv=Ceda56rl c=1 sm=1 tr=0 ts=69e0cace a=mQh4lXv8Ki03N4RHjGLFDw==:617 a=xqWC_Br6kY4A:10 a=upfotvCWAAAA:8 a=x6324uh4kdY2UnL4QPAA:9 a=4qE0YqfkZC6mYwTr:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10 a=apvA3Ydrovr4La5eIF1A:22
+X-AuthUser: vendas2@bh3distribuidora.com.br

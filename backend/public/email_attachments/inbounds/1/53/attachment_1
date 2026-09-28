@@ -1,0 +1,96 @@
+BEGIN:VCALENDAR
+METHOD:REQUEST
+PRODID:Microsoft Exchange Server 2010
+VERSION:2.0
+BEGIN:VTIMEZONE
+TZID:E. South America Standard Time
+BEGIN:STANDARD
+DTSTART:16010101T000000
+TZOFFSETFROM:-0300
+TZOFFSETTO:-0300
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:16010101T000000
+TZOFFSETFROM:-0300
+TZOFFSETTO:-0300
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+ORGANIZER;CN=Gestão de Fornecedores;SENT-BY="mailto:leonardo.maciel@axia.co
+ m.br":mailto:noreply-gestaodefornecedores@axia.com.br
+ATTACH:CID:image001.gif@01DD1438.2E334920
+DESCRIPTION;LANGUAGE=pt-BR:\n\n\n[Eletrobras agora é AXIA Energia]\n\nLeon
+ ardo Maciel\n\nProcessos e Sistemas\n\nleonardo.maciel@axia.com.br<mailto:
+ leonardo.maciel@axia.com.br>\n\nwww.axia.com.br\n\nEletrobras agora é AXI
+ A Energia.\n\n-----Compromisso original-----\nDe: Gestão de Fornecedores 
+ <noreply-gestaodefornecedores@axia.com.br>\nEnviada em: terça-feira\, 14 
+ de julho de 2026 09:47\nPara: Gestão de Fornecedores\nCc: Leonardo Marque
+ s Maciel\nAssunto: Treinamento SAP Fieldglass para Fornecedores\nQuando: q
+ uinta-feira\, 16 de julho de 2026 10:00-12:00 (UTC-03:00) Brasília.\nOnde
+ : Reuniões do Microsoft Teams\n\n\n______________________________________
+ __________________________________________\nReunião do Microsoft Teams\nI
+ ngressar: https://teams.microsoft.com/meet/247551873244073?p=JfwwOroNSNcye
+ JJzSh\nID da Reunião: 247 551 873 244 073\nSenha: An6F4VE6\n_____________
+ ___________________\nPrecisa de ajuda?<https://aka.ms/JoinTeamsMeeting?omk
+ t=pt-BR> | Referência do sistema<https://teams.microsoft.com/l/meetup-joi
+ n/19%3ameeting_MGQ3Nzc5ZTEtOTg0NS00NTY0LThhYmYtNzJlZWJhMzY0NWQ2%40thread.v
+ 2/0?context=%7b%22Tid%22%3a%228a0ffb54-9716-4a93-9158-9e3a7206f18e%22%2c%2
+ 2Oid%22%3a%22f6b6d286-9cf2-4685-ab80-23ecb919a90b%22%7d>\nIngressar em um 
+ dispositivo de videoconferência\nChave do locatário: eletrobras@m.webex.
+ com<mailto:eletrobras@m.webex.com>\nID do Video: 115 724 516 2\nMais infor
+ mações<https://www.webex.com/msteams?confid=1157245162&tenantkey=eletrob
+ ras&domain=m.webex.com>\nPara organizadores: Opções de reunião<https://
+ teams.microsoft.com/meetingOptions/?organizerId=f6b6d286-9cf2-4685-ab80-23
+ ecb919a90b&tenantId=8a0ffb54-9716-4a93-9158-9e3a7206f18e&threadId=19_meeti
+ ng_MGQ3Nzc5ZTEtOTg0NS00NTY0LThhYmYtNzJlZWJhMzY0NWQ2@thread.v2&messageId=0&
+ language=pt-BR>\n_________________________________________________________
+ _______________________\n
+UID:040000008200E00074C5B7101A82E00800000000CF8D0EDE8E13DD01000000000000000
+ 010000000F53A0A495457D54FB15B669111E11989
+SUMMARY;LANGUAGE=pt-BR:ENC: Treinamento SAP Fieldglass para Fornecedores
+DTSTART;TZID=E. South America Standard Time:20260716T100000
+DTEND;TZID=E. South America Standard Time:20260716T120000
+CLASS:PUBLIC
+PRIORITY:5
+DTSTAMP:20260714T124705Z
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+SEQUENCE:1
+LOCATION;LANGUAGE=pt-BR:Reuniões do Microsoft Teams
+X-MICROSOFT-CDO-APPT-SEQUENCE:1
+X-MICROSOFT-CDO-OWNERAPPTID:2124903910
+X-MICROSOFT-CDO-BUSYSTATUS:TENTATIVE
+X-MICROSOFT-CDO-INTENDEDSTATUS:BUSY
+X-MICROSOFT-CDO-ALLDAYEVENT:FALSE
+X-MICROSOFT-CDO-IMPORTANCE:1
+X-MICROSOFT-CDO-INSTTYPE:0
+X-MICROSOFT-ONLINEMEETINGINFORMATION:{"OnlineMeetingChannelId":null\,"Onlin
+ eMeetingProvider":3}
+X-MICROSOFT-SKYPETEAMSMEETINGURL:https://teams.microsoft.com/l/meetup-join/
+ 19%3ameeting_MGQ3Nzc5ZTEtOTg0NS00NTY0LThhYmYtNzJlZWJhMzY0NWQ2%40thread.v2/
+ 0?context=%7b%22Tid%22%3a%228a0ffb54-9716-4a93-9158-9e3a7206f18e%22%2c%22O
+ id%22%3a%22f6b6d286-9cf2-4685-ab80-23ecb919a90b%22%7d
+X-MICROSOFT-SCHEDULINGSERVICEUPDATEURL:https://api.scheduler.teams.microsof
+ t.com/teams/8a0ffb54-9716-4a93-9158-9e3a7206f18e/f6b6d286-9cf2-4685-ab80-2
+ 3ecb919a90b/19_meeting_MGQ3Nzc5ZTEtOTg0NS00NTY0LThhYmYtNzJlZWJhMzY0NWQ2@th
+ read.v2/0
+X-MICROSOFT-SKYPETEAMSPROPERTIES:{"cid":"19:meeting_MGQ3Nzc5ZTEtOTg0NS00NTY
+ 0LThhYmYtNzJlZWJhMzY0NWQ2@thread.v2"\,"rid":0\,"mid":0\,"uid":null\,"priva
+ te":true\,"type":0}
+X-MICROSOFT-ONLINEMEETINGCONFLINK:
+X-MICROSOFT-CONFERENCETELURI:
+X-MICROSOFT-DONOTFORWARDMEETING:FALSE
+X-MICROSOFT-DISALLOW-COUNTER:FALSE
+X-MICROSOFT-REQUESTEDATTENDANCEMODE:DEFAULT
+X-MICROSOFT-ISRESPONSEREQUESTED:TRUE
+X-MICROSOFT-LOCATIONS:[{"DisplayName":"Reuniões do Microsoft Teams"\,"Loca
+ tionAnnotation":""\,"LocationUri":""\,"LocationStreet":""\,"LocationCity":
+ ""\,"LocationState":""\,"LocationCountry":""\,"LocationPostalCode":""\,"Lo
+ cationFullAddress":""}]
+BEGIN:VALARM
+DESCRIPTION:REMINDER
+TRIGGER;RELATED=START:-PT15M
+ACTION:DISPLAY
+END:VALARM
+END:VEVENT
+END:VCALENDAR

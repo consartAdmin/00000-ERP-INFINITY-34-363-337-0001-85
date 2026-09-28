@@ -1,0 +1,16 @@
+[
+  {
+    "name": "manter-5-mais-recentes",
+    "action": { "type": "Keep" },
+    "mostRecentVersions": {
+      "keepCount": 5
+    }
+  },
+  {
+    "name": "apagar-imagens-antigas",
+    "action": { "type": "Delete" },
+    "condition": {
+      "olderThan": "7d"
+    }
+  }
+]

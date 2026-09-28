@@ -1,0 +1,249 @@
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║ chartOfAccounts.html — Plano de Contas | CONSART ERP            ║
+     ║ ✅ Layout profissional                                           ║
+     ║ ✅ Busca + filtros                                               ║
+     ║ ✅ Grid estilo Excel                                             ║
+     ║ ✅ Scroll interno correto                                        ║
+     ║ ✅ Sticky header                                                 ║
+     ║ ✅ Paginação visível                                             ║
+     ║ ✅ Paginação completa no rodapé                                  ║
+     ║ ✅ Pronto para chartOfAccounts.js                                ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png" />
+  <title>PLANO DE CONTAS | CONSART ERP</title>
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/chartOfAccounts/chartOfAccounts.css?v=2" />
+  <link rel="stylesheet" href="/public/chartOfAccounts/chartOfAccountsModal.css?v=2" />
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <!-- HEADER -->
+    <div class="header header-row">
+      <div>
+        <h1>Plano de Contas</h1>
+        <p>Gerencie a estrutura financeira e hierarquia das contas</p>
+      </div>
+
+      <div class="btn-inline btn-position-right">
+        <button id="btnReload" class="btn btn-toolbar btn-sm" type="button">
+          <span aria-hidden="true">↻</span>
+          <span>Recarregar</span>
+        </button>
+
+        <button id="btnNewAccount" class="btn btn-toolbar btn-sm" type="button">
+          <span aria-hidden="true">＋</span>
+          <span>Nova Conta</span>
+        </button>
+      </div>
+    </div>
+
+
+    <section class="table-layout-integrated table-max-height-700">
+      <div class="table-layout-integrated__filter">
+
+        <!-- FILTERS -->
+        <div class="fields-inline fields-inline-wrap">
+          <div class="fields fields-w-20 fields-h-6">
+            <input type="text" id="searchInput" placeholder="Buscar por código ou descrição..." autocomplete="off"
+              aria-label="Buscar conta" />
+          </div>
+
+          <div class="fields fields-w-10 fields-h-6">
+            <select id="filterType" aria-label="Filtrar por tipo">
+              <option value="">Todos os Tipos</option>
+              <option value="ASSET">Ativo</option>
+              <option value="LIABILITY">Passivo</option>
+              <option value="EQUITY">Patrimônio Líquido</option>
+              <option value="REVENUE">Receita</option>
+              <option value="EXPENSE">Despesa</option>
+            </select>
+          </div>
+
+          <div class="fields fields-w-10 fields-h-6">
+            <select id="filterNature" aria-label="Filtrar por natureza">
+              <option value="">Todas as Naturezas</option>
+              <option value="DEBIT">Débito</option>
+              <option value="CREDIT">Crédito</option>
+            </select>
+          </div>
+
+          <div class="fields fields-w-10 fields-h-6">
+            <select id="filterPosting" aria-label="Filtrar por lançamento">
+              <option value="">Todos</option>
+              <option value="true">Aceita Lançamento</option>
+              <option value="false">Conta Grupo</option>
+            </select>
+          </div>
+
+          <div class="fields fields-w-10 fields-h-6">
+            <select id="filterActive" aria-label="Filtrar por status">
+              <option value="">Todos os Status</option>
+              <option value="true">Ativo</option>
+              <option value="false">Inativo</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRID -->
+      <div id="gridScrollArea" class="table-scroll table-scroll--flex table-row-h-20">
+        <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head" aria-label="Plano de contas">
+
+          <thead>
+            <tr>
+              <th class="coa-col-code">Código</th>
+              <th class="coa-col-description">Descrição</th>
+              <th class="coa-col-type">Tipo</th>
+              <th class="coa-col-nature">Natureza</th>
+              <th class="coa-col-level">Nível</th>
+              <th class="coa-col-parent">Conta Pai</th>
+              <th class="coa-col-posting">Lançamento</th>
+              <th class="coa-col-status">Status</th>
+              <th class="coa-col-actions">Ações</th>
+            </tr>
+          </thead>
+
+          <tbody id="accountsTableBody">
+            <tr class="row-loading">
+              <td colspan="9">Carregando contas...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- FOOTER / PAGINAÇÃO -->
+      <footer class="table-footer">
+
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="coaTableInfo">0 Registros</span>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="btnPreviousPage" class="btn btn-clean btn-sm">Anterior</button>
+          <span id="coaPageInfo">Página 1 de 1</span>
+          <button type="button" id="btnNextPage" class="btn btn-new btn-sm">Próxima</button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="coaRowsPerPage">Mostrar</label>
+          <select id="coaRowsPerPage" class="table-footer__page-size-select" name="rowsPerPage">
+            <option value="10">10 linhas</option>
+            <option value="20" selected>20 linhas</option>
+            <option value="30">30 linhas</option>
+            <option value="50">50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+
+      </footer>
+    </section>
+
+  </main>
+
+  <!-- ==================================================================
+       MODAL — NOVA CONTA PAI (conta grupo)
+  =================================================================== -->
+  <div id="coaParentModal" class="modal" aria-hidden="true">
+
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true"
+        aria-labelledby="coaParentModalTitle">
+
+        <!-- HEADER -->
+        <header class="modal__header modal-header-color-3">
+          <h3 id="coaParentModalTitle" class="modal__title">Nova Conta Pai</h3>
+
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">
+            ×
+          </button>
+        </header>
+
+        <!-- BODY -->
+        <div class="modal__body">
+          <form id="coaParentForm" novalidate>
+
+            <div class="modal-form-grid modal-form-grid--3">
+
+              <div class="fields fields-h-6">
+                <label for="coaParentCode">Código</label>
+                <input id="coaParentCode" type="text" placeholder="Ex.: 3.2" autocomplete="off">
+              </div>
+
+              <div class="fields fields-h-6 modal-field--span-2">
+                <label for="coaParentDescription">Descrição</label>
+                <input id="coaParentDescription" type="text" placeholder="Ex.: Despesas com Vendas" autocomplete="off">
+              </div>
+
+              <div class="fields fields-h-6">
+                <label for="coaParentType">Tipo</label>
+                <select id="coaParentType">
+                  <option value="">Selecione...</option>
+                  <option value="ASSET">Ativo</option>
+                  <option value="LIABILITY">Passivo</option>
+                  <option value="EQUITY">Patrimônio Líquido</option>
+                  <option value="REVENUE">Receita</option>
+                  <option value="EXPENSE">Despesa</option>
+                </select>
+              </div>
+
+              <div class="fields fields-h-6">
+                <label for="coaParentNature">Natureza</label>
+                <select id="coaParentNature">
+                  <option value="">Selecione...</option>
+                  <option value="DEBIT">Débito</option>
+                  <option value="CREDIT">Crédito</option>
+                </select>
+              </div>
+
+              <div class="fields fields-h-6">
+                <label for="coaParentLevel">Nível</label>
+                <input id="coaParentLevel" type="number" min="1" step="1" placeholder="Automático">
+              </div>
+
+              <div class="fields fields-h-6 modal-field--span-full">
+                <label for="coaParentParent">Conta Superior</label>
+                <select id="coaParentParent">
+                  <option value="">Sem conta superior (raiz)</option>
+                </select>
+              </div>
+
+            </div>
+
+            <div id="coaParentError" class="coa-modal__error hidden"></div>
+
+          </form>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="modal__footer modal-footer-color-3">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+          <button id="coaParentSaveBtn" class="btn btn-save btn-sm" type="submit" form="coaParentForm">Salvar</button>
+        </footer>
+
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/chartOfAccounts/chartOfAccountsModal.js?v=4"></script>
+  <script type="module" src="/public/chartOfAccounts/chartOfAccounts.js?v=3"></script>
+</body>
+
+</html>

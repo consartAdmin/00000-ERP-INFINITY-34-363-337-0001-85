@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="icon" type="image/png" href="/public/imagens/brasaoConsartInfinity.png">
+    <title>Comissões por NF-e | CONSART ERP</title>
+
+    <link rel="stylesheet" href="/public/modalsSearch/sellersModalSearch.css" />
+    <link rel="stylesheet" href="/public/includes/css/style.css" />
+    <link rel="stylesheet" href="/public/salesCommissionsFromInvoices/salesCommissionsFromInvoices.css" />
+</head>
+
+<body>
+    <div id="appMenu"></div>
+
+    <main class="sci-page">
+        <section class="sci-header">
+            <div>
+                <h1>Comissões por NF-e</h1>
+                <p>Comissões reais geradas a partir das notas fiscais emitidas.</p>
+            </div>
+
+            <div class="sci-actions">
+                <button id="btnGenerate" class="btn primary">Gerar Comissões</button>
+                <button id="btnRecalc" class="btn warning">Recalcular</button>
+                <button id="btnRefresh" class="btn neutral">Atualizar</button>
+                <button id="btnPdf" class="btn pdf">Gerar PDF</button>
+            </div>
+        </section>
+
+        <section class="sci-filters">
+            <label>
+                Data inicial
+                <input type="date" id="dateStart" />
+            </label>
+
+            <label>
+                Data final
+                <input type="date" id="dateEnd" />
+            </label>
+
+            <label>
+                Vendedor
+                <div class="seller-picker">
+                    <input type="text" id="salesperson" placeholder="Selecione um vendedor" readonly />
+                    <input type="hidden" id="sellerId" />
+                    <button id="btnSellerSearch" class="btn neutral" type="button">🔎</button>
+                </div>
+            </label>
+
+            <label>
+                Tabela de preço
+                <input type="number" id="priceId" placeholder="price_id" />
+            </label>
+
+            <button id="btnSearch" class="btn primary">Pesquisar</button>
+            <button id="btnClear" class="btn neutral">Limpar</button>
+        </section>
+
+        <section class="sci-kpis">
+            <div class="kpi-card">
+                <span>Total registros</span>
+                <strong id="kpiTotal">0</strong>
+            </div>
+
+            <div class="kpi-card">
+                <span>Total faturado</span>
+                <strong id="kpiRevenue">R$ 0,00</strong>
+            </div>
+
+            <div class="kpi-card">
+                <span>Total comissão</span>
+                <strong id="kpiCommission">R$ 0,00</strong>
+            </div>
+
+            <div class="kpi-card">
+                <span>Sem regra</span>
+                <strong id="kpiMissingRule">0</strong>
+            </div>
+        </section>
+
+        <section class="sci-table-box">
+            <div class="table-top">
+                <h2>Itens de comissão</h2>
+                <span id="statusText">Carregando...</span>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>NF-e</th>
+                            <th>Pedido</th>
+                            <th>Cliente</th>
+                            <th>Vendedor</th>
+                            <th>SKU</th>
+                            <th>Produto</th>
+                            <th>Tabela</th>
+                            <th>Qtd</th>
+                            <th>Total Item</th>
+                            <th>Tipo</th>
+                            <th>%</th>
+                            <th>Fixo</th>
+                            <th>Comissão</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                <button id="btnPrev" class="btn neutral">Anterior</button>
+                <span id="pageInfo">Página 1</span>
+                <button id="btnNext" class="btn neutral">Próxima</button>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/public/includes/js/core.js"></script>
+    <script type="module" src="/public/salesCommissionsFromInvoices/salesCommissionsFromInvoices.js"></script>
+</body>
+
+</html>

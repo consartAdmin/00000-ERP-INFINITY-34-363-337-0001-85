@@ -1,0 +1,64 @@
+**╔════════════════════════════════════════════════════════════════════════════╗**
+**║  catalog_schema.products.js — Catálogo: Products (CONSART ERP | ESM)       ║**
+**║ Estrutura base e metadados da tabela `products`                            ║**
+**║ Totalmente compatível com a DDL atual (sem FKs explícitas).                ║**
+**╚════════════════════════════════════════════════════════════════════════════╝**
+
+export const PRODUCTS_SCHEMA = Object.freeze({
+  table: 'products',
+  alias: 'p',
+
+  columns: {
+  **🧱 Identificação principal**
+    product_id:           { type: 'SERIAL', pk: true, comment: 'Identificador único do produto' },
+    product_code:         { type: 'VARCHAR(50)', unique: true, notNull: true, comment: 'Código interno (SKU) do produto' },
+    description:          { type: 'TEXT', notNull: true, comment: 'Descrição completa do produto' },
+    barcode:              { type: 'VARCHAR(100)', comment: 'Código de barras EAN/UPC' },
+    manufacturer_ref:     { type: 'VARCHAR(100)', comment: 'Referência do fabricante' },
+
+  **💲 Preço e custos**
+    cost_price:           { type: 'NUMERIC(14,2)', default: 0, comment: 'Preço de custo do produto' },
+    product_price_id:     { type: 'INTEGER', comment: 'Referência à tabela de preços (sem FK)' },
+
+  **🧩 Relacionamentos (sem FK)**
+    product_group_id:        { type: 'INTEGER', comment: 'Grupo do produto (sem FK)' },
+    product_subgroup_id:     { type: 'INTEGER', comment: 'Subgrupo do produto (sem FK)' },
+    product_grade_id:        { type: 'INTEGER', comment: 'Grade (variação/tamanho/cor) (sem FK)' },
+    product_unit_id:         { type: 'INTEGER', comment: 'Unidade de medida base (sem FK)' },
+    product_dimension_id:    { type: 'INTEGER', comment: 'Dimensões físicas (sem FK)' },
+    product_stock_id:        { type: 'INTEGER', comment: 'Local de estoque principal (sem FK)' },
+    products_fiscal_id:      { type: 'INTEGER', comment: 'Perfil fiscal vinculado (sem FK)' },
+
+  **📍 Outras referências**
+    product_location_id:     { type: 'INTEGER', comment: 'Localização física (sem FK)' },
+    supplier_id:             { type: 'INTEGER', comment: 'Fornecedor principal (sem FK)' },
+    manufacturer_id:         { type: 'INTEGER', comment: 'Fabricante do produto (sem FK)' },
+
+    // 🖼️ Mídia
+    product_imagem_id:       { type: 'INTEGER', comment: 'Imagem principal vinculada (sem FK)' },
+
+    
+  **🕓Auditoria/status**
+    created_at:              { type: 'TIMESTAMP', default: 'NOW()', comment: 'Data de criação do registro' },
+    updated_at:              { type: 'TIMESTAMP', default: 'NOW()', comment: 'Última atualização do registro' },
+    is_active:               { type: 'BOOLEAN', default: true, comment: 'Status ativo/inativo do produto' }
+  },
+
+  **🔗 Estrutura simbólica para JOINs automáticos futuros**
+  relations: {
+    price:        { table: 'product_prices',        key: 'product_price_id' },
+    group:        { table: 'product_groups',        key: 'product_group_id' },
+    subgroup:     { table: 'product_subgroups',     key: 'product_subgroup_id' },
+    grade:        { table: 'grades',                key: 'product_grade_id' },
+    unit:         { table: 'product_units',         key: 'product_unit_id' },
+    dimension:    { table: 'product_dimensions',    key: 'product_dimension_id' },
+    stock:        { table: 'stocks',                key: 'product_stock_id' },
+    fiscal:       { table: 'products_fiscal',       key: 'products_fiscal_id' },
+    location:     { table: 'locations',             key: 'product_location_id' },
+    supplier:     { table: 'suppliers',             key: 'supplier_id' },
+    manufacturer: { table: 'manufacturers',         key: 'manufacturer_id' },
+    imagem:       { table: 'productsImagens',       key: 'product_imagem_id' }
+  }
+});
+
+export default PRODUCTS_SCHEMA;

@@ -1,0 +1,26 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: from localhost (117.138.230.35.bc.googleusercontent.com [IPv6:2804:14c:5b75:9e22:ddf5:9bf2:74fc:c3e9])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4fTvxS4N4fz1xnD
+	for <consarterp@consart.com.br>; Mon,  9 Mar 2026 11:32:12 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1773055933;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=4L6hA+NW4L0XEKg5T5OZmEZjGsxKYCWNBdhTszx/a0I=;
+	b=dUkcVQvHoSd3VxXQaevvTFl+G+TdvHuo8Nu7TwvHmBd4u6d1BfG3Xm3EzxXILIy6UeNcDD
+	xemOqK0VFmrC/XE7IAVNzUIlCabu7AqLpXX7TlaJE5Vx8pcuQnVUVj/dNJlWrGXWgiSc0p
+	O9Z2alcb60pPb5IbXROVbT8KiTL0Jt1q54guTsZaPeOh0PAlu9hPuw54YZz9VFzy5CQLb8
+	bcMPOw3VeitZxi00d8jK6+aegon5mcfsFuxJAClHgky5L2a1ocy7BwFJntiouUXRNmswvK
+	pnVp12YW4Mw032U7k+LnRBnWTqgiLaD+zjdgo4SGb7a37JOoFr0VeUqhxvsKqw==
+Content-Type: multipart/related;
+ boundary=enmime-75397c35-cc5b-411a-a503-950cc34cda65
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1773055931611744616.1773055931@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: teste
+To: <consarterp@consart.com.br>
+Date: Mon,  9 Mar 2026 11:32:12 +0000 (UTC)
+X-CM-Envelope: MS4xfF24prP1MAeU32l8gkj+q9dvOqkTy/fSeu+1vor9I4jqJwAs0BlcvcheSoeNMOHxnqfM9gK4Itjqoqe/K5YAt6AmhiakLiAWHRUbgGU+5k3ZGjCWrbFe Wzo7jGj6+e+aS2eT7Bsg06M3rxmi+i6kzHluUO1qk+hl9hyinr3QA8yvOnS086+j2Bztm4iT4FcdDPz7Vtm1c2d4um419rxzPQlFU9OdmdENeVeHPNKwZcM1 jdR7JiWc2Jx7LV3h4uG0zMWLTH3CXXjwY7uzDaY90jE=
+X-CM-Analysis: v=2.4 cv=GMJaEfNK c=1 sm=1 tr=0 ts=69aeafbc a=5ZBaOeH6G/crhX3iVGBwxA==:617 a=xqWC_Br6kY4A:10 a=OLW7vWcCd-y0pd5tikkA:9 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10
+X-AuthUser: vendas2@bh3distribuidora.com.br

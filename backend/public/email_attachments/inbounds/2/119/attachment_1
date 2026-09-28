@@ -1,0 +1,100 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: by storagemail-cli-253.kinghost.net (Postfix, from userid 1000)
+	id A56F6FE0CB; Tue,  7 Apr 2026 11:41:13 -0300 (-03)
+Received: from mx-worker-cli-10.kinghost.net (unknown [10.19.16.49])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by storagemail-cli-253.kinghost.net (Postfix) with ESMTPS id 95C3FFE0C9
+	for <suprimentos@ultra.eng.br>; Tue,  7 Apr 2026 11:41:13 -0300 (-03)
+X-Policyd: dunno
+Received: from serval.cherry.relay.mailchannels.net (serval.cherry.relay.mailchannels.net [23.83.223.163])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-worker-cli-10.kinghost.net (Postfix) with ESMTPS id 853172FD67E40
+	for <suprimentos@ultra.eng.br>; Tue,  7 Apr 2026 11:41:00 -0300 (-03)
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 5522B764AF6
+	for <suprimentos@ultra.eng.br>; Tue, 07 Apr 2026 14:40:59 +0000 (UTC)
+Received: from fr-int-smtpout19.hostinger.io (100-123-14-240.trex-nlb.outbound.svc.cluster.local [100.123.14.240])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 257D8764791
+	for <suprimentos@ultra.eng.br>; Tue, 07 Apr 2026 14:40:57 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1775572858;
+	b=QkXEc2EI7I1XHO9nVe9stBZWDthSXHwcKhF1s02kPmmEZ4Yimdw+aTiHeeukesXVj6weJ4
+	xHK9M3kbzuOTfJlqqA1lfJnXmD5DgsISLnF60aR/2ui0iemx8VJnRX6jfFMUBbfQz4qRJy
+	jJphpAMzTDrXSrKJpGfEsM8yJm8rLyNoav1PNJvbi9Kki1HlIIgTEuFRG/f6kx0B2Tz2x2
+	rvOzIqCQ27h6tlMZY5NkD4Y3wgirFIRBo1EX/e8RicpILCDFw8BupryfYgLPFCcnF5S51e
+	t7fM3TPoN6LJnSyFWYV+cscqUJEKsO0+A+eE9lS+K6cMSipJRbrpyhUpIpJw1w==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1775572858;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 dkim-signature; bh=EW/eWbAap1LSvWd02Y2Ui1aknxTUujyHo+dsK069ExM=;
+	b=RnQKYFqv3bhRN8SZP9FkT57r/6vAeXcu8gqgUOpk5orJ1q4FEt8P7Q8pFw0PfpULG5d/z9
+	DZ5bihel1YwM1peFxMZrOaYuHUMtbFQZ3MEmZBhxNjhns5VN0riKZ19GJQYKhv3g4nEQvp
+	dGSKv+vNsROwWCxWdz6kKGzA1Un9Uqdtje1Q8FjOJhpo40Oa3FZIZiYS5qbdDILkwTSvkt
+	r4bu7lrnyiIHwrk7M0217j8DkQzM6WwdL3FhCf6oYvrGe9ZMCNIT7p6VlPUOqMOtIopoub
+	WErIC4Bcsh8Q3Mgdj9g3PRT5zBK+HEv6bzFgiWxAJjmKSUd1GXoMn0N3H2AIJQ==
+ARC-Authentication-Results: i=1;
+	rspamd-7d86dcc447-rk5c2;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas2@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Neutral
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Spot-Absorbed: 58bfcea77801e1aa_1775572859151_663613731
+X-MC-Loop-Signature: 1775572859151:2763446496
+X-MC-Ingress-Time: 1775572859151
+Received: from fr-int-smtpout19.hostinger.io (fr-int-smtpout19.hostinger.io
+ [148.222.54.35])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.123.14.240 (trex/7.1.5);
+	Tue, 07 Apr 2026 14:40:59 +0000
+Received: from localhost (17.131.242.35.bc.googleusercontent.com [IPv6:2804:14c:5b75:9e22:8ed:bf5c:9f16:ab3e])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4fqplq5SWBz1xn3
+	for <suprimentos@ultra.eng.br>; Tue,  7 Apr 2026 14:40:55 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1775572856;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=EW/eWbAap1LSvWd02Y2Ui1aknxTUujyHo+dsK069ExM=;
+	b=JiiS5GAGjIGmhIs4InpYexs1/8FvsMhwgDT5CXrKvijV4Ks/HxyWIhFG/8KfJdG0pBRSTc
+	FguF9AoQcRG7/PA9sZ9JZIbN1HsjUgRKPNKVdLp68zECLGWnBxuPOsChmQgyxzHCwA71gh
+	8MVzR9Hb9GDg41fFMtrgpvJGKdgteSLBuK7ksGYU0PA9GbZ0FJa3bsU4IOE1akx4FSOvG1
+	EozhhV15TQOw+6sfCdrYchdzKrTunbqE+XLVZ94zRPpU0xlyw6C1td8/8eyJyoBgW9wO/Z
+	7CLD6P3PqRs57BPVejyZKaZ1XlRHHCmqJG+cQt2k8m7eKpN++P06aRiRw8AqkA==
+Content-Type: multipart/related;
+ boundary=enmime-832d9f71-974e-4336-9d63-28927800487c
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1775572855198148793.1775572855@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <suprimentos@ultra.eng.br>
+Date: Tue,  7 Apr 2026 14:40:55 +0000 (UTC)
+X-CM-Analysis: v=2.4 cv=UN2PHzfy c=1 sm=1 tr=0 ts=69d51777 a=vQoS6RXzr14jXeBwKzB+jQ==:617 a=xqWC_Br6kY4A:10 a=upfotvCWAAAA:8 a=p8FIkToNzAR1UjRJC94A:9 a=qZ6xlu2fqyG3s6m5:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10 a=apvA3Ydrovr4La5eIF1A:22
+X-CM-Envelope: MS4xfNyDVNefebMebSLbQMLQHnJQL0ypYFqIgVl5Pc6jI5vAWAGXlsA75y5KABMwik9mgdx5R7MBRTOcddo8Z8+5LtAR6h7aYVEAFy99jUXUP8s3CN8Nbe30 X2JjiyMydp82JuRtHIqJhVWzSY4PbnAyrxr6FhXB4vDGVIUPkSPaDKkHfk7NKF0Zynm8neAM4LUm+LvebjG4zqyqMfSNjeUwRFzHFz3ciYSDFk81M0T6xljb 4Bc507aBvz9yU1g5OBN4vWh0mBDwKbl1yWd2nkkhbjE=
+X-AuthUser: vendas2@bh3distribuidora.com.br
+X-Rspamd-Action: no action
+X-Spaminator-Spectre: default: False [-3.20 / 15.00];
+	NEURAL_HAM(-2.00)[-1.000];
+	BAYES_HAM(-1.00)[99.99%];
+	R_DKIM_ALLOW(-0.20)[bh3distribuidora.com.br:s=hostingermail-a];
+	FROM_EQ_ENVFROM(0.00)[];
+	FROM_NO_DN(0.00)[];
+	DKIM_TRACE(0.00)[bh3distribuidora.com.br:+];
+	ASN(0.00)[asn:63213, ipnet:23.83.223.0/24, country:CA];
+	R_SPF_DNSFAIL(0.00)[~any];
+	RWL_MAILSPIKE_POSSIBLE(0.00)[23.83.223.163:from];
+	RCVD_IN_DNSWL_FAIL(0.00)[23.83.223.163:query timed out,148.222.54.35:query timed out];
+	DNSWL_BLOCKED(0.00)[2804:14c:5b75:9e22:8ed:bf5c:9f16:ab3e:received];
+	SPFBL_WHITELIST_SERVER_FAIL(0.00)[serval.cherry.relay.mailchannels.net:query timed out,23.83.223.163:query timed out]
+X-Queue-Id: 853172FD67E40
+X-Scan-Server: mx-worker-cli-10.kinghost.net

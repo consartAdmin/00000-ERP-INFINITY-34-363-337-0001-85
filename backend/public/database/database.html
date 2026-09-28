@@ -1,0 +1,120 @@
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║ FILE: backend/public/database/database.html                        ║
+     ║ MODULE: Database Viewer / Editor                                   ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>CONSART ERP | Banco de Dados</title>
+
+    <link rel="stylesheet" href="/public/includes/css/style.css" />
+
+    <link rel="stylesheet" href="./database.css" />
+</head>
+
+<body>
+    <main class="db-page">
+        <aside class="db-sidebar">
+            <div class="brand">
+                <h1>Database</h1>
+                <span>CONSART ERP</span>
+            </div>
+
+            <div class="sidebar-search">
+                <input id="tableSearch" type="text" placeholder="Buscar tabela..." />
+            </div>
+
+            <div id="tablesList" class="tables-list"></div>
+        </aside>
+
+        <section class="db-content">
+            <header class="db-header">
+                <div>
+                    <h2 id="currentTableTitle">Selecione uma tabela</h2>
+                    <p id="currentTableSubtitle">Visualize colunas, dados e registros do banco.</p>
+                </div>
+
+                <div class="header-actions">
+                    <button id="btnReload" class="btn secondary">Atualizar</button>
+                    <button id="btnNewRow" class="btn primary" disabled>Novo Registro</button>
+                </div>
+            </header>
+
+            <section class="toolbar">
+                <input id="rowSearch" type="text" placeholder="Pesquisar nos registros..." />
+
+                <select id="limitSelect">
+                    <option value="25">25 linhas</option>
+                    <option value="50" selected>50 linhas</option>
+                    <option value="100">100 linhas</option>
+                    <option value="200">200 linhas</option>
+                </select>
+            </section>
+
+            <section class="meta-grid">
+                <div class="meta-card">
+                    <span>Total</span>
+                    <strong id="totalRows">0</strong>
+                </div>
+
+                <div class="meta-card">
+                    <span>Página</span>
+                    <strong id="pageInfo">1</strong>
+                </div>
+
+                <div class="meta-card">
+                    <span>Primary Key</span>
+                    <strong id="primaryKeyInfo">-</strong>
+                </div>
+            </section>
+
+            <section class="table-wrapper">
+                <table id="dataTable">
+                    <thead id="tableHead"></thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td class="empty">Selecione uma tabela para começar.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <footer class="pagination">
+                <button id="btnPrev" class="btn secondary">Anterior</button>
+                <span id="paginationLabel">Página 1</span>
+                <button id="btnNext" class="btn secondary">Próxima</button>
+            </footer>
+        </section>
+    </main>
+
+    <div id="rowModal" class="db-modal hidden" aria-hidden="true">
+        <div class="db-modal-backdrop" id="modalBackdrop"></div>
+
+        <div class="db-modal-box">
+            <header class="db-modal-header">
+                <h3 id="modalTitle">Registro</h3>
+                <button id="btnCloseModal" type="button" class="icon-btn">×</button>
+            </header>
+
+            <div id="modalFields" class="db-modal-fields"></div>
+
+            <footer class="db-modal-footer">
+                <button id="btnDeleteRow" type="button" class="btn danger hidden">Excluir</button>
+                <div class="modal-spacer"></div>
+                <button id="btnCancelModal" type="button" class="btn secondary">Cancelar</button>
+                <button id="btnSaveRow" type="button" class="btn primary">Salvar</button>
+            </footer>
+        </div>
+    </div>
+
+    <script type="module" src="/public/includes/js/core.js"></script>
+
+    <script type="module" src="./database.js"></script>
+</body>
+
+</html>

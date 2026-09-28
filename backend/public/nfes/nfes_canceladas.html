@@ -1,0 +1,132 @@
+<!-- /backend/public/nfes/nfes_canceladas.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+
+  <!-- 🟦 Favicons CONSART -->
+  <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <title>NF-e Canceladas | CONSART ERP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- 🎨 Design System CONSART -->
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/includes/css/topGradientBar.css?v=kb-esm-01" />
+
+  <!-- 🔧 CSS específico do módulo NF-e (mesmo do painel geral) -->
+  <link rel="stylesheet" href="/public/nfes/nfes.css" />
+</head>
+<body>
+
+  <!-- 🔹 Barra de título (topGradientBar) -->
+  <header class="top-gradient-bar">
+    <div class="top-gradient-bar__inner">
+      <div class="top-gradient-bar__titles">
+        <h1 class="top-gradient-bar__title">Gestão de Notas Fiscais</h1>
+        <p class="top-gradient-bar__subtitle">
+          Painel de NF-e Canceladas
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <main class="c-main">
+    <div class="consart-container">
+      <section class="section-card">
+        <header class="row between center" style="margin-bottom: var(--gap-sm);">
+          <h1>Notas Fiscais (NF-e) Canceladas</h1>
+          <div class="menu-botoes">
+            <button id="btnRecarregarNfesCanceladas" class="btn btn-flat" title="Recarregar lista">
+              ⟳ Recarregar
+            </button>
+          </div>
+        </header>
+
+        <!-- 🔎 Filtros (sem select de status, já forçado a CANCELADA) -->
+        <div class="row linha-filtros" role="region" aria-label="Filtros NF-e canceladas" style="margin-bottom: var(--gap-sm);">
+          <label for="qNfesCanceladas" class="row center" style="gap: var(--gap-xs);">
+            <span>Buscar</span>
+            <input
+              id="qNfesCanceladas"
+              type="text"
+              placeholder="por cliente, doc, nº pedido, chave, protocolo"
+              style="min-width: 260px;"
+            />
+          </label>
+
+          <div class="row center" style="gap: var(--gap-xs);">
+            <span>Status</span>
+            <span class="badge badge--canceled" style="cursor: default;">Canceladas</span>
+          </div>
+
+          <label for="limitNfesCanceladas" class="row center" style="gap: var(--gap-xs);">
+            <span>Mostrar</span>
+            <select id="limitNfesCanceladas">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+
+          <button id="btnBuscarNfesCanceladas" class="btn btn-primary btn-sm" title="Buscar NF-e canceladas">
+            🔍 Buscar
+          </button>
+        </div>
+
+        <!-- 📄 Tabela -->
+        <div class="table-wrapper">
+          <table id="tblNfesCanceladas" class="tbl tbl-nfes">
+            <thead>
+              <tr>
+                <th>Pedido</th>
+                <th>Emissão</th>
+                <th>Nº NF-e</th>
+                <th>Chave de Acesso</th>
+                <th>Cliente</th>
+                <th>CNPJ/CPF</th>
+                <th class="ta-right">Total (R$)</th>
+                <th>Status NF-e</th>
+                <th>Ambiente</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <div id="emptyNfesCanceladas" class="mt-2" style="display:none;color:#64748b;">
+            Nenhuma NF-e cancelada encontrada.
+          </div>
+        </div>
+
+        <!-- 📑 Paginação -->
+        <footer class="row between center" style="margin-top: var(--gap-sm);">
+          <div id="totalInfoNfesCanceladas">0 NF-e(s)</div>
+          <div class="row center" style="gap: var(--gap-xs);">
+            <button id="prevNfesCanceladas" class="btn btn-flat btn-sm" aria-label="Página anterior">◀</button>
+            <span id="pageInfoNfesCanceladas">Página 1 de 1</span>
+            <button id="nextNfesCanceladas" class="btn btn-flat btn-sm" aria-label="Próxima página">▶</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </main>
+
+  <!-- 🔹 Top gradient bar: apenas atualiza o texto se precisar -->
+  <script type="module">
+    import { initTopGradientBar } from '/public/includes/js/topGradientBar.js';
+
+    initTopGradientBar({
+      title: 'Gestão de Notas Fiscais',
+      subtitle: 'NF-e Canceladas',
+    });
+  </script>
+
+  <script>window.API_BASE = window.apiBase || window.location.origin;</script>
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/nfes/nfes_canceladas.js"></script>
+</body>
+</html>

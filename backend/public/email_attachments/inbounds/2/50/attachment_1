@@ -1,0 +1,68 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 302D61236D1
+	for <villaodontologiaavancada@yahoo.com>; Mon, 23 Mar 2026 17:34:43 +0000 (UTC)
+Received: from fr-int-smtpout20.hostinger.io (100-115-142-207.trex-nlb.outbound.svc.cluster.local [100.115.142.207])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 43AED123803
+	for <villaodontologiaavancada@yahoo.com>; Mon, 23 Mar 2026 17:34:41 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1774287282;
+	b=tsuUEN25CXzG6e2Howp+MaMsrOVC8tMJJ16y8Tq6RPaRDfNJ8qsG7LzmX+MkFPl3xTGV9q
+	vDShyadT/dhxs56fkVhYMgrq2xJvPFLzG4UkD/mvx8sz9n1fK0cY3xqBARGATLiqN8sqEf
+	2mcbHlTE8lQCSODA7cRaS7Gctc/Yw3ZbbTVeD9NbBZapzXiZfh7PExDNaeRhin0yvEyuHD
+	+x43oVrBxcs9aOtFCl8vnI8BeDMahER8KSzqblQZvHgth8J2hOJav4VbC8he6Eneb6/D4v
+	9I3B0fDRBMwcFXNexFufdGUkrBMmdWOQApPSCrUeFwEIPhXOMn5FVW9feXElGg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1774287282;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 dkim-signature; bh=NDHxSxFQd96RVEUoenVY1N0a1p6roY6p9V8m04rJKJo=;
+	b=s8Sj/7L0ruxMQjFRTXOBpZPDqRE3uyPk7alVKuxzUd2QMPbHfXFE2MtjaKn4PuQDMQwbS/
+	rifo0ZAnqzpNtA+vBmUOxBsoJq7XUb7cQlNo/MIHgVGSceAGoquz/787vlfw2ai3JC65md
+	kMk8TRgdidHgkQkTc1iGcvo/OEgtX2Dx86HnOn89Di3MKAHXR2VM8ttsmTWZRsb9UWQoUE
+	lWX2l6f0/9Ov/pdmf2p3HuorDFwqBEM+mxrWp21v2WoC5mvdktQGSxrqImbkixhUR2yQo3
+	7VjPvm7ikFi22Y5SwFvH+AeZoH45SH21YLpYvBHlA1fqnXV6AYuRk/CD+3Jq5A==
+ARC-Authentication-Results: i=1;
+	rspamd-7f98bb5847-5nwhb;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas2@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Neutral
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Robust-Oafish: 5826e2b25a614255_1774287282290_2346684296
+X-MC-Loop-Signature: 1774287282290:239711761
+X-MC-Ingress-Time: 1774287282289
+Received: from fr-int-smtpout20.hostinger.io (fr-int-smtpout20.hostinger.io
+ [148.222.54.36])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.115.142.207 (trex/7.1.5);
+	Mon, 23 Mar 2026 17:34:42 +0000
+Received: from localhost (122.132.242.35.bc.googleusercontent.com [IPv6:2804:14c:5b75:9e22:a0e9:74de:8fcf:b426])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4ffgKB71RDz1xtJ
+	for <villaodontologiaavancada@yahoo.com>; Mon, 23 Mar 2026 17:34:38 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1774287279;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=NDHxSxFQd96RVEUoenVY1N0a1p6roY6p9V8m04rJKJo=;
+	b=GSK0TPhsFlARYmGsf0mCKGGOZzYkC5rVS5TtLWIQnD6z+y8eHZ4RtYdd+CPlwiL+RXWCtx
+	NqgbpMI2d+g0tv750FkDpMdvRn9cy8hzTWBJciwHsOTlJPoEHlVQtnjq9kk53YUVfE6jkF
+	v+2hR9rReYpHtsnqP10LY7NSpiutOpSo7TKxrLIV2MMh2UIKb60cHaxyjHDM6+Kou2TtJR
+	T2knYrGAmcKYlMrPB7M+RSxgOFDKrl0zAcP4tTUa4h+gi/SpfINKzxPNqJ7+g/gfwOY8KM
+	xTh8Xw7NSYmFlHlIxcIM2wG4uxKRlD8CinB1AxChUku6juLI6F+BrYa5rWFCFw==
+Content-Type: multipart/related;
+ boundary=enmime-374870fe-35c5-46b7-bb3e-10addade12bc
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1774287278249782911.1774287278@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <villaodontologiaavancada@yahoo.com>
+Date: Mon, 23 Mar 2026 17:34:38 +0000 (UTC)
+X-CM-Envelope: MS4xfG22H3rvRA5NW12Na1iAMBs7B2wo5krFJ5zZ+hP+DZL7pcn1OzFb89DDdd/Q8e5h0glrmGK57/FVdRN/C7bGUJ16EzZGvCcAtG0TIcaJDWF76K/y9uz5 hfYs+luRouUh29qZmUStBIaVkmpQPSLbz2f7Af7PZ7eyUAdPnDZG2EvuA5fGqBreIC1M4nvzI7erp51/6SDAErcKkIik1/ZcXZ13lYc2fIexp6V8g9IR2XIg dSAzOxOsKpbpfgmgqtYbjzLsVwf/F5VL9r3dx9doKdFmdP+qoFjTnyqZYfSK5Gg4
+X-CM-Analysis: v=2.4 cv=Gq4Q+V1C c=1 sm=1 tr=0 ts=69c179af a=rWfVZmSrVlBG97+FN3d8LQ==:617 a=xqWC_Br6kY4A:10 a=R7QQ6CqMXZx-2PjCN8wA:9 a=pT_QGpuZIPVyGxV-:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10
+X-AuthUser: vendas2@bh3distribuidora.com.br

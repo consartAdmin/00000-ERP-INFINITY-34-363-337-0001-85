@@ -1,0 +1,68 @@
+Return-Path: <vendas2@bh3distribuidora.com.br>
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 58075583F6D
+	for <financeiro_artea@terra.com.br>; Fri, 13 Mar 2026 19:41:13 +0000 (UTC)
+Received: from de-fra-smtpout1.hostinger.io (100-110-40-34.trex-nlb.outbound.svc.cluster.local [100.110.40.34])
+	(Authenticated sender: hostingeremail)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 3B52E583FE2
+	for <financeiro_artea@terra.com.br>; Fri, 13 Mar 2026 19:41:11 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1773430872;
+	b=CthX8O2icmx21Ss2+YSdJAoAE4QBM6+CLcZHOl5o1BmOBTRl59CvK2g+up60H8uhai3RCW
+	yvxunVuYejiFb0VBDDJehkb04V45gU6Tm82aDmOnkzpAXx+Wt3JmGnNbgJfMQOHa88Y7+4
+	P8WWKunIoNIRfUDP1RU/XYrCld7lkWcxI87wZmcv9NrruhLMik1yT+PX4HaiOE/TcVJJ4g
+	kfdu094Qckpmmh2e6cQH5cFCMky2cQbHpty8WoxpxMEcche3HDppmTjW8lSPZhP1iawsMC
+	+Wznpni4NcJK4BibUt9k2WU8UMont0YnCJD0475ds/VyM86oQcz38rlLe0FYew==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1773430872;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 dkim-signature; bh=RoHvLY+zhGbUS1O+HfIrk+nt5BTyHAP0YPj2Mojlaeo=;
+	b=ofo4ePRw5EHimi2W3oWkcFeOpHDhRogF/GUHyfFBYE6PwiWy1w9DpFi0x/FDspl32AMk2n
+	BgYHUjP3YifAznSo57Hz+ZjV4eF1VDeY/YJq44TmrCAYLRyJuAZxscCOzvrtkB4QcdhJ9M
+	GgSzkb3Nj6K1TPJR22w5+YVxdvYgSnJxnn+rCPWb0SDudYYWAWbTHPod3lTCTwmdhDrcht
+	fUiE6A7aZlR/+iVpf+hPF8DuPHRgU7KN/Z4GLAwv88yp7le/vgfCgSc0HPCNsV+LoREh62
+	Q2Ex0nkx6I98l1wJgla2rz1gTFvuGVNTIWoaIdub+SFhGqsqakX42J/FLTE9hQ==
+ARC-Authentication-Results: i=1;
+	rspamd-99596b4c6-4q7tt;
+	auth=pass smtp.auth=hostingeremail
+ smtp.mailfrom=vendas2@bh3distribuidora.com.br
+X-Sender-Id: hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MC-Relay: Good
+X-MailChannels-SenderId:
+ hostingeremail|x-authuser|vendas2@bh3distribuidora.com.br
+X-MailChannels-Auth-Id: hostingeremail
+X-Cooing-Slimy: 781bc19b7faacf68_1773430872814_524134776
+X-MC-Loop-Signature: 1773430872814:464417382
+X-MC-Ingress-Time: 1773430872813
+Received: from de-fra-smtpout1.hostinger.io (de-fra-smtpout1.hostinger.io
+ [148.222.55.8])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.110.40.34 (trex/7.1.5);
+	Fri, 13 Mar 2026 19:41:12 +0000
+Received: from localhost (122.132.242.35.bc.googleusercontent.com [201.80.171.191])
+	(Authenticated sender: vendas2@bh3distribuidora.com.br)
+	by smtp.hostinger.com (smtp.hostinger.com) with ESMTPSA id 4fXZbn2BjCz3wbc
+	for <financeiro_artea@terra.com.br>; Fri, 13 Mar 2026 19:41:09 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=bh3distribuidora.com.br;
+	s=hostingermail-a; t=1773430869;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=RoHvLY+zhGbUS1O+HfIrk+nt5BTyHAP0YPj2Mojlaeo=;
+	b=TdKSgzDOYpLeTSMcUJ7D9Nu62V5Vfdu/wI4QFDk9jZWYFPv01yKrOa6+Q7Do+tQJ2qKVpT
+	hXY2bIKq3hPrSAkvFNZC2u1Tnt3FK1DkT8dLhWJXWsQTv56ullnM9XyXLiLl64urplP2P6
+	xlvCYjt3LnkKPY5fLt5fk1IJ0H+7QFyIBWz2MTaDdSc+riXz06rH3EhdzMXTIssDPw2LeK
+	D4o2pcqXW2FI/Y85qzSUJxfY3bmUersHgUhVtI91yhIcjaBXXHPMbTSiAAz+QupqRHgKkO
+	gSbKl94S93dgHgsY8xjyqj8dvaDayP3SE503rg+MtyuKko1Me4lDIB2xzXjJIg==
+Content-Type: multipart/related;
+ boundary=enmime-1484c4fa-46c5-4a43-9d2b-9985b3f11c1b
+From: <vendas2@bh3distribuidora.com.br>
+Message-Id: <1773430868677323694.1773430868@bh3distribuidora.com.br>
+Mime-Version: 1.0
+Subject: MATERIAIS DE LIMPEZA!
+To: <financeiro_artea@terra.com.br>
+Date: Fri, 13 Mar 2026 19:41:09 +0000 (UTC)
+X-CM-Envelope: MS4xfPcK9FugOkKDTrmMWyKHlWDxOo3DE+M4H6PGqJJQjjA4lhN5fkVaMHhKPxqmhbQoT39xgAS5T154I0eEzMyFLyQBSGnN1qBgyVa4bA4XwMJV9Bw4KofB qh9+rW+WD4VTeJKh3Pdnol2opUOgKnul9FKGoLku8MHoWUWQ5qoHUMkNMfhJCFuSVSgCjo87v//gAQ1QEX7mneJzGei+p8LwiVw=
+X-CM-Analysis: v=2.4 cv=etGNzZpX c=1 sm=1 tr=0 ts=69b46855 a=R2ZaLEfC9qjI1KZi0jOIlA==:117 a=R2ZaLEfC9qjI1KZi0jOIlA==:17 a=R7QQ6CqMXZx-2PjCN8wA:9 a=XN55P-rHXJZhQgw5:21 a=lqcHg5cX4UMA:10 a=QEXdDO2ut3YA:10 a=4VeV1i3rvIALQj08qroA:9 a=HXjIzolwW10A:10 a=T6a71-JsGAwA:10
+X-AuthUser: vendas2@bh3distribuidora.com.br
