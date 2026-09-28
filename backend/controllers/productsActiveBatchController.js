@@ -11,7 +11,7 @@
 
 'use strict';
 
-import productsActiveBatchApi from '../services/apis/productsActiveBatchApi.js';
+import productsActiveBatchApi from '../repositories/productsActiveBatch/productsActiveBatch.index.js';
 
 /**
  * Wrapper padrão do CONSART:

@@ -24,7 +24,7 @@ import {
   listBoxes,
   getBoxById,
   listBoxItems,
-} from '../services/apis/productsBoxesApis.js';
+} from '../repositories/productsBoxes/productsBoxes.index.js';
 
 /* ──────────────────────────────────────────────────────────────
    Paths

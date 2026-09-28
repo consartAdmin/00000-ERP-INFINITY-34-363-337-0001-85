@@ -12,7 +12,7 @@ import {
   updateProductsKit,
   deleteProductsKit,
   hardDeleteProductsKit,
-} from '../services/apis/productsKitsApi.js';
+} from '../repositories/productsKits/productsKits.index.js';
 
 export async function ensure(req, res) {
   try {

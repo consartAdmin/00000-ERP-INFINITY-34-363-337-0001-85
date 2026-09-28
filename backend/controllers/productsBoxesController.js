@@ -20,7 +20,7 @@ import {
   deleteBoxItem,
   listBoxesByProductCode,
   getBoxByProductCode,
-} from '../services/apis/productsBoxesApis.js';
+} from '../repositories/productsBoxes/productsBoxes.index.js';
 
 import { generateProductsBoxesPdf } from '../generationPdf/generationProductsBoxesPdf.js';
 

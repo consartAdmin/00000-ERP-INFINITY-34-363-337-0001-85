@@ -5,7 +5,7 @@
 // ║ ✅ Controller para consulta mobile por código de barras / SKU        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import productsMobileApi from '../services/apis/productsMobileApi.js';
+import productsMobileApi from '../repositories/productsMobile/productsMobile.index.js';
 
 function normalizeSearch(value) {
   return String(value || '').trim();

@@ -13,7 +13,7 @@
 
 'use strict';
 
-import GroupsBatchApi from '../services/apis/groupsAndSubgroupsBatchApi.js';
+import GroupsBatchApi from '../repositories/groupsAndSubgroupsBatch/groupsAndSubgroupsBatch.index.js';
 
 /* ──────────────────────────────────────────────────────────────
    Helpers

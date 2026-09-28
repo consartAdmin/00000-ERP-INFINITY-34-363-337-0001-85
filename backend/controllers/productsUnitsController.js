@@ -11,7 +11,7 @@
 
 'use strict';
 
-import ProductsUnitsAPI from '../services/apis/productsUnitsApi.js';
+import ProductsUnitsAPI from '../repositories/productsUnits/productsUnits.index.js';
 
 // ✅ NOVO: sync barcode -> productsBarCode
 import pool from '../config/db.js';

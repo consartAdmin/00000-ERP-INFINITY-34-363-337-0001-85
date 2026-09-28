@@ -16,7 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import pool from '../config/db.js';
-import productsImagensApi from '../services/apis/productsImagensApi.js';
+import productsImagensApi from '../repositories/productsImagens/productsImagens.index.js';
 import productsLocationsApi from '../services/apis/productsLocationsApi.js';
 import productsStockManager from '../services/apis/productsStock/productsStock.manager.js';
 

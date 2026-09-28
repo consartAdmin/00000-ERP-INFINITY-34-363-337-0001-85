@@ -11,7 +11,7 @@
 // ║ ✅ Soft delete / hard delete opcional                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import productsImagensApi from '../services/apis/productsImagensApi.js';
+import productsImagensApi from '../repositories/productsImagens/productsImagens.index.js';
 
 /* =========================================================================
    Helpers
