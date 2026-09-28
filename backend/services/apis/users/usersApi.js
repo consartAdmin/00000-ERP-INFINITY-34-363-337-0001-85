@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../../config/db.js';
-import catalog from './catalog_schema.users.js';
+import catalog from '../../../repositories/users/users.catalog.js';
 
 /* ─────────────────────────── Catálogo ─────────────────────────── */
 

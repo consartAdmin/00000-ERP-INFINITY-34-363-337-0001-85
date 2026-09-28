@@ -11,7 +11,7 @@ import PRODUCT_FISCAL_COST_RULES_SCHEMA, {
   PRODUCT_FISCAL_COST_RULES_UPDATE_COLUMNS,
   prepareProductFiscalCostRuleInsert,
   prepareProductFiscalCostRuleUpdate,
-} from './catalog_schema.productFiscalCostRules.js';
+} from '../../../repositories/productFiscalCostRules/productFiscalCostRules.catalog.js';
 
 const TB = PRODUCT_FISCAL_COST_RULES_TABLE;
 const SELECT_COLUMNS = PRODUCT_FISCAL_COST_RULES_SCHEMA.selectProjection;

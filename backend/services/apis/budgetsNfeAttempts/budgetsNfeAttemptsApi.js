@@ -11,16 +11,16 @@ import {
     BUDGETS_NFE_ATTEMPTS_TABLE as TB_ATTEMPTS,
     BUDGETS_NFE_ATTEMPTS_INSERT_COLUMNS,
     BUDGETS_NFE_ATTEMPTS_UPDATE_COLUMNS,
-} from './catalog_schema.budgetsNfeAttempts.js';
+} from '../../../repositories/budgetsNfeAttempts/budgetsNfeAttempts.catalog.js';
 
 import {
     BUDGETS_NFE_ATTEMPT_ITEMS_TABLE as TB_ITEMS,
     BUDGETS_NFE_ATTEMPT_ITEMS_INSERT_COLUMNS,
-} from './catalog_schema.budgetsNfeAttemptItems.js';
+} from '../../../repositories/budgetsNfeAttempts/budgetsNfeAttemptItems.catalog.js';
 
 import {
     BUDGETS_TABLE as TB_BUDGETS,
-} from './../budgets/catalog_schema.budgets.js';
+} from '../../../repositories/budgets/budgets.catalog.js';
 
 const TB_STATUS = 'public."nfeStatusMap"';
 const TB_SHIPPING = 'public."budgetsShipping"';

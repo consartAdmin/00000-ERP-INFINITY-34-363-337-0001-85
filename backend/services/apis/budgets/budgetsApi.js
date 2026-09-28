@@ -26,7 +26,7 @@ import budgetsSchema, {
   isBudgetColumn,
   prepareBudgetInsert,
   prepareBudgetUpdate,
-} from './catalog_schema.budgets.js';
+} from '../../../repositories/budgets/budgets.catalog.js';
 
 import {
   resolveProductsPricesMode,

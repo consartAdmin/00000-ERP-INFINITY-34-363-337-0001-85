@@ -8,7 +8,7 @@ import pool from '../../../config/db.js';
 
 import {
     NFE_STATUS_MAP_TABLE,
-} from './catalog_schema.nfeStatusMap.js';
+} from '../../../repositories/nfeStatusMap/nfeStatusMap.catalog.js';
 
 
 /* =========================================================================

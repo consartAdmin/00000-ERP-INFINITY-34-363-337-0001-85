@@ -6,8 +6,8 @@ import {
   FISCAL_CLASSIFICATION_V2_SELECT_SQL,
   prepareFiscalClassificationInsert,
   prepareFiscalClassificationUpdate,
-} from './catalog_schema.fiscalClassificationV2.js';
-import { FISCAL_PROFILE_V2_TABLE } from '../fiscalProfileV2/catalog_schema.fiscalProfileV2.js';
+} from '../../../repositories/fiscalClassificationV2/fiscalClassificationV2.catalog.js';
+import { FISCAL_PROFILE_V2_TABLE } from '../../../repositories/fiscalProfileV2/fiscalProfileV2.catalog.js';
 
 const RETURNING = FISCAL_CLASSIFICATION_V2_SELECT_COLUMNS
   .map((column) => `"${column}"`)

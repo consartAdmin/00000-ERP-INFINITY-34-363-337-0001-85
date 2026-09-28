@@ -28,7 +28,7 @@ import {
   ORDER_MONEY_COLUMNS,
   ORDER_REQUIRED_COLUMNS,
   ORDER_DEFAULTS,
-} from './catalog_schema.orders.js';
+} from '../../../repositories/orders/orders.catalog.js';
 
 import {
   ordersItemsSchema,
@@ -39,7 +39,7 @@ import {
   ORDER_ITEM_NUMERIC_COLUMNS,
   ORDER_ITEM_REQUIRED_COLUMNS,
   ORDER_ITEM_DEFAULTS,
-} from './catalog_schema.ordersItems.js';
+} from '../../../repositories/orders/ordersItems.catalog.js';
 
 function reportOrdersError(...args) {
   console.error(...args);

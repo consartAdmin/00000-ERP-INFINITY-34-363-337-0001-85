@@ -13,7 +13,7 @@ import {
     PRODUCTS_SCHEMA,
     prepareProductInsert,
     prepareProductUpdate,
-} from './catalog_schema.products.js';
+} from '../../../repositories/products/products.catalog.js';
 
 const TABLE_STOCK = 'public."productsStock"';
 const TABLE_PRICES = 'public."productsPrices"';

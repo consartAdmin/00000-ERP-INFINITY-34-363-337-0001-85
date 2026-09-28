@@ -16,7 +16,7 @@ import productsBarCodeSchema, {
   PRODUCTS_BAR_CODE_TYPES,
   prepareProductsBarCodeInsert,
   prepareProductsBarCodeUpdate,
-} from './catalog_schema.productsBarCode.js';
+} from '../../../repositories/productsBarCode/productsBarCode.catalog.js';
 
 const TB_PRODUCTS_BAR_CODE = PRODUCTS_BAR_CODE_TABLE;
 const PK_PRODUCTS_BAR_CODE = PRODUCTS_BAR_CODE_PRIMARY_KEY;

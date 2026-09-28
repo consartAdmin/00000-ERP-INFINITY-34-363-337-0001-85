@@ -10,9 +10,9 @@ import {
   PRODUCTS_FISCAL_V2_SELECT_SQL,
   PRODUCTS_FISCAL_V2_CURRENT_WHERE_SQL as CURRENT_WHERE,
   validateProductFiscalPayload,
-} from './catalog_schema.productsFiscalV2.js';
-import { FISCAL_CLASSIFICATION_V2_TABLE } from '../fiscalClassificationV2/catalog_schema.fiscalClassificationV2.js';
-import { FISCAL_PROFILE_V2_TABLE } from '../fiscalProfileV2/catalog_schema.fiscalProfileV2.js';
+} from '../../../repositories/productsFiscalV2/productsFiscalV2.catalog.js';
+import { FISCAL_CLASSIFICATION_V2_TABLE } from '../../../repositories/fiscalClassificationV2/fiscalClassificationV2.catalog.js';
+import { FISCAL_PROFILE_V2_TABLE } from '../../../repositories/fiscalProfileV2/fiscalProfileV2.catalog.js';
 
 // ============================================================================
 // CATÁLOGO — COLUNAS E VALIDAÇÃO

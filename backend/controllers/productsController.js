@@ -14,7 +14,7 @@ import pool from '../config/db.js';
 import { Storage } from '@google-cloud/storage';
 
 import productsApi, { ProductsApiError } from './../services/apis/products/productsApi.js';
-import { PRODUCTS_TABLE } from './../services/apis/products/catalog_schema.products.js';
+import { PRODUCTS_TABLE } from '../repositories/products/products.catalog.js';
 
 import productsGroupsApi from '../repositories/productsGroups/productsGroups.index.js';
 import productsManufacturersApi from '../repositories/productsManufacturers/productsManufacturers.index.js';

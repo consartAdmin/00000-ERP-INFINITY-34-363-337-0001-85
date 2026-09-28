@@ -11,7 +11,7 @@ import {
   UPDATED_BY_MAX_LENGTH,
   COLUMN_NAMES,
   DEFAULTS,
-} from './catalog_schema.budgetSettings.js';
+} from '../../../repositories/budgetSettings/budgetSettings.catalog.js';
 
 const VALID_MODES = new Set(OUT_OF_STOCK_MODES);
 const SELECT_COLUMNS = COLUMN_NAMES.join(',\n      ');

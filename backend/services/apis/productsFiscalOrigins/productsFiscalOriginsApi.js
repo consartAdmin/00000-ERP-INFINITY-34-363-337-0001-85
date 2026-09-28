@@ -21,7 +21,7 @@ import PRODUCTS_FISCAL_ORIGINS_SCHEMA, {
   PRODUCTS_FISCAL_ORIGINS_NULL_SCOPE,
   DDL,
   DDL_INDEXES,
-} from './catalog_schema.productsFiscalOrigins.js';
+} from '../../../repositories/productsFiscalOrigins/productsFiscalOrigins.catalog.js';
 
 const TB = PRODUCTS_FISCAL_ORIGINS_TABLE;
 const SELECT_COLUMNS = PRODUCTS_FISCAL_ORIGINS_SCHEMA.selectProjection;

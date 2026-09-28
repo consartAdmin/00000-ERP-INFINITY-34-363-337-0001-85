@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../../config/db.js';
-import budgetsShippingSchema from './catalog_schema.budgetsShipping.js';
+import budgetsShippingSchema from '../../../repositories/budgetsShipping/budgetsShipping.catalog.js';
 
 const {
   qualifiedName: TABLE,

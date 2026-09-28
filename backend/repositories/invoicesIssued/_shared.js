@@ -14,7 +14,7 @@ import {
   INVOICES_ISSUED_INSERT_COLUMNS,
   INVOICES_ISSUED_UPDATE_COLUMNS,
   INVOICES_ISSUED_PRIMARY_KEY,
-} from '../../services/apis/invoicesIssued/catalog_schema.invoicesIssued.js';
+} from './invoicesIssued.catalog.js';
 
 export { pool, createAuditLog };
 

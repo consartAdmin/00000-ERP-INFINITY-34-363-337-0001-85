@@ -20,7 +20,7 @@ import {
     ORDER_NFE_ATTEMPT_JSON_COLUMNS,
     ORDER_NFE_ATTEMPT_ITEM_INSERT_COLUMNS,
     ORDER_NFE_ATTEMPT_ITEM_JSON_COLUMNS,
-} from './catalog_schema.ordersNfeAttempts.js';
+} from '../../../repositories/ordersNfeAttempts/ordersNfeAttempts.catalog.js';
 
 const ATTEMPT_INSERT = new Set(ORDER_NFE_ATTEMPT_INSERT_COLUMNS);
 const ATTEMPT_UPDATE = new Set(ORDER_NFE_ATTEMPT_UPDATE_COLUMNS);

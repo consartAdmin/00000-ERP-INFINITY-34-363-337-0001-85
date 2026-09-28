@@ -15,7 +15,7 @@ import {
   SUPPLIERS_TABLE,
   SUPPLIERS_SCHEMA,
   SUPPLIERS_INSERT_COLUMNS,
-} from './catalog_schema.suppliers.js';
+} from '../../../repositories/suppliers/suppliers.catalog.js';
 
 /* ──────────────────────────────────────────────────────────────
    Tabela & Alias

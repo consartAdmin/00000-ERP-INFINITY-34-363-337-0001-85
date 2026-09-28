@@ -21,9 +21,9 @@
 import pool from '../../../config/db.js';
 import installmentsSchema, {
   INSTALLMENT_STATUSES
-} from './catalog_schema.budgetsPaymentInstallments.js';
+} from '../../../repositories/budgetsPaymentInstallments/budgetsPaymentInstallments.catalog.js';
 
-import budgetsPaymentsSchema from '../budgetsPayments/catalog_schema.budgetsPayments.js';
+import budgetsPaymentsSchema from '../../../repositories/budgetsPayments/budgetsPayments.catalog.js';
 
 /* ──────────────────────────────────────────────────────────────────────
  * Catálogo → SQL

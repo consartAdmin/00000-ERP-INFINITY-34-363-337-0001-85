@@ -9,7 +9,7 @@
 'use strict';
 
 import pool from '../../../config/db.js';
-import catalog from './catalog_schema.chartOfAccounts.js';
+import catalog from '../../../repositories/chartOfAccounts/chartOfAccounts.catalog.js';
 
 /* ─────────────────────────── Catalog ─────────────────────────── */
 

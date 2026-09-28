@@ -11,7 +11,7 @@ import {
   FISCAL_PROFILE_V2_SELECT_SQL,
   prepareFiscalProfileInsert,
   prepareFiscalProfileUpdate,
-} from './catalog_schema.fiscalProfileV2.js';
+} from '../../../repositories/fiscalProfileV2/fiscalProfileV2.catalog.js';
 
 const RETURNING = FISCAL_PROFILE_V2_SELECT_COLUMNS
   .map((column) => `"${column}"`)

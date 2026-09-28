@@ -21,7 +21,7 @@ import budgetsPaymentInstallmentsApi from '../budgetsPaymentInstallments/budgets
 import budgetsPaymentsSchema, {
   BOLETO_MODES,
   COLLECTION_PROVIDERS
-} from './catalog_schema.budgetsPayments.js';
+} from '../../../repositories/budgetsPayments/budgetsPayments.catalog.js';
 
 /* ──────────────────────────────────────────────────────────────────────
  * Catálogo → SQL
