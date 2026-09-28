@@ -9,7 +9,7 @@ import {
   createOrderPayment,
   updateOrderPayment,
   deleteOrderPayment,
-} from '../services/apis/ordersPaymentsApi.js';
+} from '../repositories/ordersPayments/ordersPayments.index.js';
 
 const ok = (res, data = {}) => res.json({ ok: true, ...data });
 

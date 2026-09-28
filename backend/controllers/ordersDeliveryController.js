@@ -5,7 +5,7 @@
 // ║ REST API - Order Shipping / Delivery                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import orderDeliveryApi from '../services/apis/ordersDeliveryApi.js';
+import orderDeliveryApi from '../repositories/ordersDelivery/ordersDelivery.index.js';
 
 /* --------------------------------------------------------------------- */
 /* Helpers                                                               */

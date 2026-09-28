@@ -11,7 +11,7 @@
 // ║   - services/apis/orders/ordersApi.js (para validar existência do pedido)   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import ordersBillingApi from '../services/apis/ordersBillingApi.js';
+import ordersBillingApi from '../repositories/ordersBilling/ordersBilling.index.js';
 import ordersApi from '../services/apis/orders/ordersApi.js';
 
 // ======================================================================

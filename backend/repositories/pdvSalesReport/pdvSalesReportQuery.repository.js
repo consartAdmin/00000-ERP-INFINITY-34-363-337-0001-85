@@ -1,35 +1,13 @@
-// ╔══════════════════════════════════════════════════════════════════════╗
-// ║ pdvSalesReportApi.js — Service Relatório de Vendas PDV (ESM)       ║
-// ║ CONSART ERP — Usa tabelas pdvSales / pdvSalesItems                 ║
-// ║ Retorno padrão:                                                    ║
-// ║   { filters, summary, detailByDay, detailByCustomer, detailBySale }║
-// ╚══════════════════════════════════════════════════════════════════════╝
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ pdvSalesReportQuery.repository.js — getPdvSalesReportData          ║
+// ║ Tabelas: public."pdvSales" / public."pdvSalesItems"                ║
+// ║ Retorno: { filters, summary, detailByDay, detailByCustomer,        ║
+// ║            detailBySale }                                          ║
+// ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-
-const TABLE_PDV_SALES = 'public."pdvSales"';
-const TABLE_PDV_SALES_ITEMS = 'public."pdvSalesItems"';
-
-// ---------------------------------------------------------------------
-// Helpers de datas
-// ---------------------------------------------------------------------
-
-function parseDateOrNull(value) {
-  if (!value) return null;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString();
-}
-
-function getDefaultDateRange() {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 30);
-  return {
-    startDateIso: start.toISOString(),
-    endDateIso: end.toISOString()
-  };
-}
+import { TABLE_PDV_SALES, TABLE_PDV_SALES_ITEMS } from './pdvSalesReport.constants.js';
+import { parseDateOrNull, getDefaultDateRange } from './pdvSalesReport.utils.js';
 
 /**
  * Monta o relatório PDV a partir dos filtros
@@ -229,9 +207,3 @@ export async function getPdvSalesReportData(filters = {}) {
     client.release();
   }
 }
-
-const pdvSalesReportApi = {
-  getPdvSalesReportData
-};
-
-export default pdvSalesReportApi;

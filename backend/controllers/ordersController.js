@@ -17,7 +17,7 @@ import {
   rollbackOrderStock,
 } from '../services/stockFromOrdersService.js';
 
-import ordersBillingApi from '../services/apis/ordersBillingApi.js';
+import ordersBillingApi from '../repositories/ordersBilling/ordersBilling.index.js';
 
 import invoicesIssuedApi from '../repositories/invoicesIssued/invoicesIssued.index.js';
 

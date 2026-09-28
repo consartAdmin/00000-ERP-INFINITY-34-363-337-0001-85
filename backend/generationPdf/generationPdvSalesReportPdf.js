@@ -8,7 +8,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import PDFDocument from 'pdfkit';
-import { getPdvSalesReportData } from '../services/apis/pdvSalesReportApi.js';
+import { getPdvSalesReportData } from '../repositories/pdvSalesReport/pdvSalesReport.index.js';
 import pool from '../config/db.js';
 
 // ---------------------------------------------------------------------

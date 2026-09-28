@@ -17,13 +17,13 @@ import paymentMethodsApi from '../repositories/paymentMethods/paymentMethods.ind
 import budgetsPaymentsApi from '../services/apis/budgetsPayments/budgetsPaymentsApi.js';
 import budgetsPaymentInstallmentsApi from '../services/apis/budgetsPaymentInstallments/budgetsPaymentInstallmentsApi.js';
 import enterpriseApi from '../services/apis/enterpriseApi.js';
-import * as ordersKanbanApi from '../services/apis/ordersKanbanApi.js';
+import * as ordersKanbanApi from '../repositories/ordersKanban/ordersKanban.index.js';
 
 import {
   generateBudgetPdf
 } from '../generationPdf/generationBudgetsPdf/generationBudgetsPdf.manager.js';
 
-import orderDeliveryApi from '../services/apis/ordersDeliveryApi.js';
+import orderDeliveryApi from '../repositories/ordersDelivery/ordersDelivery.index.js';
 import {
   getBudgetSettings,
 } from '../services/apis/budgetSettings/budgetSettingsApi.js';

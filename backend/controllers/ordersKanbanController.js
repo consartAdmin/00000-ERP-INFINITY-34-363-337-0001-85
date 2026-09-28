@@ -8,7 +8,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import * as kanbanApi from '../services/apis/ordersKanbanApi.js';
+import * as kanbanApi from '../repositories/ordersKanban/ordersKanban.index.js';
 import pool from '../config/db.js';
 
 import { generateOrdersKanbanPendingsPdf } from '../generationPdf/generationOrdersKanbanPdf.js';

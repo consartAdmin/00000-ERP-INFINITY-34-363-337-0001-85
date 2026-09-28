@@ -9,8 +9,8 @@
 // ║ - deleteEcommerceOrder(req, res)                                     ║
 // ╚══════════════════════════════════════════════════════════════════════╝ */
 
-import ecommerceOrdersApi from '../services/apis/ecommerceOrdersApi.js';
-import ecommerceOrderItemsApi from '../services/apis/ecommerceOrderItemsApi.js';
+import ecommerceOrdersApi from '../repositories/ecommerceOrders/ecommerceOrders.index.js';
+import ecommerceOrderItemsApi from '../repositories/ecommerceOrderItems/ecommerceOrderItems.index.js';
 
 /* --------------------------------------------------------------------- */
 /* 1. Bootstrap / DDL                                                     */
