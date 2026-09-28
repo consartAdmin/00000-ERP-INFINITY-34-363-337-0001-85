@@ -11,6 +11,9 @@ import { ensureTable } from './processesSchema.repository.js';
 ────────────────────────────────────────────────────────────── */
 export async function list({ q = '', status = '', limit = 20, offset = 0 } = {}) {
   await ensureTable();
+  // limit/offset entram no SQL por interpolação: força inteiros para evitar SQL injection
+  limit = Math.max(Number.parseInt(limit, 10) || 20, 1);
+  offset = Math.max(Number.parseInt(offset, 10) || 0, 0);
 
   const params = [];
   const whereParts = [];
