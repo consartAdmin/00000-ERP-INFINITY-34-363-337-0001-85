@@ -7,7 +7,7 @@
 import {
   expenseEntriesApi,
   parseNfeXmlToExpenseEntryDraft,
-} from '../services/apis/expenseEntriesApi.js';
+} from '../repositories/expenseEntries/expenseEntries.index.js';
 
 import caixaApi from '../repositories/cashMoviments/cashMoviments.index.js';
 

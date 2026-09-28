@@ -7,7 +7,7 @@
 
 'use strict';
 
-import debtPaymentsApi from '../services/apis/debtPaymentsApi.js';
+import debtPaymentsApi from '../repositories/debtPayments/debtPayments.index.js';
 
 function sendError(res, error, fallbackMessage = 'Erro interno do servidor.') {
   const message = error?.message || fallbackMessage;

@@ -11,7 +11,7 @@ import {
   updateExpense,
   patchExpenseStatus,
   deleteExpense,
-} from '../services/apis/expensesApi.js';
+} from '../repositories/expenses/expenses.index.js';
 
 import { generateExpensesPdf } from '../generationPdf/generateExpensesPdf.js'; // ✅ ajuste path se preciso
 

@@ -3,7 +3,7 @@
 /* ║ CONSART ERP — ESM, UUID, customer_id, filtros, paginação, ordenação ║
    ╚══════════════════════════════════════════════════════════════════════╝ */
 
-import { fixedExpensesApi } from '../services/apis/fixedExpensesApi.js';
+import { fixedExpensesApi } from '../repositories/fixedExpenses/fixedExpenses.index.js';
 
 // Bootstrap idempotente (não quebra schema existente)
 fixedExpensesApi.ensureTable()

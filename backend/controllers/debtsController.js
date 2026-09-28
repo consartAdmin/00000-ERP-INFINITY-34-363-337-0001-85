@@ -7,9 +7,9 @@
 
 'use strict';
 
-import debtsApi from '../services/apis/debtsApi.js';
+import debtsApi from '../repositories/debts/debts.index.js';
 
-import installmentPlansApi from '../services/apis/debtInstallmentPlansApi.js';
+import installmentPlansApi from '../repositories/debtInstallmentPlans/debtInstallmentPlans.index.js';
 
 function sendError(res, error, fallbackMessage = 'Erro interno do servidor.') {
   const message = error?.message || fallbackMessage;
