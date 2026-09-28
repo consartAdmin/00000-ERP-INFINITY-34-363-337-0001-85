@@ -1,7 +1,7 @@
 import api, {
     create, getById, search, update, remove, addItem, updateItem, removeItem,
     markReady, issueBonusNfe, reconcileBonusNfe, getBonusNfeXml, getBonusNfeDanfe,
-} from '../services/apis/nfeBonusIssuedApi.js';
+} from '../repositories/nfeBonusIssued/nfeBonusIssued.index.js';
 
 const userId = (req) => req.user?.user_id || req.user?.id || null;
 const send = (res, result, success = 200) => res.status(result?.ok === false ? (result.error === 'NOT_FOUND' ? 404 : 400) : success).json(result);

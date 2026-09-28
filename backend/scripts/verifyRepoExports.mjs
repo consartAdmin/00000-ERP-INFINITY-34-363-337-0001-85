@@ -16,8 +16,9 @@ if (!name || !repoDir) {
 
 const apisDir = path.resolve('services/apis');
 const newFile = path.resolve('repositories', repoDir, `${repoDir}.index.js`);
-// Arquivo temporário na mesma pasta para que imports relativos continuem válidos.
-const oldFile = path.join(apisDir, `__orig_${name}.js`);
+// Arquivo temporário na mesma pasta do original para que imports relativos continuem válidos.
+// <name> pode incluir subpasta (ex.: budgets/budgetsApi).
+const oldFile = path.join(apisDir, path.dirname(name), `__orig_${path.basename(name)}.js`);
 
 const describe = (mod) => {
   const named = Object.keys(mod).filter((k) => k !== 'default').sort();
