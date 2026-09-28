@@ -11,7 +11,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../config/db.js';
-import budgetsApi from '../services/apis/budgets/budgetsApi.js';
+import budgetsApi from '../repositories/budgets/budgets.index.js';
 import ordersApi from '../repositories/orders/orders.index.js';
 import paymentMethodsApi from '../repositories/paymentMethods/paymentMethods.index.js';
 import budgetsPaymentsApi from '../repositories/budgetsPayments/budgetsPayments.index.js';
@@ -26,7 +26,7 @@ import {
 import orderDeliveryApi from '../repositories/ordersDelivery/ordersDelivery.index.js';
 import {
   getBudgetSettings,
-} from '../services/apis/budgetSettings/budgetSettingsApi.js';
+} from '../repositories/budgetSettings/budgetSettings.index.js';
 import {
   resolveProductsStockMode,
 } from '../services/apis/productsStock/productsStock.manager.js';

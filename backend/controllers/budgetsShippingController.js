@@ -4,7 +4,7 @@
 // ║ CONSART ERP                                                          ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import * as Api from '../services/apis/budgetsShipping/budgetsShippingApi.js';
+import * as Api from '../repositories/budgetsShipping/budgetsShipping.index.js';
 
 // Postgres foreign_key_violation, mapped by constraint name.
 const FK_ERRORS = {

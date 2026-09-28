@@ -1,20 +1,9 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ FILE: services/apis/budgetsShipping/budgetsShippingApi.js          ║
-// ║ MODULE: Budgets Shipping API                                       ║
-// ║ CONSART ERP                                                        ║
+// ║ budgetsShipping.sanitizers.js — Normalização do payload de frete     ║
+// ║ toNumber / toInt / toBool / cleanText / onlyDigits / normalizePayload ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import pool from '../../../config/db.js';
-import budgetsShippingSchema from '../../../repositories/budgetsShipping/budgetsShipping.catalog.js';
-
-const {
-  qualifiedName: TABLE,
-  lookupKey: LOOKUP_KEY,
-  columns: COLUMNS,
-  selectColumns: SELECT_COLUMNS,
-  writeColumns: WRITE_COLUMNS,
-  api: API,
-} = budgetsShippingSchema;
+import { COLUMNS, WRITE_COLUMNS } from './budgetsShipping.constants.js';
 
 function toNumber(value, fallback = 0) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -79,7 +68,7 @@ function pickValue(body, column) {
   return undefined;
 }
 
-function normalizePayload(body = {}) {
+export function normalizePayload(body = {}) {
   const data = {};
 
   for (const column of BODY_COLUMNS) {
@@ -88,67 +77,4 @@ function normalizePayload(body = {}) {
   }
 
   return data;
-}
-
-// ── SQL (built once from the catalog schema) ─────────────────────────
-
-const SELECT_SQL = `
-  SELECT
-    ${SELECT_COLUMNS.join(',\n    ')}
-  FROM ${TABLE}
-  WHERE ${LOOKUP_KEY} = $1
-  LIMIT 1
-`;
-
-const CONFLICT_TARGET = API.upsert.conflictTarget;
-
-const UPDATE_ASSIGNMENTS = [
-  ...WRITE_COLUMNS
-    .filter((column) => !CONFLICT_TARGET.includes(column))
-    .map((column) => `${column} = EXCLUDED.${column}`),
-  ...Object.entries(API.upsert.touch || {}).map(([column, expr]) => `${column} = ${expr}`),
-];
-
-const UPSERT_SQL = `
-  INSERT INTO ${TABLE} (
-    ${WRITE_COLUMNS.join(',\n    ')}
-  )
-  VALUES (
-    ${WRITE_COLUMNS.map((_, i) => `$${i + 1}`).join(', ')}
-  )
-  ON CONFLICT (${CONFLICT_TARGET.join(', ')})
-  DO UPDATE SET
-    ${UPDATE_ASSIGNMENTS.join(',\n    ')}
-  RETURNING ${API.upsert.returning || '*'}
-`;
-
-const DELETE_SQL = `
-  DELETE FROM ${TABLE}
-  WHERE ${LOOKUP_KEY} = $1
-`;
-
-// ── API ──────────────────────────────────────────────────────────────
-
-export async function getByBudgetId(budgetId) {
-  const { rows } = await pool.query(SELECT_SQL, [budgetId]);
-
-  return rows[0] || null;
-}
-
-export async function upsert(budgetId, body = {}) {
-  const data = normalizePayload(body);
-
-  const params = WRITE_COLUMNS.map((column) =>
-    column === LOOKUP_KEY ? budgetId : data[column]
-  );
-
-  const { rows } = await pool.query(UPSERT_SQL, params);
-
-  return rows[0];
-}
-
-export async function remove(budgetId) {
-  await pool.query(DELETE_SQL, [budgetId]);
-
-  return true;
 }

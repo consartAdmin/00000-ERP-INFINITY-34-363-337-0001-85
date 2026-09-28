@@ -5,7 +5,7 @@
 
 'use strict';
 
-import * as api from '../services/apis/budgetSettings/budgetSettingsApi.js';
+import * as api from '../repositories/budgetSettings/budgetSettings.index.js';
 
 const VALID_MODES = new Set(['BLOCK', 'PASSWORD', 'ALLOW']);
 
