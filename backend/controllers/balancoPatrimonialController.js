@@ -2,7 +2,7 @@
 // ║ balancoPatrimonialController.js — Handlers REST                     ║
 /* ╚══════════════════════════════════════════════════════════════════════╝ */
 
-import * as API from '../services/apis/balancoPatrimonialApi.js';
+import * as API from '../repositories/balancoPatrimonial/balancoPatrimonial.index.js';
 
 export const balancoPatrimonialController = {
   async list(req, res) {

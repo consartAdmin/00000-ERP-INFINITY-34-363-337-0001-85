@@ -3,7 +3,7 @@
 // ║ CONSART ERP | ESM                                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import dreGerencialApi from '../services/apis/dreGerencialApi.js';
+import dreGerencialApi from '../repositories/dreGerencial/dreGerencial.index.js';
 
 import generateReportDreGerencialPdfStream from '../generationPdf/generationReportDreGerencialPdf.js';
 

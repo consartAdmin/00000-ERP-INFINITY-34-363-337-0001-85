@@ -13,7 +13,7 @@ import {
   createCheckpoint,
   updateCheckpoint,
   deleteCheckpoint,
-} from '../services/apis/bankAccountsBalanceApi.js';
+} from '../repositories/bankAccountsBalance/bankAccountsBalance.index.js';
 
 function sendError(res, error, context) {
   console.error(`[${context}]`, error);

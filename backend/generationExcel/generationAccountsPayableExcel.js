@@ -4,7 +4,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import ExcelJS from 'exceljs';
-import { list } from '../services/apis/accountsPayableApi.js';
+import { list } from '../repositories/accountsPayable/accountsPayable.index.js';
 
 const EXPORT_PAGE_SIZE = 200;
 const MAX_EXPORT_ROWS = 50000;

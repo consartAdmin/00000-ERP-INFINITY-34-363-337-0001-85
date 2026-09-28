@@ -21,7 +21,7 @@ import { generateCaixaPdf } from '../generationPdf/generationCashMovimentsPdf.js
 import {
   getById as getAccountsPayableById,
   list as listAccountsPayable,
-} from '../services/apis/accountsPayableApi.js';
+} from '../repositories/accountsPayable/accountsPayable.index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

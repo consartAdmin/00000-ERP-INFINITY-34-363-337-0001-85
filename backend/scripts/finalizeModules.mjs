@@ -25,7 +25,7 @@ for (const [api, dir] of pairs) {
     failed = true;
     continue;
   }
-  const r = spawnSync('node', ['scripts/verifyRepoExports.mjs', api, dir], { encoding: 'utf8' });
+  const r = spawnSync('node', ['scripts/verifyRepoExports.mjs', api, dir, 'HEAD'], { encoding: 'utf8' });
   const line = r.stdout.split(/\r?\n/).find((l) => /^(OK|DIFF)/.test(l)) || lastLine(r.stderr);
   console.log(line);
   if (r.status !== 0) failed = true;

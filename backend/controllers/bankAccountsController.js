@@ -11,7 +11,7 @@ import {
   createBankAccount,
   updateBankAccount,
   deactivateBankAccount,
-} from '../services/apis/bankAccountsApi.js';
+} from '../repositories/bankAccounts/bankAccounts.index.js';
 
 function sendError(res, error, context) {
   console.error(`[${context}]`, error);

@@ -1,7 +1,7 @@
 'use strict';
 
 import ExcelJS from 'exceljs';
-import { getSummary, listSales, listAllSales } from '../services/apis/accountsReceivableReportsApi.js';
+import { getSummary, listSales, listAllSales } from '../repositories/accountsReceivableReports/accountsReceivableReports.index.js';
 
 function filters(query = {}) {
   return {

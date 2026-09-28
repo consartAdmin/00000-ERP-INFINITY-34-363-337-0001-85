@@ -18,7 +18,7 @@ import {
   signAttachmentUpload,
   signAttachmentDownload,
   createFromSource
-} from '../services/apis/accountsPayableApi.js';
+} from '../repositories/accountsPayable/accountsPayable.index.js';
 
 import { generateAccountsPayablePdf }
   from '../generationPdf/generationAccountsPayablePdf.js';

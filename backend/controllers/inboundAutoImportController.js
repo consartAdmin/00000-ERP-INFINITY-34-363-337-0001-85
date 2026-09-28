@@ -17,7 +17,7 @@ import { parseStringPromise } from 'xml2js';
 
 import pool from '../config/db.js';
 import inboundInvoicesApi from '../repositories/inboundInvoices/inboundInvoices.index.js';
-import { createFromSource as createAccountsPayableFromSource } from '../services/apis/accountsPayableApi.js';
+import { createFromSource as createAccountsPayableFromSource } from '../repositories/accountsPayable/accountsPayable.index.js';
 
 // ============================================================================
 // GOOGLE CLOUD STORAGE
