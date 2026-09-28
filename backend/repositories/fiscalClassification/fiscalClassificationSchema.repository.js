@@ -102,7 +102,7 @@ export async function ensureTable() {
     await client.query('COMMIT');
     return { ok: true };
   } catch (err) {
-    await pool.query('ROLLBACK');
+    await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();

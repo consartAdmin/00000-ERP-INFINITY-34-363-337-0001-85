@@ -10,6 +10,11 @@ export async function withClient(fn) {
   const client = await pool.connect();
   try {
     return await fn(client);
+  } catch (err) {
+    // Se fn abriu BEGIN e lançou erro, não devolve ao pool uma conexão no meio da transação.
+    // Sem transação aberta o ROLLBACK só gera um WARNING no Postgres.
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
   } finally {
     client.release();
   }
