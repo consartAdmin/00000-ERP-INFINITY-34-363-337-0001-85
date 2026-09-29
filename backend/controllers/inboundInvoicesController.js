@@ -46,7 +46,7 @@ import crypto from 'crypto';
 import {
   registerProductMovement,
   MOVEMENT_TYPES,
-} from '../services/products/productMovementsService.js';
+} from '../repositories/productMovements/productMovements.index.js';
 import { queueErrorEmail } from '../errorEmailReporter.js';
 
 function reportInboundError(...args) {

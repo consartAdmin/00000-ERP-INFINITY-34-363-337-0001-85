@@ -8,7 +8,7 @@
 import {
   registerProductMovement,
   MOVEMENT_TYPES,
-} from '../../services/products/productMovementsService.js';
+} from '../productMovements/productMovements.index.js';
 
 import {
   TB_INVOICES,

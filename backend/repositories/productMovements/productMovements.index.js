@@ -1,11 +1,13 @@
 // ╔══════════════════════════════════════════════════════════════╗
 // ║ productMovements.index.js — ponto de entrada do módulo      ║
-// ║ Mantém a mesma API pública do antigo productMovementsApi.js ║
+// ║ Leitura (listByProductCode) + registro (registerProductMovement)║
 // ╚══════════════════════════════════════════════════════════════╝
 
 import { listByProductCode } from './productMovementsQuery.repository.js';
+import { registerProductMovement } from './productMovementsCreate.repository.js';
+import { MOVEMENT_TYPES } from './productMovements.constants.js';
 
-export { listByProductCode };
+export { listByProductCode, registerProductMovement, MOVEMENT_TYPES };
 
 export default {
   listByProductCode,

@@ -1,16 +1,11 @@
 // ╔══════════════════════════════════════════════════════════════╗
-// ║ productMovementsService.js                                  ║
-// ║ Centralizador de Registros de Produto — CONSART ERP         ║
+// ║ productMovementsCreate.repository.js — registerProductMovement║
+// ║ Centralizador de Registros de Produto (INSERT)              ║
+// ║ Tabela: public."productMovements"                           ║
 // ╚══════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-
-export const MOVEMENT_TYPES = Object.freeze({
-  ENTRADA: 'ENTRADA',
-  SAIDA: 'SAIDA',
-  INVENTARIO: 'INVENTARIO',
-  AJUSTE: 'AJUSTE',
-});
+import { TB_PRODUCT_MOVEMENTS } from './productMovements.constants.js';
 
 export async function registerProductMovement({
   client = pool,
@@ -50,7 +45,7 @@ export async function registerProductMovement({
   }
 
   const sql = `
-    INSERT INTO public."productMovements" (
+    INSERT INTO ${TB_PRODUCT_MOVEMENTS} (
       product_code,
       movement_type,
       origin_module,
@@ -97,3 +92,5 @@ export async function registerProductMovement({
 
   return rows[0];
 }
+
+export default registerProductMovement;

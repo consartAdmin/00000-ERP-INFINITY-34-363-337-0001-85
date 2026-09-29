@@ -7,7 +7,7 @@ import pool from '../../config/db.js';
 import {
   registerProductMovement,
   MOVEMENT_TYPES,
-} from '../../services/products/productMovementsService.js';
+} from '../productMovements/productMovements.index.js';
 import { TB_INV, TB_ITEMS, TB_LOTS } from './inventory.constants.js';
 import { invDebug, invError, q } from './inventory.utils.js';
 import { rowToInventory } from './inventory.mappers.js';
