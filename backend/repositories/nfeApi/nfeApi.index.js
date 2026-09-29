@@ -6,9 +6,10 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import {
-  assertCompanyEnvironment,
   errorMessageFrom,
+  getCompanyEnvironment,
   getIssuerCnpj,
+  isHomologationEnvironment,
   isNfeApiProvider,
   request,
 } from './nfeApiClient.repository.js';
@@ -39,12 +40,7 @@ export async function emitirNFe(dadosNFe) {
     return { ok: false, status: error.status || 422, message: error.message, error: { message: error.message, code: error.code, context: 'NfeApi.emitirNFe' } };
   }
 
-  const environment = await assertCompanyEnvironment(body.issuerCnpj);
-  if (!environment.ok) {
-    return { ok: false, status: environment.status, message: environment.message, error: { message: environment.message, context: 'NfeApi.emitirNFe' } };
-  }
-
-  console.log('[NFE][NFE-API][ENVIO]', JSON.stringify({ idIntegracao: body.externalId, numero: body.number, serie: body.series }));
+  console.log('[NFE][NFE-API][ENVIO]', JSON.stringify({ idIntegracao: body.externalId, numero: body.number ?? 'automático (NF-e API)', serie: body.series }));
   const res = await request('POST', '/v1/invoices', { data: body });
 
   // 201 autorizada · 202 processando/sem retorno · 422 COM accessKey = rejeitada/denegada pela SEFAZ
@@ -124,6 +120,30 @@ export async function cancelarNFe(idNota, justificativa = 'Cancelamento solicita
   const res = await request('POST', `/v1/invoices/${key}/cancel`, { data: { reason: reason.slice(0, 255) } });
   if (res.status !== 200) return failure(res, 'cancelarNFe');
   return { ok: true, status: 200, data: toProviderDocument(res.data) };
+}
+
+/* =========================================================================
+ * 🧭 Ambiente da emissão de orçamentos
+ * ========================================================================= */
+
+/**
+ * Onde a próxima NF-e de orçamento será emitida.
+ *   · TecnoSpeed: NFE_AMBIENTE do ERP, numeração do ERP (public.nfe).
+ *   · NF-e API: ambiente escolhido no painel. Em homologação a própria API
+ *     numera (sequência de testes) e a sequência real do ERP não é consumida.
+ * @returns {Promise<{ environment: string, apiNumbering: boolean, provider: string }>}
+ */
+export async function resolveBudgetIssueTarget() {
+  if (!isNfeApiProvider()) {
+    return { provider: 'tecnospeed', environment: process.env.NFE_AMBIENTE || null, apiNumbering: false };
+  }
+  const { environment } = await getCompanyEnvironment();
+  return { provider: 'nfe-api', environment, apiNumbering: isHomologationEnvironment(environment) };
+}
+
+/** Nota de testes da NF-e API: não deve mexer em estoque, status do orçamento nem boletos. */
+export function isNfeApiHomologationDocument(document, fallbackEnvironment) {
+  return isNfeApiProvider() && isHomologationEnvironment(document?.ambiente || fallbackEnvironment);
 }
 
 /* =========================================================================

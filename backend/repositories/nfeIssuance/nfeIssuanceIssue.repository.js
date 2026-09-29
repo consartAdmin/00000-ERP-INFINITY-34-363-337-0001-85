@@ -10,10 +10,14 @@ import { providerDocument, providerIdFrom, providerProtocolFrom, providerMessage
 import { getBudgetIssuedData } from './nfeIssuanceFiscalContext.repository.js';
 import { getBudgetFiscalItems, assertBudgetItemsAreIssuable } from './nfeIssuanceItems.repository.js';
 import { claimBudgetForIssuance, persistIssueResult, persistIssueError } from './nfeIssuanceAttempts.repository.js';
-import { routeProvider } from '../nfeApi/nfeApi.index.js';
+import { routeProvider, resolveBudgetIssueTarget } from '../nfeApi/nfeApi.index.js';
 
 // Orçamentos: NFE_PROVIDER=nfe-api emite pela NF-e API própria; senão, TecnoSpeed.
 const emitirNFe = routeProvider('emitirNFe', tecnospeedNfeApi.emitirNFe);
+
+// Homologação pela NF-e API: o builder exige um número (senão reserva um da
+// sequência real), então recebe este marcador, que é removido antes do envio.
+const API_NUMBERING_PLACEHOLDER = 999999999;
 
 export async function issueBudgetNfe(budgetId, { userId } = {}) {
   const budget = await getBudgetIssuedData(budgetId);
@@ -22,7 +26,11 @@ export async function issueBudgetNfe(budgetId, { userId } = {}) {
 
   assertBudgetItemsAreIssuable(items);
 
-  const attempt = await claimBudgetForIssuance(budget, items, userId);
+  // Ambiente e numeração: TecnoSpeed → NFE_AMBIENTE; NF-e API → painel /admin
+  const target = await resolveBudgetIssueTarget();
+
+  const attempt = await claimBudgetForIssuance(budget, items, userId, target);
+  const builderNumber = attempt.nfe_number ?? API_NUMBERING_PLACEHOLDER;
 
   try {
     const payload = await tecnospeedNfeApi.buildNFeFromOrder({
@@ -31,8 +39,8 @@ export async function issueBudgetNfe(budgetId, { userId } = {}) {
         id: null,
         order_id: null,
         budget_id: budget.budget_id,
-        numero: attempt.nfe_number,
-        nfe_number: attempt.nfe_number,
+        numero: builderNumber,
+        nfe_number: builderNumber,
 
         // The authorized production NF-e used indFinal=1. Do not derive
         // consumidorFinal from the existence of a state registration:
@@ -52,6 +60,17 @@ export async function issueBudgetNfe(budgetId, { userId } = {}) {
     // Enforce the atomically reserved number even if the generic builder
     // receives another legacy/default sequence value.
     payload.numero = attempt.nfe_number;
+
+    if (target.apiNumbering) {
+      // A NF-e API numera; o marcador não pode chegar à nota
+      delete payload.numero;
+      if (payload.cobranca) delete payload.cobranca.numero;
+      if (payload.informacoesComplementares) {
+        payload.informacoesComplementares = String(payload.informacoesComplementares)
+          .replace(new RegExp(`\\s*\\|?\\s*Fatura:\\s*${API_NUMBERING_PLACEHOLDER}`, 'g'), '')
+          .trim();
+      }
+    }
 
     // Recovery path: if a previous HTTP call reached the provider but the
     // local persistence failed, reuse the provider document instead of
@@ -135,7 +154,7 @@ export async function issueBudgetNfe(budgetId, { userId } = {}) {
     }
     const environment =
       document.ambiente || result.data?.ambiente ||
-      process.env.NFE_AMBIENTE || null;
+      target.environment || process.env.NFE_AMBIENTE || null;
 
     await persistIssueResult(attempt.attempt_id, {
       status,
@@ -143,6 +162,8 @@ export async function issueBudgetNfe(budgetId, { userId } = {}) {
       idIntegracao,
       protocol,
       environment,
+      // Homologação pela NF-e API: o número vem da API, não da reserva do ERP
+      nfeNumber: target.apiNumbering && document.numero ? Number(document.numero) : null,
       providerResponse: result.data || {},
     });
 

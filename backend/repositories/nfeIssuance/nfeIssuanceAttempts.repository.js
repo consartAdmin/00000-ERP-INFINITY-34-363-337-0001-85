@@ -7,6 +7,7 @@ import pool from '../../config/db.js';
 import { ATTEMPTS_TABLE, ATTEMPT_ITEMS_TABLE, STATUS_TABLE, STATUS_ALIASES, RETRYABLE_ATTEMPT_STATUS_CODES, REUSABLE_NFE_NUMBER_STATUS_CODES } from './nfeIssuance.constants.js';
 import { positiveInteger } from './nfeIssuance.utils.js';
 import { fiscalItemSnapshot } from './nfeIssuance.mappers.js';
+import { isHomologationEnvironment } from '../nfeApi/nfeApiClient.repository.js';
 
 export async function resolveNfeStatus(client, rawStatus) {
   const normalized = String(rawStatus || 'PROCESSANDO').trim().toUpperCase();
@@ -40,7 +41,12 @@ async function insertAttemptItem(client, data) {
   );
 }
 
-export async function claimBudgetForIssuance(budget, items, userId) {
+/**
+ * @param {object} [target] resultado de resolveBudgetIssueTarget():
+ *   { provider, environment, apiNumbering }. apiNumbering=true (homologação
+ *   pela NF-e API) não consome a sequência real de public.nfe.
+ */
+export async function claimBudgetForIssuance(budget, items, userId, target = {}) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -62,7 +68,13 @@ export async function claimBudgetForIssuance(budget, items, userId) {
     const previous = latest.rows[0];
     const previousCode = String(previous?.status_code || '').trim().toUpperCase();
     const retryable = RETRYABLE_ATTEMPT_STATUS_CODES.has(previousCode);
-    if (previous && (previous.is_authorized || (!previous.is_final && !retryable))) {
+    // NF-e de testes (homologação) emitida pela NF-e API não impede emitir
+    // de novo o mesmo orçamento — inclusive em produção.
+    const previousWasNfeApiTest =
+      target.provider === 'nfe-api'
+      && Boolean(previous?.is_authorized)
+      && isHomologationEnvironment(previous?.nfe_environment);
+    if (previous && ((previous.is_authorized && !previousWasNfeApiTest) || (!previous.is_final && !retryable))) {
       const error = new Error(
         previous.is_authorized
           ? 'Este orçamento já possui uma NF-e autorizada.'
@@ -93,13 +105,21 @@ export async function claimBudgetForIssuance(budget, items, userId) {
     const previousWasDuplicate =
       /\b(539|204)\b|duplicidade/i.test(String(previous?.error_message || ''));
     const canReusePreviousNumber =
-      previousNfeNumber !== null
+      !target.apiNumbering
+      && !previousWasNfeApiTest
+      && previousNfeNumber !== null
       && REUSABLE_NFE_NUMBER_STATUS_CODES.has(previousCode)
       && !previousWasDuplicate;
 
     let reservedNfeNumber = canReusePreviousNumber ? previousNfeNumber : null;
 
-    if (reservedNfeNumber === null) {
+    if (target.apiNumbering) {
+      console.log('[BUDGET NFE][NUMERACAO NF-E API]', {
+        budget_id: budget.budget_id,
+        environment: target.environment,
+        detail: 'Homologação: a NF-e API numera; public.nfe não é consumida.',
+      });
+    } else if (reservedNfeNumber === null) {
       const reservedNumberResult = await client.query(
         `
           WITH active_sequence AS (
@@ -169,7 +189,7 @@ export async function claimBudgetForIssuance(budget, items, userId) {
       `,
       [
         budget.budget_id, attemptNumber, status.nfe_status_id,
-        process.env.NFE_AMBIENTE || null, budget.operation_type_id || null,
+        target.environment || process.env.NFE_AMBIENTE || null, budget.operation_type_id || null,
         budget.customer_id || null, budget.customer_name || null,
         budget.customer_tax_id || null,
         budget.customer_email || budget.email || null,
@@ -218,10 +238,11 @@ export async function persistIssueResult(attemptId, values) {
   // há risco de vazar conexão.
   const status = await resolveNfeStatus(pool, values.status);
   await pool.query(
-    `UPDATE ${ATTEMPTS_TABLE} SET nfe_status_id = $2, provider_id = $3, integration_id = $4, protocol = $5, nfe_environment = $6, provider_response = $7::jsonb, error_code = NULL, error_message = NULL, last_checked_at = NOW(), authorized_at = CASE WHEN $8 THEN COALESCE(authorized_at, NOW()) ELSE authorized_at END, rejected_at = CASE WHEN $9 THEN COALESCE(rejected_at, NOW()) ELSE rejected_at END, updated_at = NOW() WHERE attempt_id = $1`,
+    `UPDATE ${ATTEMPTS_TABLE} SET nfe_status_id = $2, provider_id = $3, integration_id = $4, protocol = $5, nfe_environment = $6, provider_response = $7::jsonb, nfe_number = COALESCE($10, nfe_number), error_code = NULL, error_message = NULL, last_checked_at = NOW(), authorized_at = CASE WHEN $8 THEN COALESCE(authorized_at, NOW()) ELSE authorized_at END, rejected_at = CASE WHEN $9 THEN COALESCE(rejected_at, NOW()) ELSE rejected_at END, updated_at = NOW() WHERE attempt_id = $1`,
     [attemptId, status.nfe_status_id, values.providerId, values.idIntegracao,
       values.protocol, values.environment, JSON.stringify(values.providerResponse || {}),
-      Boolean(status.is_authorized), Boolean(status.is_final && !status.is_authorized)],
+      Boolean(status.is_authorized), Boolean(status.is_final && !status.is_authorized),
+      values.nfeNumber ?? null],
   );
 }
 

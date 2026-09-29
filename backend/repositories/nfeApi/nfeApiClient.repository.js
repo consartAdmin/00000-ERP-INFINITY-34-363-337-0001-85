@@ -77,43 +77,31 @@ export function errorMessageFrom(response) {
 
 /* =========================================================================
  * 🧭 Ambiente
+ *
+ * Com NFE_PROVIDER=nfe-api quem define homologação/produção é o painel da
+ * NF-e API (/admin → Empresas → Ambiente), por empresa. NFE_AMBIENTE do ERP
+ * só vale para a TecnoSpeed.
  * ========================================================================= */
-
-/** NFE_AMBIENTE do ERP (producao/homologacao/sandbox) → ambiente da NF-e API. */
-export function expectedApiEnvironment() {
-  return String(process.env.NFE_AMBIENTE || 'producao').toLowerCase() === 'producao' ? 'production' : 'homologation';
-}
 
 /** Ambiente da NF-e API → nomenclatura já gravada pelo ERP (NFE_AMBIENTE). */
 export function toErpEnvironment(environment) {
   return environment === 'production' ? 'producao' : 'homologacao';
 }
 
-let companyCache = { at: 0, value: null };
+export const isHomologationEnvironment = (environment) => /homolog|sandbox/i.test(String(environment || ''));
 
 /**
- * Impede emitir em um ambiente diferente do que o ERP acredita estar usando
- * (ex.: ERP em producao e empresa ainda em homologação na API).
+ * Ambiente atual da empresa no painel da NF-e API, sem cache: uma troca no
+ * painel vale já na próxima emissão.
+ * @returns {Promise<{ environment: 'producao'|'homologacao', company: object }>}
  */
-export async function assertCompanyEnvironment(cnpj) {
-  if (!companyCache.value || companyCache.value.cnpj !== cnpj || Date.now() - companyCache.at > 60_000) {
-    const res = await request('GET', `/v1/companies/${cnpj}`);
-    if (res.status !== 200) {
-      return { ok: false, status: res.status, message: `Empresa ${cnpj} não encontrada na NF-e API: ${errorMessageFrom(res)}` };
-    }
-    companyCache = { at: Date.now(), value: res.data };
+export async function getCompanyEnvironment(cnpj = getIssuerCnpj()) {
+  const res = await request('GET', `/v1/companies/${cnpj}`);
+  if (res.status !== 200) {
+    const error = new Error(`Empresa ${cnpj} não encontrada na NF-e API: ${errorMessageFrom(res)}`);
+    error.status = res.status === 404 ? 422 : 502;
+    error.code = 'NFE_API_COMPANY_UNAVAILABLE';
+    throw error;
   }
-
-  const company = companyCache.value;
-  const expected = expectedApiEnvironment();
-  if (company.environment !== expected) {
-    return {
-      ok: false,
-      status: 409,
-      message:
-        `Ambiente divergente: o ERP está em "${process.env.NFE_AMBIENTE || 'producao'}" e a empresa ` +
-        `${cnpj} está em "${toErpEnvironment(company.environment)}" na NF-e API. Ajuste um dos dois antes de emitir.`,
-    };
-  }
-  return { ok: true, company };
+  return { environment: toErpEnvironment(res.data.environment), company: res.data };
 }

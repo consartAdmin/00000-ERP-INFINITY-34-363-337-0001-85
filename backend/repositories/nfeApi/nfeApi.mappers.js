@@ -169,8 +169,10 @@ function mapBilling(cobranca, numero) {
     dueDate: String(p.dataVencimento).slice(0, 10),
     amount: Number(p.valor),
   }));
+  // Sem número reservado (homologação numerada pela API) o builder pode mandar "null"
+  const invoiceNumber = [cobranca.numero, numero].map((v) => String(v ?? '')).find((v) => /^\d+$/.test(v));
   return {
-    invoiceNumber: String(cobranca.numero ?? numero),
+    ...(invoiceNumber ? { invoiceNumber } : {}),
     originalValue: num(cobranca.valorTotal ?? cobranca.valorOriginal),
     discount: num(cobranca.valorDesconto) ?? 0,
     netValue: num(cobranca.valorLiquido),
@@ -184,7 +186,8 @@ export function toApiInvoicePayload(nfe) {
     issuerCnpj: digits(nfe.emitente?.cpfCnpj),
     externalId: nfe.idIntegracao,
     series: Number(nfe.serie ?? 1),
-    number: Number(nfe.numero), // número já reservado pelo ERP (public.nfe)
+    // Número reservado pelo ERP (public.nfe). Ausente = a NF-e API numera (homologação).
+    ...(Number(nfe.numero) > 0 ? { number: Number(nfe.numero) } : {}),
     operationNature: text(nfe.natureza, 60),
     operationType: nfe.saida === false ? 0 : 1,
     purpose: Number(nfe.finalidade ?? 1),

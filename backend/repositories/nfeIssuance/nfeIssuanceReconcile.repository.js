@@ -15,6 +15,7 @@ import { providerDocument, providerProtocolFrom, providerMessageFrom, providerAc
 import { getBudgetIssuedData } from './nfeIssuanceFiscalContext.repository.js';
 import { resolveNfeStatus } from './nfeIssuanceAttempts.repository.js';
 import { getBudgetNfeReference, resolveProviderId } from './nfeIssuanceReference.repository.js';
+import { isNfeApiHomologationDocument } from '../nfeApi/nfeApi.index.js';
 
 export async function reconcileBudgetNfe(budgetId) {
   const reference = await getBudgetNfeReference(budgetId);
@@ -43,6 +44,17 @@ export async function reconcileBudgetNfe(budgetId) {
 
   const statusMap = await resolveNfeStatus(pool, status);
   const isCancelled = status === 'CANCELADA';
+
+  // NF-e de testes (homologação) da NF-e API não tem valor fiscal: registra a
+  // nota, mas não baixa/estorna estoque, não muda o status do orçamento e não
+  // gera boletos no Asaas.
+  const isTestInvoice = isNfeApiHomologationDocument(document, reference.nfe_environment);
+  if (isTestInvoice) {
+    console.log('[BUDGET NFE][HOMOLOGACAO NF-E API] efeitos de negócio ignorados', {
+      budget_id: reference.budget_id,
+      status,
+    });
+  }
 
   await pool.query(
     `
@@ -161,25 +173,27 @@ export async function reconcileBudgetNfe(budgetId) {
       ],
     );
 
-    await pool.query(
-      `
-        UPDATE public.budgets
-        SET status = 'CANCELADO',
-            updated_at = NOW()
-        WHERE budget_id = $1
-      `,
-      [reference.budget_id],
-    );
+    if (!isTestInvoice) {
+      await pool.query(
+        `
+          UPDATE public.budgets
+          SET status = 'CANCELADO',
+              updated_at = NOW()
+          WHERE budget_id = $1
+        `,
+        [reference.budget_id],
+      );
 
-    // ========================================================================
-    // ORÇAMENTO → NF-e CANCELADA → ESTORNO IDEMPOTENTE DO ESTOQUE
-    // ========================================================================
-    stockRollback =
-      await stockFromBudgetsService
-        .rollbackStockFromBudget({
-          attemptId:
-            reference.attempt_id,
-        });
+      // ======================================================================
+      // ORÇAMENTO → NF-e CANCELADA → ESTORNO IDEMPOTENTE DO ESTOQUE
+      // ======================================================================
+      stockRollback =
+        await stockFromBudgetsService
+          .rollbackStockFromBudget({
+            attemptId:
+              reference.attempt_id,
+          });
+    }
 
     cancellationSync = {
       ok: cancellationResult.rowCount > 0,
@@ -201,8 +215,9 @@ export async function reconcileBudgetNfe(budgetId) {
     // ========================================================================
     // ORÇAMENTO → NF-e AUTORIZADA → ESTOQUE
     // ========================================================================
-    stockSync =
-      await stockFromBudgetsService
+    stockSync = isTestInvoice
+      ? { ok: true, skipped: true, reason: 'NF-e de homologação (NF-e API)' }
+      : await stockFromBudgetsService
         .applyStockFromBudget(
           budget,
           {
@@ -308,21 +323,25 @@ export async function reconcileBudgetNfe(budgetId) {
     // O orçamento só se torna FATURADO depois que estoque e invoicesIssued
     // terminam com sucesso. Operações com moves_stock=false são marcadas pelo
     // serviço de estoque como ignoradas, sem gerar baixa.
-    await pool.query(
-      `
-        UPDATE public.budgets
-        SET status = 'FATURADO',
-            updated_at = NOW()
-        WHERE budget_id = $1
-      `,
-      [reference.budget_id],
-    );
+    if (!isTestInvoice) {
+      await pool.query(
+        `
+          UPDATE public.budgets
+          SET status = 'FATURADO',
+              updated_at = NOW()
+          WHERE budget_id = $1
+        `,
+        [reference.budget_id],
+      );
+    }
 
     // ============================================================================
     // ORÇAMENTO → NF-e AUTORIZADA → ASAAS → BOLETOS
     // ============================================================================
 
-    try {
+    if (isTestInvoice) {
+      boletoSync = { ok: true, skipped: true, reason: 'NF-e de homologação (NF-e API)' };
+    } else try {
       boletoSync =
         await syncAuthorizedBudgetNfe({
           budgetId:
