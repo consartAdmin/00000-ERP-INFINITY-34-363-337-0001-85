@@ -20,6 +20,7 @@ import {
   montarLogradouroNfe,
 } from './tecnoSpeedNfe.sanitizers.js';
 import {
+  buildReformaTributariaFromFiscal,
   buildReformaTotals,
 } from './tecnoSpeedNfe.reformaTributaria.js';
 import {

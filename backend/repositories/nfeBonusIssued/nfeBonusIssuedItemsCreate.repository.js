@@ -11,6 +11,7 @@ import { ensureTables } from './nfeBonusIssuedSchema.repository.js';
 import { resolveProduct, resolveLot, getNextItemSequence } from './nfeBonusIssuedLookup.repository.js';
 import { recalculateBonusTotal } from './nfeBonusIssuedTotal.repository.js';
 import { getById } from './nfeBonusIssuedGetById.repository.js';
+import { rowToBonusItem } from './nfeBonusIssued.mappers.js';
 
 // ======================================================================
 // ADD ITEM

@@ -58,6 +58,19 @@ export async function issueBudgetNfeController(req, res) {
         const result = await issueBudgetNfe(req.params.budgetId, {
             userId: req.user?.user_id || req.user?.id || null,
         });
+
+        // NF-e já autorizada na resposta (NF-e API é síncrona): reconcilia agora.
+        // Sem isso, invoicesIssued, estoque, status FATURADO e boletos só seriam
+        // processados por GET /status, que o front não chama nesse caso.
+        if (String(result?.status || '').toUpperCase() === 'AUTORIZADA') {
+            try {
+                result.reconcile = await reconcileBudgetNfe(req.params.budgetId);
+            } catch (error) {
+                console.error('[budgetsIssuedsController][issue][reconcile]', error);
+                result.reconcile = { ok: false, error: error?.code || 'BUDGET_NFE_RECONCILE_FAILED', message: error?.message };
+            }
+        }
+
         return res.status(202).json({
             ok: true,
             message: result.recovered ? 'NF-e localizada no provedor e vinculada ao orçamento.' : 'NF-e enviada para processamento.',

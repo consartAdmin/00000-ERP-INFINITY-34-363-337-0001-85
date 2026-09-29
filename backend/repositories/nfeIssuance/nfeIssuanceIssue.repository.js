@@ -97,7 +97,7 @@ export async function issueBudgetNfe(budgetId, { userId } = {}) {
       console.log('[BUDGET NFE][ANTES DO ENVIO]', {
         budgetId: budget.budget_id,
         idIntegracao,
-        ambiente: process.env.NFE_AMBIENTE || null,
+        ambiente: target.environment || process.env.NFE_AMBIENTE || null,
         consumidorFinal: payload.consumidorFinal,
       });
 

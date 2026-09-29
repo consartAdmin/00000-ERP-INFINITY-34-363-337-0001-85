@@ -10,6 +10,7 @@ import { withTransaction } from './nfeBonusIssued.utils.js';
 import { ensureTables } from './nfeBonusIssuedSchema.repository.js';
 import { getBonusOperation, getCustomerForBonus } from './nfeBonusIssuedLookup.repository.js';
 import { getById } from './nfeBonusIssuedGetById.repository.js';
+import { rowToBonus } from './nfeBonusIssued.mappers.js';
 
 // ======================================================================
 // CREATE BONUS
