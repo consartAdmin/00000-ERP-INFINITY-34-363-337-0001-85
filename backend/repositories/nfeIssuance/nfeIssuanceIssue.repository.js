@@ -10,6 +10,10 @@ import { providerDocument, providerIdFrom, providerProtocolFrom, providerMessage
 import { getBudgetIssuedData } from './nfeIssuanceFiscalContext.repository.js';
 import { getBudgetFiscalItems, assertBudgetItemsAreIssuable } from './nfeIssuanceItems.repository.js';
 import { claimBudgetForIssuance, persistIssueResult, persistIssueError } from './nfeIssuanceAttempts.repository.js';
+import { routeProvider } from '../nfeApi/nfeApi.index.js';
+
+// Orçamentos: NFE_PROVIDER=nfe-api emite pela NF-e API própria; senão, TecnoSpeed.
+const emitirNFe = routeProvider('emitirNFe', tecnospeedNfeApi.emitirNFe);
 
 export async function issueBudgetNfe(budgetId, { userId } = {}) {
   const budget = await getBudgetIssuedData(budgetId);
@@ -78,7 +82,7 @@ export async function issueBudgetNfe(budgetId, { userId } = {}) {
         consumidorFinal: payload.consumidorFinal,
       });
 
-      result = await tecnospeedNfeApi.emitirNFe(payload);
+      result = await emitirNFe(payload);
       logProviderResult('[BUDGET NFE][RESPOSTA COMPLETA]', result);
     }
 

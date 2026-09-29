@@ -88,9 +88,14 @@ export async function claimBudgetForIssuance(budget, items, userId) {
      * que duas emissões simultâneas recebam o mesmo número.
      */
     const previousNfeNumber = positiveInteger(previous?.nfe_number);
+    // Rejeição 539/204 (duplicidade): o número JÁ existe na SEFAZ com outra
+    // chave, então reaproveitá-lo geraria a mesma rejeição para sempre.
+    const previousWasDuplicate =
+      /\b(539|204)\b|duplicidade/i.test(String(previous?.error_message || ''));
     const canReusePreviousNumber =
       previousNfeNumber !== null
-      && REUSABLE_NFE_NUMBER_STATUS_CODES.has(previousCode);
+      && REUSABLE_NFE_NUMBER_STATUS_CODES.has(previousCode)
+      && !previousWasDuplicate;
 
     let reservedNfeNumber = canReusePreviousNumber ? previousNfeNumber : null;
 

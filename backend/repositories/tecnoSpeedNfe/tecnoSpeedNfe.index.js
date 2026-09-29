@@ -9,14 +9,15 @@
 import { getEffectiveConfig } from './tecnoSpeedNfeClient.repository.js';
 import { cancelarNFe } from '../cancelarNfe/cancelarNfe.index.js';
 import { buildNFeFromOrder } from './tecnoSpeedNfeBuild.repository.js';
-import { emitirNFe } from './tecnoSpeedNfeEmit.repository.js';
+import { emitirNFe as emitirNFeTecnospeed } from './tecnoSpeedNfeEmit.repository.js';
 import {
-  consultarNFe,
-  obterXml,
-  obterPdf,
+  consultarNFe as consultarNFeTecnospeed,
+  obterXml as obterXmlTecnospeed,
+  obterPdf as obterPdfTecnospeed,
   extrairTpAmb,
 } from './tecnoSpeedNfeQuery.repository.js';
-import { listarNFe } from './tecnoSpeedNfeList.repository.js';
+import { listarNFe as listarNFeTecnospeed } from './tecnoSpeedNfeList.repository.js';
+import { routeProvider } from '../nfeApi/nfeApi.index.js';
 import { reconcileOrderNfe } from './tecnoSpeedNfeOrderSync.repository.js';
 import {
   emitirCCe,
@@ -30,6 +31,19 @@ import {
 } from './tecnoSpeedNfeInutilizacao.repository.js';
 import { emitirNFeSupplierReturn } from './tecnoSpeedNfeSupplierReturn.repository.js';
 import { emitirNFeUsoConsumo } from './tecnoSpeedNfeUsoConsumo.repository.js';
+
+/* =========================================================================
+ * 🔀 Provedor: NFE_PROVIDER=nfe-api usa a NF-e API própria; padrão TecnoSpeed.
+ * Consulta/XML/PDF/listagem vão para a NF-e API só quando a nota é dela
+ * (chave de 44 dígitos conhecida pela API); as demais seguem na TecnoSpeed.
+ * A EMISSÃO continua sempre na TecnoSpeed aqui: somente o fluxo de orçamentos
+ * (nfeIssuanceIssue.repository.js) emite pela NF-e API, via routeProvider.
+ * ========================================================================= */
+const emitirNFe = emitirNFeTecnospeed;
+const consultarNFe = routeProvider('consultarNFe', consultarNFeTecnospeed);
+const obterXml = routeProvider('obterXml', obterXmlTecnospeed);
+const obterPdf = routeProvider('obterPdf', obterPdfTecnospeed);
+const listarNFe = routeProvider('listarNFe', listarNFeTecnospeed);
 
 export {
   buildNFeFromOrder,

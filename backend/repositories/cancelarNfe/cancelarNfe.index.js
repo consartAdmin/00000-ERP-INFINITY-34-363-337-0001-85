@@ -11,7 +11,12 @@ import {
   consultarResumoNFeParaCancelamento,
   consultarStatusCancelamentoNFe,
 } from './cancelarNfeQuery.repository.js';
-import { cancelarNFe } from './cancelarNfeCancel.repository.js';
+import { cancelarNFe as cancelarNFeTecnospeed } from './cancelarNfeCancel.repository.js';
+import { routeProvider } from '../nfeApi/nfeApi.index.js';
+
+// NFE_PROVIDER=nfe-api: notas da NF-e API (chave de 44 dígitos) são canceladas lá;
+// as emitidas pela TecnoSpeed continuam sendo canceladas na TecnoSpeed.
+const cancelarNFe = routeProvider('cancelarNFe', cancelarNFeTecnospeed);
 
 export {
   consultarResumoNFeParaCancelamento,
