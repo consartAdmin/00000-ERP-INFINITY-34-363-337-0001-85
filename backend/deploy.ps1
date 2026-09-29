@@ -4,7 +4,6 @@
 # ║ - Separa DEPLOY_* de envs da aplicação                     ║
 # ║ - Gera YAML temporário de env vars                         ║
 # ║ - Deploy Cloud Run                                         ║
-# ║ - Cria/atualiza Scheduler com token                        ║
 # ║                                                            ║
 # ║ Uso:                                                       ║
 # ║   .\deploy.ps1                          (usa .env)         ║
@@ -43,17 +42,30 @@ function Resolve-DotEnvPath {
   return $null
 }
 
-function Get-LiveService($svc, $proj, $reg) {
-  # PS 5.1: stderr de comando nativo + "Stop" vira exceção; serviço inexistente é esperado aqui
+function Invoke-GcloudQuiet {
+  # PS 5.1: stderr de comando nativo + "Stop" vira exceção; recurso inexistente é esperado aqui.
+  # Retorna a saída (stdout) ou $null se o gcloud falhar.
   $prev = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   try {
-    $json = $(gcloud run services describe $svc --project=$proj --region=$reg --format=json 2>$null)
-    if ($LASTEXITCODE -ne 0 -or -not $json) { return $null }
-    return ($json | Out-String | ConvertFrom-Json)
+    $out = $(& gcloud @args 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $out) { return $null }
+    return $out
   } finally {
     $ErrorActionPreference = $prev
   }
+}
+
+function Invoke-Gcloud([string]$label) {
+  # Executa o gcloud e aborta o deploy se falhar
+  & gcloud @args
+  if ($LASTEXITCODE -ne 0) { throw "❌ FALHA: $label" }
+}
+
+function Get-LiveService($svc, $proj, $reg) {
+  $json = Invoke-GcloudQuiet run services describe $svc "--project=$proj" "--region=$reg" "--format=json"
+  if (-not $json) { return $null }
+  return ($json | Out-String | ConvertFrom-Json)
 }
 
 function ConvertTo-EnvValue([string]$value) {
@@ -61,11 +73,11 @@ function ConvertTo-EnvValue([string]$value) {
 
   $v = $value.Trim()
 
-  if (
-    ($v.StartsWith('"') -and $v.EndsWith('"')) -or
-    ($v.StartsWith("'") -and $v.EndsWith("'"))
-  ) {
-    $v = $v.Substring(1, $v.Length - 2).Trim()
+  # Valor entre aspas: pega até a aspa de fechamento; o que vier depois (ex.: comentário) é ignorado
+  if ($v.StartsWith('"') -or $v.StartsWith("'")) {
+    $quote = $v.Substring(0, 1)
+    $close = $v.IndexOf($quote, 1)
+    if ($close -gt 0) { return $v.Substring(1, $close - 1) }
   }
 
   $hashPos = $v.IndexOf(" #")
@@ -79,7 +91,7 @@ function ConvertTo-EnvValue([string]$value) {
 function Import-DotEnv($path) {
   $map = [ordered]@{}
 
-  Get-Content $path | ForEach-Object {
+  Get-Content $path -Encoding UTF8 | ForEach-Object {
     $line = $_.Trim()
 
     if ([string]::IsNullOrWhiteSpace($line)) { return }
@@ -165,9 +177,6 @@ $VPC_NETWORK         = $DEPLOY["DEPLOY_VPC_NETWORK"]
 $VPC_RANGE           = $DEPLOY["DEPLOY_VPC_RANGE"]
 $ROUTER_NAME         = $DEPLOY["DEPLOY_ROUTER_NAME"]
 $NAT_NAME            = $DEPLOY["DEPLOY_NAT_NAME"]
-$BASE_URL            = $DEPLOY["DEPLOY_BASE_URL"]
-$SCHEDULER_LOCATION  = $DEPLOY["DEPLOY_SCHEDULER_LOCATION"]
-$TIMEZONE            = $DEPLOY["DEPLOY_SCHEDULER_TIMEZONE"]
 $ACCOUNT             = $DEPLOY["DEPLOY_ACCOUNT"]
 $IMAGE_REPO          = $DEPLOY["DEPLOY_IMAGE_REPO"]
 
@@ -185,6 +194,9 @@ if ($ImageOnly -and -not $REGION) { $REGION = "us-central1" }
 if (-not $PROJECT -or -not $REGION -or -not $SERVICE) {
   throw "❌ Informe DEPLOY_PROJECT, DEPLOY_REGION e DEPLOY_SERVICE no .env."
 }
+
+# Projeto do gcloud só para este processo (não altera o `gcloud config` global)
+$env:CLOUDSDK_CORE_PROJECT = $PROJECT
 
 # ╔════════════════════════════════════════════════════════════╗
 # ║ Modo -ImageOnly: builda e publica só o código.             ║
@@ -240,7 +252,13 @@ $live = Get-LiveService $SERVICE $PROJECT $REGION
 if ($live) {
   $liveEnv = @($live.spec.template.spec.containers[0].env)
 
-  $liveDbName = [string](($liveEnv | Where-Object { $_.name -eq "DB_NAME" } | Select-Object -First 1).value)
+  $liveDbEntry = $liveEnv | Where-Object { $_.name -eq "DB_NAME" } | Select-Object -First 1
+  $liveDbName = [string]$liveDbEntry.value
+  if (-not $envDbName) {
+    Write-Host "[TRAVA] DB_NAME ausente no arquivo: conferência de cliente não realizada." -ForegroundColor Yellow
+  } elseif ($liveDbEntry -and $liveDbEntry.valueFrom) {
+    Write-Host "[TRAVA] DB_NAME do serviço vem do Secret Manager: conferência de cliente não realizada." -ForegroundColor Yellow
+  }
   if ($liveDbName -and $envDbName -and $liveDbName -ne $envDbName) {
     throw "❌ TRAVA: $SERVICE usa DB_NAME=$liveDbName, mas o arquivo tem DB_NAME=$envDbName. Arquivo de outro cliente? Use -EnvFile correto."
   }
@@ -264,8 +282,6 @@ if (-not $MEMORY)              { $MEMORY = "1Gi" }
 if (-not $TIMEOUT)             { $TIMEOUT = "300" }
 if (-not $PORT)                { $PORT = "8080" }
 if (-not $CONCURRENCY)         { $CONCURRENCY = "80" }
-if (-not $SCHEDULER_LOCATION)  { $SCHEDULER_LOCATION = $REGION }
-if (-not $TIMEZONE)            { $TIMEZONE = "America/Sao_Paulo" }
 
 # Repositório: DEPLOY_IMAGE_REPO (projeto compartilhado) ou, se vazio, o padrão antigo = nome do serviço
 if (-not $IMAGE_REPO) { $IMAGE_REPO = $SERVICE }
@@ -278,32 +294,46 @@ Write-Host "[INFO] REGION  = $REGION"
 Write-Host "[INFO] SERVICE = $SERVICE"
 Write-Host "[INFO] IMAGE   = $IMAGE"
 
-gcloud config set project $PROJECT | Out-Null
-
 Write-Host ""
 Write-Host "[APIs] Habilitando APIs necessárias..."
 
-gcloud services enable `
+Invoke-Gcloud "habilitar APIs" services enable `
   run.googleapis.com `
   cloudbuild.googleapis.com `
   artifactregistry.googleapis.com `
   compute.googleapis.com `
   vpcaccess.googleapis.com `
   storage.googleapis.com `
-  cloudscheduler.googleapis.com `
-  sqladmin.googleapis.com | Out-Null
+  sqladmin.googleapis.com `
+  --project $PROJECT | Out-Null
+
+Write-Host ""
+Write-Host "[ARTIFACT] Verificando repositório $IMAGE_REPO..."
+
+$repo = Invoke-GcloudQuiet artifacts repositories describe $IMAGE_REPO `
+  --location $REGION `
+  --project $PROJECT `
+  --format="value(name)"
+
+if (-not $repo) {
+  Write-Host "[ARTIFACT] Criando repositório $IMAGE_REPO..."
+  Invoke-Gcloud "criar repositório $IMAGE_REPO" artifacts repositories create $IMAGE_REPO `
+    --repository-format docker `
+    --location $REGION `
+    --project $PROJECT | Out-Null
+}
 
 if ($CONNECTOR_NAME -and $VPC_NETWORK -and $VPC_RANGE) {
   Write-Host ""
   Write-Host "[VPC ACCESS] Verificando conector..."
 
-  $existing = $(gcloud compute networks vpc-access connectors describe $CONNECTOR_NAME `
+  $existing = Invoke-GcloudQuiet compute networks vpc-access connectors describe $CONNECTOR_NAME `
     --region $REGION `
     --project $PROJECT `
-    --format="value(name)" 2>$null)
+    --format="value(name)"
 
   if (-not $existing) {
-    gcloud compute networks vpc-access connectors create $CONNECTOR_NAME `
+    Invoke-Gcloud "criar conector $CONNECTOR_NAME" compute networks vpc-access connectors create $CONNECTOR_NAME `
       --region $REGION `
       --project $PROJECT `
       --network $VPC_NETWORK `
@@ -316,45 +346,48 @@ if ($CONNECTOR_NAME -and $VPC_NETWORK -and $VPC_RANGE) {
 
   Write-Host "[VPC ACCESS] Aguardando READY..."
 
+  $state = $null
   for ($i = 0; $i -lt 60; $i++) {
-    $state = $(gcloud compute networks vpc-access connectors describe $CONNECTOR_NAME `
+    $state = Invoke-GcloudQuiet compute networks vpc-access connectors describe $CONNECTOR_NAME `
       --region $REGION `
       --project $PROJECT `
-      --format="value(state)" 2>$null)
+      --format="value(state)"
 
-    if ($state -eq "READY") {
-      Write-Host "[VPC ACCESS] READY"
-      break
-    }
+    if ($state -eq "READY") { break }
 
     Start-Sleep -Seconds 5
   }
+
+  if ($state -ne "READY") {
+    throw "❌ Conector $CONNECTOR_NAME não ficou READY em 5 minutos (estado: $state)."
+  }
+  Write-Host "[VPC ACCESS] READY"
 }
 
 if ($ROUTER_NAME -and $NAT_NAME -and $VPC_NETWORK) {
   Write-Host ""
   Write-Host "[NAT] Verificando Router e NAT..."
 
-  $router = $(gcloud compute routers describe $ROUTER_NAME `
+  $router = Invoke-GcloudQuiet compute routers describe $ROUTER_NAME `
     --region $REGION `
     --project $PROJECT `
-    --format="value(name)" 2>$null)
+    --format="value(name)"
 
   if (-not $router) {
-    gcloud compute routers create $ROUTER_NAME `
+    Invoke-Gcloud "criar router $ROUTER_NAME" compute routers create $ROUTER_NAME `
       --network $VPC_NETWORK `
       --region $REGION `
       --project $PROJECT | Out-Null
   }
 
-  $nat = $(gcloud compute routers nats describe $NAT_NAME `
+  $nat = Invoke-GcloudQuiet compute routers nats describe $NAT_NAME `
     --router $ROUTER_NAME `
     --region $REGION `
     --project $PROJECT `
-    --format="value(name)" 2>$null)
+    --format="value(name)"
 
   if (-not $nat) {
-    gcloud compute routers nats create $NAT_NAME `
+    Invoke-Gcloud "criar NAT $NAT_NAME" compute routers nats create $NAT_NAME `
       --router $ROUTER_NAME `
       --region $REGION `
       --project $PROJECT `
@@ -377,73 +410,57 @@ $APPENV["GOOGLE_CLOUD_PROJECT"] = $PROJECT
 $APPENV["CLOUD_RUN_REGION"] = $REGION
 
 # ✅ Cloud Run safe boot: impede listeners longos no startup
-$APPENV["ENABLE_EMAIL_INBOUND"] = "false"
-$APPENV["ENABLE_DFE_SCHEDULER"] = "false"
+foreach ($k in @("ENABLE_EMAIL_INBOUND", "ENABLE_DFE_SCHEDULER")) {
+  if ($APPENV.Contains($k) -and [string]$APPENV[$k] -ne "false") {
+    Write-Host "[ENV] $k=$($APPENV[$k]) no .env sobrescrito para false (safe boot)" -ForegroundColor Yellow
+  }
+  $APPENV[$k] = "false"
+}
 
 Write-Host ""
 Write-Host "[ENV] Gerando arquivo YAML temporário..."
 
-Write-EnvYaml -envMap $APPENV -outFile $ENV_YAML
+try {
+  Write-EnvYaml -envMap $APPENV -outFile $ENV_YAML
 
-Write-Host "[ENV] Arquivo: $ENV_YAML"
+  Write-Host "[ENV] Arquivo: $ENV_YAML"
 
-Write-Host ""
-Write-Host "[DEPLOY] Publicando serviço no Cloud Run..."
+  Write-Host ""
+  Write-Host "[DEPLOY] Publicando serviço no Cloud Run..."
 
-$cmd = @(
-  "run", "deploy", $SERVICE,
-  "--project", $PROJECT,
-  "--image", $IMAGE,
-  "--region", $REGION,
-  "--allow-unauthenticated",
-  "--port", $PORT,
-  "--startup-probe", "tcpSocket.port=8080,periodSeconds=10,timeoutSeconds=10,failureThreshold=24",
-  "--memory", $MEMORY,
-  "--cpu", $CPU,
-  "--no-cpu-throttling",
-  "--concurrency", $CONCURRENCY,
-  "--timeout", $TIMEOUT,
-  "--min-instances", $MIN_INST,
-  "--max-instances", $MAX_INST,
-  "--env-vars-file", $ENV_YAML
-)
+  $cmd = @(
+    "run", "deploy", $SERVICE,
+    "--project", $PROJECT,
+    "--image", $IMAGE,
+    "--region", $REGION,
+    "--allow-unauthenticated",
+    "--port", $PORT,
+    "--startup-probe", "tcpSocket.port=$PORT,periodSeconds=10,timeoutSeconds=10,failureThreshold=24",
+    "--memory", $MEMORY,
+    "--cpu", $CPU,
+    "--no-cpu-throttling",
+    "--concurrency", $CONCURRENCY,
+    "--timeout", $TIMEOUT,
+    "--min-instances", $MIN_INST,
+    "--max-instances", $MAX_INST,
+    "--env-vars-file", $ENV_YAML
+  )
 
-if ($CONNECTOR_NAME) {
-  $cmd += @("--vpc-connector", $CONNECTOR_NAME, "--vpc-egress", "all-traffic")
-}
+  if ($CONNECTOR_NAME) {
+    $cmd += @("--vpc-connector", $CONNECTOR_NAME, "--vpc-egress", "all-traffic")
+  }
 
-gcloud @cmd
+  gcloud @cmd
 
-if ($LASTEXITCODE -ne 0) {
-  throw "❌ DEPLOY FAILURE"
+  if ($LASTEXITCODE -ne 0) {
+    throw "❌ DEPLOY FAILURE"
+  }
+} finally {
+  # O YAML contém senhas em texto puro: remove mesmo se o deploy falhar
+  Remove-Item $ENV_YAML -Force -ErrorAction SilentlyContinue
 }
 
 Write-Host ""
 Write-Host "✅ Deploy concluído com sucesso."
 Write-Host "[INFO] Serviço publicado: $SERVICE"
 Write-Host "[INFO] Região: $REGION"
-
-try {
-  Remove-Item $ENV_YAML -Force -ErrorAction SilentlyContinue
-} catch { }
-
-# =========================================================
-# SCHEDULER — LIGA/DESLIGA AUTOMÁTICO (COM TOKEN)
-# =========================================================
-
-Write-Host ""
-Write-Host "[SCHEDULER] Configurando liga/desliga automático..." -ForegroundColor Yellow
-
-if (-not $BASE_URL) {
-  $BASE_URL = $(gcloud run services describe $SERVICE `
-    --project=$PROJECT `
-    --region=$REGION `
-    --format="value(status.url)")
-}
-
-# $ENVALL (e não $APPENV): o token pode ter saído do YAML por vir do Secret Manager
-$ADMIN_TOKEN = $ENVALL["CONSART_ADMIN_TOKEN"]
-
-if (-not $ADMIN_TOKEN) {
-  throw "❌ CONSART_ADMIN_TOKEN não encontrado no .env."
-}

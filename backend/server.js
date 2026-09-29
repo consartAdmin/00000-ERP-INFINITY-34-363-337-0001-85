@@ -1469,12 +1469,6 @@ import auditLogsRoutes from './routes/auditLogsRoutes.js';
 app.use('/api/audit-logs', auditLogsRoutes);
 
 /* ╔══════════════════════════════════════════════════════════╗
-   ║                 "cloudrunAdminRoutes"                    ║
-   ╚══════════════════════════════════════════════════════════╝ */
-import cloudsqlAdminRoutes from './routes/cloudsqlAdminRoutes.js';
-app.use(cloudsqlAdminRoutes);
-
-/* ╔══════════════════════════════════════════════════════════╗
    ║            Rotas estáticas centralizadas                 ║
    ╚══════════════════════════════════════════════════════════╝ */
 import staticRoutes from "./routes/staticRoutes.js";
