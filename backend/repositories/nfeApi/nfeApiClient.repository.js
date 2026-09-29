@@ -15,8 +15,17 @@ export function isNfeApiProvider() {
   return String(process.env.NFE_PROVIDER || 'tecnospeed').trim().toLowerCase() === 'nfe-api';
 }
 
-function getBaseUrl() {
+export function getBaseUrl() {
   return String(process.env.NFE_API_URL || 'https://api.producao.consart.com.br').trim().replace(/\/+$/, '');
+}
+
+/**
+ * Cabeçalho de autenticação para URLs da NF-e API (ex.: xml/pdf gravados em
+ * invoicesIssued ou orders). Devolve null para URLs de outros provedores.
+ */
+export function nfeApiAuthHeaders(url) {
+  if (!String(url || '').startsWith(`${getBaseUrl()}/`)) return null;
+  return { 'x-api-key': getApiKey() };
 }
 
 function getApiKey() {

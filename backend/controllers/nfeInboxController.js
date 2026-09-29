@@ -479,7 +479,7 @@ export async function manifestNfe(req, res) {
     const id = Number(req.params.id);
     if (!Number.isFinite(id)) return res.status(400).json({ success: false, error: 'INVALID_ID' });
 
-    const { operacao } = req.body || {};
+    const { operacao, justificativa } = req.body || {};
     if (!operacao) return res.status(400).json({ success: false, error: 'OPERACAO_REQUIRED' });
 
     const row = await nfeInboxApi.getById(id);
@@ -489,6 +489,7 @@ export async function manifestNfe(req, res) {
       chave: row.chave_nfe,
       cpfCnpj: row.cnpj_empresa,
       operacao,
+      justificativa,
     });
 
     await nfeInboxApi.upsertFromParsedNfe({
@@ -501,7 +502,9 @@ export async function manifestNfe(req, res) {
     res.json({ success: true });
   } catch (err) {
     console.error('manifestNfe()', err);
-    res.status(500).json({ success: false });
+    // 4xx = recusa da SEFAZ/validação: devolve a mensagem para a tela
+    const status = Number(err?.status) >= 400 && Number(err?.status) < 500 ? Number(err.status) : 500;
+    res.status(status).json({ success: false, error: err?.message || 'MANIFEST_FAILED' });
   }
 }
 

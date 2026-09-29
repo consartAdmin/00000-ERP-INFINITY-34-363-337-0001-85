@@ -13,6 +13,7 @@ import { positiveBigInt } from './ordersNfeAttempts.sanitizers.js';
 import { normalizeProviderDateTime, normalizeEnvironment, normalizeAccessKey, providerDocument, errorPayload, remoteStatus, isAuthorized, isRejected, isCancelled } from './ordersNfeAttempts.utils.js';
 import { getLatestTrackableByOrderId } from './ordersNfeAttemptsQuery.repository.js';
 import { updateAttempt, markAuthorized, markRejected, markChecked, attachInvoice } from './ordersNfeAttemptsUpdate.repository.js';
+import { isNfeApiHomologationDocument } from '../nfeApi/nfeApi.index.js';
 
 export async function reconcileOrderNfe({ orderId } = {}) {
     const id = positiveBigInt(orderId, 'order_id');
@@ -148,6 +149,11 @@ export async function reconcileOrderNfe({ orderId } = {}) {
     let invoiceSync = null;
     let asaasSync = null;
 
+    // NF-e de testes (homologação) da NF-e API: registra a nota, mas não
+    // movimenta estoque nem gera contas a receber/boletos.
+    const isTestInvoice = isNfeApiHomologationDocument(data, attempt?.nfe_environment);
+    const skipped = { ok: true, skipped: true, reason: 'NF-e de homologação (NF-e API)' };
+
     if (authorized) {
         invoiceSync = await invoicesIssuedApi.upsertFromOrder(id, {
             attemptId,
@@ -163,14 +169,14 @@ export async function reconcileOrderNfe({ orderId } = {}) {
             await attachInvoice(attemptId, invoiceId);
         }
 
-        stockSync = await stockFromOrdersService.applyStockFromOrder(
+        stockSync = isTestInvoice ? skipped : await stockFromOrdersService.applyStockFromOrder(
             order,
             {
                 attemptId,
             },
         );
 
-        asaasSync = await nfeAsaasSyncApi.syncAuthorizedNfe({
+        asaasSync = isTestInvoice ? skipped : await nfeAsaasSyncApi.syncAuthorizedNfe({
             orderId: id,
             nfeNumber:
                 data.numero ??
@@ -187,7 +193,7 @@ export async function reconcileOrderNfe({ orderId } = {}) {
     }
 
     if (cancelled) {
-        stockRollback =
+        stockRollback = isTestInvoice ? skipped :
             await stockFromOrdersService.rollbackStockFromOrder({
                 attemptId,
             });

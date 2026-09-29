@@ -14,6 +14,8 @@ import {
   request,
 } from './nfeApiClient.repository.js';
 import { toApiInvoicePayload, toProviderDocument } from './nfeApi.mappers.js';
+import * as cce from './nfeApiCce.repository.js';
+import { inutilizarNumeracao } from './nfeApiInutilizacao.repository.js';
 
 const ACCESS_KEY = /^\d{44}$/;
 
@@ -164,7 +166,16 @@ const ROUTES = {
   obterPdf: { fn: obterPdf, mode: 'byKey' },
   cancelarNFe: { fn: cancelarNFe, mode: 'byKey' },
   listarNFe: { fn: listarNFe, mode: 'list' },
+  // CC-e: chave (44) ou protocolo da CC-e (15 dígitos) conhecidos pela NF-e API; o resto → TecnoSpeed
+  emitirCCe: { fn: cce.emitirCCe, mode: 'byKey' },
+  consultarStatusCCe: { fn: cce.consultarStatusCCe, mode: 'keyOrProtocol' },
+  obterPdfCCe: { fn: cce.obterPdfCCe, mode: 'keyOrProtocol' },
+  obterXmlCCe: { fn: cce.obterXmlCCe, mode: 'keyOrProtocol' },
+  // Inutilização: a numeração é da empresa na NF-e API (ambiente do painel)
+  inutilizarNumeracao: { fn: inutilizarNumeracao, mode: 'always' },
 };
+
+const PROTOCOL = /^\d{15}$/;
 
 /**
  * Envolve uma função da TecnoSpeed. Com NFE_PROVIDER diferente de nfe-api
@@ -179,11 +190,13 @@ export function routeProvider(name, tecnospeedFn) {
 
     if (route.mode === 'always') return route.fn(...args);
 
-    if (route.mode === 'byKey') {
-      if (!ACCESS_KEY.test(String(args[0] ?? '').trim())) return tecnospeedFn(...args);
+    if (route.mode === 'byKey' || route.mode === 'keyOrProtocol') {
+      const id = String(args[0] ?? '').trim();
+      const ours = ACCESS_KEY.test(id) || (route.mode === 'keyOrProtocol' && PROTOCOL.test(id));
+      if (!ours) return tecnospeedFn(...args);
       const result = await route.fn(...args);
       if (result?.status === 404) {
-        console.log(`[NFE][NFE-API][${name}] chave não encontrada na NF-e API, consultando TecnoSpeed`);
+        console.log(`[NFE][NFE-API][${name}] ${id} não encontrado na NF-e API, consultando TecnoSpeed`);
         return tecnospeedFn(...args);
       }
       return result;

@@ -20,13 +20,13 @@ import { listarNFe as listarNFeTecnospeed } from './tecnoSpeedNfeList.repository
 import { routeProvider } from '../nfeApi/nfeApi.index.js';
 import { reconcileOrderNfe } from './tecnoSpeedNfeOrderSync.repository.js';
 import {
-  emitirCCe,
-  consultarStatusCCe,
-  obterPdfCCe,
-  obterXmlCCe,
+  emitirCCe as emitirCCeTecnospeed,
+  consultarStatusCCe as consultarStatusCCeTecnospeed,
+  obterPdfCCe as obterPdfCCeTecnospeed,
+  obterXmlCCe as obterXmlCCeTecnospeed,
 } from './tecnoSpeedNfeCce.repository.js';
 import {
-  inutilizarNumeracao,
+  inutilizarNumeracao as inutilizarNumeracaoTecnospeed,
   consultarInutilizacao,
 } from './tecnoSpeedNfeInutilizacao.repository.js';
 import { emitirNFeSupplierReturn } from './tecnoSpeedNfeSupplierReturn.repository.js';
@@ -44,6 +44,11 @@ const consultarNFe = routeProvider('consultarNFe', consultarNFeTecnospeed);
 const obterXml = routeProvider('obterXml', obterXmlTecnospeed);
 const obterPdf = routeProvider('obterPdf', obterPdfTecnospeed);
 const listarNFe = routeProvider('listarNFe', listarNFeTecnospeed);
+const emitirCCe = routeProvider('emitirCCe', emitirCCeTecnospeed);
+const consultarStatusCCe = routeProvider('consultarStatusCCe', consultarStatusCCeTecnospeed);
+const obterPdfCCe = routeProvider('obterPdfCCe', obterPdfCCeTecnospeed);
+const obterXmlCCe = routeProvider('obterXmlCCe', obterXmlCCeTecnospeed);
+const inutilizarNumeracao = routeProvider('inutilizarNumeracao', inutilizarNumeracaoTecnospeed);
 
 export {
   buildNFeFromOrder,

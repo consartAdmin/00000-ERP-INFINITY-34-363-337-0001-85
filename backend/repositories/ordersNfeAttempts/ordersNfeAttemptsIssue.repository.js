@@ -11,6 +11,14 @@ import { positiveBigInt } from './ordersNfeAttempts.sanitizers.js';
 import { saoPauloDate, numberOrZero, normalizeEnvironment, providerDocument, errorPayload, snapshotItems } from './ordersNfeAttempts.utils.js';
 import { transaction, createAttempt, replaceItems } from './ordersNfeAttemptsCreate.repository.js';
 import { updateAttempt } from './ordersNfeAttemptsUpdate.repository.js';
+import { routeProvider, resolveBudgetIssueTarget } from '../nfeApi/nfeApi.index.js';
+
+// Pedidos: NFE_PROVIDER=nfe-api emite pela NF-e API própria; senão, TecnoSpeed.
+const emitirNFe = routeProvider('emitirNFe', (...args) => tecnospeedNfeApi.emitirNFe(...args));
+
+// Homologação pela NF-e API: o builder exige um número (senão reserva um da
+// sequência real), então recebe este marcador, que é removido antes do envio.
+const API_NUMBERING_PLACEHOLDER = 999999999;
 
 export async function reserveNfeNumberForAttempt(attemptId) {
     const id = positiveBigInt(attemptId, 'attempt_id');
@@ -127,11 +135,18 @@ export async function issueOrderNfe({ orderId, userId = null } = {}) {
     }
 
     const header = order.header ?? {};
+
+    // Ambiente e numeração: TecnoSpeed → NFE_AMBIENTE; NF-e API → painel /admin
+    const target = await resolveBudgetIssueTarget();
     let environment = process.env.NFE_ENVIRONMENT ?? null;
-    try {
-        environment = tecnospeedNfeApi.getEffectiveConfig?.()?.ambiente ?? environment;
-    } catch {
-        // Usa a configuração já disponível.
+    if (target.provider === 'nfe-api') {
+        environment = target.environment;
+    } else {
+        try {
+            environment = tecnospeedNfeApi.getEffectiveConfig?.()?.ambiente ?? environment;
+        } catch {
+            // Usa a configuração já disponível.
+        }
     }
     environment = normalizeEnvironment(environment);
 
@@ -160,19 +175,33 @@ export async function issueOrderNfe({ orderId, userId = null } = {}) {
     const attemptId = attempt.attempt_id;
 
     try {
-        const reservedNumber = await reserveNfeNumberForAttempt(
-            attemptId,
-        );
+        // Homologação pela NF-e API: a API numera e public.nfe não é consumida
+        const reservedNumber = target.apiNumbering
+            ? null
+            : await reserveNfeNumberForAttempt(
+                attemptId,
+            );
 
         // Passa o número reservado para o gerador do payload.
         order.header = {
             ...order.header,
-            nfe_number: reservedNumber,
+            nfe_number: reservedNumber ?? API_NUMBERING_PLACEHOLDER,
         };
 
         const payload = await tecnospeedNfeApi.buildNFeFromOrder(
             order,
         );
+
+        if (target.apiNumbering) {
+            // O marcador não pode chegar à nota
+            delete payload.numero;
+            if (payload.cobranca) delete payload.cobranca.numero;
+            if (payload.informacoesComplementares) {
+                payload.informacoesComplementares = String(payload.informacoesComplementares)
+                    .replace(new RegExp(`\\s*\\|?\\s*Fatura:\\s*${API_NUMBERING_PLACEHOLDER}`, 'g'), '')
+                    .trim();
+            }
+        }
 
         await updateAttempt(attemptId, {
             nfe_number: reservedNumber,
@@ -181,7 +210,7 @@ export async function issueOrderNfe({ orderId, userId = null } = {}) {
 
         await replaceItems(attemptId, snapshotItems(order, payload));
 
-        const response = await tecnospeedNfeApi.emitirNFe(payload);
+        const response = await emitirNFe(payload);
         if (!response?.ok) {
             await updateAttempt(attemptId, {
                 nfe_status_id: NFE_STATUS_ID.ERROR,
@@ -197,6 +226,8 @@ export async function issueOrderNfe({ orderId, userId = null } = {}) {
 
         const document = providerDocument(response);
         await updateAttempt(attemptId, {
+            // Homologação pela NF-e API: o número vem da API
+            ...(target.apiNumbering && document?.numero ? { nfe_number: Number(document.numero) } : {}),
             nfe_status_id: NFE_STATUS_ID.PROCESSING,
             provider_id: document?.id ?? null,
             integration_id: document?.idIntegracao ?? null,

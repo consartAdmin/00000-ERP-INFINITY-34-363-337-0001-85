@@ -21,6 +21,7 @@ import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.
 
 // ✅ IMPORT CERTO (bate com o seu arquivo)
 import { generateDanfeFromXml } from '../services/danfeConsartService.js';
+import { nfeApiAuthHeaders } from '../repositories/nfeApi/nfeApiClient.repository.js';
 
 // ----------------------------------------------------------------------
 // Helpers ENV
@@ -185,6 +186,19 @@ async function resolveXmlUrlFromProvider({ header }) {
 // Download XML (PlugNotas exige X-API-KEY)
 // ----------------------------------------------------------------------
 async function downloadXmlAsText(xmlUrl) {
+  // XML de NF-e emitida pela NF-e API própria: autentica com NFE_API_KEY
+  const nfeApiHeaders = nfeApiAuthHeaders(xmlUrl);
+  if (nfeApiHeaders) {
+    const resp = await axios.get(xmlUrl, {
+      headers: nfeApiHeaders,
+      responseType: 'text',
+      timeout: 30000,
+      transformResponse: [(d) => d],
+      validateStatus: (s) => s >= 200 && s < 300,
+    });
+    return normalizeXmlText(resp.data);
+  }
+
   const apiKey = getPlugNotasApiKey();
 
   const isPlugNotas = String(xmlUrl || '').includes('api.plugnotas.com.br');

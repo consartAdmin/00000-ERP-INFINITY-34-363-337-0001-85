@@ -4,7 +4,7 @@
 // ║ ✔ Registro da NF-e API → "documento" lido por nfeIssuance.provider   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { toErpEnvironment } from './nfeApiClient.repository.js';
+import { getBaseUrl, toErpEnvironment } from './nfeApiClient.repository.js';
 
 const digits = (value) => String(value ?? '').replace(/\D/g, '');
 const text = (value, max) => {
@@ -242,6 +242,11 @@ export function toProviderDocument(record) {
     emissao: brDate(record.issuedAt),
     dataAutorizacao: brDate(record.authorizedAt),
     valor: record.totalValue,
+    // Mesmos campos da PlugNotas (gravados em invoicesIssued.xml_url/danfe_url e usados pelo DANFE de pedidos).
+    // Exigem o cabeçalho x-api-key da NF-e API (nfeApiAuthHeaders).
+    ...(['authorized', 'cancelled'].includes(record.status)
+      ? { xml: `${getBaseUrl()}/v1/invoices/${record.accessKey}/xml`, pdf: `${getBaseUrl()}/v1/invoices/${record.accessKey}/pdf` }
+      : {}),
     ...(record.cancellation ? {
       dataCancelamento: brDate(record.cancellation.registeredAt) ?? brDate(record.updatedAt),
       protocoloCancelamento: record.cancellation.protocolNumber ?? null,
