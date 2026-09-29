@@ -17,6 +17,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import PDFDocument from 'pdfkit';
 
 import pool from '../config/db.js';
@@ -43,7 +44,8 @@ function safeFilePart(v) {
 
 function getOutDir() {
   // PDFs públicos (para servir via /public/...)
-  const dir = path.resolve(process.cwd(), 'backend', 'public', 'pdfs', 'productsBoxes');
+  // backend/public/pdfs/productsBoxes, relativo a este arquivo (não ao cwd)
+  const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'pdfs', 'productsBoxes');
   ensureDir(dir);
   return dir;
 }

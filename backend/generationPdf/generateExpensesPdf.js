@@ -10,13 +10,15 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
 import pool from '../config/db.js';
 
 const TB = 'public."Expenses"'; // ajuste se seu schema/tabela for diferente
 
-// pasta pública para download (ajuste se seu ERP usa outra)
-const PUBLIC_DIR = path.resolve(process.cwd(), 'backend', 'public');
+// pasta pública para download: backend/public (servida em /public pelo server.js).
+// Relativo a este arquivo, não ao cwd — com cwd=backend o caminho virava backend/backend/public.
+const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const OUT_DIR = path.join(PUBLIC_DIR, 'pdfs', 'expenses');
 
 function ensureDirSync(dir) {

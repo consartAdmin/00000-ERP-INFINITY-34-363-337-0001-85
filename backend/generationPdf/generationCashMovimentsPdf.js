@@ -113,7 +113,7 @@ const ID_TEXT_PADDINGY = 3;
 // Caminhos default de imagens
 const caminhoLogoDefault = () => path.resolve(__dirname, '../../public/imagens/logoconsart.png');
 const caminhoPaperclipDefault = () =>
-  path.resolve(process.cwd(), 'backend/public/imagens/paperclip.png');
+  path.resolve(__dirname, '../public/imagens/paperclip.png');
 
 const vCenter = (y, h, fontSize) => y + (h - fontSize) / 2 - 0.5;
 
