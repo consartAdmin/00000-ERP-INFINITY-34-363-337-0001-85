@@ -4,8 +4,6 @@
 // ║ Projeto: CONSART ERP                                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import fs from 'fs/promises';
-import path from 'path';
 import spedFiscalService from '../services/spedFiscal/spedFiscal.service.js';
 
 function parseParams(req) {
@@ -62,20 +60,25 @@ export async function generateSpedFiscal(req, res) {
 export async function downloadSpedFiscal(req, res) {
   try {
     const loteId = Number(req.params.id);
-    const lote = await spedFiscalService.download(loteId);
+    const result = await spedFiscalService.download(loteId);
 
-    if (!lote) {
+    if (!result) {
       return res.status(404).json({ ok: false, message: 'Lote não encontrado.' });
     }
 
-    if (!lote.arquivo_path) {
-      return res.status(404).json({ ok: false, message: 'Arquivo do lote não encontrado.' });
+    if (!result.txt) {
+      return res.status(404).json({ ok: false, message: 'Lote sem arquivo gerado (status diferente de "gerado").' });
     }
 
-    const filePath = path.resolve(lote.arquivo_path);
+    if (!result.hashMatches) {
+      console.warn(`[SPED Fiscal] lote ${loteId}: dados mudaram desde a geração (hash diferente).`);
+    }
 
-    await fs.access(filePath);
-    return res.download(filePath);
+    // Envia direto para o navegador; nada é gravado no servidor.
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('X-Sped-Hash-Match', result.hashMatches ? 'true' : 'false');
+    res.attachment(result.fileName);
+    return res.send(result.txt);
   } catch (error) {
     console.error('downloadSpedFiscal:', error);
     return res.status(500).json({

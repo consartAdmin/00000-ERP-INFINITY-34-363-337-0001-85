@@ -422,12 +422,9 @@ async function generate(params) {
       .update(txt)
       .digest('hex');
 
-    console.log('[SPED Fiscal] saving generated file...');
-
-    const saved = await repository.saveGeneratedFile({
+    // O TXT não é gravado em disco: o download remonta o arquivo a partir do lote.
+    const fileName = repository.buildGeneratedFileName({
       loteId: lote.id,
-      txt,
-      hash,
       company: context.company,
       month: params.month,
       year: params.year
@@ -437,15 +434,14 @@ async function generate(params) {
 
     await repository.updateLoteAfterGeneration(lote.id, {
       status: 'gerado',
-      arquivo_path: saved.filePath,
+      arquivo_path: fileName,
       hash_arquivo: hash
     });
 
     return {
       ok: true,
       loteId: lote.id,
-      fileName: saved.fileName,
-      filePath: saved.filePath,
+      fileName,
       hash,
       totals: buildTotals(context, validation),
       validation
@@ -463,8 +459,31 @@ async function generate(params) {
    DOWNLOAD FILE
 ========================================================= */
 
+// Remonta o TXT do lote na hora (nada é salvo localmente).
+// hashMatches = false indica que os dados do período mudaram desde a geração.
 async function download(loteId) {
-  return repository.getGeneratedFileByLoteId(loteId);
+  const lote = await repository.getGeneratedFileByLoteId(loteId);
+  if (!lote) return null;
+  if (lote.status !== 'gerado') return { lote, txt: null };
+
+  const context = await buildContext({
+    companyId: lote.empresa_id,
+    month: lote.competencia_mes,
+    year: lote.competencia_ano,
+    uf: lote.uf,
+  });
+
+  const txt = generateSpedTxt(context);
+  const hash = crypto.createHash('sha256').update(txt).digest('hex');
+
+  const fileName = repository.buildGeneratedFileName({
+    loteId: lote.id,
+    company: context.company,
+    month: lote.competencia_mes,
+    year: lote.competencia_ano,
+  });
+
+  return { lote, txt, fileName, hash, hashMatches: !lote.hash_arquivo || lote.hash_arquivo === hash };
 }
 
 /* =========================================================

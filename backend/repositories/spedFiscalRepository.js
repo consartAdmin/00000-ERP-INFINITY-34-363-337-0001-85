@@ -4,11 +4,7 @@
 // ║ Projeto: CONSART ERP                                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import fs from 'fs/promises';
-import path from 'path';
 import pool from '../config/db.js';
-
-const SPED_OUTPUT_DIR = path.resolve('backend/public/spedFiscal/files');
 
 async function ensureBaseTables() {
   await pool.query(`
@@ -597,18 +593,12 @@ async function saveInconsistencies(loteId, issues = []) {
   }
 }
 
-async function saveGeneratedFile({ loteId, txt, hash, company, month, year }) {
-  await fs.mkdir(SPED_OUTPUT_DIR, { recursive: true });
-
+// O arquivo SPED não é mais gravado em disco: é montado sob demanda no download.
+function buildGeneratedFileName({ loteId, company, month, year }) {
   const cnpj = String(company?.cnpj || '').replace(/\D+/g, '') || 'semcnpj';
   const mm = String(month).padStart(2, '0');
   const yyyy = String(year);
-  const fileName = `SPED_FISCAL_${cnpj}_${yyyy}_${mm}_LOTE_${loteId}.txt`;
-  const filePath = path.join(SPED_OUTPUT_DIR, fileName);
-
-  await fs.writeFile(filePath, txt, 'utf8');
-
-  return { fileName, filePath };
+  return `SPED_FISCAL_${cnpj}_${yyyy}_${mm}_LOTE_${loteId}.txt`;
 }
 
 async function updateLoteAfterGeneration(loteId, { status, arquivo_path, hash_arquivo }) {
@@ -652,7 +642,7 @@ export default {
   getParameters,
   createLote,
   saveInconsistencies,
-  saveGeneratedFile,
+  buildGeneratedFileName,
   updateLoteAfterGeneration,
   getGeneratedFileByLoteId,
 };
