@@ -63,9 +63,23 @@ function Invoke-Gcloud([string]$label) {
 }
 
 function Get-LiveService($svc, $proj, $reg) {
-  $json = Invoke-GcloudQuiet run services describe $svc "--project=$proj" "--region=$reg" "--format=json"
-  if (-not $json) { return $null }
-  return ($json | Out-String | ConvertFrom-Json)
+  # $null só quando o serviço não existe; qualquer outra falha aborta, senão o
+  # deploy seguiria como "serviço novo" (sem trava de DB_NAME e sem preservar segredos)
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    $out = @(& gcloud run services describe $svc "--project=$proj" "--region=$reg" "--format=json" 2>&1)
+    $code = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $prev
+  }
+
+  $errText = ($out | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | ForEach-Object { $_.ToString() }) -join "`n"
+  $json = ($out | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
+
+  if ($code -eq 0 -and $json) { return ($json | ConvertFrom-Json) }
+  if ($errText -match 'Cannot find service|could not be found|NOT_FOUND') { return $null }
+  throw "❌ Falha ao consultar o serviço $svc no Cloud Run (exit $code):`n$errText"
 }
 
 function ConvertTo-EnvValue([string]$value) {

@@ -4,7 +4,7 @@
 // ║ Downloads XML/DANFE via PlugNotas/TecnoSpeed                                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import axios from 'axios';
+import { obterXml } from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
 
 import pool from '../config/db.js';
 
@@ -63,21 +63,12 @@ async function auditInvoiceAction(req, invoice, operation, details = {}) {
   });
 }
 
-function getBaseUrl() {
-  return (
-    process.env.PLUGNOTAS_BASE_URL ||
-    process.env.TECNOSPEED_BASE_URL ||
-    'https://api.plugnotas.com.br'
-  );
-}
-
-function getApiKey() {
-  return (
-    process.env.PLUGNOTAS_API_KEY ||
-    process.env.TECNOSPEED_TOKEN_SH ||
-    process.env.TECNOSPEED_TOKEN ||
-    ''
-  );
+// Corpo de erro do provedor pode vir como Buffer (responseType arraybuffer/stream)
+function providerErrorText(err) {
+  const data = err?.response?.data;
+  if (Buffer.isBuffer(data)) return data.toString('utf8');
+  if (data && typeof data === 'object') return data.message || data.error || JSON.stringify(data);
+  return data || err?.message || String(err);
 }
 
 function sanitizeFilename(name, fallback = 'arquivo') {
@@ -223,75 +214,49 @@ async function resolvePlugNotasIdFromInvoice(invoice) {
   return null;
 }
 
+// XML via roteador de provedor: chave de 44 dígitos → NF-e API (404 → TecnoSpeed);
+// outros ids (notas antigas da PlugNotas) → TecnoSpeed
+async function fetchInvoiceXml(plugId) {
+  const result = await obterXml(plugId);
+
+  if (!result?.ok || !result.xml) {
+    const detail = result?.error;
+    const error = new Error(
+      typeof detail === 'string'
+        ? detail
+        : detail?.message || detail?.error || 'Não foi possível obter o XML da NF-e no provedor.',
+    );
+    error.status = Number(result?.status) || 502;
+    throw error;
+  }
+
+  return result.xml;
+}
+
 async function streamPlugNotasFile({
   res,
   plugId,
-  kind,
   filename,
   contentType,
   onReady = null,
 }) {
-  const base = getBaseUrl().replace(/\/$/, '');
-  const url = `${base}/nfe/${encodeURIComponent(plugId)}/${kind}`;
-
-  const apiKey = getApiKey();
-
-  if (!apiKey) {
-    return res.status(500).json({
-      ok: false,
-      error: 'API Key PlugNotas/TecnoSpeed não configurada no .env',
-    });
-  }
-
-  const response = await axios.get(url, {
-    responseType: 'stream',
-    headers: {
-      'X-API-KEY': apiKey,
-    },
-    timeout: Number(process.env.PLUGNOTAS_TIMEOUT || 20000),
-  });
+  const xml = await fetchInvoiceXml(plugId);
 
   if (typeof onReady === 'function') {
     await onReady();
   }
 
-  const headerFilename =
-    response.headers['content-disposition']
-      ?.match(/filename="?([^"]+)"?/i)
-    ?.[1];
-
-  res.setHeader(
-    'Content-Type',
-    response.headers['content-type'] || contentType
-  );
-
+  res.setHeader('Content-Type', contentType);
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="${sanitizeFilename(headerFilename || filename)}"`
+    `attachment; filename="${sanitizeFilename(filename)}"`
   );
 
-  return response.data.pipe(res);
+  return res.end(xml);
 }
 
-async function getPlugNotasFileBuffer({ plugId, kind }) {
-  const base = getBaseUrl().replace(/\/$/, '');
-  const url = `${base}/nfe/${encodeURIComponent(plugId)}/${kind}`;
-
-  const apiKey = getApiKey();
-
-  if (!apiKey) {
-    throw new Error('API Key PlugNotas/TecnoSpeed não configurada no .env');
-  }
-
-  const response = await axios.get(url, {
-    responseType: 'arraybuffer',
-    headers: {
-      'X-API-KEY': apiKey,
-    },
-    timeout: Number(process.env.PLUGNOTAS_TIMEOUT || 20000),
-  });
-
-  return Buffer.from(response.data);
+async function getPlugNotasFileBuffer({ plugId }) {
+  return Buffer.from(await fetchInvoiceXml(plugId), 'utf8');
 }
 
 export async function initInvoicesIssuedController() {
@@ -633,7 +598,7 @@ export async function downloadInvoiceXml(req, res) {
         }),
     });
   } catch (err) {
-    const status = err.response?.status || 500;
+    const status = err.response?.status || err.status || 500;
     console.error(
       '[downloadInvoiceXml] EXC:',
       status,
@@ -642,7 +607,7 @@ export async function downloadInvoiceXml(req, res) {
 
     return res.status(status).json({
       ok: false,
-      error: err.response?.data || err.message || String(err),
+      error: providerErrorText(err),
     });
   }
 }
@@ -767,7 +732,7 @@ export async function downloadInvoiceDanfe(req, res) {
 
     return res.end(pdfBuffer);
   } catch (err) {
-    const status = err.response?.status || 500;
+    const status = err.response?.status || err.status || 500;
 
     console.error(
       '[downloadInvoiceDanfe CONSART] EXC:',
@@ -777,7 +742,7 @@ export async function downloadInvoiceDanfe(req, res) {
 
     return res.status(status).json({
       ok: false,
-      error: err.response?.data || err.message || String(err),
+      error: providerErrorText(err),
     });
   }
 }
