@@ -1,4 +1,5 @@
 import { validateProductLmRef } from './productsLmRef.validation.js';
+import { loadSupplierName, setSupplier } from './productsLmRef.lookups.js';
 
 const form = () => document.querySelector('#productsLmRefForm');
 
@@ -24,7 +25,8 @@ export function validateProductsLmRefForm(data) {
 
 export function fillProductsLmRefForm(item) {
   const element = form();
-  element.elements.supplierId.value = item.supplierId;
+  setSupplier(item.supplierId);
+  loadSupplierName(item.supplierId);
   element.elements.nfProductCode.value = item.nfProductCode;
   element.elements.productCode.value = item.productCode;
   element.elements.description.value = item.description;
@@ -35,6 +37,7 @@ export function fillProductsLmRefForm(item) {
 
 export function resetProductsLmRefForm() {
   form().reset();
+  setSupplier('');
   form().elements.isActive.checked = true;
   document.querySelector('#formTitle').textContent = 'Nova referência de produto';
   document.querySelectorAll('[data-error]').forEach((element) => { element.textContent = ''; });

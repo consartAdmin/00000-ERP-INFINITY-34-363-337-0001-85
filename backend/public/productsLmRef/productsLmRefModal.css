@@ -9,5 +9,9 @@
 .products-lm-ref-form-grid__full { grid-column: 1 / -1; }
 .products-lm-ref-error { min-height: 16px; color: #b42318; font-size: 12px; }
 .products-lm-ref-checkbox { display: flex; align-items: center; gap: 8px; }
+.products-lm-ref-lookup { display: flex; align-items: stretch; gap: 6px; }
+.products-lm-ref-lookup input { flex: 1 1 auto; min-width: 0; }
+.products-lm-ref-lookup input[readonly] { cursor: pointer; background: #f8fafc; }
+.products-lm-ref-lookup .btn { flex: 0 0 auto; }
 @media (max-width: 640px) { .products-lm-ref-form-grid { grid-template-columns: 1fr; } }
 

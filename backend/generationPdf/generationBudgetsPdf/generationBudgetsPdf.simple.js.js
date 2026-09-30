@@ -2,6 +2,7 @@ import PDFDocument from 'pdfkit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { budgetPdfFilename, contentDisposition } from './generationBudgetsPdf.filename.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,15 +75,7 @@ function sanitizeFilename(value) {
 }
 
 function defaultFilename(budget) {
-    const id = first(
-        budget?.number,
-        budget?.budget_number,
-        budget?.budget_num,
-        budget?.id,
-        'ORCAMENTO'
-    );
-
-    return `ORCAMENTO-${id}.pdf`;
+    return budgetPdfFilename(budget);
 }
 
 function itemsOf(budget) {
@@ -1305,7 +1298,8 @@ export async function generateBudgetPdf(
         new PDFDocument({
             size: PAGE.size,
             layout: PAGE.layout,
-            margin: PAGE.margin
+            margin: PAGE.margin,
+            info: { Title: filename.replace(/\.pdf$/i, '') }
         });
 
     const chunks = [];
@@ -1325,7 +1319,7 @@ export async function generateBudgetPdf(
 
         res.setHeader(
             'Content-Disposition',
-            `inline; filename="${sanitizeFilename(filename)}"`
+            contentDisposition(filename)
         );
 
         doc.pipe(res);

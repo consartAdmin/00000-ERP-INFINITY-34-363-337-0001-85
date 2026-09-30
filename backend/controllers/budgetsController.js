@@ -1605,12 +1605,8 @@ export async function getBudgetPdf(req, res) {
       }
     };
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="orcamento_${id}.pdf"`
-    );
-
+    // Content-Type e Content-Disposition ("<número> - <cliente>.pdf") são
+    // definidos pelo gerador do template
     await generateBudgetPdf(budget, {
       company,
       output: 'response',

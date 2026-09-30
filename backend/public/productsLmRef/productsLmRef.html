@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/public/includes/css/style.css">
   <link rel="stylesheet" href="./productsLmRef.css">
   <link rel="stylesheet" href="./productsLmRefModal.css">
+  <link rel="stylesheet" href="/public/modalsSearch/suppliersModalSearch.css">
 </head>
 <body class="consart-theme p-page pw-page--full ph-page--xr">
   <main class="consart-container consart-container--full consart-container--ultraslim">
@@ -88,7 +89,12 @@
       <div class="products-lm-ref-modal__body">
         <div class="products-lm-ref-form-grid">
           <div class="fields fields-h-6 fields-font-3">
-            <label for="supplierId">Fornecedor</label><input id="supplierId" name="supplierId" type="number" min="1" required>
+            <label for="supplierName">Fornecedor</label>
+            <div class="products-lm-ref-lookup">
+              <input id="supplierName" name="supplierName" type="text" readonly placeholder="Clique para pesquisar o fornecedor...">
+              <button id="btnPickSupplier" class="btn btn-toolbar btn-sm" type="button" title="Pesquisar fornecedor" aria-label="Pesquisar fornecedor">🔍</button>
+            </div>
+            <input id="supplierId" name="supplierId" type="hidden">
             <span class="products-lm-ref-error" data-error="supplierId"></span>
           </div>
           <div class="fields fields-h-6 fields-font-3">
@@ -96,11 +102,19 @@
             <span class="products-lm-ref-error" data-error="nfProductCode"></span>
           </div>
           <div class="fields fields-h-6 fields-font-3">
-            <label for="productCode">Código interno do produto</label><input id="productCode" name="productCode" maxlength="50" required>
+            <label for="productCode">Código interno do produto</label>
+            <div class="products-lm-ref-lookup">
+              <input id="productCode" name="productCode" maxlength="50" required placeholder="Pesquise o produto (F2)">
+              <button id="btnPickProduct" class="btn btn-toolbar btn-sm" type="button" title="Pesquisar produto" aria-label="Pesquisar produto">🔍</button>
+            </div>
             <span class="products-lm-ref-error" data-error="productCode"></span>
           </div>
           <div class="fields fields-h-6 fields-font-3 products-lm-ref-form-grid__full">
-            <label for="description">Descrição</label><input id="description" name="description" maxlength="255" required>
+            <label for="description">Descrição</label>
+            <div class="products-lm-ref-lookup">
+              <input id="description" name="description" maxlength="255" required placeholder="Preenchida pela pesquisa de produto (F2)">
+              <button id="btnPickProductByDescription" class="btn btn-toolbar btn-sm" type="button" title="Pesquisar produto" aria-label="Pesquisar produto">🔍</button>
+            </div>
             <span class="products-lm-ref-error" data-error="description"></span>
           </div>
           <label class="products-lm-ref-checkbox"><input name="isActive" type="checkbox" checked> Ativo</label>

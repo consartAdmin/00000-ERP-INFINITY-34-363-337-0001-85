@@ -1070,15 +1070,23 @@ export function collectPayload() {
   };
 }
 
+// Nome vindo do servidor ("<número> - <cliente>.pdf"); filename* (UTF-8) tem prioridade
+function filenameFromContentDisposition(header, fallback) {
+  const value = String(header || '');
+  const encoded = value.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+  if (encoded) {
+    try { return decodeURIComponent(encoded[1].trim()); } catch { /* usa o próximo */ }
+  }
+  const plain = value.match(/filename\s*=\s*"?([^";]+)"?/i);
+  return plain ? plain[1].trim() : fallback;
+}
+
 export async function openPdf(id) {
   const budgetId = Number(id);
 
   if (!Number.isFinite(budgetId) || budgetId <= 0) {
     return toast.error('Erro', 'ID do orçamento inválido.');
   }
-
-  // Abre a aba durante o clique para evitar bloqueio de pop-up.
-  const pdfWindow = window.open('', '_blank');
 
   try {
     const response = await fetch(ROUTES.printPdf(budgetId), {
@@ -1090,7 +1098,6 @@ export async function openPdf(id) {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
-      pdfWindow?.close();
 
       if (handleAuthFail(response.status, errorText)) return;
 
@@ -1102,29 +1109,27 @@ export async function openPdf(id) {
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.toLowerCase().includes('application/pdf')) {
       const errorText = await response.text().catch(() => '');
-      pdfWindow?.close();
       throw new Error(errorText || 'O servidor não retornou um arquivo PDF.');
     }
+
+    const filename = filenameFromContentDisposition(
+      response.headers.get('content-disposition'),
+      `${budgetId}.pdf`
+    );
 
     const pdfBlob = await response.blob();
     const pdfUrl = URL.createObjectURL(pdfBlob);
 
-    if (pdfWindow) {
-      pdfWindow.location.replace(pdfUrl);
-    } else {
-      // Fallback caso o navegador tenha bloqueado a nova aba.
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.download = `ORCAMENTO-${budgetId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    }
+    // Download direto: numa aba com blob o navegador ignora o nome do arquivo
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 
-    // Dá tempo para a nova aba carregar antes de liberar o Blob.
     window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60_000);
   } catch (error) {
-    pdfWindow?.close();
     console.error('[budgets][pdf] Falha ao gerar PDF:', error);
     toast.error(
       'Erro ao gerar PDF',

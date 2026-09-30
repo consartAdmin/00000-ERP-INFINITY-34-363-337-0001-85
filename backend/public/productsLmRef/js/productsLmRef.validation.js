@@ -2,7 +2,7 @@ export function validateProductLmRef(data) {
   const errors = {};
 
   if (!Number.isInteger(Number(data.supplierId)) || Number(data.supplierId) <= 0) {
-    errors.supplierId = 'Enter a valid supplier ID.';
+    errors.supplierId = 'Select a supplier.';
   }
   if (!data.nfProductCode?.trim()) errors.nfProductCode = 'NF product code is required.';
   if (!data.productCode?.trim()) errors.productCode = 'Product code is required.';

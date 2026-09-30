@@ -23,6 +23,7 @@ import PDFDocument from 'pdfkit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { budgetPdfFilename, contentDisposition } from './generationBudgetsPdf.filename.js';
 import { downloadEnterpriseLogoByUrl } from '../../uploadBuckets/uploadBucketsEnterprise.js';
 
 /* ──────────────────────────────────────────────────────────────
@@ -163,29 +164,7 @@ function sanitizeFilename(name) {
 }
 
 function defaultFilename(budget) {
-  const number =
-    budget?.number ||
-    budget?.budget_number ||
-    budget?.budget_num ||
-    budget?.budget_id ||
-    budget?.id ||
-    'ORCAMENTO';
-
-  const customer = (
-    budget?.customer_name ||
-    budget?.nome_razao_social ||
-    budget?.trade_name ||
-    budget?.legal_name ||
-    ''
-  )
-    .toString()
-    .replace(/[^\p{L}\p{N}\s_-]+/gu, '')
-    .replace(/\s+/g, '-')
-    .slice(0, 60)
-    .toUpperCase();
-
-  const base = customer ? `ORCAMENTO-${number}-${customer}` : `ORCAMENTO-${number}`;
-  return `${base}.pdf`;
+  return budgetPdfFilename(budget);
 }
 
 function resolveBudgetItemsArray(budget) {
@@ -1421,6 +1400,7 @@ export async function generateBudgetPdf(budget, options = {}) {
     margin: PAGE.margin,
     size: PAGE.size,
     layout: PAGE.layout,
+    info: { Title: filename.replace(/\.pdf$/i, '') },
   });
 
   const chunks = [];
@@ -1432,7 +1412,7 @@ export async function generateBudgetPdf(budget, options = {}) {
     }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${sanitizeFilename(filename)}"`);
+    res.setHeader('Content-Disposition', contentDisposition(filename));
     doc.pipe(res);
   } else if (output === 'file') {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
