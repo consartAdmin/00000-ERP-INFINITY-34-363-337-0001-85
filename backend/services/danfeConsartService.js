@@ -339,7 +339,7 @@ function aplicarMarcaDAguaCancelado(doc) {
 // ======================================================================
 // Marca d’água para pré-visualização sem valor fiscal
 // ======================================================================
-function aplicarMarcaDAguaSemValorFiscal(doc) {
+function aplicarMarcaDAguaSemValorFiscal(doc, { fontSize = 62, offsetY = 0 } = {}) {
   try {
     const width = doc.page.width;
     const height = doc.page.height;
@@ -364,7 +364,7 @@ function aplicarMarcaDAguaSemValorFiscal(doc) {
 
     doc
       .font('Helvetica-Bold')
-      .fontSize(62);
+      .fontSize(fontSize);
 
     const boxWidth =
       width * 1.35;
@@ -372,7 +372,7 @@ function aplicarMarcaDAguaSemValorFiscal(doc) {
     doc.text(
       'SEM VALOR FISCAL',
       centerX - boxWidth / 2,
-      centerY - 50,
+      centerY - 50 + offsetY,
       {
         width: boxWidth,
         align: 'center',
@@ -1081,13 +1081,16 @@ export async function generateDanfeFromXml({
 
   // ✅ Watermark must be drawn LAST (on top)
   function stampDocumentStatusOnTop() {
-    if (preview) {
-      aplicarMarcaDAguaSemValorFiscal(doc);
+    // CANCELADO tem prioridade: uma prévia/homologação cancelada mostra as duas marcas
+    // (antes, "preview" retornava cedo e o cancelamento nunca aparecia)
+    if (cancelada) {
+      aplicarMarcaDAguaCancelado(doc);
+      if (preview) aplicarMarcaDAguaSemValorFiscal(doc, { fontSize: 36, offsetY: 90 });
       return;
     }
 
-    if (cancelada) {
-      aplicarMarcaDAguaCancelado(doc);
+    if (preview) {
+      aplicarMarcaDAguaSemValorFiscal(doc);
     }
   }
 
@@ -3268,7 +3271,9 @@ export async function generateDanfeFromXml({
 
   })();
 
-  // ✅ carimbo por cima também na última página  stampDocumentStatusOnTop();
+  // ✅ carimbo por cima também na última página
+  // (a chamada estava dentro do comentário: DANFE de 1 página nunca recebia a marca d'água)
+  stampDocumentStatusOnTop();
 
   doc.end();
 
