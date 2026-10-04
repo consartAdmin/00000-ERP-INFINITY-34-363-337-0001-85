@@ -47,29 +47,19 @@ export function askPasswordModal({
     const clearError = () => {
       if (!errorBox) return;
       errorBox.textContent = '';
-      errorBox.style.display = 'none';
+      errorBox.hidden = true;
     };
 
     const showError = (message) => {
       if (!errorBox) return;
       errorBox.textContent = message;
-      errorBox.style.display = 'block';
+      errorBox.hidden = false;
     };
 
+    // Overlay, centralização e z-index vêm do modals.css via .is-open
     const close = () => {
-      modal.classList.remove('is-open', 'open', 'show', 'active');
-      modal.hidden = true;
+      modal.classList.remove('is-open');
       modal.setAttribute('aria-hidden', 'true');
-
-      modal.style.removeProperty('display');
-      modal.style.removeProperty('position');
-      modal.style.removeProperty('inset');
-      modal.style.removeProperty('align-items');
-      modal.style.removeProperty('justify-content');
-      modal.style.removeProperty('padding');
-      modal.style.removeProperty('background');
-      modal.style.removeProperty('z-index');
-
       document.body.classList.remove('modal-open');
     };
 
@@ -118,13 +108,13 @@ export function askPasswordModal({
     }
 
     function onBackdrop(event) {
-      if (event.target === modal) {
+      if (event.target.closest('[data-password-modal-close]')) {
         onCancel(event);
       }
     }
 
     function onKeyDown(event) {
-      if (modal.hidden) return;
+      if (!modal.classList.contains('is-open')) return;
 
       if (event.key === 'Escape') {
         onCancel(event);
@@ -148,20 +138,8 @@ export function askPasswordModal({
     input.addEventListener('input', clearError);
     document.addEventListener('keydown', onKeyDown, true);
 
-    modal.hidden = false;
-    modal.removeAttribute('hidden');
     modal.setAttribute('aria-hidden', 'false');
     modal.classList.add('is-open');
-
-    modal.style.display = 'flex';
-    modal.style.position = 'fixed';
-    modal.style.inset = '0';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.padding = '20px';
-    modal.style.background = 'rgba(15, 23, 42, 0.55)';
-    modal.style.zIndex = '99999';
-
     document.body.classList.add('modal-open');
 
     requestAnimationFrame(() => {

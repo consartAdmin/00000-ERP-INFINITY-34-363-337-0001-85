@@ -75,7 +75,7 @@
         </div>
       </div>
 
-      <div class="info">
+      <div class="info" data-feature="PRODUCT_LOCATIONS">
         <span>Localização atual</span>
         <strong id="productLocation">-</strong>
 
@@ -162,6 +162,8 @@
   </div>
 
   <script type="module" src="./inventoryMobile.js"></script>
+  <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta [data-feature="PRODUCT_LOCATIONS"] -->
+  <script type="module">import { initProductLocationsFeature } from "/public/includes/js/productLocationsFeature.js"; initProductLocationsFeature();</script>
 </body>
 
 </html>

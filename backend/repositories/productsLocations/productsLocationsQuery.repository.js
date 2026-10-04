@@ -63,12 +63,21 @@ export async function list({
       ${ALIAS}.observacao,
       ${ALIAS}.created_at,
       ${ALIAS}.updated_at,
-      ${ALIAS}.is_active
+      ${ALIAS}.is_active,
+      -- localização principal do produto (products.product_location_id)
+      COALESCE(${PRODUCTS_ALIAS}.product_location_id = ${ALIAS}.id, FALSE) AS is_primary
     FROM ${TB} ${ALIAS}
     LEFT JOIN ${TB_PRODUCTS} ${PRODUCTS_ALIAS}
       ON ${PRODUCTS_ALIAS}.product_code = ${ALIAS}.product_code
-    LEFT JOIN ${TB_BARCODES} ${BARCODES_ALIAS}
-      ON ${BARCODES_ALIAS}.product_code = ${ALIAS}.product_code
+    LEFT JOIN LATERAL (
+      -- um único barcode por produto (ativo primeiro): produto com vários
+      -- códigos de barras não pode multiplicar a linha da localização
+      SELECT pbx."${BARCODE_COL}"
+      FROM ${TB_BARCODES} pbx
+      WHERE pbx.product_code = ${ALIAS}.product_code
+      ORDER BY pbx.is_active DESC NULLS LAST, pbx."${BARCODE_COL}" ASC
+      LIMIT 1
+    ) ${BARCODES_ALIAS} ON TRUE
     ${where}
     ORDER BY ${ALIAS}.product_code ASC, ${ALIAS}.id ASC
     LIMIT ${limit} OFFSET ${offset};
@@ -80,8 +89,15 @@ export async function list({
     FROM ${TB} ${ALIAS}
     LEFT JOIN ${TB_PRODUCTS} ${PRODUCTS_ALIAS}
       ON ${PRODUCTS_ALIAS}.product_code = ${ALIAS}.product_code
-    LEFT JOIN ${TB_BARCODES} ${BARCODES_ALIAS}
-      ON ${BARCODES_ALIAS}.product_code = ${ALIAS}.product_code
+    LEFT JOIN LATERAL (
+      -- um único barcode por produto (ativo primeiro): produto com vários
+      -- códigos de barras não pode multiplicar a linha da localização
+      SELECT pbx."${BARCODE_COL}"
+      FROM ${TB_BARCODES} pbx
+      WHERE pbx.product_code = ${ALIAS}.product_code
+      ORDER BY pbx.is_active DESC NULLS LAST, pbx."${BARCODE_COL}" ASC
+      LIMIT 1
+    ) ${BARCODES_ALIAS} ON TRUE
     ${where};
   `;
 
@@ -123,12 +139,21 @@ export async function getById(id) {
       ${ALIAS}.observacao,
       ${ALIAS}.created_at,
       ${ALIAS}.updated_at,
-      ${ALIAS}.is_active
+      ${ALIAS}.is_active,
+      -- localização principal do produto (products.product_location_id)
+      COALESCE(${PRODUCTS_ALIAS}.product_location_id = ${ALIAS}.id, FALSE) AS is_primary
     FROM ${TB} ${ALIAS}
     LEFT JOIN ${TB_PRODUCTS} ${PRODUCTS_ALIAS}
       ON ${PRODUCTS_ALIAS}.product_code = ${ALIAS}.product_code
-    LEFT JOIN ${TB_BARCODES} ${BARCODES_ALIAS}
-      ON ${BARCODES_ALIAS}.product_code = ${ALIAS}.product_code
+    LEFT JOIN LATERAL (
+      -- um único barcode por produto (ativo primeiro): produto com vários
+      -- códigos de barras não pode multiplicar a linha da localização
+      SELECT pbx."${BARCODE_COL}"
+      FROM ${TB_BARCODES} pbx
+      WHERE pbx.product_code = ${ALIAS}.product_code
+      ORDER BY pbx.is_active DESC NULLS LAST, pbx."${BARCODE_COL}" ASC
+      LIMIT 1
+    ) ${BARCODES_ALIAS} ON TRUE
     WHERE ${ALIAS}.id = $1
     LIMIT 1;
     `,

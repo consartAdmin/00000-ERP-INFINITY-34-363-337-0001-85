@@ -10,6 +10,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import ExcelJS from 'exceljs';
+import { resolveUseProductLocations } from '../repositories/productsLocations/productsLocations.index.js';
 
 function toNumber(value, fallback = 0) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -181,6 +182,8 @@ export async function generateReportsProductsStockExcel(data = [], filters = {},
     worksheet.getColumn(2).width = 16;
     worksheet.getColumn(3).width = 62;
     worksheet.getColumn(4).width = 36;
+    // appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → coluna Localização oculta
+    worksheet.getColumn(4).hidden = !(await resolveUseProductLocations());
     worksheet.getColumn(5).width = 14;
     worksheet.getColumn(6).width = 14;
     worksheet.getColumn(7).width = 18;

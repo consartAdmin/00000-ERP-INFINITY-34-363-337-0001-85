@@ -23,6 +23,34 @@
   <link rel="stylesheet" href="/public/includes/css/style.css" />
 
   <!-- Estilos específicos do módulo de inventário -->
+  <style>
+    /* Modal de senha (estrutura base vem do modals.css) */
+    #passwordModal {
+      /* acima do menu fixo (menuConsart.css usa até 20060) */
+      --modal-z-index: 99998;
+    }
+
+    .inv-modal-subtitle {
+      margin: 4px 0 0;
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748b;
+    }
+
+    .inv-modal-error {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(220, 38, 38, .25);
+      background: rgba(220, 38, 38, .08);
+      color: #991b1b;
+      font-size: 12px;
+    }
+
+    .inv-modal-error[hidden] {
+      display: none;
+    }
+  </style>
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -35,8 +63,8 @@
         <!-- ✅ Importar XLS -->
         <div class="fields-inline fields-gap-3">
 
-          <div class="btn-inline">
-            <button type="button" class="btn btn-toolbar btn-sm" id="btnNewInventory" data-tab="tab-edit">
+          <!-- Botões e campos lado a lado no .fields-inline (alinha pela base, todos com 30px) -->
+          <button type="button" class="btn btn-toolbar btn-sm" id="btnNewInventory" data-tab="tab-edit">
               Novo inventário
             </button>
 
@@ -52,12 +80,12 @@
               Relação de inventários
             </button>
 
-            <div class="fields fields-h-5 fields-w-20 fields-font-3">
+            <div class="fields fields-h-6 fields-w-20 fields-font-3">
               <label for="searchInventory" class="field-label">Pesquisar</label>
               <input id="searchInventory" type="text" placeholder="Código ou descrição" />
             </div>
 
-            <div class="fields fields-h-5 fields-w-20 fields-font-3">
+            <div class="fields fields-h-6 fields-w-20 fields-font-3">
               <label for="statusFilter" class="field-label">Status</label>
               <select id="statusFilter">
                 <option value="">Todos</option>
@@ -71,7 +99,6 @@
             <button id="btnSearchInventories" class="btn btn-toolbar btn-sm" type="button">
               Buscar
             </button>
-          </div>
 
           <button type="button" class="btn btn-toolbar btn-sm btn-position-right" id="tabLogsBtn" data-tab="tab-logs">
             Registros (Auditoria)
@@ -102,7 +129,7 @@
 
           <div class="table-footer__info">
             <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
-              <span id="apTableInfo">0 registros encontrados</span>
+              <span id="apTableInfo">0 registros</span>
             </div>
           </div>
 
@@ -223,7 +250,7 @@
               </select>
             </div>
 
-            <div class="fields fields-h-5 fields-w-15 fields-font-3">
+            <div class="fields fields-h-5 fields-w-15 fields-font-3" data-feature="PRODUCT_LOCATIONS">
               <label class="field-label" for="itemLocation">Localização</label>
               <select id="itemLocation">
                 <option value="">Selecione...</option>
@@ -265,7 +292,7 @@
                 <th>Código do produto</th>
                 <th>Produto</th>
                 <th>Unidade</th>
-                <th>Localização</th>
+                <th data-feature="PRODUCT_LOCATIONS">Localização</th>
                 <th class="col-number">Sistema</th>
                 <th class="col-number">Contado</th>
                 <th class="col-number">Total</th>
@@ -282,50 +309,45 @@
 
     <!-- ░░░ ABA 3 — REGISTROS (AUDITORIA) ░░░ -->
     <div class="tab-panel" id="tab-logs" hidden>
-      <div class="inventory-logs">
-
-        <header class="inventory-logs__header">
-          <h2>Registros (Auditoria)</h2>
-          <p class="inventory-logs__subtitle">
-            Histórico de operações realizadas no inventário selecionado.
-          </p>
-          <button type="button" class="btn btn-new btn-sm" data-tab="tab-list">
+      <!-- Mesmo padrão da aba "Relação de inventários": header com fields-inline + table-layout -->
+      <header class="header">
+        <div class="fields-inline fields-gap-3">
+          <button type="button" class="btn btn-toolbar btn-sm" data-tab="tab-list">
             Relação de inventários
           </button>
-        </header>
 
-        <div class="inventory-logs__filters">
-          <div class="form-grid form-grid--4col">
-            <div class="field">
-              <label class="field-label" for="logDateFrom">Data inicial</label>
-              <input id="logDateFrom" type="date" />
-            </div>
-
-            <div class="field">
-              <label class="field-label" for="logDateTo">Data final</label>
-              <input id="logDateTo" type="date" />
-            </div>
-
-            <div class="field">
-              <label class="field-label" for="logUserName">Usuário</label>
-              <input id="logUserName" type="text" placeholder="Nome do usuário" />
-            </div>
-
-            <div class="field">
-              <label class="field-label" for="logProductCode">Produto</label>
-              <input id="logProductCode" type="text" placeholder="Código do produto" />
-            </div>
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="logDateFrom" class="field-label">Data inicial</label>
+            <input id="logDateFrom" type="date" />
           </div>
 
-          <div class="inventory-logs__filters-actions">
-            <button id="btnSearchLogs" class="btn btn-toolbar btn-sm" type="button">Filtrar</button>
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="logDateTo" class="field-label">Data final</label>
+            <input id="logDateTo" type="date" />
+          </div>
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="logUserName" class="field-label">Usuário</label>
+            <input id="logUserName" type="text" placeholder="Nome do usuário" />
+          </div>
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="logProductCode" class="field-label">Produto</label>
+            <input id="logProductCode" type="text" placeholder="Código do produto" />
+          </div>
+
+          <button id="btnSearchLogs" class="btn btn-toolbar btn-sm" type="button">Filtrar</button>
+
+          <div class="btn-position-right" title="Histórico de operações realizadas no inventário selecionado.">
+            <strong>📋 Registros (Auditoria)</strong>
           </div>
         </div>
+      </header>
 
         <!-- ✅ Scroll tabela logs -->
         <section class="table-layout">
-          <div class="table-scroll table-scroll--flex">
-            <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head" style="min-width:1100px;">
+          <div class="table-scroll table-height-600 table-row-h-20">
+            <table class="table table-zebra table-zebra-hover table-sticky-head">
               <thead>
                 <tr>
                   <th>Data / Hora</th>
@@ -343,39 +365,43 @@
             </table>
           </div>
         </section>
-
-      </div>
     </div>
 
   </main>
 
   <!-- ✅ MODAL: Senha de alçada (Finalizar / Estornar Inventário) -->
-  <div id="passwordModal" class="modal" hidden aria-hidden="true">
-    <div class="modal-content" style="width:min(520px,95vw); padding:0; overflow:hidden;">
-      <div
-        style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e5e7eb;background:#f8fafc;">
-        <div>
-          <div id="passwordModalTitle" style="font-weight:800;color:#111827;">Senha requerida</div>
-          <div id="passwordModalSubtitle" style="font-size:12px;color:#64748b;margin-top:2px;">
-            Digite a senha para continuar.
+  <div id="passwordModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-password-modal-close></div>
+
+    <div class="modal__dialog">
+      <div class="modal__panel modal-width-3 modal-header-color-2 modal-footer-color-1" role="dialog" aria-modal="true"
+        aria-labelledby="passwordModalTitle" aria-describedby="passwordModalSubtitle">
+        <header class="modal__header">
+          <div>
+            <h2 class="modal__title" id="passwordModalTitle">🔒 Senha requerida</h2>
+            <p class="inv-modal-subtitle" id="passwordModalSubtitle">Digite a senha para continuar.</p>
           </div>
+          <button type="button" class="modal__close" id="passwordModalClose" aria-label="Fechar modal"
+            title="Fechar">×</button>
+        </header>
+
+        <div class="modal__body">
+          <section class="modal-section">
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="passwordModalInput">Senha</label>
+              <!-- autocomplete off: é senha de alçada, não login — evita o navegador sugerir contas salvas -->
+              <input id="passwordModalInput" name="approval-password" type="password" placeholder="••••••••"
+                autocomplete="off" data-lpignore="true" data-1p-ignore />
+            </div>
+
+            <div id="passwordModalError" class="inv-modal-error" hidden></div>
+          </section>
         </div>
-        <button type="button" id="passwordModalClose" class="btn btn-sm" style="min-width:auto;">✕</button>
-      </div>
 
-      <div style="padding:14px 16px;">
-        <label style="display:block;font-weight:700;color:#334155;margin-bottom:6px;">Senha</label>
-        <input id="passwordModalInput" type="password" placeholder="••••••••"
-          style="width:100%;height:42px;border:1px solid #e5e7eb;border-radius:10px;padding:0 12px;outline:none;" />
-
-        <div id="passwordModalError"
-          style="display:none;margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(220,38,38,.25);background:rgba(220,38,38,.08);color:#991b1b;font-size:12px;">
-        </div>
-      </div>
-
-      <div style="display:flex;justify-content:flex-end;gap:10px;padding:12px 16px 16px;border-top:1px solid #e5e7eb;">
-        <button type="button" id="passwordModalCancel" class="btn">Cancelar</button>
-        <button type="button" id="passwordModalOk" class="btn btn-primary">OK</button>
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" id="passwordModalCancel">Cancelar</button>
+          <button type="button" class="btn btn-save btn-sm" id="passwordModalOk">OK</button>
+        </footer>
       </div>
     </div>
   </div>
@@ -523,6 +549,8 @@
   <script type="module" src="/public/includes/js/core.js"></script>
 
   <script type="module" src="/public/inventory/js/inventory.index.js"></script>
+  <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta [data-feature="PRODUCT_LOCATIONS"] -->
+  <script type="module">import { initProductLocationsFeature } from "/public/includes/js/productLocationsFeature.js"; initProductLocationsFeature();</script>
 
   <!-- ✅ Importador XLS + download do modelo CSV -->
   <script type="module" src="/public/inventory/inventoryImportXls.js"></script>

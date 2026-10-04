@@ -20,14 +20,64 @@ function getInventoryNotes(inv) {
   return inv?.notes ?? inv?.observacoes ?? inv?.observacao ?? inv?.observation ?? '';
 }
 
-export async function loadInventories(els) {
+// ── Paginação da lista de inventários (rodapé: apTableInfo / infoPagina / pagAnterior / pagProxima / apRowsPerPage)
+const invPaging = { page: 1, limit: 20, total: 0, bound: false };
+
+function inventoryPagingEls() {
+  return {
+    info: document.getElementById('apTableInfo'),
+    pageInfo: document.getElementById('infoPagina'),
+    prev: document.getElementById('pagAnterior'),
+    next: document.getElementById('pagProxima'),
+    rowsPerPage: document.getElementById('apRowsPerPage'),
+  };
+}
+
+function bindInventoryPaging(els) {
+  if (invPaging.bound) return;
+  invPaging.bound = true;
+
+  const p = inventoryPagingEls();
+  if (p.rowsPerPage) invPaging.limit = Number(p.rowsPerPage.value) || invPaging.limit;
+
+  p.prev?.addEventListener('click', () => {
+    if (invPaging.page > 1) loadInventories(els, { page: invPaging.page - 1 });
+  });
+  p.next?.addEventListener('click', () => {
+    const totalPages = Math.max(1, Math.ceil(invPaging.total / invPaging.limit));
+    if (invPaging.page < totalPages) loadInventories(els, { page: invPaging.page + 1 });
+  });
+  p.rowsPerPage?.addEventListener('change', () => {
+    invPaging.limit = Number(p.rowsPerPage.value) || 20;
+    loadInventories(els, { page: 1 });
+  });
+}
+
+function renderInventoryPaging(rowsOnPage) {
+  const p = inventoryPagingEls();
+  const totalPages = Math.max(1, Math.ceil(invPaging.total / invPaging.limit));
+
+  if (p.info) {
+    p.info.textContent = `${invPaging.total.toLocaleString('pt-BR')} registros`;
+  }
+  if (p.pageInfo) p.pageInfo.textContent = `Página ${invPaging.page} de ${totalPages}`;
+  if (p.prev) p.prev.disabled = invPaging.page <= 1;
+  if (p.next) p.next.disabled = invPaging.page >= totalPages || rowsOnPage === 0;
+}
+
+/** Lista inventários; sem `page` volta para a 1ª página (nova busca, filtro ou recarga após salvar) */
+export async function loadInventories(els, { page = 1 } = {}) {
   try {
+    bindInventoryPaging(els);
+
     const search = (els.searchInventory?.value || '').trim();
     const status = els.statusFilter?.value || '';
 
+    invPaging.page = Math.max(1, page);
+
     const params = new URLSearchParams();
-    params.set('limit', '50');
-    params.set('offset', '0');
+    params.set('limit', String(invPaging.limit));
+    params.set('offset', String((invPaging.page - 1) * invPaging.limit));
     if (search) params.set('search', search);
     if (status) params.set('status', status);
 
@@ -35,7 +85,13 @@ export async function loadInventories(els) {
     const data = await apiGet(url);
 
     const inventories = Array.isArray(data?.rows) ? data.rows : [];
+    // total vem do backend; fallback para APIs antigas sem contagem
+    invPaging.total = Number.isFinite(Number(data?.total))
+      ? Number(data.total)
+      : (invPaging.page - 1) * invPaging.limit + inventories.length;
+
     renderInventoryTable(els, inventories, async (inv) => await onSelectInventory(els, inv));
+    renderInventoryPaging(inventories.length);
   } catch (err) {
     logError('Erro em loadInventories:', err);
     showCenterModal({

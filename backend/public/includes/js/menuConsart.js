@@ -2,6 +2,9 @@
 // Busca mostra somente links existentes e não bloqueados no menu.
 // O script de permissões deve marcar links bloqueados com hidden=true,
 // style.display='none' ou class='modulo-bloqueado'.
+// Itens com `feature` ficam ocultos quando a appFeature correspondente está desativada.
+
+import { initProductLocationsFeature } from './productLocationsFeature.js';
 
 const MENU_CONFIG = [
   { type: 'link', id: 1, label: '🏠 Início', href: '../home/home.html', className: 'link-inicio' },
@@ -25,8 +28,8 @@ const MENU_CONFIG = [
           { type: 'link', id: 12, label: '⚙️ Parâmetros de Etiquetas', href: '../labelParameters/labelParameters.html' },
           { type: 'link', id: 13, label: '🖼️ Imagens dos Produtos', href: '../productsImagens/productsImagens.html' },
           { type: 'link', id: 14, label: '💲 Tabela de Preços', href: '../prices/prices.html' },
-          { type: 'link', id: 15, label: '📍 Código de Barras Por Localização', href: '../locationsBarCode/locationsBarCode.html' },
-          { type: 'link', id: 16, label: '✏️ Parâmetros Etiqueta Localização', href: '../labelPrintConfig/labelPrintConfig.html' },
+          { type: 'link', id: 15, label: '📍 Código de Barras Por Localização', href: '../locationsBarCode/locationsBarCode.html', feature: 'PRODUCT_LOCATIONS' },
+          { type: 'link', id: 16, label: '✏️ Parâmetros Etiqueta Localização', href: '../labelPrintConfig/labelPrintConfig.html', feature: 'PRODUCT_LOCATIONS' },
           { type: 'link', id: 143, label: '📚 Vinculo Ref. LIMPMAX X Ref. LLV (Entradas NF-e)', href: '../productsLmRef/productsLmRef.html' },
 
           // { type: 'link', id: 17, label: '🛒 Ordem de Compra', href: '../manufacturesOrders/manufacturesOrders.html' },
@@ -65,8 +68,8 @@ const MENU_CONFIG = [
           { type: 'link', id: 38, label: '💳 Entradas de Despesas', href: '../expenseEntries/expenseEntries.html' },
           { type: 'link', id: 39, label: '📦 Inventário de Produtos', href: '../inventory/inventory.html' },
           { type: 'link', id: 40, label: '📱 Inventário Mobile', href: '../inventoryMobile/inventoryMobile.html' },
-          { type: 'link', id: 41, label: '🗺️ Localização de Produtos', href: '../productsLocations/productsLocations.html' },
-          { type: 'link', id: 42, label: '📍 Cadastro de Localizações', href: '../locations/locations.html' },
+          { type: 'link', id: 41, label: '🗺️ Localização de Produtos', href: '../productsLocations/productsLocations.html', feature: 'PRODUCT_LOCATIONS' },
+          { type: 'link', id: 42, label: '📍 Cadastro de Localizações', href: '../locations/locations.html', feature: 'PRODUCT_LOCATIONS' },
           { type: 'link', id: 43, label: '📊 Gestão de Estoque Min./Máx.', href: '../productsStock/productsStock.html' },
           { type: 'link', id: 44, label: '🏷️ Estoque por Lote', href: '../productsStockLots/productsStockLots.html' },
           { type: 'link', id: 142, label: '📚 Conciliação Entradas X Saídas', href: '../conciliationSalesxStock/conciliationSalesxStock.html' },
@@ -75,7 +78,6 @@ const MENU_CONFIG = [
       {
         type: 'submenu', id: 45, label: '📈 Fiscal ▹', children: [
           { type: 'link', id: 46, label: '🧾 Notas Fiscais Emitidas', href: '../invoicesIssued/invoicesIssued.html' },
-          { type: 'link', id: 47, label: '📑 Gerenciar NF-e', href: '../nfes/nfes.html' },
           { type: 'link', id: 48, label: '🚫 Inutilizar NF-e', href: '../nfeInutilizarEvents/nfeInutilizarEvents.html' },
           { type: 'link', id: 49, label: '✏️ Carta de Correção Eletrônica', href: '../nfeCce/nfeCce.html' },
           { type: 'link', id: 50, label: '❌ Cancelar NF-e', href: '../cancelarNfe/cancelarNfe.html' },
@@ -95,7 +97,6 @@ const MENU_CONFIG = [
     type: 'dropdown', id: 56, htmlId: 'Vendas', label: '📈 Vendas', children: [
       { type: 'link', id: 57, label: '📑 Orçamentos', href: '../budgets/budgets.html' },
       { type: 'link', id: 58, label: '📝 Pedidos', href: '../orders/orders.html' },
-      // { type: 'link', id: 59, label: '🚚 Notas Fiscais', href: '../nfes/nfes.html' },
       // { type: 'link', id: 60, label: '📊 Orçamento Inteligente', href: '../iaBudgets/iaBudgets.html' },
       { type: 'link', id: 61, label: '📊 Relatório de Vendas', href: '../salesReport/salesReport.html' },
       { type: 'link', id: 62, label: '🚚 Montar Pedido Para Despacho', href: '../OrdersLogisticsPacking/OrdersLogisticsPacking.html' },
@@ -221,6 +222,8 @@ const MENU_CONFIG = [
   //   { type: 'link', id: 137, label: '🛰️ Trackeamento & SEO', href: '../trackingManager/trackingManager.html' },
   //   { type: 'link', id: 138, label: '🛰️ Acompanhamentos de Trackeamento', href: '../analyticsTracking/analyticsTracking.html' },
   // ]},
+  // Sem id de módulo: o botão de suporte fica visível para todos os usuários.
+  { type: 'link', label: '💬 Suporte', href: 'https://wa.me/5531989230220', className: 'link-suporte', external: true },
 ];
 
 function createLink(item, extraClass = '') {
@@ -228,7 +231,13 @@ function createLink(item, extraClass = '') {
   a.textContent = item.label;
   a.href = (item.href || '#').trim();
   if (item.id != null) a.dataset.moduloId = String(item.id);
+  if (item.feature) a.dataset.feature = item.feature;
   if (extraClass) a.classList.add(extraClass);
+  if (item.external) {
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.title = 'Suporte via WhatsApp: (31) 9 8923-0220';
+  }
   return a;
 }
 
@@ -434,6 +443,9 @@ function buildMenuPrincipal() {
     document.getElementById('menu-consart-mount');
   if (mount) mount.appendChild(menu);
   else document.body.prepend(menu);
+
+  // appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta os links de localização
+  initProductLocationsFeature({ root: menu }).catch(() => {});
 
   // Dispara somente depois que todos os links existem no DOM.
   try {

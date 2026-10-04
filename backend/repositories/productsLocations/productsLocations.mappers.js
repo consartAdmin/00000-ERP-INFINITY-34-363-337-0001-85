@@ -25,5 +25,8 @@ export function normalizeRow(r = {}) {
     created_at: r.created_at,
     updated_at: r.updated_at,
     is_active: !!r.is_active,
+
+    // ✅ é a localização principal do produto (products.product_location_id)
+    is_primary: !!r.is_primary,
   };
 }

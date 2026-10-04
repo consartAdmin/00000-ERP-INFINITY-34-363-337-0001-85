@@ -552,7 +552,7 @@
                   </div>
                 </div>
 
-                <div class="fields-inline fields-gap-3">
+                <div class="fields-inline fields-gap-3" data-feature="PRODUCT_LOCATIONS">
                   <div class="fields fields-h-6 fields-w-30">
                     <span>Localização</span>
                     <input type="text" id="product_location_label" placeholder="Selecione uma localização" readonly>
@@ -565,6 +565,9 @@
                 </div>
 
                 <select id="product_location_id" name="product_location_id" hidden></select>
+
+                <!-- Todas as localizações do SKU (Mapa de Localização); a principal é a do campo acima -->
+                <div id="productLocationsList" class="product-locations-list" data-feature="PRODUCT_LOCATIONS" hidden></div>
               </div>
 
               <section id="productsImagens" class="product-images-card" aria-labelledby="productsImagensTitle">
@@ -1548,6 +1551,8 @@
     <script type="module" src="/public/includes/js/core.js"></script>
     <script type="module" src="/public/includes/js/apiBase.js"></script>
     <script type="module" src="/public/includes/js/productsLocationsModals.js"></script>
+    <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta [data-feature="PRODUCT_LOCATIONS"] -->
+    <script type="module">import { initProductLocationsFeature } from "/public/includes/js/productLocationsFeature.js"; initProductLocationsFeature();</script>
     <script type="module" src="/public/editProducts/js/selectLoads.js"></script>
     <script type="module" src="/public/editProducts/js/productsMovements.js?v=20260601-02"></script>
     <script type="module" src="/public/editProducts/js/productImages.js?v=20260820-01">

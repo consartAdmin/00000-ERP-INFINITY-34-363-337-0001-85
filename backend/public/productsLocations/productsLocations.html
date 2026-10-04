@@ -14,7 +14,7 @@
   <title>LOCALIZAÇÃO DE PRODUTOS | CONSART ERP</title>
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/productsLocations/productsLocations.css?v=ds-01" />
+  <link rel="stylesheet" href="/public/productsLocations/productsLocations.css?v=ds-02" />
 </head>
 
 <body class="consart-theme page-locations p-page pw-page--full ph-page--xr">
@@ -91,6 +91,7 @@
               <th class="pl-col-small">Bandeja</th>
               <th class="pl-col-small">Posição</th>
               <th class="pl-col-notes">Observações</th>
+              <th class="pl-col-primary" title="Localização principal exibida na Edição de Produtos">Principal</th>
               <th class="pl-col-actions col-acoes">Ações</th>
             </tr>
           </thead>
@@ -236,7 +237,9 @@
   </script>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/productsLocations/productsLocations.js"></script>
+  <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → página bloqueada com aviso -->
+  <script type="module">import { guardProductLocationsPage } from "/public/includes/js/productLocationsFeature.js"; guardProductLocationsPage();</script>
+  <script type="module" src="/public/productsLocations/productsLocations.js?v=2"></script>
 
 </body>
 

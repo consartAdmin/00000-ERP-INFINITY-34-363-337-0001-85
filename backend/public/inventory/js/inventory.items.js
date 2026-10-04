@@ -733,7 +733,7 @@ export function renderItemsTable(els) {
       <td>${item.product_code ?? ''}</td>
       <td>${productNameShown}</td>
       <td>${item.unit ?? ''}</td>
-      <td>${item.location_name ?? ''}</td>
+      <td data-feature="PRODUCT_LOCATIONS">${item.location_name ?? ''}</td>
       <td class="col-number">${fmtQty3(systemQty)}</td>
       <td class="col-number">${countedQty != null ? fmtQty3(countedQty) : ''}</td>
       <td class="col-number"><strong>${fmtQty3(totalQty)}</strong></td>

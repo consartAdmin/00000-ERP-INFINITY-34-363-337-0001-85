@@ -16,8 +16,10 @@ import {
 
 import { bindExport, bindStockPdf } from './products.export.js';
 import { bindCameraDropZone } from './products.dragdrop.js';
+import { bindColumnsSettings } from './products.columns.js';
 import { loadProducts, renderTableHeader } from './products.render.js';
 import { resolveShowProductImages } from '/public/includes/js/productImagesFeature.js';
+import { resolveUseProductLocations } from '/public/includes/js/productLocationsFeature.js';
 
 async function bootstrap() {
   try {
@@ -27,13 +29,16 @@ async function bootstrap() {
     bindSearch();
     bindLimit();
     bindFilters();
+    bindColumnsSettings();
 
-    // appFeature PRODUCT_SEARCH_IMAGE_MODE: sem a feature cadastrada → exibe
-    const [showImages] = await Promise.all([
+    // appFeatures PRODUCT_SEARCH_IMAGE_MODE / PRODUCT_LOCATIONS: sem a feature cadastrada → exibe
+    const [showImages, showLocations] = await Promise.all([
       resolveShowProductImages(),
+      resolveUseProductLocations(),
       loadFilterOptions(),
     ]);
     state.showImages = showImages;
+    state.showLocations = showLocations;
     // cabeçalho já no modo certo antes de a lista carregar
     renderTableHeader();
 

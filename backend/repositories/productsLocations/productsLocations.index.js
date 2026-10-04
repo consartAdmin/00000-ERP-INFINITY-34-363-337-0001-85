@@ -6,8 +6,12 @@
 import { ensureTable } from './productsLocationsSchema.repository.js';
 import { list, listByProductCode, getById } from './productsLocationsQuery.repository.js';
 import { create } from './productsLocationsCreate.repository.js';
-import { update, deactivate } from './productsLocationsUpdate.repository.js';
+import { update, deactivate, setPrimary } from './productsLocationsUpdate.repository.js';
 import { remove } from './productsLocationsRemove.repository.js';
+import {
+  PRODUCT_LOCATIONS_FEATURE_CODE,
+  resolveUseProductLocations,
+} from './productsLocationsFeature.repository.js';
 
 export {
   ensureTable,
@@ -17,7 +21,10 @@ export {
   create,
   update,
   deactivate,
+  setPrimary,
   remove,
+  PRODUCT_LOCATIONS_FEATURE_CODE,
+  resolveUseProductLocations,
 };
 
 export default {
@@ -28,5 +35,7 @@ export default {
   create,
   update,
   deactivate,
+  setPrimary,
   remove,
+  resolveUseProductLocations,
 };

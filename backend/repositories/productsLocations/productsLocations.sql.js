@@ -8,8 +8,8 @@ import {
   ALIAS,
   PRODUCTS_ALIAS,
   PRODUCT_DESC_COL,
-  BARCODES_ALIAS,
   BARCODE_COL,
+  TB_BARCODES,
 } from './productsLocations.constants.js';
 
 /**
@@ -47,8 +47,13 @@ export function buildWhere({
         OR LOWER(COALESCE(${ALIAS}.observacao,  '')) LIKE ${pLike}
         OR LOWER(COALESCE(${PRODUCTS_ALIAS}."${PRODUCT_DESC_COL}", '')) LIKE ${pLike}
 
-        OR ${BARCODES_ALIAS}."${BARCODE_COL}" = ${pExact}
-        OR LOWER(COALESCE(${BARCODES_ALIAS}."${BARCODE_COL}", '')) LIKE ${pLike}
+        -- qualquer barcode do produto (EXISTS: não duplica a linha da localização)
+        OR EXISTS (
+          SELECT 1 FROM ${TB_BARCODES} pbq
+          WHERE pbq.product_code = ${ALIAS}.product_code
+            AND (pbq."${BARCODE_COL}" = ${pExact}
+              OR LOWER(COALESCE(pbq."${BARCODE_COL}", '')) LIKE ${pLike})
+        )
       )
     `);
   }

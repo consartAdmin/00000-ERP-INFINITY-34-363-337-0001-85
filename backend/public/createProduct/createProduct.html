@@ -265,7 +265,7 @@
                 <select id="supplier_id" name="supplier_id"></select>
               </label>
 
-              <label class="field-group entity-header__location" for="product_location_label">
+              <label class="field-group entity-header__location" for="product_location_label" data-feature="PRODUCT_LOCATIONS">
                 <span>Localização</span>
 
                 <div class="plm-field">
@@ -1162,6 +1162,8 @@
 
     <!-- 🚀 Orquestrador da página -->
     <script type="module" src="/public/createProduct/createProduct.js" defer></script>
+    <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta [data-feature="PRODUCT_LOCATIONS"] -->
+    <script type="module">import { initProductLocationsFeature } from "/public/includes/js/productLocationsFeature.js"; initProductLocationsFeature();</script>
   </main>
 </body>
 

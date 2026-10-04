@@ -79,7 +79,7 @@
         </div>
       </div>
 
-      <div class="info-block">
+      <div class="info-block" data-feature="PRODUCT_LOCATIONS">
         <span class="label">Location</span>
         <p id="productLocation">-</p>
       </div>
@@ -109,5 +109,7 @@
   </main>
 
   <script type="module" src="./productsMobile.js"></script>
+  <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta [data-feature="PRODUCT_LOCATIONS"] -->
+  <script type="module">import { initProductLocationsFeature } from "/public/includes/js/productLocationsFeature.js"; initProductLocationsFeature();</script>
 </body>
 </html>

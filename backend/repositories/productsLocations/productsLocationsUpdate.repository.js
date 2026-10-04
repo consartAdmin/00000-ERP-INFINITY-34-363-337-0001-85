@@ -4,9 +4,10 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB } from './productsLocations.constants.js';
+import { TB, TB_PRODUCTS } from './productsLocations.constants.js';
 import { toBool } from './productsLocations.sanitizers.js';
 import { getById } from './productsLocationsQuery.repository.js';
+import { clearPrimaryIfMatches } from './productsLocationsRemove.repository.js';
 
 export async function update(id, patch = {}) {
   const fields = [];
@@ -74,5 +75,28 @@ export async function deactivate(id) {
       RETURNING id;`,
     [id]
   );
+  if (rows[0]?.id) await clearPrimaryIfMatches(rows[0].id); // inativa não pode seguir como principal
   return rows[0]?.id ? getById(rows[0].id) : null;
+}
+
+/**
+ * Define esta localização como a PRINCIPAL do produto
+ * (products.product_location_id — exibida na Edição de Produtos).
+ * Só aceita localização ativa; retorna a localização atualizada ou null se não existir.
+ */
+export async function setPrimary(id) {
+  const loc = await getById(id);
+  if (!loc) return null;
+  if (!loc.is_active) {
+    const err = new Error('Localização inativa não pode ser a principal.');
+    err.status = 400;
+    throw err;
+  }
+
+  await pool.query(
+    `UPDATE ${TB_PRODUCTS} SET product_location_id = $1 WHERE product_code = $2;`,
+    [loc.id, loc.product_code]
+  );
+
+  return getById(id);
 }

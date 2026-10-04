@@ -960,7 +960,11 @@ async function hydrateItemForPdf(
     cloned?.addressing,
   );
 
-  if (!currentLocation && sku) {
+  if (
+    cache.useLocations !== false &&
+    !currentLocation &&
+    sku
+  ) {
     let locationRow = null;
 
     if (
@@ -1171,7 +1175,15 @@ async function hydrateOrderItems(
         scopeId,
       });
 
+  const useLocations =
+    await productsLocationsApi
+      .resolveUseProductLocations({
+        scopeType,
+        scopeId,
+      });
+
   const cache = {
+    useLocations,
     products: new Map(),
     locations: new Map(),
     lots: new Map(),
@@ -1561,6 +1573,17 @@ const COLS = {
   headerHeight: 20,
 };
 
+// appFeature PRODUCT_LOCATIONS = LOCATIONS_DISABLED: sem a coluna Localização;
+// a Descrição absorve a largura (mesmos índices, coluna 3 com largura 0).
+const COLS_NO_LOCATION = {
+  ...COLS,
+  w: COLS.w.map((width, index) => {
+    if (index === 2) return COLS.w[2] + COLS.w[3];
+    if (index === 3) return 0;
+    return width;
+  }),
+};
+
 const SUMMARY = {
   gapAfterTable: 18,
   summaryBoxHeight: 46,
@@ -1798,13 +1821,13 @@ function drawHeader(
   }
 }
 
-function drawTableHeader(doc, y) {
+function drawTableHeader(doc, y, cols = COLS) {
   const {
     x,
     w,
     headers,
     headerHeight,
-  } = COLS;
+  } = cols;
 
   doc
     .font('Helvetica-Bold')
@@ -1812,6 +1835,8 @@ function drawTableHeader(doc, y) {
 
   headers.forEach(
     (label, index) => {
+      if (!w[index]) return;
+
       doc.save();
 
       doc
@@ -1854,18 +1879,20 @@ function drawTableHeader(doc, y) {
   );
 }
 
-function drawRowBorders(doc, y) {
+function drawRowBorders(doc, y, cols = COLS) {
   const {
     x,
     w,
     rowHeight,
-  } = COLS;
+  } = cols;
 
   for (
     let index = 0;
     index < x.length;
     index += 1
   ) {
+    if (!w[index]) continue;
+
     doc
       .rect(
         x[index],
@@ -1935,6 +1962,7 @@ function addNewTablePage(
   doc,
   company,
   order,
+  cols = COLS,
 ) {
   doc.addPage({
     margin: PAGE.margin,
@@ -1951,11 +1979,12 @@ function addNewTablePage(
   drawTableHeader(
     doc,
     TABLE_START_Y,
+    cols,
   );
 
   return (
     TABLE_START_Y +
-    COLS.headerHeight
+    cols.headerHeight
   );
 }
 
@@ -2072,6 +2101,19 @@ export async function generateOrderSeparationPdf(
 
   let page = 1;
 
+  // appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → PDF sem a coluna Localização
+  const showLocations =
+    await productsLocationsApi
+      .resolveUseProductLocations({
+        scopeType: stockScopeType,
+        scopeId: stockScopeId,
+      });
+
+  const cols =
+    showLocations
+      ? COLS
+      : COLS_NO_LOCATION;
+
   const hydratedOrder =
     hydrateBudget
       ? await hydrateOrderWithBudget(
@@ -2111,11 +2153,12 @@ export async function generateOrderSeparationPdf(
   drawTableHeader(
     doc,
     TABLE_START_Y,
+    cols,
   );
 
   let y =
     TABLE_START_Y +
-    COLS.headerHeight;
+    cols.headerHeight;
 
   let totalQuantity = 0;
 
@@ -2144,7 +2187,7 @@ export async function generateOrderSeparationPdf(
     totalQuantity += quantity;
 
     if (
-      y + COLS.rowHeight >
+      y + cols.rowHeight >
       doc.page.height -
       PAGE.margin -
       70
@@ -2160,22 +2203,24 @@ export async function generateOrderSeparationPdf(
         doc,
         company,
         hydratedOrder,
+        cols,
       );
     }
 
     drawRowBorders(
       doc,
       y,
+      cols,
     );
 
     const imageX =
-      COLS.x[0] + 3;
+      cols.x[0] + 3;
 
     const imageY =
       y + 3;
 
     const imageWidth =
-      COLS.w[0] - 6;
+      cols.w[0] - 6;
 
     const imageHeight = 42;
 
@@ -2265,10 +2310,10 @@ export async function generateOrderSeparationPdf(
 
     doc.text(
       sku,
-      COLS.x[1] + 2,
+      cols.x[1] + 2,
       y + 14,
       {
-        width: COLS.w[1] - 4,
+        width: cols.w[1] - 4,
         align: 'center',
         lineBreak: false,
       },
@@ -2276,18 +2321,18 @@ export async function generateOrderSeparationPdf(
 
     doc.text(
       description,
-      COLS.x[2] + 3,
+      cols.x[2] + 3,
       y + 9,
       {
-        width: COLS.w[2] - 6,
+        width: cols.w[2] - 6,
         height: 30,
         align: 'left',
       },
     );
 
     if (
-      corredor ||
-      endereco
+      showLocations &&
+      (corredor || endereco)
     ) {
       doc
         .font('Helvetica')
@@ -2295,11 +2340,11 @@ export async function generateOrderSeparationPdf(
         .fillColor(COLORS.text)
         .text(
           corredor,
-          COLS.x[3] + 2,
+          cols.x[3] + 2,
           y + 8,
           {
             width:
-              COLS.w[3] - 4,
+              cols.w[3] - 4,
 
             align: 'center',
             lineBreak: false,
@@ -2312,11 +2357,11 @@ export async function generateOrderSeparationPdf(
         .fillColor(COLORS.text)
         .text(
           endereco,
-          COLS.x[3] + 2,
+          cols.x[3] + 2,
           y + 22,
           {
             width:
-              COLS.w[3] - 4,
+              cols.w[3] - 4,
 
             align: 'center',
             lineBreak: false,
@@ -2330,11 +2375,11 @@ export async function generateOrderSeparationPdf(
       .fillColor(COLORS.text)
       .text(
         lot,
-        COLS.x[4] + 2,
+        cols.x[4] + 2,
         y + 14,
         {
           width:
-            COLS.w[4] - 4,
+            cols.w[4] - 4,
 
           align: 'center',
           lineBreak: false,
@@ -2343,11 +2388,11 @@ export async function generateOrderSeparationPdf(
 
     doc.text(
       unit,
-      COLS.x[5] + 2,
+      cols.x[5] + 2,
       y + 14,
       {
         width:
-          COLS.w[5] - 4,
+          cols.w[5] - 4,
 
         align: 'center',
         lineBreak: false,
@@ -2356,11 +2401,11 @@ export async function generateOrderSeparationPdf(
 
     doc.text(
       formatStock(quantity),
-      COLS.x[6] + 2,
+      cols.x[6] + 2,
       y + 14,
       {
         width:
-          COLS.w[6] - 4,
+          cols.w[6] - 4,
 
         align: 'center',
         lineBreak: false,
@@ -2369,11 +2414,11 @@ export async function generateOrderSeparationPdf(
 
     doc.text(
       formatStock(currentStock),
-      COLS.x[7] + 2,
+      cols.x[7] + 2,
       y + 14,
       {
         width:
-          COLS.w[7] - 4,
+          cols.w[7] - 4,
 
         align: 'center',
         lineBreak: false,
@@ -2382,21 +2427,21 @@ export async function generateOrderSeparationPdf(
 
     drawManualFillLine(
       doc,
-      COLS.x[8],
+      cols.x[8],
       y,
-      COLS.w[8],
-      COLS.rowHeight,
+      cols.w[8],
+      cols.rowHeight,
     );
 
     drawManualFillLine(
       doc,
-      COLS.x[9],
+      cols.x[9],
       y,
-      COLS.w[9],
-      COLS.rowHeight,
+      cols.w[9],
+      cols.rowHeight,
     );
 
-    y += COLS.rowHeight;
+    y += cols.rowHeight;
   }
 
   const observation = String(

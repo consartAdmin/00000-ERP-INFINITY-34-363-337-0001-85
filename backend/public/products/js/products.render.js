@@ -11,6 +11,7 @@ import { renderPagination } from './products.pagination.js';
 import { bindCameraButtons } from './products.camera.js';
 import { onUploadImageTable } from './products.upload.js';
 import { makeRowDraggable, updateCameraFocusStyles } from './products.dragdrop.js';
+import { priceColumnClass, syncColumns } from './products.columns.js';
 
 const FIXED_PRICE_KEYS = new Set([
   'cost_price', 'preco_custo',
@@ -103,15 +104,21 @@ export function renderTableHeader(additionalPriceColumns = []) {
     <th class="col-ref">Ref. Fab.</th>
     <th class="text-right col-preco-custo">Preço de Custo</th>
     <th class="text-right col-preco-varejo">Preço Varejo</th>
-    ${additionalPriceColumns.map(({ label }) =>
-      `<th class="text-right col-preco-adicional">${sanitize(label)}</th>`).join('')}
+    ${additionalPriceColumns.map(({ key, label }) =>
+      `<th class="text-right col-preco-adicional ${priceColumnClass(key)}">${sanitize(label)}</th>`).join('')}
     <th class="text-right col-estoque">Estoque</th>
-    <th class="col-local">Localização</th>
+    ${state.showLocations ? '<th class="col-local">Localização</th>' : ''}
     <th class="col-ativo">Status</th>
     <th class="col-fiscal">Prod. Fiscal</th>
     ${state.showImages ? '<th class="text-center col-img">Imagem</th>' : ''}
     <th class="text-center col-actions">Ações</th>
   `;
+
+  syncColumns({
+    additionalPriceColumns,
+    showImages: state.showImages,
+    showLocations: state.showLocations,
+  });
 }
 
 export function mapRow(r) {
@@ -174,9 +181,86 @@ export function mapRow(r) {
   };
 }
 
+/* Localização: 1 local → texto; vários → ícone "📍 N" com a lista no hover.
+   O backend agrega as localizações ativas separadas por " | ". */
+function renderLocationCell(description) {
+  const parts = String(description || '')
+    .split(' | ')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (!parts.length) return '—';
+  if (parts.length === 1) return sanitize(parts[0]);
+
+  // atributo HTML: escapa também aspas (sanitize só trata < > &)
+  const attr = (v) => sanitize(v).replace(/"/g, '&quot;');
+  const label = `${parts.length} localizações: ${parts.join('; ')}`;
+  return `<span class="loc-multi" tabindex="0" data-locations="${attr(parts.join('\n'))}"
+    aria-label="${attr(label)}">📍 ${parts.length}</span>`;
+}
+
+// Tooltip flutuante (position: fixed) — não é cortado pelo scroll da tabela
+let locTooltipEl = null;
+
+function showLocationTooltip(target) {
+  if (!locTooltipEl) {
+    locTooltipEl = document.createElement('div');
+    locTooltipEl.className = 'loc-tooltip';
+    locTooltipEl.setAttribute('role', 'tooltip');
+    document.body.appendChild(locTooltipEl);
+  }
+
+  const items = String(target.dataset.locations || '').split('\n').filter(Boolean);
+  locTooltipEl.replaceChildren(
+    Object.assign(document.createElement('div'), {
+      className: 'loc-tooltip__title',
+      textContent: `${items.length} localizações`,
+    }),
+    ...items.map((txt) => Object.assign(document.createElement('div'), {
+      className: 'loc-tooltip__item',
+      textContent: txt,
+    })),
+  );
+  locTooltipEl.hidden = false;
+
+  const rect = target.getBoundingClientRect();
+  const tip = locTooltipEl.getBoundingClientRect();
+  const left = Math.min(Math.max(8, rect.left + rect.width / 2 - tip.width / 2), window.innerWidth - tip.width - 8);
+  const below = rect.bottom + 6;
+  const top = below + tip.height > window.innerHeight - 8 ? rect.top - tip.height - 6 : below;
+  locTooltipEl.style.left = `${left}px`;
+  locTooltipEl.style.top = `${top}px`;
+}
+
+function hideLocationTooltip() {
+  if (locTooltipEl) locTooltipEl.hidden = true;
+}
+
+function bindLocationTooltip(tbody) {
+  if (tbody.__locTooltipBound) return;
+  tbody.__locTooltipBound = true;
+
+  const open = (ev) => {
+    const el = ev.target.closest?.('.loc-multi');
+    if (el) showLocationTooltip(el);
+  };
+  const close = (ev) => {
+    if (ev.target.closest?.('.loc-multi')) hideLocationTooltip();
+  };
+
+  tbody.addEventListener('mouseover', open);
+  tbody.addEventListener('mouseout', close);
+  tbody.addEventListener('focusin', open);
+  tbody.addEventListener('focusout', close);
+  tbody.closest('.table-scroll, .table-scroll--flex')?.addEventListener('scroll', hideLocationTooltip, { passive: true });
+}
+
 export function renderTable(rows) {
   const tbody = getTableBody();
   if (!tbody) return;
+
+  hideLocationTooltip();
+  bindLocationTooltip(tbody);
 
   tbody.innerHTML = '';
   const additionalPriceColumns = getAdditionalPriceColumns(rows);
@@ -184,7 +268,9 @@ export function renderTable(rows) {
 
   if (!rows?.length) {
     const tr = document.createElement('tr');
-    const colspan = 13 + additionalPriceColumns.length - (state.showImages ? 0 : 1);
+    const colspan = 13 + additionalPriceColumns.length
+      - (state.showImages ? 0 : 1)
+      - (state.showLocations ? 0 : 1);
     tr.innerHTML = `<td colspan="${colspan}" class="empty">Nenhum produto encontrado.</td>`;
     tbody.appendChild(tr);
     return;
@@ -236,9 +322,9 @@ export function renderTable(rows) {
       <td class="col-preco-custo">${precoCusto}</td>
       <td class="col-preco-varejo">${precoVarejo}</td>
       ${additionalPriceColumns.map(({ key }) =>
-        `<td class="col-preco-adicional">${fmtMoney(additionalPrices.get(key))}</td>`).join('')}
+        `<td class="col-preco-adicional ${priceColumnClass(key)}">${fmtMoney(additionalPrices.get(key))}</td>`).join('')}
       <td class="col-estoque">${estoque}</td>
-      <td class="col-local">${sanitize(r.location_description || '—')}</td>
+      ${state.showLocations ? `<td class="col-local">${renderLocationCell(r.location_description)}</td>` : ''}
       <td class="col-ativo">${ativoBadge}</td>
       <td class="col-fiscal">${fiscalIcon}</td>
 
@@ -278,9 +364,14 @@ export function renderTable(rows) {
   updateCameraFocusStyles();
 }
 
+// Só a busca mais recente pode atualizar tabela/rodapé (evita resposta antiga
+// sobrescrever a nova enquanto o usuário digita).
+let loadSeq = 0;
+
 export async function loadProducts() {
+  const seq = ++loadSeq;
   try {
-    if (state.loading) state.aborter?.abort?.();
+    state.aborter?.abort?.();
     state.aborter = new AbortController();
     state.loading = true;
 
@@ -297,6 +388,8 @@ export async function loadProducts() {
 
       signal: state.aborter.signal,
     });
+
+    if (seq !== loadSeq) return; // chegou uma busca mais nova
 
     const rows = dedupeById(data?.rows);
 
@@ -316,11 +409,12 @@ export async function loadProducts() {
     setFooterInfo({ total, page: state.page, pages });
 
   } catch (err) {
-    if (err?.name === 'AbortError') return;
+    if (err?.name === 'AbortError' || seq !== loadSeq) return;
     console.error('Erro ao carregar products:', err);
     setStatus(`Erro ao carregar products: ${err.message || err}`, 'error');
     setFooterInfo({ total: null, page: null, pages: null });
   } finally {
-    state.loading = false;
+    // busca antiga cancelada não pode "desligar" o loading da busca atual
+    if (seq === loadSeq) state.loading = false;
   }
 }
