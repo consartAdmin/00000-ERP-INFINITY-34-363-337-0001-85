@@ -190,18 +190,22 @@ export function createTableSettings(options = {}) {
       rules.push(`${tableSel} > tbody > tr { height: ${t.rowHeight}px !important; }`);
       rules.push(`${tableSel} > tbody > tr > td, ${tableSel} > tbody > tr > th { padding-top: ${pad} !important; padding-bottom: ${pad} !important; }`);
     }
-    // Dentro do .table-layout-integrated (overflow: hidden + max-height) a altura fixa
-    // empurraria o rodapé para fora: o card passa a abraçar filtro + tabela + rodapé.
+    // Dentro do .table-layout-integrated o card (filtro + tabela + rodapé) acompanha a tabela:
+    // - altura fixa empurraria o rodapé para fora (overflow: hidden + max-height): o card abraça o conteúdo;
+    // - largura vai no card inteiro, senão a tabela encolhe e sobra o fundo do card ao lado.
     const parent = inst.wrapper.parentElement;
     const shell = parent?.classList.contains('table-layout-integrated') ? parent : null;
-    if (shell && t.height) shell.dataset.tsShell = tableKey;
+    if (shell && (t.height || t.width)) shell.dataset.tsShell = tableKey;
     else if (shell?.dataset.tsShell === tableKey) delete shell.dataset.tsShell;
 
     if (t.height) {
       rules.push(`${scopeSel} { height: ${t.height}px !important; max-height: ${t.height}px !important; min-height: 0 !important; flex: 0 0 auto !important; }`);
       rules.push(`${shellSel} { height: auto !important; max-height: none !important; min-height: 0 !important; flex: 0 0 auto !important; }`);
     }
-    if (t.width) {
+    if (t.width && shell) {
+      rules.push(`${shellSel} { width: ${t.width}${t.widthUnit} !important; max-width: 100% !important; }`);
+      rules.push(`${scopeSel} { width: 100% !important; max-width: 100% !important; }`);
+    } else if (t.width) {
       rules.push(`${scopeSel} { width: ${t.width}${t.widthUnit} !important; max-width: 100% !important; }`);
     }
 
