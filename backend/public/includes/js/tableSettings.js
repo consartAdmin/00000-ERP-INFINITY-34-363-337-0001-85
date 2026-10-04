@@ -20,6 +20,7 @@ const PREFS_URL = '/api/user-table-preferences/';
 const CACHE_PREFIX = 'consart.tableSettings.v1.';
 const TABLE_PREF = '__table'; // chave reservada: opções da tabela inteira
 const KEY_PATTERN = /^[a-zA-Z0-9._-]{1,80}$/;
+const SPECIFICITY_BOOST = '#ts-boost#ts-boost#ts-boost';
 
 const COL_WIDTH = { min: 40, max: 1200 };
 const ROW_HEIGHT = { min: 18, max: 120 };
@@ -84,9 +85,13 @@ export function createTableSettings(options = {}) {
   }
 
   const cacheKey = options.cacheKey || `${CACHE_PREFIX}${tableKey}`;
-  const scopeSel = `[data-ts-key="${tableKey}"]`;
-  const shellSel = `[data-ts-shell="${tableKey}"]`;
-  const tableSel = `table[data-ts-table="${tableKey}"]`;
+  // O que o usuário escolhe na engrenagem precisa vencer o CSS do módulo, que às vezes
+  // força tamanhos com !important (ex.: budgets.list.mobile.css). :is() assume a maior
+  // especificidade entre seus argumentos; o #id nunca casa, só eleva a especificidade.
+  const boost = (sel) => `:is(${sel}, ${SPECIFICITY_BOOST})`;
+  const scopeSel = boost(`[data-ts-key="${tableKey}"]`);
+  const shellSel = boost(`[data-ts-shell="${tableKey}"]`);
+  const tableSel = boost(`table[data-ts-table="${tableKey}"]`);
 
   const inst = {
     tableKey,
@@ -172,7 +177,7 @@ export function createTableSettings(options = {}) {
     getTable();
     if (!inst.style) {
       inst.style = document.createElement('style');
-      inst.style.dataset.tableSettings = tableKey;
+      inst.style.dataset.tsStyle = tableKey;
       document.head.appendChild(inst.style);
     }
 
