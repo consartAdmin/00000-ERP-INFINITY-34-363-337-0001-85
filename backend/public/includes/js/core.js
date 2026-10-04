@@ -28,6 +28,9 @@ import '/public/includes/js/modal.js';
 
 import '/public/includes/js/sortableTable.js';
 
+// === ENGRENAGEM ⚙️ DAS TABELAS (linhas, largura/altura, colunas) ===
+import '/public/includes/js/tableSettings.js';
+
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 // (opcional, mas recomendado) helper padronizado:

@@ -101,15 +101,15 @@
 
             <div class="products-columns">
               <button type="button" id="btnColumnsSettings" class="products-columns__trigger"
-                title="Configurar colunas da tabela" aria-label="Configurar colunas da tabela" aria-haspopup="dialog"
-                aria-expanded="false" aria-controls="productsColumnsModal">⚙️</button>
+                title="Configurar tabela" aria-label="Configurar tabela" aria-haspopup="dialog"
+                aria-expanded="false" aria-controls="tableSettingsModal">⚙️</button>
             </div>
           </div>
         </div>
       </div>
 
       <!-- ✅ TABELA ROLÁVEL DENTRO DO CARD -->
-      <div class="table-scroll table-height-600 table-row-h-20">
+      <div class="table-scroll table-height-600 table-row-h-20" data-table-settings-manual>
         <table class="table table-zebra table-zebra-hover table-sticky-head table-freeze-left-3 table-freeze-right-1">
           <thead>
             <tr id="productsTableHeader">
@@ -175,48 +175,6 @@
 
   <script type="module" src="/public/includes/js/core.js"></script>
 
-  <!-- ===================================================== -->
-  <!-- MODAL — CONFIGURAR COLUNAS (salvo por usuário no banco) -->
-  <!-- ===================================================== -->
-  <div class="modal" id="productsColumnsModal" aria-hidden="true">
-    <div class="modal__backdrop" data-pc-close></div>
-
-    <div class="modal__dialog">
-      <div class="modal__panel modal-width-8 modal-height-8 modal-header-color-2 modal-footer-color-1" role="dialog"
-        aria-modal="true" aria-labelledby="productsColumnsModalTitle">
-        <header class="modal__header">
-          <div>
-            <h2 class="modal__title" id="productsColumnsModalTitle">⚙️ Colunas da tabela</h2>
-            <p class="pc-subtitle">Visibilidade, largura e alinhamento. As mudanças aparecem na tabela e só valem após
-              Salvar.</p>
-          </div>
-          <button type="button" class="modal__close" data-pc-close aria-label="Fechar modal" title="Fechar">×</button>
-        </header>
-
-        <div class="modal__body">
-          <table class="table table-zebra pc-table" aria-label="Configuração das colunas">
-            <thead>
-              <tr>
-                <th class="pc-col-show">Mostrar</th>
-                <th class="pc-col-name">Coluna</th>
-                <th class="pc-col-width">Largura (px)</th>
-                <th class="pc-col-align">Alinhar título</th>
-                <th class="pc-col-align">Alinhar dados</th>
-              </tr>
-            </thead>
-            <tbody id="productsColumnsTbody"></tbody>
-          </table>
-        </div>
-
-        <footer class="modal__footer">
-          <span class="pc-status" id="productsColumnsStatus" aria-live="polite"></span>
-          <button type="button" class="btn btn-clean btn-sm" data-pc-reset>Restaurar padrão</button>
-          <button type="button" class="btn btn-cancel btn-sm" data-pc-close>Fechar</button>
-          <button type="button" class="btn btn-save btn-sm" data-pc-save disabled>💾 Salvar</button>
-        </footer>
-      </div>
-    </div>
-  </div>
 
   <script type="module" src="/public/products/js/products.init.js"></script>
 
