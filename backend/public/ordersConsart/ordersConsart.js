@@ -75,7 +75,7 @@ const ROUTES = Object.freeze({
   },
 
   // NF-e atrelada ao pedido
-  nfeIssue:  (id) => `${API_BASE}/api/orders/${encodeURIComponent(id)}/nfe`,
+  nfeIssue:  (id) => `${API_BASE}/api/orders-nfe-attempts/orders/${encodeURIComponent(id)}/issue`,
   nfeStatus: (id) => `${API_BASE}/api/orders/${encodeURIComponent(id)}/nfe`,
 
   // 🔄 Return Order (pedido → orçamento)
@@ -1369,7 +1369,7 @@ async function emitirNFe(orderId) {
     }
 
     setTimeout(() => {
-      window.location.href = '/public/nfes/nfes.html';
+      window.location.href = '/public/invoicesIssued/invoicesIssued.html';
     }, 800);
   } catch (err) {
     console.error('[orders] exceção ao emitir NF-e:', err);

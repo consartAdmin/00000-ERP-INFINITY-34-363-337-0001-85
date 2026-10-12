@@ -75,6 +75,10 @@
     color: var(--modal-header-text-color-9);
 }
 
+#dfeImportModal .dfe-status[data-tone='warn'] {
+    color: #b45309;
+}
+
 /* ====================================================================
    CADASTRO RÁPIDO DE FORNECEDOR
    Estrutura vem de modals.css. Aqui só o empilhamento: o modal pode

@@ -171,3 +171,6 @@ backend/**/*.b64
 
 backend/doc.contabil/
 backend/employees/
+
+# Chaves de service account GCP (nunca commitar)
+backend/keys/

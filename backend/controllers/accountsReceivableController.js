@@ -229,10 +229,33 @@ export async function receive(req, res) {
 
 // POST /api/accounts-receivable/sync-asaas
 export async function syncAsaasHandler(req, res) {
-  try {
-    const { from, to, status } = req.body || req.query || {};
+  // ?stream=1 → NDJSON: uma linha por evento de progresso e, no fim,
+  // { type: 'done', result } (ou { type: 'error', message }).
+  if (String(req.query?.stream) === '1') {
+    res.status(200);
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
 
-    const result = await syncFromAsaas({ from, to, status });
+    const send = (event) => {
+      if (!res.writableEnded) res.write(`${JSON.stringify(event)}\n`);
+    };
+
+    try {
+      const result = await syncFromAsaas({ onProgress: send });
+      send({ type: 'done', result });
+    } catch (err) {
+      console.error('[ACCOUNTS-RECEIVABLE/SYNC-ASAAS][STREAM]', err);
+      send({ type: 'error', message: err?.message || 'Falha ao sincronizar com o Asaas.' });
+    }
+
+    return res.end();
+  }
+
+  try {
+    // Sincroniza só as contas Asaas em aberto (Pendente/Vencido); filtros da tela não se aplicam.
+    const result = await syncFromAsaas();
     return res.json(result);
   } catch (err) {
     return boom(res, err, 'ACCOUNTS-RECEIVABLE/SYNC-ASAAS');

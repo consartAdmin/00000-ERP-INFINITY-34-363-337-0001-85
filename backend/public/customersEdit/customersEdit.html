@@ -20,6 +20,7 @@
   <!-- 🎨 Modais -->
   <link href="/public/modalsSearch/ibgeCustomersModalSearch.css" rel="stylesheet" />
   <link href="/public/modalsSearch/customersStatusModal.css" rel="stylesheet" />
+  <link href="/public/modalsSearch/chartAccountsModalSearch.css" rel="stylesheet" />
 
   <!-- 🎨 Design System -->
   <link href="/public/includes/css/style.css" rel="stylesheet" />
@@ -473,6 +474,65 @@
 
                   <input id="financial_contact_notes" name="financial_contact_notes"
                     placeholder="Informações sobre o contato financeiro" type="text" />
+                </div>
+
+              </div>
+
+            </div>
+          </section>
+
+          <!-- CLASSIFICAÇÃO PADRÃO — importada na Movimentação de Caixa -->
+          <section class="section section-max-xl section-center section-panel section-gap-3">
+
+            <div class="section__header">
+              <span class="badge-step"></span>
+              <h2 class="section__title">Classificação Financeira Padrão</h2>
+            </div>
+
+            <div class="section__body">
+
+              <div class="fields-inline fields-inline-scroll fields-gap-4">
+
+                <!-- PLANO DE CONTAS -->
+                <div class="fields fields-w-30 fields-h-6">
+                  <label for="default_chart_account_label">
+                    Plano de Contas
+                  </label>
+
+                  <div class="inline-field">
+                    <input id="default_chart_account_label" placeholder="Selecione a conta contábil" readonly
+                      type="text" />
+
+                    <button class="btn btn-search btn-sm" id="btnDefaultChartAccount" title="Buscar conta contábil"
+                      type="button">🔎</button>
+
+                    <button class="btn btn-clean btn-sm" id="btnClearDefaultChartAccount" title="Limpar conta contábil"
+                      type="button">×</button>
+                  </div>
+
+                  <input id="default_chart_account_id" name="default_chart_account_id" type="hidden" />
+                </div>
+
+                <!-- CATEGORIA -->
+                <div class="fields fields-w-20 fields-h-6">
+                  <label for="default_cash_category_id">
+                    Categoria
+                  </label>
+
+                  <select id="default_cash_category_id" name="default_cash_category_id">
+                    <option value="">— Nenhuma —</option>
+                  </select>
+                </div>
+
+                <!-- SUBCATEGORIA -->
+                <div class="fields fields-w-20 fields-h-6">
+                  <label for="default_cash_subcategory_id">
+                    Subcategoria
+                  </label>
+
+                  <select id="default_cash_subcategory_id" name="default_cash_subcategory_id">
+                    <option value="">— Nenhuma —</option>
+                  </select>
                 </div>
 
               </div>

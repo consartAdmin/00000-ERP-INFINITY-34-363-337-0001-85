@@ -10,6 +10,8 @@ import {
   replaceUserDashboardAccess,
 } from './usersDashboardAccess.api.js';
 
+import { openUsersModalSearch } from '/public/modalsSearch/usersModalSearch.js';
+
 const state = {
   userId: null,
   permissions: new Map(),
@@ -22,6 +24,8 @@ const elements = {};
 
 function cacheElements() {
   elements.userId = document.getElementById('udaUserId');
+  elements.userName = document.getElementById('udaUserName');
+  elements.searchUserButton = document.getElementById('udaSearchUserButton');
   elements.loadButton = document.getElementById('udaLoadButton');
   elements.selectAllButton = document.getElementById('udaSelectAllButton');
   elements.clearAllButton = document.getElementById('udaClearAllButton');
@@ -48,6 +52,32 @@ function parseUserId() {
   }
 
   return value;
+}
+
+function openUserSearch() {
+  openUsersModalSearch({
+    onPick: (user) => {
+      const id = user?.user_id ?? user?.id ?? null;
+
+      if (!id) {
+        setStatus(
+          'Usuário sem ID retornado pela busca.',
+          'error'
+        );
+        return;
+      }
+
+      elements.userId.value = String(id);
+      elements.userName.value =
+        user.name ??
+        user.full_name ??
+        user.display_name ??
+        user.username ??
+        '';
+
+      loadPermissions();
+    },
+  });
 }
 
 function setActionsEnabled(enabled) {
@@ -269,6 +299,19 @@ function bindEvents() {
   elements.clearAllButton.addEventListener(
     'click',
     () => applyAll(false)
+  );
+
+  elements.searchUserButton.addEventListener(
+    'click',
+    openUserSearch
+  );
+
+  // Typing an ID manually invalidates the name picked in the modal.
+  elements.userId.addEventListener(
+    'input',
+    () => {
+      elements.userName.value = '';
+    }
   );
 
   elements.userId.addEventListener(

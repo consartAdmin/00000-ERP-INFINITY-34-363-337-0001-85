@@ -181,3 +181,18 @@
   .pl-card__header{ flex-direction: column; }
   .pl-card__header-actions{ justify-content: flex-start; }
 }
+
+/* Coluna "Principal" (localização principal do produto) */
+.pl-col-primary{ width: 150px; text-align: center; white-space: nowrap; }
+
+.pl-primary-badge{
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+}

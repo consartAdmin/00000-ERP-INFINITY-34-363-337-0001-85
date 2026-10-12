@@ -72,6 +72,11 @@ export async function list(options = {}) {
         if (value !== null) add(`${column} = ?`, value);
     }
 
+    // linked=true → com grupo vinculado | linked=false → sem grupo
+    const linked = String(options.linked ?? '').trim().toLowerCase();
+    if (linked === 'true') where.push('p.product_group_id IS NOT NULL');
+    if (linked === 'false') where.push('p.product_group_id IS NULL');
+
     // stock=with → saldo > 0 | stock=without → saldo <= 0 (inclui negativos)
     // Subquery (e não o JOIN de ps) para valer também no countSql.
     const stock = String(options.stock ?? '').trim().toLowerCase();

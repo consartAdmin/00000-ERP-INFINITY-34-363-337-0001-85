@@ -1446,7 +1446,7 @@ async function emitirNFe(orderId) {
     }
 
     setTimeout(() => {
-      window.location.href = '/public/nfes/nfes.html';
+      window.location.href = '/public/invoicesIssued/invoicesIssued.html';
     }, 800);
   } catch (err) {
     console.error('[orders] exceção ao emitir NF-e:', err);

@@ -34,11 +34,14 @@ export async function createCustomer(payload) {
   const json = await readJson(legacyResponse);
 
   if (!legacyResponse.ok) {
-    throw new Error(
-      json?.error ||
+    const error = new Error(
       json?.message ||
+      json?.error ||
       `HTTP ${legacyResponse.status}`
     );
+    error.title = json?.title;
+    error.customerId = json?.customer_id;
+    throw error;
   }
 
   return json;

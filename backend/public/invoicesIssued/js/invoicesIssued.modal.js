@@ -11,72 +11,72 @@ import { normalizeNfeStatusCode } from './invoicesIssued.validation.js';
 let afterSaveCallback = null;
 
 export function setAfterSaveCallback(callback) {
-  afterSaveCallback = callback;
+    afterSaveCallback = callback;
 }
 
 export function openModal(row = null) {
-  const modal = $('invoiceIssuedModal');
+    const modal = $('invoiceIssuedModal');
 
-  modal.classList.remove('is-hidden');
-  modal.setAttribute('aria-hidden', 'false');
+    modal.classList.remove('is-hidden');
+    modal.setAttribute('aria-hidden', 'false');
 
-  $('modalTitle').textContent = row ? `Editar NF-e #${row.invoice_id}` : 'Nova NF-e';
+    $('modalTitle').textContent = row ? `Editar NF-e #${row.invoice_id}` : 'Nova NF-e';
 
-  $('invoice_id').value = row?.invoice_id || '';
-  $('order_id').value = row?.order_id || '';
-  $('nfe_number').value = row?.nfe_number || '';
-  $('nfe_key').value = row?.nfe_key || '';
-  $('nfe_status').value = normalizeNfeStatusCode(row?.nfe_status) || 'PENDENTE';
-  $('nfe_environment').value = row?.nfe_environment || '';
-  $('nfe_protocol').value = row?.nfe_protocol || '';
-  $('issued_date').value = toDateInput(row?.issued_date || row?.issued_at);
-  $('total_amount').value = row?.total_amount || '';
-  $('xml_url').value = row?.xml_url || '';
-  $('danfe_url').value = row?.danfe_url || '';
+    $('invoice_id').value = row?.invoice_id || '';
+    $('order_id').value = row?.order_id || '';
+    $('nfe_number').value = row?.nfe_number || '';
+    $('nfe_key').value = row?.nfe_key || '';
+    $('nfe_status').value = normalizeNfeStatusCode(row?.nfe_status) || 'PENDENTE';
+    $('nfe_environment').value = row?.nfe_environment || '';
+    $('nfe_protocol').value = row?.nfe_protocol || '';
+    $('issued_date').value = toDateInput(row?.issued_date || row?.issued_at);
+    $('total_amount').value = row?.total_amount || '';
+    $('xml_url').value = row?.xml_url || '';
+    $('danfe_url').value = row?.danfe_url || '';
 }
 
 export function closeModal() {
-  const modal = $('invoiceIssuedModal');
+    const modal = $('invoiceIssuedModal');
 
-  modal.classList.add('is-hidden');
-  modal.setAttribute('aria-hidden', 'true');
+    modal.classList.add('is-hidden');
+    modal.setAttribute('aria-hidden', 'true');
 
-  $('invoiceForm').reset();
-  $('invoice_id').value = '';
+    $('invoiceForm').reset();
+    $('invoice_id').value = '';
 }
 
 function getFormPayload() {
-  const result = getInvoiceFormPayload();
+    const result = getInvoiceFormPayload();
 
-  if (!result.ok) {
-    throw new Error(result.errors.join('\\n'));
-  }
+    if (!result.ok) {
+        throw new Error(result.errors.join('\\n'));
+    }
 
-  return result.payload;
+    return result.payload;
 }
 
 export async function saveInvoice(event) {
-  event.preventDefault();
+    event.preventDefault();
 
-  try {
-    const id = $('invoice_id').value;
-    const payload = getFormPayload();
+    try {
+        const id = $('invoice_id').value;
+        const payload = getFormPayload();
 
-    if (id) {
-      await updateInvoice(id, payload);
-    } else {
-      await createInvoice(payload);
+        if (id) {
+            await updateInvoice(id, payload);
+        } else {
+            await createInvoice(payload);
+        }
+
+        closeModal();
+
+        if (typeof afterSaveCallback === 'function') {
+            await afterSaveCallback();
+        }
+    } catch (err) {
+        console.error('[modal.saveInvoice]', err);
+        alert(`Erro ao salvar: ${err.message}`);
     }
-
-    closeModal();
-
-    if (typeof afterSaveCallback === 'function') {
-      await afterSaveCallback();
-    }
-  } catch (err) {
-    console.error('[modal.saveInvoice]', err);
-    alert(`Erro ao salvar: ${err.message}`);
-  }
 }
 
 // ======================================================================
@@ -115,7 +115,7 @@ function setModalVisibility(modal, visible) {
 
 function getDefaultSubject(invoice = {}) {
     const nfeNumber = safe(invoice.nfe_number);
-    return `NF-e ${nfeNumber || safe(invoice.invoice_id)} — LLV SOLUÇÕES COMERCIAIS`;
+    return `NF-e ${nfeNumber || safe(invoice.invoice_id)} — BH3 SUPPLY`;
 }
 
 function getDefaultMessage(invoice = {}) {

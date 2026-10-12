@@ -14,6 +14,8 @@ import { generateDanfeFromXml } from '../services/danfeConsartService.js';
 
 import ordersApi from '../repositories/orders/orders.index.js';
 
+import * as ordersNfeAttemptsApi from '../repositories/ordersNfeAttempts/ordersNfeAttempts.index.js';
+
 import { createAuditLog } from '../repositories/auditLogs/auditLogs.index.js';
 
 function getRequestUserId(req) {
@@ -324,7 +326,12 @@ export async function syncAllFaturadasFromOrders(req, res) {
 
 export async function getInvoicesIssuedKpis(req, res) {
   try {
-    const out = await invoicesIssuedApi.getKpis();
+    const { dateFrom, dateTo } = req.query;
+
+    const out = await invoicesIssuedApi.getKpis({
+      dateFrom,
+      dateTo,
+    });
 
     return res
       .status(out.ok ? 200 : 400)
@@ -987,9 +994,10 @@ export async function finishInvoiceFromOrder(req, res) {
       });
     }
 
-    await fetch(`http://localhost:8080/api/nfes/reconcile/${orderId}`, {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
+    // Atualiza o status da NF-e no provedor antes de gravar em invoicesIssued
+    // (falha na consulta não impede o upsert com os dados já existentes).
+    await ordersNfeAttemptsApi.reconcileOrderNfe({ orderId }).catch((err) => {
+      console.warn('[finishInvoiceFromOrder] reconcile NF-e falhou:', err?.message || err);
     });
 
     const out = await invoicesIssuedApi.upsertFromOrder(orderId, {

@@ -5,77 +5,138 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Acesso aos Dashboards | CONSART ERP</title>
+  <title>ACESSO AOS DASHBOARDS | CONSART ERP</title>
 
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png" />
 
+  <!-- style.css imports fields.css and table.css -->
   <link rel="stylesheet" href="/public/includes/css/style.css" />
 
   <link rel="stylesheet" href="/public/usersDashboardAccess/css/usersDashboardAccess.css" />
 </head>
 
-<body>
-  <main class="uda-page">
-    <section class="uda-panel">
-      <header class="uda-header">
-        <div>
-          <h1>Acesso aos Dashboards</h1>
-          <p>Defina quais indicadores cada usuário poderá visualizar na Home.</p>
-        </div>
-      </header>
+<body class="consart-theme p-page pw-page--full ph-page--xr">
 
-      <div class="uda-toolbar">
-        <div class="uda-field uda-field--user">
-          <label for="udaUserId">Usuário</label>
+  <main class="consart-container consart-container--full consart-container--ultraslim">
 
-          <div class="uda-user-row">
-            <input id="udaUserId" type="number" min="1" step="1" inputmode="numeric" placeholder="ID do usuário"
-              autocomplete="off" />
+    <section class="table-layout-integrated">
 
-            <button type="button" id="udaLoadButton" class="uda-btn uda-btn--primary">
+
+      <!-- ================================================================
+           FILTERS
+      ================================================================= -->
+
+      <div class="table-layout-integrated__filter">
+
+        <h1 class="table-layout-integrated__filter-title">
+          Acesso aos Dashboards — defina quais indicadores cada usuário poderá visualizar na Home.
+        </h1>
+
+        <div class="fields-inline fields-gap-3">
+
+
+          <!-- USER ID + SEARCH -->
+
+          <div class="fields fields-w-16 fields-h-6">
+
+            <label for="udaUserId">
+              Usuário
+            </label>
+
+            <div class="inline-field">
+
+              <input id="udaUserId" type="number" min="1" step="1" inputmode="numeric" placeholder="ID"
+                autocomplete="off" />
+
+              <button type="button" id="udaSearchUserButton" class="btn btn-search btn-sm" title="Buscar usuário">
+                🔎
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- USER NAME -->
+
+          <div class="fields fields-w-25 fields-h-6">
+
+            <label for="udaUserName">
+              Nome
+            </label>
+
+            <input id="udaUserName" type="text" placeholder="Selecione um usuário" readonly tabindex="-1" />
+
+          </div>
+
+
+          <!-- LOAD -->
+
+          <div class="btn-inline">
+
+            <button type="button" id="udaLoadButton" class="btn btn-new btn-sm">
               Carregar
             </button>
+
           </div>
+
+
+          <!-- ACTIONS -->
+
+          <div class="btn-inline btn-position-right">
+
+            <button type="button" id="udaSelectAllButton" class="btn btn-clean btn-sm" disabled>
+              Marcar todos
+            </button>
+
+            <button type="button" id="udaClearAllButton" class="btn btn-clean btn-sm" disabled>
+              Desmarcar todos
+            </button>
+
+            <button type="button" id="udaSaveButton" class="btn btn-save btn-sm" disabled>
+              Salvar acessos
+            </button>
+
+          </div>
+
         </div>
 
-        <div class="uda-toolbar-actions">
-          <button type="button" id="udaSelectAllButton" class="uda-btn" disabled>
-            Marcar todos
-          </button>
+        <div id="udaStatus" class="uda-status" role="status" aria-live="polite"></div>
 
-          <button type="button" id="udaClearAllButton" class="uda-btn" disabled>
-            Desmarcar todos
-          </button>
-
-          <button type="button" id="udaSaveButton" class="uda-btn uda-btn--success" disabled>
-            Salvar acessos
-          </button>
-        </div>
       </div>
 
-      <div id="udaStatus" class="uda-status" role="status" aria-live="polite"></div>
 
-      <div class="uda-table-wrapper">
-        <table class="uda-table">
+      <!-- ================================================================
+           TABLE
+      ================================================================= -->
+
+      <div class="table-scroll table-height-flex" data-table-settings="usersdashboardaccess.udatablebody">
+
+        <table class="table table-zebra table-zebra-hover table-sticky-head">
+
           <thead>
+
             <tr>
               <th>Dashboard</th>
               <th>Chave</th>
               <th class="uda-col-access">Acesso</th>
             </tr>
+
           </thead>
 
           <tbody id="udaTableBody"></tbody>
+
         </table>
+
       </div>
+
     </section>
+
   </main>
 
   <script type="module" src="/public/usersDashboardAccess/js/usersDashboardAccess.js"></script>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-
-  </script>
 </body>
 
 </html>

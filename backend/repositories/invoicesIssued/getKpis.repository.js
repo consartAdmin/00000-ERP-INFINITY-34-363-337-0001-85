@@ -1,6 +1,7 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ getKpis.repository.js — CONSART ERP | Notas Fiscais Emitidas         ║
 // ║ Totais de NF-e: emitidas, autorizadas, canceladas e valor autorizado ║
+// ║ Período opcional (dateFrom/dateTo, inclusivo) pela data de emissão   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import {
@@ -9,7 +10,21 @@ import {
   TB_NFE_STATUS_MAP,
 } from './_shared.js';
 
-export async function getKpis() {
+export async function getKpis({ dateFrom, dateTo } = {}) {
+  const where = [];
+  const args = [];
+
+  // mesmo filtro de período da listagem (search.repository.js)
+  if (dateFrom) {
+    args.push(dateFrom);
+    where.push(`i.issued_date >= $${args.length}::date`);
+  }
+
+  if (dateTo) {
+    args.push(dateTo);
+    where.push(`i.issued_date <= $${args.length}::date`);
+  }
+
   const { rows } = await pool.query(`
     SELECT
       COUNT(*) AS total,
@@ -60,7 +75,9 @@ export async function getKpis() {
 
     LEFT JOIN ${TB_NFE_STATUS_MAP} nsm
       ON nsm.nfe_status_id = i.nfe_status_id
-  `);
+
+    ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+  `, args);
 
   const row = rows[0] || {};
 

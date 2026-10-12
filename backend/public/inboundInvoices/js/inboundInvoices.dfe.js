@@ -108,6 +108,14 @@ export function initImportFromDfe({ core, ROUTES, state, refs }) {
       .map((row) => {
         const done = row.entrada_criada === true;
         const key = String(row.chave_nfe || '').trim();
+        const action = row.needsManifest
+          ? `<button type="button" class="btn btn-toolbar btn-sm" data-dfe-manifest
+                     title="Envia a Ciência da Operação à SEFAZ para liberar o XML completo">
+                     Manifestar ciência
+                   </button>`
+          : `<button type="button" class="btn btn-toolbar btn-sm" data-dfe-import>
+                     Importar
+                   </button>`;
 
         return `
           <tr data-id="${htmlEscape(row.id)}" data-key="${htmlEscape(key)}">
@@ -119,9 +127,7 @@ export function initImportFromDfe({ core, ROUTES, state, refs }) {
             <td>
               ${done
             ? '<span class="dfe-badge dfe-badge--done">Já lançada</span>'
-            : `<button type="button" class="btn btn-toolbar btn-sm" data-dfe-import>
-                     Importar
-                   </button>`
+            : action
           }
             </td>
           </tr>
@@ -184,12 +190,66 @@ export function initImportFromDfe({ core, ROUTES, state, refs }) {
     }
   }
 
+  const findRow = (id) => rows.find((row) => String(row.id) === String(id));
+
+  const hasManifest = (row) => Boolean(row?.manifestacao?.operacao);
+
+  /**
+   * Busca o XML completo da nota no backend (que consulta a NF-e API).
+   * Lança erro com code = 'XML_NOT_AVAILABLE' quando só existe o resumo
+   * (resNFe), ou seja, a SEFAZ ainda não liberou o XML.
+   */
+  async function fetchXml(id) {
+    const response = await fetch(ROUTES.nfeInboxXmlById(id));
+    const text = await response.text();
+
+    if (!response.ok) {
+      let json = {};
+
+      try {
+        json = JSON.parse(text);
+      } catch {
+        // resposta não-JSON: mantém a mensagem padrão
+      }
+
+      const error = new Error(json?.message || `Erro HTTP ${response.status}.`);
+      error.code = json?.error;
+      throw error;
+    }
+
+    if (!text || text.trim().length < 50) {
+      throw new Error('O XML retornado está vazio.');
+    }
+
+    return text;
+  }
+
+  async function deliverXml(id, key, xml) {
+    const file = new File([xml], `${key || id}.xml`, { type: 'application/xml' });
+
+    closeModal();
+
+    await state.actions.importXmlFile?.(file);
+  }
+
+  function setBusy(trigger, label) {
+    if (!trigger) return () => {};
+
+    const original = trigger.textContent;
+    trigger.disabled = true;
+    trigger.textContent = label;
+
+    return () => {
+      trigger.disabled = false;
+      trigger.textContent = original;
+    };
+  }
+
   /**
    * Baixa o XML da nota e entrega ao pipeline de importação.
    *
-   * O endpoint do DF-e devolve o XML salvo em xml_completo e, quando
-   * ele ainda não existe, tenta buscá-lo na SEFAZ/TecnoSpeed. Se a nota
-   * exigir manifestação prévia, a resposta vem em JSON com o motivo.
+   * Sem manifestação a SEFAZ só distribui o resumo da NF-e. Nesse caso a
+   * linha passa a oferecer "Manifestar ciência" em vez de "Importar".
    */
   async function importFromRow(rowEl) {
     const id = rowEl?.dataset.id;
@@ -197,58 +257,105 @@ export function initImportFromDfe({ core, ROUTES, state, refs }) {
 
     if (!id) return;
 
-    const trigger = rowEl.querySelector('[data-dfe-import]');
-
-    if (trigger) {
-      trigger.disabled = true;
-      trigger.textContent = 'Baixando…';
-    }
+    const release = setBusy(rowEl.querySelector('[data-dfe-import]'), 'Baixando…');
 
     try {
       setStatus('Baixando XML da NF-e...');
 
-      const response = await fetch(ROUTES.nfeInboxXmlById(id));
-      const text = await response.text();
-
-      if (!response.ok) {
-        let message = `Erro HTTP ${response.status}.`;
-
-        try {
-          message = JSON.parse(text)?.message || message;
-        } catch {
-          // resposta não-JSON: mantém a mensagem padrão
-        }
-
-        throw new Error(message);
-      }
-
-      if (!text || text.trim().length < 50) {
-        throw new Error('O XML retornado está vazio.');
-      }
-
-      const file = new File(
-        [text],
-        `${key || id}.xml`,
-        { type: 'application/xml' }
-      );
-
-      closeModal();
-
-      await state.actions.importXmlFile?.(file);
+      const xml = await fetchXml(id);
+      await deliverXml(id, key, xml);
     } catch (error) {
       console.error('[INBOUND][DFE][IMPORT]', error);
 
-      setStatus(error?.message || 'Falha ao baixar o XML.', 'error');
+      const row = findRow(id);
 
-      core?.toast?.error?.(
-        'XML indisponível',
-        error?.message || 'Não foi possível obter o XML desta NF-e.'
-      );
-    } finally {
-      if (trigger) {
-        trigger.disabled = false;
-        trigger.textContent = 'Importar';
+      if (error?.code === 'XML_NOT_AVAILABLE' && row && !hasManifest(row)) {
+        row.needsManifest = true;
+        renderRows();
+
+        setStatus(
+          'Só o resumo desta NF-e está disponível. Clique em "Manifestar ciência" para liberar o XML completo.',
+          'warn'
+        );
+        return;
       }
+
+      const message = error?.code === 'XML_NOT_AVAILABLE'
+        ? 'Ciência já registrada, mas a SEFAZ ainda não liberou o XML. Tente novamente em alguns minutos.'
+        : error?.message || 'Não foi possível obter o XML desta NF-e.';
+
+      setStatus(message, 'error');
+      core?.toast?.error?.('XML indisponível', message);
+    } finally {
+      release();
+    }
+  }
+
+  /**
+   * Envia a Ciência da Operação (evento 210210) pela NF-e API e, em
+   * seguida, tenta baixar e importar o XML. A ciência não aceita nem
+   * recusa a nota; só libera o XML completo para o destinatário.
+   */
+  async function manifestAndImport(rowEl) {
+    const id = rowEl?.dataset.id;
+    const key = rowEl?.dataset.key || '';
+    const row = findRow(id);
+
+    if (!id || !row) return;
+
+    const confirmed = window.confirm(
+      'Enviar à SEFAZ a "Ciência da Operação" desta NF-e?\n\n'
+      + 'Ela apenas registra que a empresa tomou conhecimento da nota e libera o XML completo. '
+      + 'Não confirma nem recusa a operação.'
+    );
+    if (!confirmed) return;
+
+    const release = setBusy(rowEl.querySelector('[data-dfe-manifest]'), 'Enviando…');
+
+    try {
+      setStatus('Enviando Ciência da Operação à SEFAZ...');
+
+      const response = await fetch(ROUTES.nfeInboxManifestById(id), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operacao: 'CIENCIA' }),
+      });
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok || json?.success === false) {
+        throw new Error(json?.error || json?.message || `Erro HTTP ${response.status}.`);
+      }
+
+      row.manifestacao = { operacao: 'CIENCIA' };
+      row.needsManifest = false;
+
+      setStatus('Ciência registrada. Buscando o XML completo...');
+
+      try {
+        const xml = await fetchXml(id);
+        core?.toast?.success?.('Ciência registrada', 'XML liberado. Abrindo a importação.');
+        await deliverXml(id, key, xml);
+      } catch (error) {
+        if (error?.code !== 'XML_NOT_AVAILABLE') throw error;
+
+        renderRows();
+        setStatus(
+          'Ciência registrada. A SEFAZ ainda não liberou o XML; clique em "Importar" novamente em alguns minutos.',
+          'warn'
+        );
+        core?.toast?.warn?.(
+          'Ciência registrada',
+          'O XML ainda não foi liberado pela SEFAZ. Tente importar em alguns minutos.'
+        );
+      }
+    } catch (error) {
+      console.error('[INBOUND][DFE][MANIFEST]', error);
+
+      const message = error?.message || 'Falha ao enviar a manifestação.';
+      setStatus(message, 'error');
+      core?.toast?.error?.('Manifestação não enviada', message);
+    } finally {
+      release();
     }
   }
 
@@ -266,6 +373,12 @@ export function initImportFromDfe({ core, ROUTES, state, refs }) {
   });
 
   tbody.addEventListener('click', (event) => {
+    const manifestTrigger = event.target.closest('[data-dfe-manifest]');
+    if (manifestTrigger) {
+      void manifestAndImport(manifestTrigger.closest('tr'));
+      return;
+    }
+
     const trigger = event.target.closest('[data-dfe-import]');
     if (!trigger) return;
 

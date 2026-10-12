@@ -23,8 +23,8 @@
   <title>ENTREGAS E MOTORISTAS | CONSART ERP</title>
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/modalsSearch/customersModalSearch.css?v=1" />
-  <link rel="stylesheet" href="./deliveryTrips.css?v=4" />
+  <link rel="stylesheet" href="/public/modalsSearch/suppliersModalSearch.css" />
+  <link rel="stylesheet" href="./deliveryTrips.css?v=6" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -67,8 +67,10 @@
 
     <!-- ═══════════════════════ TAB: ROTAS ═══════════════════════ -->
     <div id="tab-rotas" class="tab-panel is-active" role="tabpanel" tabindex="0">
-      <section class="table-layout-integrated table-max-height-600">
+
+      <section class="table-layout-integrated table-max-height-400">
         <div class="table-layout-integrated__filter">
+
           <div class="fields fields-inline fields-gap-3">
             <div class="fields fields-h-6 fields-w-25 fields-font-3">
               <label for="tripSearch">🔎 Pesquisar</label>
@@ -156,7 +158,7 @@
     <div id="tab-montar" class="tab-panel" role="tabpanel" tabindex="0" hidden>
 
       <!-- Cabeçalho da rota -->
-      <section class="table-layout-integrated">
+      <section class="table-layout-integrated table-max-height-700">
         <div class="table-layout-integrated__filter">
           <div class="fields fields-inline fields-gap-3">
             <div>
@@ -220,7 +222,7 @@
         </div>
 
         <!-- Paradas da rota -->
-        <div class="table-scroll table-max-height-400 table-row-h-28">
+        <div class="table-scroll table-max-height-flex table-row-h-28" data-table-settings="deliverytrips.stopstablebody">
           <table class="table table-zebra table-zebra-hover table-sticky-head" aria-label="Paradas da rota">
             <thead>
               <tr>
@@ -229,10 +231,10 @@
                 <th style="width:130px;">Origem</th>
                 <th style="width:240px;">Cliente / Local</th>
                 <th style="width:320px;">Endereço</th>
-                <th style="width:110px;">Vol / Peso</th>
-                <th style="width:120px;" class="dt-num">Valor</th>
-                <th style="width:170px;">Status</th>
-                <th class="col-actions" style="width:250px;">Ações</th>
+                <th style="width:90px;">Vol / Peso</th>
+                <th style="width:80px;" class="dt-num">Valor</th>
+                <th style="width:120px;">Status</th>
+                <th class="col-actions" style="width:320px;">Ações</th>
               </tr>
             </thead>
             <tbody id="stopsTableBody"></tbody>
@@ -240,89 +242,11 @@
         </div>
       </section>
 
-      <!-- Adicionar paradas -->
-      <section class="table-layout-integrated dt-mt" id="addStopsPanel">
-        <div class="table-layout-integrated__filter">
-          <h3 class="dt-section-title">➕ Adicionar paradas</h3>
-
-          <div class="fields fields-inline fields-inline-wrap fields-gap-3">
-            <div class="fields fields-h-6 fields-w-13 fields-font-3">
-              <label for="srcType">Documento</label>
-              <select id="srcType">
-                <option value="PEDIDO">📝 Pedidos</option>
-                <option value="ORCAMENTO">📑 Orçamentos</option>
-                <option value="NFE">🧾 Notas Fiscais</option>
-              </select>
-            </div>
-
-            <div class="fields fields-h-6 fields-w-12 fields-font-3">
-              <label for="srcMovement">Movimento</label>
-              <select id="srcMovement">
-                <option value="ENTREGA">🚚 Entrega</option>
-                <option value="COLETA">📦 Coleta</option>
-              </select>
-            </div>
-
-            <div class="fields fields-h-6 fields-w-25 fields-font-3">
-              <label for="srcSearch">🔎 Pesquisar</label>
-              <input id="srcSearch" type="text" placeholder="Nº, cliente, CNPJ/CPF, chave NF-e, cidade, bairro..."
-                autocomplete="off" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-12 fields-font-3">
-              <label for="srcDateFrom">Emissão de</label>
-              <input id="srcDateFrom" type="date" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-12 fields-font-3">
-              <label for="srcDateTo">Até</label>
-              <input id="srcDateTo" type="date" />
-            </div>
-
-            <label class="dt-check"><input id="srcOnlyFree" type="checkbox" checked /> Só não agendados</label>
-
-            <div class="btn-inline">
-              <button id="btnSrcSearch" class="btn btn-search btn-sm" type="button">🔎 Buscar</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="table-scroll table-max-height-400 table-row-h-28">
-          <table class="table table-zebra table-zebra-hover table-sticky-head" aria-label="Documentos disponíveis">
-            <thead>
-              <tr>
-                <th style="width:44px;"><input type="checkbox" id="srcCheckAll" title="Selecionar todos" /></th>
-                <th style="width:90px;">Nº</th>
-                <th style="width:100px;">Emissão</th>
-                <th style="width:260px;">Cliente</th>
-                <th style="width:320px;">Endereço</th>
-                <th style="width:120px;">Valor</th>
-                <th style="width:130px;">Status</th>
-                <th style="width:200px;">Agendamento</th>
-              </tr>
-            </thead>
-            <tbody id="srcTableBody">
-              <tr>
-                <td colspan="8" class="dt-empty">Use a busca para listar documentos.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <footer class="table-footer">
-          <div class="table-footer__info">
-            <div class="summary-pill summary-pill--info summary-width-5 summary-left-space-3">
-              <span id="lblSrcSelected">0 selecionado(s)</span>
-            </div>
-          </div>
-
-          <div class="btn-inline btn-position-right">
-            <button type="button" class="btn btn-toolbar btn-sm" id="btnManualStop">✍️ Parada avulsa</button>
-            <button type="button" class="btn btn-new btn-sm" id="btnAddSelected">➕ Adicionar selecionados à
-              rota</button>
-          </div>
-        </footer>
-      </section>
+      <!-- Adicionar paradas (abre o modal de seleção) -->
+      <div class="btn-inline dt-mt" id="addStopsPanel">
+        <button type="button" class="btn btn-new btn-sm" id="btnOpenAddStops">➕ Adicionar paradas</button>
+        <button type="button" class="btn btn-toolbar btn-sm" id="btnManualStop">✍️ Parada avulsa</button>
+      </div>
     </div>
 
     <!-- ═══════════════════════ TAB: MOTORISTAS ═══════════════════════ -->
@@ -414,24 +338,102 @@
   </main>
 
   <!-- ===================================================== -->
-  <!-- MODAL — PARADA AVULSA                                 -->
+  <!-- MODAL — ADICIONAR PARADAS                             -->
   <!-- ===================================================== -->
-  <div class="modal" id="manualStopModal" aria-hidden="true">
+  <div class="modal" id="addStopsModal" aria-hidden="true">
     <div class="modal__backdrop" data-modal-close></div>
 
     <div class="modal__dialog">
-      <div class="modal__panel modal-width-8 modal-header-color-2 modal-footer-color-1" role="dialog"
-        aria-modal="true" aria-labelledby="manualStopModalTitle">
+      <div class="modal__panel modal-width-13 modal-height-12 modal-header-color-2 modal-footer-color-1" role="dialog"
+        aria-modal="true" aria-labelledby="addStopsModalTitle">
         <header class="modal__header">
-          <h2 class="modal__title" id="manualStopModalTitle">✍️ Parada avulsa</h2>
+          <h2 class="modal__title" id="addStopsModalTitle">➕ Adicionar paradas</h2>
           <button type="button" class="modal__close" data-modal-close aria-label="Fechar modal"
             title="Fechar">×</button>
         </header>
 
-        <form id="formManualStop" autocomplete="off">
-          <input type="hidden" id="ms_customer_id" />
+        <div class="modal__body">
+          <div class="dt-mode-switch" role="tablist" aria-label="Origem da parada">
+            <button type="button" class="dt-mode-btn is-active" role="tab" aria-selected="true"
+              data-add-mode="docs">📄 Documentos</button>
+            <button type="button" class="dt-mode-btn" role="tab" aria-selected="false"
+              data-add-mode="manual">✍️ Manual (entrega / coleta avulsa)</button>
+          </div>
 
-          <div class="modal__body">
+          <!-- Modo: documentos (Pedidos / Orçamentos / NF-e) -->
+          <div id="addModeDocs">
+          <section class="modal-section">
+            <div class="fields fields-inline fields-inline-wrap fields-gap-3">
+              <div class="fields fields-h-6 fields-w-13 fields-font-3">
+                <label for="srcType">Documento</label>
+                <select id="srcType">
+                  <option value="PEDIDO">📝 Pedidos</option>
+                  <option value="ORCAMENTO">📑 Orçamentos</option>
+                  <option value="NFE">🧾 Notas Fiscais</option>
+                </select>
+              </div>
+
+              <div class="fields fields-h-6 fields-w-12 fields-font-3">
+                <label for="srcMovement">Movimento</label>
+                <select id="srcMovement">
+                  <option value="ENTREGA">🚚 Entrega</option>
+                  <option value="COLETA">📦 Coleta</option>
+                </select>
+              </div>
+
+              <div class="fields fields-h-6 fields-w-25 fields-font-3">
+                <label for="srcSearch">🔎 Pesquisar</label>
+                <input id="srcSearch" type="text" placeholder="Nº, cliente, CNPJ/CPF, chave NF-e, cidade, bairro..."
+                  autocomplete="off" />
+              </div>
+
+              <div class="fields fields-h-6 fields-w-12 fields-font-3">
+                <label for="srcDateFrom">Emissão de</label>
+                <input id="srcDateFrom" type="date" />
+              </div>
+
+              <div class="fields fields-h-6 fields-w-12 fields-font-3">
+                <label for="srcDateTo">Até</label>
+                <input id="srcDateTo" type="date" />
+              </div>
+
+              <label class="dt-check"><input id="srcOnlyFree" type="checkbox" checked /> Só não agendados</label>
+
+              <div class="btn-inline">
+                <button id="btnSrcSearch" class="btn btn-search btn-sm" type="button">🔎 Buscar</button>
+              </div>
+            </div>
+          </section>
+
+          <div class="modal-divider"></div>
+
+          <div class="table-scroll table-row-h-28" data-table-settings="deliverytrips.srctablebody">
+            <table class="table table-zebra table-zebra-hover table-sticky-head" aria-label="Documentos disponíveis">
+              <thead>
+                <tr>
+                  <th style="width:44px;"><input type="checkbox" id="srcCheckAll" title="Selecionar todos" /></th>
+                  <th style="width:90px;">Nº</th>
+                  <th style="width:100px;">Emissão</th>
+                  <th style="width:260px;">Cliente</th>
+                  <th style="width:320px;">Endereço</th>
+                  <th style="width:120px;">Valor</th>
+                  <th style="width:130px;">Status</th>
+                  <th style="width:200px;">Agendamento</th>
+                </tr>
+              </thead>
+              <tbody id="srcTableBody">
+                <tr>
+                  <td colspan="8" class="dt-empty">Use a busca para listar documentos.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          </div>
+
+          <!-- Modo: manual (entrega / coleta sem documento) -->
+          <form id="formManualStop" autocomplete="off" hidden>
+            <input type="hidden" id="ms_customer_id" />
+
             <section class="modal-section">
               <div class="fields-inline fields-inline-wrap fields-gap-3">
                 <div class="fields fields-h-5 fields-w-12 fields-font-3">
@@ -443,12 +445,12 @@
                 </div>
 
                 <div class="fields fields-h-5 fields-w-30 fields-font-3">
-                  <label for="ms_name">Cliente / Local *</label>
+                  <label for="ms_name">Cliente / Fornecedor / Local *</label>
                   <input id="ms_name" type="text" maxlength="255" required />
                 </div>
 
                 <div class="btn-inline">
-                  <button type="button" class="btn btn-lookup btn-sm" id="btnMsPickCustomer">🔎 Cliente</button>
+                  <button type="button" class="btn btn-lookup btn-sm" id="btnMsPickCustomer">🔎 Cliente / Fornecedor</button>
                 </div>
 
                 <div class="fields fields-h-5 fields-w-15 fields-font-3">
@@ -488,13 +490,19 @@
                 </div>
               </div>
             </section>
-          </div>
+          </form>
+        </div>
 
-          <footer class="modal__footer">
-            <button type="button" class="btn btn-cancel btn-sm" id="btnMsCancel">Cancelar</button>
-            <button type="submit" class="btn btn-save btn-sm">➕ Adicionar parada</button>
-          </footer>
-        </form>
+        <footer class="modal__footer">
+          <div class="summary-pill summary-pill--info summary-width-5" id="addDocsInfo">
+            <span id="lblSrcSelected">0 selecionado(s)</span>
+          </div>
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Fechar</button>
+          <button type="button" class="btn btn-new btn-sm" id="btnAddSelected">➕ Adicionar selecionados à
+            rota</button>
+          <button type="submit" class="btn btn-save btn-sm" form="formManualStop" id="btnMsSubmit" hidden>➕ Adicionar
+            parada</button>
+        </footer>
       </div>
     </div>
   </div>
@@ -506,8 +514,8 @@
     <div class="modal__backdrop" data-modal-close></div>
 
     <div class="modal__dialog">
-      <div class="modal__panel modal-width-8 modal-header-color-2 modal-footer-color-1" role="dialog"
-        aria-modal="true" aria-labelledby="editStopModalTitle">
+      <div class="modal__panel modal-width-8 modal-header-color-2 modal-footer-color-1" role="dialog" aria-modal="true"
+        aria-labelledby="editStopModalTitle">
         <header class="modal__header">
           <h2 class="modal__title" id="editStopModalTitle">✏️ Editar parada</h2>
           <button type="button" class="modal__close" data-modal-close aria-label="Fechar modal"
@@ -601,8 +609,8 @@
     <div class="modal__backdrop" data-modal-close></div>
 
     <div class="modal__dialog">
-      <div class="modal__panel modal-width-8 modal-header-color-2 modal-footer-color-1" role="dialog"
-        aria-modal="true" aria-labelledby="driverFormTitle">
+      <div class="modal__panel modal-width-8 modal-header-color-2 modal-footer-color-1" role="dialog" aria-modal="true"
+        aria-labelledby="driverFormTitle">
         <header class="modal__header">
           <h2 class="modal__title" id="driverFormTitle">👤 Novo Motorista</h2>
           <button type="button" class="modal__close" data-modal-close aria-label="Fechar modal"
@@ -674,8 +682,8 @@
     <div class="modal__backdrop" data-modal-close></div>
 
     <div class="modal__dialog">
-      <div class="modal__panel modal-width-8 modal-header-color-2 modal-footer-color-1" role="dialog"
-        aria-modal="true" aria-labelledby="vehicleFormTitle">
+      <div class="modal__panel modal-width-8 modal-header-color-2 modal-footer-color-1" role="dialog" aria-modal="true"
+        aria-labelledby="vehicleFormTitle">
         <header class="modal__header">
           <h2 class="modal__title" id="vehicleFormTitle">🚐 Novo Veículo</h2>
           <button type="button" class="modal__close" data-modal-close aria-label="Fechar modal"
@@ -768,7 +776,7 @@
   </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="./deliveryTrips.js?v=6"></script>
+  <script type="module" src="./deliveryTrips.js?v=9"></script>
 </body>
 
 </html>

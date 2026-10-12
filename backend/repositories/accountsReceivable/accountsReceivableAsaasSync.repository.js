@@ -288,37 +288,86 @@ async function upsertFromAsaasPayment(payment) {
 
 // -------------------------------------------------------------------
 // SYNC FROM ASAAS
+// Só atualiza contas já vinculadas ao Asaas (ponte) que ainda estão
+// em aberto no ERP: Pendente ou Vencido. Pagas/canceladas não mudam
+// mais, então não são consultadas. Os filtros da tela são ignorados de
+// propósito: uma conta vencida fora do período também precisa atualizar.
 // -------------------------------------------------------------------
-export async function syncFromAsaas({ from, to, status } = {}) {
-  const limit = 100;
-  let offset = 0;
+const OPEN_STATUSES = ['PENDING', 'OVERDUE'];
+
+/** onProgress (opcional) recebe { type: 'start', total } e { type: 'item', index, total, item }. */
+export async function syncFromAsaas({ onProgress } = {}) {
+  const { rows } = await pool.query(
+    `
+      SELECT
+        ar.id AS accounts_receivable_id,
+        b.asaas_payment_id,
+        ar.status,
+        ar.invoice_number,
+        ar.due_date,
+        ar.value,
+        b.asaas_customer_name
+      FROM ${TB} ar
+      JOIN ${TB_BRIDGE} b ON b.accounts_receivable_id = ar.id
+      WHERE ar.status = ANY($1::text[])
+        AND NULLIF(TRIM(b.asaas_payment_id), '') IS NOT NULL
+      ORDER BY ar.due_date ASC NULLS LAST, ar.id ASC
+    `,
+    [OPEN_STATUSES],
+  );
+
   let synced = 0;
-  let pages = 0;
+  const failed = [];
+  const items = [];
+  const total = rows.length;
+  const report = (event) => {
+    try {
+      onProgress?.(event);
+    } catch {
+      // progresso é só informativo: nunca interrompe o sync
+    }
+  };
 
-  while (true) {
-    const data = await asaasApi.listPayments({
-      tipoData: 'dueDate',
-      dataInicio: from,
-      dataFim: to,
-      status,
-      limit,
-      offset,
-      sort: 'dueDate',
-      order: 'asc',
-    });
+  report({ type: 'start', total });
 
-    const list = Array.isArray(data?.data) ? data.data : [];
+  for (const [position, row] of rows.entries()) {
+    const item = {
+      accountsReceivableId: row.accounts_receivable_id,
+      asaasPaymentId: row.asaas_payment_id,
+      invoiceNumber: row.invoice_number || null,
+      customerName: row.asaas_customer_name || null,
+      dueDate: row.due_date,
+      value: Number(row.value || 0),
+      statusBefore: row.status,
+    };
 
-    for (const payment of list) {
-      await upsertFromAsaasPayment(payment);
+    try {
+      const payment = await asaasApi.getPayment(row.asaas_payment_id);
+
+      // Cobrança excluída no Asaas continua com o status antigo no payload.
+      const effective = payment?.deleted ? { ...payment, status: 'CANCELLED' } : payment;
+      await upsertFromAsaasPayment(effective);
+
+      items.push({
+        ...item,
+        ok: true,
+        statusAfter: mapStatusFromAsaas(effective.status),
+        dueDate: effective.dueDate || item.dueDate,
+        value: Number(effective.value ?? item.value),
+      });
       synced += 1;
+    } catch (err) {
+      const error = err?.response?.data?.errors?.[0]?.description || err?.message || String(err);
+      failed.push({ ...item, error });
+      items.push({ ...item, ok: false, statusAfter: row.status, error });
     }
 
-    pages += 1;
-
-    if (!data?.hasMore || list.length === 0) break;
-    offset += limit;
+    report({ type: 'item', index: position + 1, total, item: items[items.length - 1] });
   }
 
-  return { ok: true, synced, pages };
+  if (failed.length) {
+    console.error('[AR][syncFromAsaas] falhas ao sincronizar:', failed);
+  }
+
+  return { ok: failed.length === 0, total, synced, failed, items };
 }

@@ -250,3 +250,37 @@
   justify-content:flex-end;
   border-top: 1px solid rgba(0,0,0,.08);
 }
+
+/* Configuração de Grupo/Subgrupo — faixa abaixo dos filtros de Produtos */
+.gsb-config{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0,0,0,.10);
+  border-radius: 12px;
+  background: rgba(0,0,0,.02);
+}
+
+.gsb-config__title{
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.gsb-config__info{
+  display:flex;
+  align-items:center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(0,0,0,.75);
+}
+
+.gsb-config__info .gsb-help{
+  margin-top: 0;
+}
+
+/* Área da tabela branca: sem isso o fundo azul do card (--table-shell-bg)
+   aparece quando a lista está vazia ou tem poucas linhas */
+.table-layout-integrated > .table-scroll--flex{
+  background-color: var(--table-row-even-bg, #fff);
+}

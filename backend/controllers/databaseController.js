@@ -12,6 +12,9 @@ import {
   insertRow,
   updateRow,
   deleteRow,
+  getTableStructure,
+  previewStructureChange,
+  applyStructureChange,
 } from '../repositories/database/database.index.js';
 
 function ok(res, data) {
@@ -108,6 +111,48 @@ export async function deleteDatabaseRow(req, res) {
       schema: req.query.schema || 'public',
       table: req.params.table,
       pk: req.body?.pk,
+    });
+
+    return ok(res, data);
+  } catch (err) {
+    return fail(res, err);
+  }
+}
+
+export async function getDatabaseTableStructure(req, res) {
+  try {
+    const data = await getTableStructure({
+      schema: req.query.schema || 'public',
+      table: req.params.table,
+    });
+
+    return ok(res, data);
+  } catch (err) {
+    return fail(res, err);
+  }
+}
+
+export async function previewDatabaseStructureChange(req, res) {
+  try {
+    const data = await previewStructureChange({
+      schema: req.query.schema || 'public',
+      table: req.params.table,
+      operation: req.body?.operation,
+    });
+
+    return ok(res, data);
+  } catch (err) {
+    return fail(res, err);
+  }
+}
+
+export async function applyDatabaseStructureChange(req, res) {
+  try {
+    const data = await applyStructureChange({
+      schema: req.query.schema || 'public',
+      table: req.params.table,
+      operation: req.body?.operation,
+      userId: req.user?.user_id ?? null,
     });
 
     return ok(res, data);

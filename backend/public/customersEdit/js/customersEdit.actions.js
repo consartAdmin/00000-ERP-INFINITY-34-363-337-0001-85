@@ -10,6 +10,11 @@
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 import { initIbgeLocationModal } from '/public/modalsSearch/ibgeLocationModal.js';
 import './customersEdit.tab.nfe.js';
+import {
+  initFinancialDefaults,
+  fillFinancialDefaults,
+  readFinancialDefaults,
+} from '/public/includes/js/customerFinancialDefaults.js';
 
 // ---------------------------------------------------------------------
 // API BASE & ROTAS
@@ -717,6 +722,7 @@ export async function initializeCustomersEdit() {
   bindUI();
   masks();
   await loadSelects(); // segmento + classificação
+  await initFinancialDefaults(); // plano de contas / categoria / subcategoria
 
   // ✅ inicializa UF/Cidade via IBGE NOVO (API + datalist + modal)
   await initIbgeAddressUI();
@@ -1039,6 +1045,11 @@ async function fill(c = {}) {
   set('invoice_email', c.invoice_email ?? '');
   set('financial_contact_notes', c.financial_contact_notes ?? '');
 
+  // Classificação padrão para a Movimentação de Caixa
+  fillFinancialDefaults(c).catch((err) =>
+    console.error('[customersEdit] classificação padrão:', err)
+  );
+
   // -------------------------
   // 4) Endereço
   // -------------------------
@@ -1318,6 +1329,9 @@ async function onSubmit(e) {
     billing_email: trimOrNull(get('billing_email')),
     invoice_email: trimOrNull(get('invoice_email')),
     financial_contact_notes: trimOrNull(get('financial_contact_notes')),
+
+    // ✅ Classificação padrão (Movimentação de Caixa)
+    ...readFinancialDefaults(),
 
     // Endereço de entrega vinculado por customers.customer_ad_id.
     // Os campos planos preservam compatibilidade com o PUT atual.

@@ -42,9 +42,8 @@ export async function updateRow({ schema = DEFAULT_SCHEMA, table, pk, data }) {
     }
   }
 
-  const entries = Object.entries(data).filter(
-    ([key]) => allowedColumns.has(key) && !pkColumns.includes(key)
-  );
+  // Colunas da PK também podem ser alteradas: o WHERE usa o valor original (pk)
+  const entries = Object.entries(data).filter(([key]) => allowedColumns.has(key));
 
   if (!entries.length) {
     const err = new Error('Nenhuma coluna válida para atualizar.');

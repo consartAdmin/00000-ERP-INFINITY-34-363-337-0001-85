@@ -41,6 +41,8 @@ lotsOptionsByStockId: (product_stock_id) =>
   nfeInboxList: () => `${base()}/api/nfe-inbox`,
   nfeInboxXmlById: (id) =>
     `${base()}/api/nfe-inbox/${encodeURIComponent(String(id))}/xml`,
+  nfeInboxManifestById: (id) =>
+    `${base()}/api/nfe-inbox/${encodeURIComponent(String(id))}/manifest`,
 
   // Products: the canonical route argument is product_code, not product_id.
   productByCode: (productCode) =>

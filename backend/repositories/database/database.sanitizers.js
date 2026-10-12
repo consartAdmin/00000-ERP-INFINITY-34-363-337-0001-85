@@ -27,6 +27,12 @@ export function quoteIdent(value) {
   return `"${safe.replace(/"/g, '""')}"`;
 }
 
+// Para objetos que JÁ EXISTEM no catálogo (ex.: constraint ".productsPrices_price_id_fkey").
+// Só use depois de confirmar que o nome existe; nomes novos passam por quoteIdent.
+export function quoteExistingIdent(value) {
+  return `"${String(value).replace(/"/g, '""')}"`;
+}
+
 export function assertTableAllowed(tableName) {
   const safeTable = assertSafeIdentifier(tableName, 'Tabela');
 

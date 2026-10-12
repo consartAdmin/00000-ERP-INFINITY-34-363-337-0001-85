@@ -100,18 +100,25 @@ export async function listByProduct(req, res) {
 
     if (onlyActive) where.push('is_active = TRUE');
 
+    // is_primary: é a localização salva no produto (products.product_location_id)
     const sql = `
-      SELECT *
-      FROM ${TB}
-      WHERE ${where.join(' AND ')}
-      ORDER BY id ASC;
+      SELECT l.*,
+        COALESCE((
+          SELECT p.product_location_id = l.id
+          FROM public."products" p
+          WHERE p.product_code = l.product_code
+          LIMIT 1
+        ), FALSE) AS is_primary
+      FROM ${TB} l
+      WHERE ${where.map((w) => `l.${w}`).join(' AND ')}
+      ORDER BY l.id ASC;
     `;
 
     const { rows } = await pool.query(sql, params);
 
     const data = rows.map((r) => {
       const normalized = normalizeRow(r);
-      return { ...normalized, label: buildLabel(normalized) };
+      return { ...normalized, is_primary: !!r.is_primary, label: buildLabel(normalized) };
     });
 
     return res.json({ data });

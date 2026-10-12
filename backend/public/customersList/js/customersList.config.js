@@ -18,6 +18,8 @@ export const ROUTES = Object.freeze({
     `${API_BASE}/api/customers/${encodeURIComponent(id)}`,
   customersReportPdf: `${API_BASE}/api/customers/report/pdf`,
   customersReportExcel: `${API_BASE}/api/customers/report/excel`,
+  exportPasswordStatus:
+    `${API_BASE}/api/module-passwords/status?module=CUSTOMERS&action=EXPORT`,
   segmentos: `${API_BASE}/api/customer-segments`,
   sellers: `${API_BASE}/api/sellers`,
   vendedores: `${API_BASE}/api/vendedores`,

@@ -80,16 +80,22 @@
 
                     <div class="btn-inline">
                         <button id="btnSearch" class="btn btn-new btn-sm" type="button">Pesquisar</button>
-                        <button id="btnDownloadXmls" class="btn btn-new btn-sm" type="button">XMLs</button>
-                        <button id="btnDownloadPdfs" class="btn btn-new btn-sm" type="button">PDFs</button>
+                    </div>
 
-                        <button id="btnSync" class="btn btn-new btn-h-4 btn-w-10" type="button"
-                            title="Sincronizar NF-e">
-                            🔄
+                    <div class="btn-inline btn-position-right">
+                        <button id="btnSync" class="btn btn-toolbar btn-sm" type="button" title="Sincronizar NF-e">
+                            <span aria-hidden="true">🔄</span>
+                            <span data-btn-label>Sincronizar</span>
                         </button>
 
-                        <button id="btnRefresh" class="btn btn-new btn-h-4 btn-w-10" type="button">
-                            Atualizar
+                        <button id="btnDownloadXmls" class="btn btn-toolbar btn-sm" type="button" title="Baixar XMLs">
+                            <img src="/iconsImagens/xmlDanfe.png" alt="" width="20" height="20" aria-hidden="true" />
+                            <span>Baixar XMLs</span>
+                        </button>
+
+                        <button id="btnDownloadPdfs" class="btn btn-toolbar btn-sm" type="button" title="Baixar PDFs">
+                            <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+                            <span>Baixar PDFs</span>
                         </button>
                     </div>
 
@@ -107,7 +113,7 @@
             <!-- TABLE                                               -->
             <!-- =================================================== -->
 
-            <div class="table-scroll--rounded table-height-flex table-row-h-28" data-table-settings="invoicesissued.invoicesissuedtable">
+            <div class="table-scroll table-height-flex table-row-h-28" data-table-settings="invoicesissued.invoicesissuedtable">
 
                 <table id="invoicesIssuedTable" class="table table-zebra table-zebra-hover table-sticky-head">
 

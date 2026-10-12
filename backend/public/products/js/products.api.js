@@ -230,18 +230,14 @@ export async function resolvePreviewUrlFromDataset(btnOrObj) {
     ''
   ).trim();
 
-  if (path) {
-    return buildProxyUrlForKey(path);
+  // URL pública direta primeiro (igual à Edição de Produtos): não depende das
+  // credenciais do backend. O proxy fica só para quando não há URL.
+  if (url && /^https?:\/\//i.test(url)) {
+    return url;
   }
 
-  if (
-    url &&
-    /https?:\/\/storage\.googleapis\.com\//i.test(url)
-  ) {
-    return (
-      `${API_BASE}/api/gcs/images/proxy?url=` +
-      encodeURIComponent(url)
-    );
+  if (path) {
+    return buildProxyUrlForKey(path);
   }
 
   return url || '';

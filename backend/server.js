@@ -1,7 +1,7 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ server.js – Web/API principal ERP Consart (Cloud Run, ESM, Express) ║
 /* ╚══════════════════════════════════════════════════════════════════════╝ */
-import 'dotenv/config';
+import './config/loadEnv.js';
 import express from "express";
 import crypto from "node:crypto";
 import path from "node:path";
@@ -478,6 +478,10 @@ app.use(
    '/api/budget-settings',
    budgetSettingsRoutes
 );
+
+// 🔐 Senhas dos Módulos (admin)
+import modulePasswordsRoutes from './routes/modulePasswordsRoutes.js';
+app.use('/api/module-passwords', modulePasswordsRoutes);
 
 import budgetsIssuedsRoutes from './routes/budgetsIssuedsRoutes.js';
 app.use('/api/budgets-issued', budgetsIssuedsRoutes);
@@ -1175,6 +1179,10 @@ app.use('/api/products-kits', productsKitsRoutes);
 import productsSubgroupsRoutes from './routes/productsSubgroupsRoutes.js';
 app.use('/api', productsSubgroupsRoutes);
 
+// Layout de tabelas por usuário (colunas visíveis, largura, alinhamento)
+import userTablePreferencesRoutes from './routes/userTablePreferencesRoutes.js';
+app.use('/api/user-table-preferences', userTablePreferencesRoutes);
+
 import processesRoutes from './routes/processesRoutes.js';
 app.use('/api/processes', processesRoutes);
 
@@ -1257,6 +1265,12 @@ app.use('/api/budgets-nfe-attempts', budgetsNfeAttemptsRoutes);
 // ╚═══════════════════════════════════════════════════════════════════════════╝
 import customerActivityRoutes from './routes/customerActivityRoutes.js';
 app.use('/api/customer-activity', customerActivityRoutes);
+
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║                     API — "customerTrainingsRoutes"                       ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+import customerTrainingsRoutes from './routes/customerTrainingsRoutes.js';
+app.use('/api/customer-trainings', customerTrainingsRoutes);
 
 // ╔═══════════════════════════════════════════════════════════════════════════╗
 // ║                        API — "crmConsartReativacao"                       ║
@@ -1408,9 +1422,6 @@ app.use('/api/invoices-issued', invoicesIssuedRoutes);
 
 import nfeRoutes from './routes/nfeRoutes.js';
 app.use('/api', nfeRoutes);
-
-import nfesRoutes from './routes/nfesRoutes.js';
-app.use('/api/nfes', nfesRoutes);
 
 import transportersRoutes from './routes/transportersRoutes.js';
 app.use('/api/transporters', transportersRoutes);

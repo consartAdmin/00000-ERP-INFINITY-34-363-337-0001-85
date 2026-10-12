@@ -49,7 +49,8 @@ export async function findProductBaseByBarcodeOrSku(searchValue) {
     ON ps.product_stock_id = p.product_stock_id
 
   LEFT JOIN public."productsPrices" pp
-    ON pp.product_price_id = p.product_price_id
+    ON pp.product_id = p.product_id::text
+   AND pp.price_id = 1
 
   LEFT JOIN public."productsLocations" pl
     ON pl.product_code = p.product_code

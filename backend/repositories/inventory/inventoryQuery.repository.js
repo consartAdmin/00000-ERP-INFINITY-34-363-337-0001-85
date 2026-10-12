@@ -52,9 +52,15 @@ export async function list({ search, status, limit = 50, offset = 0 }) {
     OFFSET $${offsetIdx};
   `;
 
+  const countSql = `SELECT COUNT(*)::int AS total FROM ${TB_INV} inv ${whereSql};`;
+  const filterParams = [...params];
+
   params.push(limit, offset);
-  const { rows } = await q(pool, 'inventory.list', sql, params);
-  return { rows };
+  const [{ rows }, countRes] = await Promise.all([
+    q(pool, 'inventory.list', sql, params),
+    q(pool, 'inventory.count', countSql, filterParams),
+  ]);
+  return { rows, total: countRes.rows[0]?.total ?? rows.length, limit, offset };
 }
 
 export async function getById(inventory_id) {

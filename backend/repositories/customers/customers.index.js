@@ -8,6 +8,7 @@ import { create } from './customersCreate.repository.js';
 import { updateById } from './customersUpdate.repository.js';
 import { getById } from './customersGetById.repository.js';
 import { removeById } from './customersRemove.repository.js';
+import { findByTaxId } from './customersFindByTaxId.repository.js';
 import {
   list,
   search,
@@ -25,6 +26,7 @@ export {
   updateById,
   getById,
   removeById,
+  findByTaxId,
   list,
   search,
   listAllForExport,
@@ -43,6 +45,7 @@ export default {
   updateById,
   getById,
   removeById,
+  findByTaxId,
   list,
   search,
   listAllForExport,

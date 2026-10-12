@@ -118,14 +118,20 @@ function drawTopHeader(doc, { title, filters }) {
   doc.y = doc.page.margins.top + 44;
 }
 
-function drawFooter(doc) {
+function drawFooter(doc, pageNumber) {
   const left = doc.page.margins.left;
   const right = doc.page.width - doc.page.margins.right;
-  const y = doc.page.height - doc.page.margins.bottom + 6;
+  const bottomMargin = doc.page.margins.bottom;
+  const y = doc.page.height - bottomMargin + 6;
+
+  // O rodapé fica dentro da margem inferior: zera a margem enquanto escreve,
+  // senão o pdfkit cria uma página nova (página em branco no relatório).
+  doc.page.margins.bottom = 0;
 
   doc.font('Helvetica').fontSize(9).fillColor(COLORS.muted)
-    .text(`Página ${doc.page.number}`, left, y, { width: right - left, align: 'right' });
+    .text(`Página ${pageNumber}`, left, y, { width: right - left, align: 'right', lineBreak: false });
 
+  doc.page.margins.bottom = bottomMargin;
   doc.fillColor(COLORS.text);
 }
 
@@ -273,6 +279,8 @@ export async function generateCustomersPdf({ req, res, rows = [], filters = {} }
   const headerH = 24;
   const rowH = 24;
 
+  let pageNumber = 1;
+
   const redrawPage = () => {
     drawTopHeader(doc, { title, filters });
 
@@ -289,7 +297,7 @@ export async function generateCustomersPdf({ req, res, rows = [], filters = {} }
   if (!data.length) {
     doc.font('Helvetica').fontSize(12).fillColor(COLORS.text)
       .text('Nenhum cliente encontrado para os filtros informados.', tableX, doc.y + 18);
-    drawFooter(doc);
+    drawFooter(doc, pageNumber);
     doc.end();
     return;
   }
@@ -300,17 +308,20 @@ export async function generateCustomersPdf({ req, res, rows = [], filters = {} }
     const bottomLimit = doc.page.height - doc.page.margins.bottom - 18;
 
     if (doc.y + rowH > bottomLimit) {
-      drawFooter(doc);
+      drawFooter(doc, pageNumber);
       doc.addPage();
+      pageNumber += 1;
       redrawPage();
     }
 
-    drawDataRow(doc, columns, row, tableX, doc.y, rowH, zebra);
-    doc.y += rowH;
+    // doc.text() move o doc.y; parte sempre do topo da linha
+    const rowY = doc.y;
+    drawDataRow(doc, columns, row, tableX, rowY, rowH, zebra);
+    doc.y = rowY + rowH;
     zebra = !zebra;
   }
 
-  drawFooter(doc);
+  drawFooter(doc, pageNumber);
   doc.end();
 }
 

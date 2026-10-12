@@ -22,6 +22,7 @@ import { initGradesTab } from './tabGrades.js';
 import { initEstoqueTab } from './tabStock.js';
 import { initProductMovementsTab } from './productsMovements.js';
 import { initProductImages } from './productImages.js';
+import { initQuickCreate } from './quickCreate.js';
 
 // ---------------------------------------------------------------------
 // Helper definitivo: utiliza a função global getApiBase() do apiBase.js
@@ -56,16 +57,11 @@ const ROUTES = Object.freeze({
     `${API_BASE}/api/products-subgroups`,
     `${API_BASE}/api/productsSubgroups`,
   ],
-  fabricantes: [
-    `${API_BASE}/api/products-manufacturers`,
-    `${API_BASE}/api/manufacturers`,
-    `${API_BASE}/api/fabricantes`,
-  ],
-  fornecedores: [
-    `${API_BASE}/api/products-suppliers`,
-    `${API_BASE}/api/suppliers`,
-    `${API_BASE}/api/fornecedores`,
-  ],
+  // Combos de fabricante/fornecedor são carregados (com paginação) em tabDadosGerais.js
+  // Obs.: /api/products-manufacturers é atendida antes pela tabela legada "productsManufactures" (vazia).
+  fabricantes: `${API_BASE}/api/manufacturers`,
+  // Obs.: /api/products-suppliers é a tabela de vínculo produto x fornecedor, não o cadastro.
+  fornecedores: `${API_BASE}/api/suppliers`,
   localizacoes: [
     `${API_BASE}/api/product-locations`,
     `${API_BASE}/api/products-locations`,
@@ -813,6 +809,7 @@ async function boot() {
     // combos + link grupo->subgrupo (depende do FIELDS da aba geral)
     await ctx.carregarCombos({ FIELDS: geral.FIELDS });
     ctx.setupGroupSubgroupLink({ FIELDS: geral.FIELDS });
+    initQuickCreate(ctx, { FIELDS: geral.FIELDS });
 
     // carrega produto (dados gerais)
     const data = await ctx.ProductsApi.getProduct(productCode);

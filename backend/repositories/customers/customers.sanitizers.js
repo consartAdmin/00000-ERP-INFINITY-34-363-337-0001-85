@@ -43,6 +43,15 @@ function sanitizeField(k, value) {
     v = toNumOrNull(v);
   }
 
+  // Padrões financeiros (FKs) — vazio/0 → null
+  if (
+    k === 'default_chart_account_id' ||
+    k === 'default_cash_category_id' ||
+    k === 'default_cash_subcategory_id'
+  ) {
+    v = toNumOrNull(v) || null;
+  }
+
   // Ativo
   if (k === 'is_active') {
     v = asBoolOrNull(v);

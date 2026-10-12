@@ -10,7 +10,7 @@
 'use strict';
 
 import { getAuthToken } from '/public/includes/js/apiFetch.js';
-import { openCustomersModalSearch } from '/public/modalsSearch/customersModalSearch.js';
+import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { Modal } from '/public/includes/js/modal.js';
 
 const API = '/api/delivery-trips';
@@ -713,41 +713,88 @@ $('btnAddSelected').addEventListener('click', async () => {
     const trip = await addStopsToTrip(stops);
     if (!trip) return;
     setTrip(trip);
+    Modal.close('addStopsModal');
     await searchSources();
   } catch (e) {
     notifyError(e);
   }
 });
 
+/** Alterna o modal entre seleção de documentos e parada manual */
+function setAddMode(mode) {
+  const manual = mode === 'manual';
+  document.querySelectorAll('#addStopsModal [data-add-mode]').forEach((btn) => {
+    const active = btn.dataset.addMode === mode;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+  $('addModeDocs').hidden = manual;
+  $('formManualStop').hidden = !manual;
+  $('addDocsInfo').hidden = manual;
+  $('btnAddSelected').hidden = manual;
+  $('btnMsSubmit').hidden = !manual;
+  $(manual ? 'ms_name' : 'srcSearch').focus({ preventScroll: true });
+}
+
+function openAddStops(mode = 'docs') {
+  if (mode === 'manual') resetManualForm();
+  Modal.open('addStopsModal', { focusSelector: mode === 'manual' ? '#ms_name' : '#srcSearch' });
+  setAddMode(mode);
+  if (mode === 'docs' && !state.sources?.length) searchSources().catch(notifyError);
+}
+
+document.querySelectorAll('#addStopsModal [data-add-mode]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    setAddMode(btn.dataset.addMode);
+    if (btn.dataset.addMode === 'docs' && !state.sources?.length) searchSources().catch(notifyError);
+  });
+});
+
+$('btnOpenAddStops').addEventListener('click', () => openAddStops('docs'));
+
 // ==========================================================
-// Parada avulsa
+// Parada avulsa (modo manual do modal "Adicionar paradas")
 // ==========================================================
 function resetManualForm() {
   $('formManualStop').reset();
   $('ms_customer_id').value = '';
 }
 
-$('btnManualStop').addEventListener('click', () => {
-  resetManualForm();
-  Modal.open('manualStopModal', { focusSelector: '#ms_name' });
-});
+$('btnManualStop').addEventListener('click', () => openAddStops('manual'));
 
-$('btnMsCancel').addEventListener('click', () => { resetManualForm(); Modal.close('manualStopModal'); });
+/** Monta "Logradouro, nº - complemento" */
+function joinAddress(street, number, complement) {
+  return [street, number].filter(Boolean).join(', ') + (complement ? ` - ${complement}` : '');
+}
 
-$('btnMsPickCustomer').addEventListener('click', () => {
-  openCustomersModalSearch({
-    apiBase: '',
-    onPick: (c) => {
-      $('ms_customer_id').value = c.customer_id ?? c.id ?? '';
-      $('ms_name').value = c.legal_name ?? c.trade_name ?? c.name ?? '';
-      $('ms_phone').value = c.mobile_number ?? c.phone_number ?? '';
-      $('ms_address').value = [[c.street_type, c.street_name].filter(Boolean).join(' '), c.street_number]
-        .filter(Boolean).join(', ') + (c.address_complement ? ` - ${c.address_complement}` : '');
-      $('ms_neighborhood').value = c.neighborhood ?? '';
-      $('ms_city').value = c.city ?? '';
-      $('ms_state').value = c.state ?? '';
-    },
+/** Cliente ou fornecedor → campos da parada manual */
+$('btnMsPickCustomer').addEventListener('click', async () => {
+  const movement = $('ms_movement').value;
+  const p = await openSuppliersModalSearch({
+    allowCustomers: true,
+    defaultType: movement === 'COLETA' ? 'suppliers' : 'customers',
   });
+  if (!p) return;
+
+  if (p.entity_type === 'customer') {
+    $('ms_customer_id').value = p.customer_id ?? '';
+    $('ms_name').value = p.legal_name ?? p.trade_name ?? p.name ?? '';
+    $('ms_phone').value = p.mobile_number ?? p.phone_number ?? '';
+    $('ms_address').value = joinAddress(
+      [p.street_type, p.street_name].filter(Boolean).join(' '), p.street_number, p.address_complement);
+    $('ms_neighborhood').value = p.neighborhood ?? '';
+  } else {
+    // Fornecedor: não há vínculo de cadastro na parada, só os dados de contato/endereço
+    $('ms_customer_id').value = '';
+    $('ms_name').value = p.name ?? '';
+    $('ms_phone').value = p.phone ?? '';
+    $('ms_address').value = joinAddress(
+      [p.address_street_type, p.address_street || p.address].filter(Boolean).join(' '),
+      p.address_number, p.address_complement);
+    $('ms_neighborhood').value = p.address_district ?? '';
+  }
+  $('ms_city').value = p.city ?? '';
+  $('ms_state').value = p.state ?? '';
 });
 
 $('formManualStop').addEventListener('submit', async (ev) => {
@@ -770,7 +817,7 @@ $('formManualStop').addEventListener('submit', async (ev) => {
     if (!trip) return;
     setTrip(trip);
     resetManualForm();
-    Modal.close('manualStopModal');
+    Modal.close('addStopsModal');
   } catch (e) {
     notifyError(e);
   }

@@ -90,7 +90,7 @@ async function loadInvoice(invoiceId) {
         b.budget_id AS final_budget_id,
 
         COALESCE(
-          o.number::text,
+          o.order_id::text,
           b.budget_id::text
         ) AS order_number,
 
@@ -111,23 +111,20 @@ async function loadInvoice(invoiceId) {
           NULLIF(TRIM(ii.customer_tax_id), '')
         ) AS customer_tax_id,
 
+        ii.xml_url AS final_xml_url,
+        ii.danfe_url AS final_danfe_url,
+
+        o.customer_email AS order_email,
+        b.customer_email AS budget_email,
         COALESCE(
-          ii.xml_url,
-          o.nfe_xml_url
-        ) AS final_xml_url,
+          NULLIF(TRIM(c.invoice_email), ''),
+          NULLIF(TRIM(c.email), '')
+        ) AS customer_email,
 
         COALESCE(
-          ii.danfe_url,
-          o.nfe_danfe_url
-        ) AS final_danfe_url,
-
-        o.email AS order_email,
-        b.email AS budget_email,
-        c.email AS customer_email,
-
-        COALESCE(
-          NULLIF(TRIM(o.email), ''),
-          NULLIF(TRIM(b.email), ''),
+          NULLIF(TRIM(o.customer_email), ''),
+          NULLIF(TRIM(b.customer_email), ''),
+          NULLIF(TRIM(c.invoice_email), ''),
           NULLIF(TRIM(c.email), '')
         ) AS final_email
 
@@ -537,7 +534,7 @@ export async function sendInvoiceIssuedEmail(req, res) {
     const customerName = safe(invoice.customer_name) || 'Cliente';
     const orderLabel = safe(invoice.order_number || invoice.order_id) || '-';
 
-    const defaultSubject = `NF-e ${nfeNumber || invoiceId} - LLV SOLUÇÕES COMERCIAIS LTDA`;
+    const defaultSubject = `NF-e ${nfeNumber || invoiceId} - BH3 SUPPLY`;
     const subject = safe(req.body?.subject) || defaultSubject;
 
     const defaultText = `

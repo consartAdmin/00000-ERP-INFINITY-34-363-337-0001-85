@@ -47,6 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
   bindAutoSearch();
   loadLocalsFilter();
   loadLocals();
+
+  // ?q=SKU (ex.: link "Gerenciar localizações" da Edição de Produtos) já abre filtrado
+  const initialQ = new URLSearchParams(window.location.search).get('q');
+  if (initialQ && $('#qLocalizacoes')) $('#qLocalizacoes').value = initialQ;
+
   loadLocations();
 });
 
@@ -281,6 +286,21 @@ async function apiPut(path, body) {
   if (!res.ok) {
     const msg = await res.text();
     throw new Error(`PUT ${path} -> ${res.status} ${msg}`);
+  }
+
+  return res.json();
+}
+
+async function apiPatch(path, body = {}) {
+  const res = await fetch(path, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(`PATCH ${path} -> ${res.status} ${msg}`);
   }
 
   return res.json();
@@ -750,6 +770,25 @@ function renderLocationsTable() {
     tdNotes.textContent = loc.observacao || '';
     tr.appendChild(tdNotes);
 
+    // ⭐ Principal (products.product_location_id — exibida na Edição de Produtos)
+    const tdPrimary = document.createElement('td');
+    tdPrimary.classList.add('pl-col-primary');
+    if (loc.is_primary) {
+      const badge = document.createElement('span');
+      badge.className = 'pl-primary-badge';
+      badge.textContent = '⭐ Principal';
+      tdPrimary.appendChild(badge);
+    } else if (loc.is_active !== false) {
+      const btnPrimary = document.createElement('button');
+      btnPrimary.type = 'button';
+      btnPrimary.className = 'btn btn-toolbar btn-sm';
+      btnPrimary.textContent = '☆ Tornar principal';
+      btnPrimary.title = 'Usar esta como localização principal do produto';
+      btnPrimary.addEventListener('click', () => setPrimaryLocation(loc, btnPrimary));
+      tdPrimary.appendChild(btnPrimary);
+    }
+    tr.appendChild(tdPrimary);
+
     const tdActions = document.createElement('td');
     tdActions.classList.add('col-acoes');
 
@@ -779,6 +818,21 @@ function renderLocationsTable() {
   const totalInfo = $('#totalInfoLocalizacoes');
   if (totalInfo) {
     totalInfo.textContent = `${cacheLocations.length} localização(ões)`;
+  }
+}
+
+/** Marca a localização como principal do produto e recarrega a lista */
+async function setPrimaryLocation(loc, btn) {
+  if (!loc?.id) return;
+  if (btn) btn.disabled = true;
+
+  try {
+    await apiPatch(`${LOC_API}/product-locations/${encodeURIComponent(loc.id)}/primary`);
+    await loadLocations();
+  } catch (err) {
+    console.error('[localizacoes] setPrimaryLocation error:', err);
+    alert('Não foi possível definir a localização principal.');
+    if (btn) btn.disabled = false;
   }
 }
 

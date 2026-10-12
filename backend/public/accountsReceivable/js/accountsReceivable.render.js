@@ -84,7 +84,7 @@ function normalizeStatus(value) {
     .toUpperCase();
 }
 
-function statusBR(value) {
+export function statusBR(value) {
   const status = normalizeStatus(value);
 
   return STATUS_LABELS[status] || value || '';
@@ -211,13 +211,14 @@ export function renderTable(items, handlers) {
       </td>
 
       <td class="ar-col-actions">
-        <div class="menu-botoes">
+        <div class="menu-botoes ar-actions">
 
             <button
       type="button"
       class="btn btn-toolbar btn-sm"
       data-act="edit"
       title="Editar conta a receber"
+      aria-label="Editar conta a receber"
     >
       ✏️
     </button>
@@ -228,8 +229,10 @@ export function renderTable(items, handlers) {
                   type="button"
                   class="btn btn-toolbar btn-sm"
                   data-act="receive"
+                  title="Receber"
+                  aria-label="Receber"
                 >
-                  Receber
+                  💰
                 </button>
               `
         : ''
@@ -241,8 +244,10 @@ export function renderTable(items, handlers) {
                   type="button"
                   class="btn btn-toolbar btn-sm"
                   data-act="boleto"
+                  title="Abrir boleto"
+                  aria-label="Abrir boleto"
                 >
-                  🔗 Boleto
+                  🧾
                 </button>
               `
         : ''
@@ -254,8 +259,10 @@ export function renderTable(items, handlers) {
                   type="button"
                   class="btn btn-toolbar btn-sm"
                   data-act="cancel-boleto"
+                  title="Cancelar boleto"
+                  aria-label="Cancelar boleto"
                 >
-                  🗑 Cancelar
+                  🗑️
                 </button>
               `
         : ''

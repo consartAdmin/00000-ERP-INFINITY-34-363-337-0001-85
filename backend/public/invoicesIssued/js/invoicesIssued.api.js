@@ -166,22 +166,6 @@ export async function syncInvoicesIssued() {
   );
 }
 
-export async function listNfeIssues(
-  limit = 100,
-) {
-  const params =
-    new URLSearchParams({
-      limit: String(limit),
-      offset: '0',
-      includeStarted: 'true',
-      onlyWithNfe: 'true',
-    });
-
-  return apiFetch(
-    `/api/nfes/search?${params.toString()}`,
-  );
-}
-
 // ======================================================================
 // NF-e STATUS MAP
 // ======================================================================
@@ -203,21 +187,21 @@ export async function syncInvoiceFromOrder(orderId) {
   );
 }
 
-export async function reconcileOrderNfe(orderId) {
-  return apiFetch(
-    `/api/nfes/reconcile/${encodeURIComponent(orderId)}`,
-    { method: 'POST' },
-  );
-}
-
 export async function refreshBudgetNfeStatus(budgetId) {
   return apiFetch(
     `/api/budgets-issued/${encodeURIComponent(budgetId)}/status`,
   );
 }
 
-export async function getInvoicesKpis() {
+export async function getInvoicesKpis({ dateFrom, dateTo } = {}) {
+  const params = new URLSearchParams();
+
+  if (dateFrom) params.set('dateFrom', dateFrom);
+  if (dateTo) params.set('dateTo', dateTo);
+
+  const qs = params.toString();
+
   return apiFetch(
-    `${API_BASE}/kpis`
+    `${API_BASE}/kpis${qs ? `?${qs}` : ''}`
   );
 }

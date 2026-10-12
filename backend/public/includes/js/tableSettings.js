@@ -8,7 +8,7 @@
 // ║ O localStorage fica só como cache para aplicar o layout sem piscar.  ║
 // ║ Aplicado por um <style> gerado: sobrevive a cada re-render da tabela.║
 // ║                                                                      ║
-// ║ Automático: toda .table-scroll com <thead> ganha a engrenagem.       ║
+// ║ Automático: toda .table-scroll(--rounded) com <thead> ganha a ⚙️.   ║
 // ║   data-table-settings="off"       → desliga nesta tabela             ║
 // ║   data-table-settings="modulo.x"  → chave própria (padrão: página+nº)║
 // ║   data-table-settings-manual      → a tela chama createTableSettings ║
@@ -707,7 +707,7 @@ function pageModule() {
 let autoIndex = 0;
 
 function autoBind(root = document) {
-  const wrappers = root.querySelectorAll?.('.table-scroll:not([data-ts-key])') || [];
+  const wrappers = root.querySelectorAll?.(':is(.table-scroll, .table-scroll--rounded):not([data-ts-key])') || [];
   wrappers.forEach((wrapper) => {
     const setting = wrapper.dataset.tableSettings;
     if (setting === 'off' || wrapper.hasAttribute('data-table-settings-manual')) return;

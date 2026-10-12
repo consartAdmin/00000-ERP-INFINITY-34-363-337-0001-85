@@ -11,6 +11,7 @@ import { generateCustomersPdf } from '../generationPdf/generationCustomersPdf.js
 import { generateCustomersExcel } from '../generationExcel/generationCustomersExcel.js';
 
 import asaasApi from '../repositories/asaas/asaas.index.js';
+import { verifyModulePassword } from '../repositories/modulePasswords/modulePasswords.index.js';
 
 /* =========================================================================
    Helpers
@@ -39,17 +40,17 @@ function getExportKeyFromRequest(req) {
   ).toString().trim();
 }
 
-function validateExportKey(req, res) {
-  const expected = String(process.env.EXPORT_DOWNLOAD_KEY || '').trim();
+// Senha em public."modulePasswords" (CUSTOMERS / EXPORT);
+// sem senha cadastrada → usa EXPORT_DOWNLOAD_KEY do .env
+async function validateExportKey(req, res) {
+  const allowed = await verifyModulePassword(
+    'CUSTOMERS',
+    'EXPORT',
+    getExportKeyFromRequest(req),
+    { fallback: process.env.EXPORT_DOWNLOAD_KEY }
+  );
 
-  // Se não houver chave no .env, não bloqueia
-  if (!expected) {
-    return { ok: true };
-  }
-
-  const received = getExportKeyFromRequest(req);
-
-  if (!received || received !== expected) {
+  if (!allowed) {
     res.status(401).json({
       ok: false,
       error: 'Chave de exportação inválida.',
@@ -173,6 +174,19 @@ export async function create(req, res) {
     const item = await customersApi.create(req.body);
     return res.status(201).json(item);
   } catch (err) {
+    // CNPJ/CPF já cadastrado → informa o cliente existente
+    if (err.constraint === 'idx_customers_tax_id_unique' || /idx_customers_tax_id_unique/.test(err.message)) {
+      const existing = await customersApi.findByTaxId(req.body?.tax_id).catch(() => null);
+      const name = existing?.trade_name || existing?.legal_name || '';
+      return res.status(409).json({
+        error: 'duplicate_tax_id',
+        title: 'Cliente Existente',
+        message: existing
+          ? `Já existe um cliente cadastrado com este CNPJ/CPF: #${existing.customer_id}${name ? ` — ${name}` : ''}`
+          : 'Já existe um cliente cadastrado com este CNPJ/CPF.',
+        customer_id: existing?.customer_id ?? null,
+      });
+    }
     const code = /(unique|duplicate key)/i.test(err.message) ? 409 : 400;
     return res.status(code).json({ error: err.message });
   }
@@ -429,7 +443,7 @@ export async function syncAsaasById(req, res) {
 export async function reportPdf(req, res) {
   try {
     // 🔐 valida chave
-    const auth = validateExportKey(req, res);
+    const auth = await validateExportKey(req, res);
     if (!auth.ok) return;
 
     const pdfEnabled = envBool('EXPORT_PDF_ENABLED', true);
@@ -476,7 +490,7 @@ export async function reportPdf(req, res) {
 export async function reportExcel(req, res) {
   try {
     // 🔐 valida chave
-    const auth = validateExportKey(req, res);
+    const auth = await validateExportKey(req, res);
     if (!auth.ok) return;
 
     const excelEnabled = envBool('EXPORT_EXCEL_ENABLED', true);

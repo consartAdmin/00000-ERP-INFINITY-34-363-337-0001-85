@@ -221,30 +221,6 @@ export function extractAlerts(payload, options = {}) {
   return alerts;
 }
 
-export function extractNfeRowAlerts(rows = []) {
-  const alerts = [];
-  const seen = new Set();
-
-  for (const row of Array.isArray(rows) ? rows : []) {
-    const status = clean(row?.nfe_status ?? row?.status).toUpperCase();
-    const message = clean(
-      row?.nfe_message ?? row?.nfe_error ?? row?.mensagem ??
-      row?.message ?? row?.error,
-    );
-
-    if (!message && !/REJEIT|ERRO|FALHA|DENEGAD/.test(status)) continue;
-
-    pushUnique(alerts, {
-      severity: /PROCESS|PENDENTE/.test(status) ? 'warning' : 'error',
-      code: row?.nfe_cstat ?? row?.cStat ?? row?.cstat,
-      orderId: row?.order_number ?? row?.order_id,
-      message: message || `NF-e com status ${status || 'inválido'}.`,
-    }, seen);
-  }
-
-  return alerts;
-}
-
 export function formatAlertTitle(alert) {
   const parts = [];
   if (alert.orderId) parts.push(`Pedido ${alert.orderId}`);

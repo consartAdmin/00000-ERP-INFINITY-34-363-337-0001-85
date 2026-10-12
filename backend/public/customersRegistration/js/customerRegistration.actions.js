@@ -172,7 +172,7 @@ async function onSubmit(event) {
     }
   } catch (error) {
     console.error('[customerRegistration.onSubmit]', error);
-    showError('Falha ao salvar', error?.message || 'Não foi possível salvar o cliente.');
+    showError(error?.title || 'Falha ao salvar', error?.message || 'Não foi possível salvar o cliente.');
   } finally {
     setSubmitting(submitButton, false);
   }

@@ -7,6 +7,7 @@
 'use strict';
 
 import { getValue, onlyDigits, trimOrNull } from './customerRegistration.utils.js';
+import { readFinancialDefaults } from '/public/includes/js/customerFinancialDefaults.js';
 
 export function buildCustomerPayload() {
   const personType = getValue('person_type') || 'J';
@@ -55,6 +56,9 @@ export function buildCustomerPayload() {
     billing_email: trimOrNull(getValue('billing_email')),
     invoice_email: trimOrNull(getValue('invoice_email')),
     financial_contact_notes: trimOrNull(getValue('financial_contact_notes')),
+
+    // Classificação padrão (Movimentação de Caixa)
+    ...readFinancialDefaults(),
 
     customer_ad_street_type: trimOrNull(getValue('customer_ad_street_type')),
     customer_ad_street_name: trimOrNull(getValue('customer_ad_street_name')),

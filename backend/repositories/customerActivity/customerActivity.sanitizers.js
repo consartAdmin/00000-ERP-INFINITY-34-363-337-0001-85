@@ -21,7 +21,7 @@ export function normalizeFollowupType(type) {
   const value = String(type || '').trim().toLowerCase();
   if (!value) return null;
 
-  const allowed = new Set(['whatsapp', 'call', 'email']);
+  const allowed = new Set(['whatsapp', 'call', 'email', 'training']);
   return allowed.has(value) ? value : null;
 }
 

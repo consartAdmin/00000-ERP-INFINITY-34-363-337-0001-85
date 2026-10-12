@@ -41,16 +41,10 @@ const ROUTES = Object.freeze({
     `${API_BASE}/api/products-subgroups`,
     `${API_BASE}/api/productsSubgroups`,
   ],
-  fabricantes: [
-    `${API_BASE}/api/products-manufacturers`,
-    `${API_BASE}/api/manufacturers`,
-    `${API_BASE}/api/fabricantes`,
-  ],
-  fornecedores: [
-    `${API_BASE}/api/products-suppliers`,
-    `${API_BASE}/api/suppliers`,
-    `${API_BASE}/api/fornecedores`,
-  ],
+  // Obs.: /api/products-manufacturers é atendida antes pela tabela legada "productsManufactures" (vazia).
+  fabricantes: `${API_BASE}/api/manufacturers`,
+  // Obs.: /api/products-suppliers é a tabela de vínculo produto x fornecedor, não o cadastro.
+  fornecedores: `${API_BASE}/api/suppliers`,
   localizacoes: [
     `${API_BASE}/api/product-locations`,
     `${API_BASE}/api/products-locations`,
@@ -406,6 +400,46 @@ async function fillSelect(urlOrList, selectSelector, { idKey = 'id', textKey = '
   });
 }
 
+// Busca TODAS as páginas de uma API paginada por page/limit
+// (/api/suppliers: limit máx. 200 | /api/manufacturers: limit máx. 500)
+async function fetchAllByPage(baseUrl, { pageSize = 200, maxPages = 150, query = '' } = {}) {
+  const out = [];
+  const sep = baseUrl.includes('?') ? '&' : '?';
+
+  for (let page = 1; page <= maxPages; page++) {
+    const data = await jfetch(`${baseUrl}${sep}page=${page}&limit=${pageSize}${query ? `&${query}` : ''}`);
+    const rows = extractRows(data);
+    out.push(...rows);
+
+    const total = Number(data?.data?.total ?? data?.total ?? 0);
+    if (rows.length < pageSize || (total && out.length >= total)) break;
+  }
+
+  return out;
+}
+
+async function fillSelectAllPages(url, selectSelector, { pageSize, query, idKey, textKeys, placeholder }) {
+  const sel = getEl(selectSelector);
+  if (!sel) return;
+
+  let rows = [];
+  try {
+    rows = await fetchAllByPage(url, { pageSize, query });
+  } catch (err) {
+    console.warn(`⚠️ Falha ao carregar ${selectSelector}:`, err?.message || err);
+  }
+
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  rows.forEach((r) => {
+    const id = r[idKey] ?? r.id;
+    if (id == null) return;
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = textKeys.map((k) => r[k]).find((v) => v != null && v !== '') ?? `#${id}`;
+    sel.appendChild(opt);
+  });
+}
+
 function setupGroupSubgroupLink(groupSel = FIELDS.product_group_id, subSel = FIELDS.product_subgroup_id) {
   const grp = getEl(groupSel);
   const sub = getEl(subSel);
@@ -465,6 +499,20 @@ async function carregarCombos() {
     fillSelect(ROUTES.groups, FIELDS.product_group_id, { idKey: 'product_group_id', textKey: 'name' }),
     fillSelect(ROUTES.subgroups, FIELDS.product_subgroup_id, { idKey: 'product_subgroup_id', textKey: 'name' }),
     fillSelect(ROUTES.localizacoes, FIELDS.product_location_id, { idKey: 'id', textKey: 'nome' }),
+    fillSelectAllPages(ROUTES.fabricantes, FIELDS.manufacturer_id, {
+      pageSize: 500,
+      query: 'sort=trade_name&dir=asc',
+      idKey: 'manufacturer_id',
+      textKeys: ['trade_name', 'corporate_name', 'name'],
+      placeholder: '— Selecione um fabricante —',
+    }),
+    fillSelectAllPages(ROUTES.fornecedores, FIELDS.supplier_id, {
+      pageSize: 200,
+      query: 'sort=name&dir=asc',
+      idKey: 'supplier_id',
+      textKeys: ['name', 'company_name', 'trading_name', 'fantasy_name'],
+      placeholder: '— Selecione um fornecedor —',
+    }),
   ]);
 }
 

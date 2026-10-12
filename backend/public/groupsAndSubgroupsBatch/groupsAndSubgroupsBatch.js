@@ -107,6 +107,7 @@ const state = {
 
   groupsMap: new Map(),     // id -> name
   subgroupsMap: new Map(),  // id -> name (do grupo selecionado)
+  allSubgroupsMap: new Map(), // id -> name (todos, para a coluna Subgrupo da tabela)
 
   newGroupId: '',
   newSubgroupId: '',
@@ -121,9 +122,12 @@ const els = {
   searchBtn: $('#gsb-search-btn'),
   tbody: $('#gsb-products-body'),
   selectAll: $('#gsb-select-all'),
-  prevPage: $('#gsb-prev-page'),
-  nextPage: $('#gsb-next-page'),
-  pageInfo: $('#gsb-page-info'),
+  // Rodapé da tabela (IDs do padrão table-footer do HTML)
+  prevPage: $('#btnPrevious'),
+  nextPage: $('#btnNext'),
+  pageInfo: $('#pageInfo'),
+  tableInfo: $('#apTableInfo'),
+  pageSize: $('#pageSize'),
   selectedCount: $('#gsb-selected-count'),
   summarySelected: $('#gsb-summary-selected'),
 
@@ -278,8 +282,23 @@ function groupLabel(groupId) {
 
 function subgroupLabel(subgroupId) {
   if (!subgroupId) return '-';
-  const name = state.subgroupsMap.get(Number(subgroupId));
+  const name = state.allSubgroupsMap.get(Number(subgroupId)) ?? state.subgroupsMap.get(Number(subgroupId));
   return name ? String(name) : String(subgroupId);
+}
+
+/** Carrega todos os subgrupos só para exibir o nome na tabela (falha não bloqueia a tela) */
+async function loadAllSubgroupNames() {
+  try {
+    const data = await safeJson(`${API_BASE}${ROUTES.SUBGROUPS_LIST}?limit=5000`);
+    state.allSubgroupsMap.clear();
+    extractList(data).forEach((sg) => {
+      const id = Number(sg.product_subgroup_id ?? sg.id);
+      const name = sg.name ?? sg.subgroup_name ?? sg.description;
+      if (Number.isInteger(id) && name) state.allSubgroupsMap.set(id, String(name));
+    });
+  } catch (err) {
+    console.warn('[GSB] Nomes de subgrupos indisponíveis', err?.message || err);
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -382,11 +401,12 @@ async function fetchProducts() {
 
   if (hasQ) params.set('q', q);
 
+  // /api/products filtra por "active"; sem o parâmetro lista ativos e inativos
   if (state.onlyActive === true) {
-    params.set('only_active', 'true');
+    params.set('active', 'true');
   }
 
-  // ✅ filtro vinculado funcionando
+  // Filtro de vínculo aplicado no backend (afeta total e paginação)
   if (state.linkedFilter === 'linked') {
     params.set('linked', 'true');
   } else if (state.linkedFilter === 'unlinked') {
@@ -394,7 +414,8 @@ async function fetchProducts() {
   }
 
   try {
-    const endpoint = hasQ
+    // /search força somente ativos; com "incluir inativos" usa a listagem (que também aceita q)
+    const endpoint = hasQ && state.onlyActive
       ? `${ROUTES.PRODUCTS_LIST}/search`
       : `${ROUTES.PRODUCTS_LIST}`;
 
@@ -411,27 +432,30 @@ async function fetchProducts() {
     // ✅ normalização aplicada
     state.products = rows.map(normalizeProduct);
 
-    // 🔥 FILTRO CLIENT-SIDE PARA VÍNCULO
-    if (state.linkedFilter === 'linked') {
-      state.products = state.products.filter(p => p.product_group_id);
-    }
-
-    if (state.linkedFilter === 'unlinked') {
-      state.products = state.products.filter(p => !p.product_group_id);
-    }
-
     renderProductsTable();
 
-    els.pageInfo.textContent = `Página ${state.page}`;
+    const total = Number(data?.total);
+    const totalPages = Number.isFinite(total) ? Math.max(1, Math.ceil(total / state.limit)) : null;
+
+    if (els.tableInfo) {
+      els.tableInfo.textContent = Number.isFinite(total)
+        ? `${total.toLocaleString('pt-BR')} Registros`
+        : `${state.products.length} Registros`;
+    }
+    if (els.pageInfo) {
+      els.pageInfo.textContent = totalPages ? `Página ${state.page} de ${totalPages}` : `Página ${state.page}`;
+    }
     if (els.prevPage) els.prevPage.disabled = state.page <= 1;
-    if (els.nextPage) els.nextPage.disabled = state.products.length < state.limit;
+    if (els.nextPage) {
+      els.nextPage.disabled = totalPages ? state.page >= totalPages : state.products.length < state.limit;
+    }
 
   } catch (err) {
     console.error('[GSB] Erro ao buscar produtos', err);
     showCenterModal({
       variant: 'error',
       title: 'Erro ao buscar produtos',
-      message: 'Falha ao buscar produtos.',
+      message: `Falha ao buscar produtos. ${String(err?.message || err).slice(0, 300)}`,
       timeoutMs: 7000,
     });
   } finally {
@@ -606,8 +630,8 @@ function onToggleSelectAll(ev) {
 
 function updateSelectionInfo() {
   const count = state.selected.size;
-  els.selectedCount.textContent = String(count);
-  els.summarySelected.textContent = String(count);
+  if (els.selectedCount) els.selectedCount.textContent = String(count);
+  if (els.summarySelected) els.summarySelected.textContent = String(count);
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -830,6 +854,16 @@ function initEvents() {
     });
   }
 
+  // ── Quantidade por página
+  if (els.pageSize) {
+    els.pageSize.value = String(state.limit);
+    els.pageSize.addEventListener('change', () => {
+      state.limit = Number(els.pageSize.value) || 20;
+      state.page = 1;
+      fetchProducts();
+    });
+  }
+
   // ── Filtro linked (all|linked|unlinked) — se existir no HTML
   if (els.linkedFilter) {
     els.linkedFilter.addEventListener('change', () => {
@@ -909,8 +943,8 @@ async function bootstrap() {
   try {
     initEvents();
 
-    // carrega grupos
-    await loadGroups();
+    // carrega grupos (+ nomes de todos os subgrupos para a tabela)
+    await Promise.all([loadGroups(), loadAllSubgroupNames()]);
     updateSummary();
 
     // abre a lista inicial

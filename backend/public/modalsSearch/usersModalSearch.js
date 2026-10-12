@@ -110,14 +110,8 @@ export function openUsersModalSearch({ apiBase = '', onPick } = {}) {
   }
 
   async function buscar(){
+    // Termo vazio lista todos os usuários.
     const termo = q.value.trim();
-    if (!termo) {
-      rowsCache = [];
-      tbody.innerHTML = '';
-      chip.textContent = '';
-      status.textContent = 'Informe um termo de busca.';
-      return;
-    }
 
     status.textContent = 'Pesquisando…';
     chip.textContent = '';
@@ -128,13 +122,12 @@ export function openUsersModalSearch({ apiBase = '', onPick } = {}) {
         ? apiBase.replace(/\/$/, '')
         : window.location.origin;
 
-      // ✅ endpoint esperado (ajuste se o seu for diferente):
-      // GET /api/users/search?q=...&limit=...&offset=...&include_inactive=...
+      // GET /api/users/search?q=...&limit=...&is_active=...
+      // Sem is_active o backend retorna ativos e inativos.
       const url = new URL('/api/users/search', base);
       url.searchParams.set('q', termo);
-      url.searchParams.set('limit', '50');
-      url.searchParams.set('offset', '0');
-      url.searchParams.set('include_inactive', chkInactive.checked ? 'true' : 'false');
+      url.searchParams.set('limit', '200');
+      if (!chkInactive.checked) url.searchParams.set('is_active', 'true');
 
       const data = await fetchJSON(url.toString());
       const rows = Array.isArray(data) ? data : (data.rows || []);
@@ -166,6 +159,7 @@ export function openUsersModalSearch({ apiBase = '', onPick } = {}) {
 
   btn.addEventListener('click', buscar);
   q.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') buscar(); });
+  chkInactive.addEventListener('change', buscar);
 
   tbody.addEventListener('click', (ev) => {
     const tr = ev.target.closest('tr[data-idx]');
@@ -176,4 +170,5 @@ export function openUsersModalSearch({ apiBase = '', onPick } = {}) {
   });
 
   setTimeout(() => q.focus(), 0);
+  buscar();
 }

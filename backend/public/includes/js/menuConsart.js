@@ -18,6 +18,7 @@ const MENU_CONFIG = [
           //  { type: 'link', id: 6, label: '✏️ Edição de Clientes', href: '../customersEdit/customersEdit.html' },
           // { type: 'link', id: 7, label: '📈 Acompanhamento de Clientes', href: '../customerActivity/customerActivity.html' },
           { type: 'link', id: 118, label: '📊 Segmentos de Cliente', href: '../customerSegments/customerSegments.html' },
+          { type: 'link', id: 145, label: '🎓 Treinamentos de Clientes', href: '../customerTrainings/customerTrainings.html' },
         ]
       },
       {
@@ -199,6 +200,7 @@ const MENU_CONFIG = [
           { type: 'link', id: 122, label: '🗂️ Contas de E-mail', href: '../emailAccounts/emailAccounts.html' },
           { type: 'link', id: 123, label: '🗂️ Vinculo de E-mail e Usuários', href: '../userEmailAccounts/userEmailAccounts.html' },
           { type: 'link', id: 139, label: '🗂️ Dash Boards', href: '../usersDashboardAccess/usersDashboardAccess.html' },
+          { type: 'link', id: 146, label: '🔑 Senhas dos Módulos', href: '../modulePasswords/modulePasswords.html' },
         ]
       },
     ]
@@ -445,7 +447,7 @@ function buildMenuPrincipal() {
   else document.body.prepend(menu);
 
   // appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta os links de localização
-  initProductLocationsFeature({ root: menu }).catch(() => {});
+  initProductLocationsFeature({ root: menu }).catch(() => { });
 
   // Dispara somente depois que todos os links existem no DOM.
   try {

@@ -33,3 +33,6 @@ Thumbs.db
 /public/pdfs
 
 !.env.example
+
+# Chaves locais de service account
+keys/

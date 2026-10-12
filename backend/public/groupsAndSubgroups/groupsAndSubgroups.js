@@ -158,7 +158,16 @@ const state = {
   groups: [],
   subgroups: [],
   selectedGroupId: null,
+  // IDs dos grupos retornados pela busca de grupos (null = sem busca ativa)
+  searchGroupIds: null,
 };
+
+/** Restringe os subgrupos aos grupos encontrados na busca (quando não há grupo selecionado) */
+function applySearchGroupFilter(subgroups) {
+  if (state.selectedGroupId || !state.searchGroupIds) return subgroups;
+  const ids = new Set(state.searchGroupIds.map(String));
+  return subgroups.filter((sg) => ids.has(String(sg.group_id)));
+}
 
 // ======================================================================
 // RENDER
@@ -251,7 +260,8 @@ function renderSubgroupsTable() {
     const groupName =
       (sg.group && sg.group.name) ||
       sg.group_name ||
-      '';
+      state.groups.find((g) => String(g.product_group_id) === String(sg.group_id))?.name ||
+      (sg.group_id ? `#${sg.group_id}` : '');
 
     const statusBadge = sg.is_active
       ? '<span class="gs-status-badge gs-status-badge--active">Ativo</span>'
@@ -295,8 +305,9 @@ function renderSelectedGroupInfo() {
   if (!els.selectedGroupLabel) return;
 
   if (!state.selectedGroupId) {
-    els.selectedGroupLabel.textContent =
-      'Nenhum grupo selecionado. Clique em um grupo à esquerda para filtrar.';
+    els.selectedGroupLabel.textContent = state.searchGroupIds
+      ? `Filtrando subgrupos dos ${state.searchGroupIds.length} grupo(s) encontrados na busca. Clique em um grupo para filtrar só ele.`
+      : 'Nenhum grupo selecionado. Clique em um grupo à esquerda para filtrar.';
     return;
   }
 
@@ -444,11 +455,24 @@ async function loadGroupsAndSubgroups(full = false) {
 
     const groups = await apiListGroups();
     state.groups = groups || [];
+
+    // Busca de grupos ativa → subgrupos acompanham os grupos encontrados.
+    // Um único resultado vira o grupo selecionado.
+    const groupTerm = (els.groupsSearch && els.groupsSearch.value.trim()) || '';
+    const foundIds = state.groups.map((g) => g.product_group_id);
+    state.searchGroupIds = groupTerm ? foundIds : null;
+    if (groupTerm && foundIds.length === 1) {
+      state.selectedGroupId = foundIds[0];
+    } else if (state.selectedGroupId && groupTerm &&
+      !foundIds.some((id) => String(id) === String(state.selectedGroupId))) {
+      state.selectedGroupId = null;
+    }
+
     renderGroupsTable();
     fillSubgroupGroupSelect();
 
     const subgroups = await apiListSubgroups();
-    state.subgroups = subgroups || [];
+    state.subgroups = applySearchGroupFilter(subgroups || []);
     renderSubgroupsTable();
     renderSelectedGroupInfo();
 
@@ -699,7 +723,7 @@ async function loadSubgroupsOnly() {
   try {
     els.subgroupsSummary.textContent = 'Carregando subgrupos...';
     const subgroups = await apiListSubgroups();
-    state.subgroups = subgroups || [];
+    state.subgroups = applySearchGroupFilter(subgroups || []);
     renderSubgroupsTable();
     renderSelectedGroupInfo();
   } catch (err) {
@@ -785,10 +809,10 @@ function bindEvents() {
 
   if (els.btnClearSelectedGroup) {
     els.btnClearSelectedGroup.addEventListener('click', () => {
+      // Limpa também a busca de grupos, que filtra os subgrupos
       state.selectedGroupId = null;
-      renderGroupsTable();
-      renderSelectedGroupInfo();
-      loadSubgroupsOnly();
+      if (els.groupsSearch) els.groupsSearch.value = '';
+      loadGroupsAndSubgroups(false);
     });
   }
 }

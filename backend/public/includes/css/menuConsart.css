@@ -28,7 +28,8 @@
    ========================= */
 
 .menu-principal .menu-item,
-.menu-principal .link-inicio {
+.menu-principal .link-inicio,
+.menu-principal .link-suporte {
   padding: 14px 16px;
   cursor: pointer;
   font-size: 14px;
@@ -42,12 +43,18 @@
 }
 
 .menu-principal .menu-item:hover,
-.menu-principal .link-inicio:hover {
+.menu-principal .link-inicio:hover,
+.menu-principal .link-suporte:hover {
   background: #f5f7fa;
 }
 
 .menu-principal .link-inicio {
   font-weight: 600;
+}
+
+.menu-principal .link-suporte {
+  font-weight: 600;
+  color: #128c7e;
 }
 
 /* =========================

@@ -21,6 +21,7 @@ import { recarregarLista } from './cashMoviments.list.js';
 
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { openChartAccountsModalSearch } from '/public/modalsSearch/chartAccountsModalSearch.js';
+import { aplicarPadroesCliente } from './cashMoviments.customerDefaults.js';
 
 import {
   loadCashDocumentTypeSelects,
@@ -40,7 +41,7 @@ if (document.readyState === 'loading') {
    FORNECEDOR / CLIENTE — CADASTRO
 ============================================================================ */
 
-function setupFornecedorModal() {
+function setupFornecedorModal(dom) {
   const inputFornecedor = document.getElementById('fornecedor');
   const btnBuscarFornecedor = document.getElementById('btnBuscarFornecedor');
   const inputFornecedorId = document.getElementById('fornecedorId');
@@ -56,6 +57,9 @@ function setupFornecedorModal() {
       inputFornecedor.value = fornecedor.name ?? '';
       if (inputFornecedorId) inputFornecedorId.value = fornecedor.supplier_id ?? fornecedor.customer_id ?? '';
       if (inputFornecedorTaxId) inputFornecedorTaxId.value = fornecedor.tax_id ?? '';
+
+      // Cliente: pré-preenche conta contábil / categoria / subcategoria
+      await aplicarPadroesCliente(dom, fornecedor, 'create');
     } catch (err) {
       console.error('[caixa.index] erro ao selecionar fornecedor:', err);
       alert('Não foi possível abrir a busca de fornecedores.');
@@ -70,7 +74,7 @@ function setupFornecedorModal() {
    FORNECEDOR / CLIENTE — EDIÇÃO
 ============================================================================ */
 
-function setupFornecedorModalEdicao() {
+function setupFornecedorModalEdicao(dom) {
   const inputFornecedor = document.getElementById('edit_fornecedor');
   const btnBuscarFornecedor = document.getElementById('edit_btnBuscarFornecedor');
   const inputFornecedorId = document.getElementById('edit_fornecedorId');
@@ -86,6 +90,9 @@ function setupFornecedorModalEdicao() {
       inputFornecedor.value = fornecedor.name ?? '';
       if (inputFornecedorId) inputFornecedorId.value = fornecedor.supplier_id ?? fornecedor.customer_id ?? '';
       if (inputFornecedorTaxId) inputFornecedorTaxId.value = fornecedor.tax_id ?? '';
+
+      // Cliente: pré-preenche conta contábil / categoria / subcategoria
+      await aplicarPadroesCliente(dom, fornecedor, 'edit');
     } catch (err) {
       console.error('[caixa.index] erro ao selecionar fornecedor na edição:', err);
       alert('Não foi possível abrir a busca de fornecedores.');
@@ -194,8 +201,8 @@ async function init() {
     bindEvents(dom);
 
     // Modais auxiliares
-    setupFornecedorModal();
-    setupFornecedorModalEdicao();
+    setupFornecedorModal(dom);
+    setupFornecedorModalEdicao(dom);
     setupChartAccountsModal();
     setupChartAccountsModalEdicao();
 

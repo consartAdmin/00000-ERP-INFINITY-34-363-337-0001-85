@@ -78,7 +78,7 @@ async function getExportKey(typeLabel) {
 async function onExportPdf() {
   try {
     const key = await getExportKey('PDF');
-    if (!key) return;
+    if (key === null) return;
     const query = buildReportQuery({ export_key: key });
     const url = `${ROUTES.customersReportPdf}?${query}`;
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -91,7 +91,7 @@ async function onExportPdf() {
 async function onExportExcel() {
   try {
     const key = await getExportKey('EXCEL');
-    if (!key) return;
+    if (key === null) return;
     const query = buildReportQuery({ export_key: key });
     window.location.href = `${ROUTES.customersReportExcel}?${query}`;
   } catch (error) {

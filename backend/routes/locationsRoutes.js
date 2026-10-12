@@ -37,6 +37,7 @@ import {
   createProductLocation,
   updateProductLocation,
   deactivateProductLocation,
+  setPrimaryProductLocation,
   deleteProductLocation,
 } from '../controllers/locationsController.js';
 
@@ -93,6 +94,7 @@ router.get('/product-locations', listProductLocations);
 router.post('/product-locations', createProductLocation);
 router.put('/product-locations/:id', updateProductLocation);
 router.patch('/product-locations/:id/deactivate', deactivateProductLocation);
+router.patch('/product-locations/:id/primary', setPrimaryProductLocation);
 router.delete('/product-locations/:id', deleteProductLocation);
 
 export default router;

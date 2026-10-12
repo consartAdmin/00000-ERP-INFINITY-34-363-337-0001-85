@@ -1,4 +1,5 @@
-.products-lm-ref-modal { width: min(720px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 10px; }
+/* Centraliza explicitamente na viewport (evita herdar margin/top globais) */
+.products-lm-ref-modal { position: fixed; inset: 0; margin: auto; width: min(720px, calc(100vw - 32px)); height: fit-content; max-height: calc(100vh - 32px); overflow: auto; padding: 0; border: 0; border-radius: 10px; }
 .products-lm-ref-modal::backdrop { background: rgb(15 23 42 / 55%); }
 .products-lm-ref-modal__header, .products-lm-ref-modal__footer { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
 .products-lm-ref-modal__header { justify-content: space-between; border-bottom: 1px solid #dfe4ec; }

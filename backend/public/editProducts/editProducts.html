@@ -15,6 +15,8 @@
   <link rel="stylesheet" href="/public/editProducts/css/editProducts.css" />
 
   <link rel="stylesheet" href="/public/includes/css/productsLocationsModals.css" />
+  <!-- CSS do modal de fornecedor (suppliers.quickModal.js); o id evita que o modal injete outro -->
+  <link id="suppliers-modal-css-runtime" rel="stylesheet" href="/public/inboundInvoices/suppliersModal.css" />
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -531,23 +533,35 @@
                 </div>
 
                 <div class="fields-inline fields-gap-3">
-                  <div class="fields fields-h-6 fields-w-17">
-                    <span>Grupo</span>
+                  <div class="fields fields-h-6 fields-w-16">
+                    <span>Grupo
+                      <button type="button" class="quick-add-btn" data-quick-add="group"
+                        title="Cadastrar novo grupo" aria-label="Cadastrar novo grupo">+</button>
+                    </span>
                     <select id="product_group_id" name="product_group_id"></select>
                   </div>
 
-                  <div class="fields fields-h-6 fields-w-17">
-                    <span>Subgrupo</span>
+                  <div class="fields fields-h-6 fields-w-16">
+                    <span>Subgrupo
+                      <button type="button" class="quick-add-btn" data-quick-add="subgroup"
+                        title="Cadastrar novo subgrupo" aria-label="Cadastrar novo subgrupo">+</button>
+                    </span>
                     <select id="product_subgroup_id" name="product_subgroup_id"></select>
                   </div>
 
-                  <div class="fields fields-h-6 fields-w-17">
-                    <span>Fabricante</span>
+                  <div class="fields fields-h-6 fields-w-16">
+                    <span>Fabricante
+                      <button type="button" class="quick-add-btn" data-quick-add="manufacturer"
+                        title="Cadastrar novo fabricante" aria-label="Cadastrar novo fabricante">+</button>
+                    </span>
                     <select id="manufacturer_id" name="manufacturer_id"></select>
                   </div>
 
                   <div class="fields fields-h-6 fields-w-16">
-                    <span>Fornecedor</span>
+                    <span>Fornecedor
+                      <button type="button" class="quick-add-btn" data-quick-add="supplier"
+                        title="Cadastrar novo fornecedor" aria-label="Cadastrar novo fornecedor">+</button>
+                    </span>
                     <select id="supplier_id" name="supplier_id"></select>
                   </div>
                 </div>

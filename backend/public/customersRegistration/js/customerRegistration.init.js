@@ -12,6 +12,7 @@ import { bindMasks } from './customerRegistration.masks.js';
 import { showError } from './customerRegistration.modal.js';
 import { loadSelects } from './customerRegistration.selects.js';
 import { initializeIbgeLocations } from './customerRegistration.ibge.js';
+import { initFinancialDefaults } from '/public/includes/js/customerFinancialDefaults.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   void boot();
@@ -24,6 +25,7 @@ async function boot() {
     await Promise.all([
       loadSelects(),
       initializeIbgeLocations(),
+      initFinancialDefaults(), // plano de contas / categoria / subcategoria
     ]);
   } catch (error) {
     console.error('[customerRegistration.boot]', error);

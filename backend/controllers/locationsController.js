@@ -603,3 +603,32 @@ export async function deactivateProductLocation(req, res) {
     return handleDbError(res, err, 'deactivateProductLocation');
   }
 }
+
+// PATCH /api/locations/product-locations/:id/primary
+// Define a localização como principal do produto (products.product_location_id)
+export async function setPrimaryProductLocation(req, res) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        error: 'ID inválido',
+        origin: 'setPrimaryProductLocation',
+      });
+    }
+
+    const row = await productsLocationsApi.setPrimary(id);
+    if (!row) {
+      return res.status(404).json({
+        error: 'Registro não encontrado',
+        origin: 'setPrimaryProductLocation',
+      });
+    }
+
+    return res.json(row);
+  } catch (err) {
+    if (err?.status === 400) {
+      return res.status(400).json({ error: err.message, origin: 'setPrimaryProductLocation' });
+    }
+    return handleDbError(res, err, 'setPrimaryProductLocation');
+  }
+}

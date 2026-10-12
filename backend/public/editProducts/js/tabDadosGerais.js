@@ -269,78 +269,21 @@ export function initDadosGeraisTab(ctx) {
     return data;
   }
 
-  // ✅ NOVO: tenta buscar TUDO quando a API pagina (limit/offset ou page/per_page)
-  async function fetchAllPages(
-    baseUrl,
-    {
-      limit = 500,
-      maxPages = 120,
-    } = {}
-  ) {
+  // Busca TODAS as páginas de uma API paginada por page/limit
+  // (/api/suppliers: limit máx. 200 | /api/manufacturers: limit máx. 500)
+  async function fetchAllByPage(baseUrl, { pageSize = 200, maxPages = 150, query = '' } = {}) {
     const out = [];
-    const seenKeys = new Set();
+    const sep = baseUrl.includes('?') ? '&' : '?';
 
-    const addRows = (rows) => {
-      let added = 0;
-
-      for (const r of rows) {
-        const id =
-          r?.id ??
-          r?.supplier_id ??
-          r?.manufacturer_id ??
-          r?.codigo ??
-          r?.code ??
-          null;
-
-        const key = id != null ? String(id) : JSON.stringify(r);
-
-        if (seenKeys.has(key)) continue;
-        seenKeys.add(key);
-        out.push(r);
-        added++;
-      }
-
-      return added;
-    };
-
-    const withQuery = (url, qs) => url + (url.includes('?') ? '&' : '?') + qs;
-
-    // 1) tenta limit/offset
-    for (let i = 0; i < maxPages; i++) {
-      const offset = i * limit;
-      const url = withQuery(
-        baseUrl,
-        `limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`
-      );
-
-      const data = await fetchJsonOrThrow(url);
-      const rows = extractRows(data);
-
-      if (!rows.length) break;
-
-      const added = addRows(rows);
-
-      if (added === 0) break;
-      if (rows.length < limit) break;
-    }
-
-    if (out.length) return out;
-
-    // 2) fallback: page/per_page
     for (let page = 1; page <= maxPages; page++) {
-      const url = withQuery(
-        baseUrl,
-        `page=${encodeURIComponent(page)}&per_page=${encodeURIComponent(limit)}`
+      const data = await fetchJsonOrThrow(
+        `${baseUrl}${sep}page=${page}&limit=${pageSize}${query ? `&${query}` : ''}`
       );
-
-      const data = await fetchJsonOrThrow(url);
       const rows = extractRows(data);
+      out.push(...rows);
 
-      if (!rows.length) break;
-
-      const added = addRows(rows);
-      if (added === 0) break;
-      if (rows.length < limit) break;
+      const total = Number(data?.data?.total ?? data?.total ?? 0);
+      if (rows.length < pageSize || (total && out.length >= total)) break;
     }
 
     return out;
@@ -408,30 +351,17 @@ export function initDadosGeraisTab(ctx) {
     const sel = getEl(FIELDS.manufacturer_id);
     if (!sel) return;
 
-    const candidates = [
-      `${ctx.API_BASE}/api/products-manufacturers`,
-      `${ctx.API_BASE}/api/manufacturers`,
-      `${ctx.API_BASE}/api/fabricantes`,
-    ];
-
     let rows = [];
     let lastErr = null;
 
-    for (const baseUrl of candidates) {
-      try {
-        const data0 = await fetchJsonOrThrow(baseUrl);
-        const rows0 = extractRows(data0);
-
-        const looksPaged = [50, 100, 200].includes(rows0.length);
-        rows = looksPaged
-          ? await fetchAllPages(baseUrl, { limit: 500, maxPages: 120 })
-          : rows0;
-
-        if (!rows.length && rows0.length) rows = rows0;
-        if (rows.length) break;
-      } catch (e) {
-        lastErr = e;
-      }
+    // Obs.: /api/products-manufacturers é atendida antes pela tabela legada "productsManufactures" (vazia).
+    try {
+      rows = await fetchAllByPage(`${ctx.API_BASE}/api/manufacturers`, {
+        pageSize: 500,
+        query: 'sort=trade_name&dir=asc',
+      });
+    } catch (e) {
+      lastErr = e;
     }
 
     if (!rows.length && lastErr) {
@@ -460,30 +390,17 @@ export function initDadosGeraisTab(ctx) {
     const sel = getEl(FIELDS.supplier_id);
     if (!sel) return;
 
-    const candidates = [
-      `${ctx.API_BASE}/api/products-suppliers`,
-      `${ctx.API_BASE}/api/suppliers`,
-      `${ctx.API_BASE}/api/fornecedores`,
-    ];
-
+    // Obs.: /api/products-suppliers é a tabela de vínculo produto x fornecedor, não o cadastro.
     let rows = [];
     let lastErr = null;
 
-    for (const baseUrl of candidates) {
-      try {
-        const data0 = await fetchJsonOrThrow(baseUrl);
-        const rows0 = extractRows(data0);
-
-        const looksPaged = [50, 100, 200].includes(rows0.length);
-        rows = looksPaged
-          ? await fetchAllPages(baseUrl, { limit: 500, maxPages: 150 })
-          : rows0;
-
-        if (!rows.length && rows0.length) rows = rows0;
-        if (rows.length) break;
-      } catch (e) {
-        lastErr = e;
-      }
+    try {
+      rows = await fetchAllByPage(`${ctx.API_BASE}/api/suppliers`, {
+        pageSize: 200,
+        query: 'sort=name&dir=asc',
+      });
+    } catch (e) {
+      lastErr = e;
     }
 
     if (!rows.length && lastErr) {
@@ -605,6 +522,111 @@ export function initDadosGeraisTab(ctx) {
     }
   }
 
+  // ✅ Lista de TODAS as localizações do SKU (Mapa de Localização).
+  // O campo "Localização" continua sendo a principal (product_location_id).
+  let todasLocalizacoes = [];
+  let nomesLocais = null; // store_id -> nome do local
+
+  async function carregarNomesLocais() {
+    if (nomesLocais) return;
+    nomesLocais = new Map();
+    try {
+      const data = await ctx.jfetch(`${ctx.API_BASE}/api/locations/locals`);
+      (Array.isArray(data) ? data : extractRows(data)).forEach((l) => {
+        if (l?.id != null) nomesLocais.set(String(l.id), l.name ?? l.description ?? '');
+      });
+    } catch { /* sem nomes: usa "Local <id>" */ }
+  }
+
+  function renderTodasLocalizacoes() {
+    const box = document.getElementById('productLocationsList');
+    if (!box) return;
+
+    const ativas = todasLocalizacoes.filter((r) => r?.is_active !== false);
+    const sku = getVal(FIELDS.product_code).trim();
+    box.replaceChildren();
+    box.hidden = !sku;
+    if (!sku) return;
+
+    // Link para o Mapa de Localização já filtrado pelo SKU (nova aba)
+    const link = document.createElement('a');
+    link.className = 'product-locations-list__link';
+    link.href = `/public/productsLocations/productsLocations.html?q=${encodeURIComponent(sku)}`;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = '⚙️ Gerenciar localizações';
+
+    if (!ativas.length) {
+      const empty = document.createElement('div');
+      empty.className = 'product-locations-list__title';
+      empty.append('📍 Nenhuma localização cadastrada. ', link);
+      box.append(empty);
+      return;
+    }
+
+    // "Principal" = a salva no produto (is_primary vindo do backend), não a que está no campo
+    const temPrincipal = ativas.some((r) => r.is_primary);
+
+    const title = document.createElement('div');
+    title.className = 'product-locations-list__title';
+    title.append(`📍 Localizações cadastradas (${ativas.length}) `, link);
+
+    if (!temPrincipal) {
+      const hint = document.createElement('span');
+      hint.className = 'product-locations-list__hint';
+      hint.textContent = ' · Nenhuma principal definida';
+      title.appendChild(hint);
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'product-locations-list__items';
+
+    ativas.forEach((r) => {
+      const li = document.createElement('li');
+      li.className = 'product-locations-list__item';
+
+      const local = nomesLocais?.get(String(r.store_id)) || (r.store_id ? `Local ${r.store_id}` : '');
+      const text = document.createElement('span');
+      text.textContent = [
+        local,
+        r.corredor,
+        r.prateleira ? `Gôndola ${r.prateleira}` : '',
+        r.bandeja ? `Bandeja ${r.bandeja}` : '',
+        r.box ? `Posição ${r.box}` : '',
+      ].filter(Boolean).join(' · ');
+      li.appendChild(text);
+
+      if (r.is_primary) {
+        li.classList.add('is-primary');
+        const badge = document.createElement('span');
+        badge.className = 'product-locations-list__badge';
+        badge.textContent = 'Principal';
+        li.appendChild(badge);
+      }
+
+      list.appendChild(li);
+    });
+
+    box.append(title, list);
+  }
+
+  async function carregarTodasLocalizacoes(productCode) {
+    todasLocalizacoes = [];
+    if (productCode) {
+      try {
+        const [data] = await Promise.all([
+          ctx.jfetch(`${ctx.API_BASE}/api/products-locations/by-product/${encodeURIComponent(productCode)}`),
+          carregarNomesLocais(),
+        ]);
+        todasLocalizacoes = extractRows(data);
+        if (!todasLocalizacoes.length && Array.isArray(data?.data)) todasLocalizacoes = data.data;
+      } catch (err) {
+        console.warn('[tabDadosGerais] erro ao listar localizações do produto:', err);
+      }
+    }
+    renderTodasLocalizacoes();
+  }
+
   async function preencherFormulario(p) {
     setVal(FIELDS.product_code, p.product_code ?? p.sku ?? '');
     setVal(FIELDS.description, p.description ?? p.descricao ?? '');
@@ -643,6 +665,7 @@ export function initDadosGeraisTab(ctx) {
           : null;
 
     await carregarLocalizacoesDoProduto(sku, selectedLocationId);
+    await carregarTodasLocalizacoes(sku);
   }
 
   async function carregarBoxDoProduto(productCode) {

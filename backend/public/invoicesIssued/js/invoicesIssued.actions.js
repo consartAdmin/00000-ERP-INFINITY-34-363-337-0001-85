@@ -15,7 +15,6 @@
 import {
   $,
   extractAlerts,
-  extractNfeRowAlerts,
   formatAlertTitle,
 } from './invoicesIssued.utils.js';
 
@@ -28,7 +27,6 @@ import {
   listInvoices,
   getInvoiceById,
   syncInvoicesIssued,
-  listNfeIssues,
   getInvoicesKpis,
 } from './invoicesIssued.api.js';
 
@@ -74,7 +72,13 @@ import {
 
 async function loadKpis() {
   try {
-    const out = await getInvoicesKpis();
+    // KPIs seguem o período de emissão do filtro (sem período = todas as notas)
+    const range = $('dateFilter')?.value || {};
+
+    const out = await getInvoicesKpis({
+      dateFrom: range.startDate || '',
+      dateTo: range.endDate || '',
+    });
 
     if (!out?.ok) {
       throw new Error(
@@ -499,6 +503,12 @@ async function loadInvoices() {
 // SYNC NF-E
 // ======================================================================
 
+function setSyncButtonLabel(btn, text) {
+  const label = btn.querySelector('[data-btn-label]');
+  if (label) label.textContent = text;
+  else btn.textContent = text;
+}
+
 async function handleSyncInvoices() {
 
   const btn = $('btnSync');
@@ -507,7 +517,7 @@ async function handleSyncInvoices() {
 
     if (btn) {
       btn.disabled = true;
-      btn.textContent = 'Sincronizando...';
+      setSyncButtonLabel(btn, 'Sincronizando...');
     }
 
     showSyncStatus(
@@ -518,19 +528,6 @@ async function handleSyncInvoices() {
     const out = await syncInvoicesIssued();
     const imported = Number(out?.imported ?? out?.total ?? 0);
     const alerts = extractAlerts(out);
-
-    // Rejected/pending documents do not enter invoicesIssued, so inspect the
-    // NF-e source after syncing and expose their fiscal messages here.
-    try {
-      const nfeOut = await listNfeIssues();
-      alerts.push(...extractNfeRowAlerts(nfeOut?.rows));
-    } catch (lookupError) {
-      alerts.push(...(
-        lookupError?.alerts?.length
-          ? lookupError.alerts
-          : [{ severity: 'warning', message: lookupError?.message || 'Não foi possível consultar as rejeições de NF-e.' }]
-      ));
-    }
 
     const uniqueAlerts = alerts.filter((alert, index, list) =>
       list.findIndex((item) =>
@@ -572,7 +569,7 @@ async function handleSyncInvoices() {
 
     if (btn) {
       btn.disabled = false;
-      btn.textContent = 'Sincronizar NF-e';
+      setSyncButtonLabel(btn, 'Sincronizar');
     }
   }
 }
@@ -696,12 +693,9 @@ async function synchronizeInvoice(invoice) {
     }
 
     await apiFetch(
-      `/api/nfes/reconcile/${encodeURIComponent(
+      `/api/orders-nfe-attempts/orders/${encodeURIComponent(
         orderId
-      )}`,
-      {
-        method: 'POST',
-      }
+      )}/status`
     );
 
     await apiFetch(
@@ -1242,7 +1236,10 @@ function bindEvents() {
   $('btnRefresh')
     ?.addEventListener(
       'click',
-      loadInvoices
+      () => {
+        loadInvoices();
+        loadKpis();
+      }
     );
 
   // ------------------------------------------------------------
@@ -1267,6 +1264,7 @@ function bindEvents() {
         state.offset = 0;
 
         loadInvoices();
+        loadKpis();
       }
     );
 
@@ -1290,6 +1288,7 @@ function bindEvents() {
       () => {
         state.offset = 0;
         loadInvoices();
+        loadKpis();
       }
     );
 
