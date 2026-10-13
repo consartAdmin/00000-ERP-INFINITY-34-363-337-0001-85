@@ -116,6 +116,32 @@ export async function createDebtPayment(req, res) {
   }
 }
 
+export async function getDebtPaymentsCashDefaults(req, res) {
+  try {
+    const debtId = Number(req.params.debtId);
+
+    if (!Number.isInteger(debtId) || debtId <= 0) {
+      return res.status(400).json({
+        ok: false,
+        message: 'debtId inválido.'
+      });
+    }
+
+    const defaults = await debtPaymentsApi.getDebtCashDefaults(debtId);
+
+    if (!defaults) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Dívida não encontrada.'
+      });
+    }
+
+    return res.status(200).json({ ok: true, data: defaults });
+  } catch (error) {
+    return sendError(res, error, 'Erro ao buscar padrões do caixa.');
+  }
+}
+
 export async function deleteDebtPayment(req, res) {
   try {
     const id = Number(req.params.id);

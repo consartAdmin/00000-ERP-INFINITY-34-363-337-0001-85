@@ -363,6 +363,46 @@ function injectPaymentModal() {
             </div>
 
           </div>
+
+          <!-- Saída no caixa (Movimentações): criada junto com o pagamento -->
+          <div class="fields-inline fields-gap-3 payment-cash-row">
+            <div class="fields fields-h-5 fields-w-12 fields-font-3">
+              <label for="payment_cash_account">Conta (caixa)</label>
+              <select id="payment_cash_account" name="payment_cash_account"><option value="">Selecione...</option></select>
+            </div>
+
+            <div class="fields fields-h-5 fields-w-12 fields-font-3">
+              <label for="payment_cash_category">Categoria</label>
+              <select id="payment_cash_category" name="payment_cash_category"><option value="">Selecione...</option></select>
+            </div>
+
+            <div class="fields fields-h-5 fields-w-12 fields-font-3">
+              <label for="payment_cash_subcategory">Subcategoria</label>
+              <select id="payment_cash_subcategory" name="payment_cash_subcategory"><option value="">Selecione...</option></select>
+            </div>
+
+            <div class="fields fields-h-5 fields-w-15 fields-font-3">
+              <label for="payment_cash_chart_label">Conta Contábil</label>
+              <input id="payment_cash_chart_label" readonly placeholder="Selecione a conta contábil">
+              <input type="hidden" id="payment_cash_chart_id" name="payment_cash_chart_id">
+            </div>
+
+            <div class="cx-field-search" style="display:flex;align-items:center;align-self:flex-end;height:25px;">
+              <button type="button" id="payment_cash_chart_search" class="action-icon action-icon--search"
+                title="Buscar conta contábil" aria-label="Buscar conta contábil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+            </div>
+
+            <div class="fields fields-h-5 fields-w-20 fields-font-3">
+              <label for="payment_cash_files_btn">Anexos (vão para a movimentação)</label>
+              <div id="payment_cash_files_box" style="display:flex;align-items:center;gap:6px;height:25px;min-width:0;">
+                <button type="button" id="payment_cash_files_btn" class="btn btn-flat btn-sm">Anexar</button>
+                <span id="payment_cash_files_label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#64748b;">Nenhum arquivo</span>
+                <button type="button" id="payment_cash_files_clear" class="action-icon action-icon--cancel"
+                  title="Remover anexos escolhidos" aria-label="Remover anexos escolhidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                <input type="file" id="payment_cash_files" accept=".pdf,.xml,.png,.jpg,.jpeg,.webp" multiple hidden>
+              </div>
+            </div>
+          </div>
         </form>
         
         <div class="modal__body">

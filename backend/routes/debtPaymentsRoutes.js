@@ -13,7 +13,8 @@ import {
   getDebtPaymentById,
   createDebtPayment,
   deleteDebtPayment,
-  getDebtPaymentsSummary
+  getDebtPaymentsSummary,
+  getDebtPaymentsCashDefaults
 } from '../controllers/debtPaymentsController.js';
 
 const router = Router();
@@ -27,6 +28,9 @@ router.get('/debts/:debtId/payments', listDebtPayments);
 
 // Resumo dos pagamentos da dívida
 router.get('/debts/:debtId/payments/summary', getDebtPaymentsSummary);
+
+// Classificação sugerida para a SAÍDA no caixa (Conta, Categoria, Conta Contábil)
+router.get('/debts/:debtId/payments/cash-defaults', getDebtPaymentsCashDefaults);
 
 // Criar pagamento para a dívida
 router.post('/debts/:debtId/payments', createDebtPayment);

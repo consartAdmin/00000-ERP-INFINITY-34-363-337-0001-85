@@ -12,6 +12,10 @@ import {
   normalizeInstallmentNumber
 } from './debtPayments.utils.js';
 import { recalcDebtById } from './debtPaymentsRecalc.repository.js';
+import {
+  ensureDebtPaymentCashColumn,
+  createDebtPaymentCashMovement
+} from './debtPaymentsCashMovement.repository.js';
 
 export async function createPayment(payload = {}) {
   const debtId = Number(payload.debt_id || payload.debtId);
@@ -47,6 +51,9 @@ export async function createPayment(payload = {}) {
   const receiptNumber = safeText(payload.receipt_number || payload.receiptNumber, 80);
   const notes = safeText(payload.notes, 5000);
 
+  // Fora da transação: o DDL não pode esperar pelos locks dela
+  await ensureDebtPaymentCashColumn();
+
   const client = await pool.connect();
 
   try {
@@ -56,6 +63,11 @@ export async function createPayment(payload = {}) {
       `
         SELECT
           id,
+          code,
+          description,
+          creditor_name,
+          document_number,
+          reference_number,
           installment_total
         FROM ${TB_DEBTS}
         WHERE id = $1
@@ -124,12 +136,21 @@ export async function createPayment(payload = {}) {
     );
 
     const payment = insRes.rows[0];
+
+    // Todo pagamento vira uma SAÍDA no caixa (Movimentações)
+    const cashMovement = await createDebtPaymentCashMovement(client, {
+      payment,
+      debt,
+      cash: payload.cash || {}
+    });
+
     const updatedDebt = await recalcDebtById(client, debtId);
 
     await client.query('COMMIT');
 
     return {
-      payment,
+      payment: { ...payment, cash_movement_id: cashMovement.id },
+      cash_movement_id: cashMovement.id,
       debt: updatedDebt
     };
   } catch (error) {

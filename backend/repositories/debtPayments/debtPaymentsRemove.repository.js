@@ -6,6 +6,10 @@
 import pool from '../../config/db.js';
 import { TB_PAYMENTS } from './debtPayments.constants.js';
 import { recalcDebtById } from './debtPaymentsRecalc.repository.js';
+import {
+  ensureDebtPaymentCashColumn,
+  deleteDebtPaymentCashMovement
+} from './debtPaymentsCashMovement.repository.js';
 
 export async function deletePayment(id) {
   const paymentId = Number(id);
@@ -13,6 +17,8 @@ export async function deletePayment(id) {
   if (!Number.isInteger(paymentId) || paymentId <= 0) {
     throw new Error('ID do pagamento inválido.');
   }
+
+  await ensureDebtPaymentCashColumn();
 
   const client = await pool.connect();
 
@@ -35,6 +41,9 @@ export async function deletePayment(id) {
 
     const payment = payRes.rows[0];
 
+    // A SAÍDA do caixa sai junto (antes do DELETE, enquanto o vínculo existe)
+    const deletedCashMovements = await deleteDebtPaymentCashMovement(client, paymentId);
+
     await client.query(
       `DELETE FROM ${TB_PAYMENTS} WHERE id = $1`,
       [paymentId]
@@ -47,6 +56,7 @@ export async function deletePayment(id) {
     return {
       deleted: true,
       payment_id: paymentId,
+      deleted_cash_movements: deletedCashMovements,
       debt
     };
   } catch (error) {

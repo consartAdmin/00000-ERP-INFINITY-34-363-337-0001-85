@@ -22,6 +22,12 @@ import {
 
 import { refreshAll } from './debts.filters.js';
 import { openDebtPaymentsModal } from './debts.modal.js';
+import {
+  applyPaymentCashDefaults,
+  getPaymentCashPayload,
+  hasPaymentCashFiles,
+  uploadPaymentCashFiles
+} from './debts.paymentCash.js';
 
 /* ──────────────────────────────────────────────────────────────────────
  * Installments state
@@ -448,12 +454,22 @@ export async function openPaymentsModal(debtId, description = '') {
   resetPaymentForm(debtId);
 
   if (els.paymentModalSubtitle) {
-    els.paymentModalSubtitle.textContent = description
-      ? `Histórico e parcelas — ${description}`
+    const debt = (state.rows || []).find(
+      (row) => Number(row.id ?? row.debt_id) === Number(debtId)
+    );
+    const creditor = String(debt?.creditor_name || '').trim();
+    const parts = [description, creditor].filter(Boolean);
+
+    els.paymentModalSubtitle.textContent = parts.length
+      ? `Histórico e parcelas — ${parts.join(' — ')}`
       : 'Histórico e parcelas da dívida.';
   }
 
   openDebtPaymentsModal();
+
+  applyPaymentCashDefaults(debtId).catch((error) => {
+    console.warn('[debts] padrões do caixa', error);
+  });
 
   try {
     await loadPayments(debtId);
@@ -505,7 +521,9 @@ export async function submitPaymentForm(event) {
       discount_amount: toNumber(els.payment_discount?.value),
       payment_method: els.payment_method?.value || null,
       receipt_number: els.receipt_number?.value.trim() || null,
-      notes: els.payment_notes?.value.trim() || null
+      notes: els.payment_notes?.value.trim() || null,
+      // Classificação da SAÍDA criada em Movimentações
+      cash: getPaymentCashPayload()
     };
 
     if (!payload.payment_date) {
@@ -516,14 +534,31 @@ export async function submitPaymentForm(event) {
       throw new Error('Informe um valor de pagamento maior que zero.');
     }
 
-    await fetchJSON(`${API_BASE}/debts/${debtId}/payments`, {
+    const result = await fetchJSON(`${API_BASE}/debts/${debtId}/payments`, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
 
-    showToast('Pagamento registrado com sucesso.', 'success');
+    const cashMovementId = Number(result?.cash_movement_id || 0);
+    let uploadFailed = [];
+
+    if (cashMovementId && hasPaymentCashFiles()) {
+      const upload = await uploadPaymentCashFiles(cashMovementId);
+      uploadFailed = upload.failed;
+    }
+
+    if (uploadFailed.length) {
+      showToast(
+        `Pagamento registrado e lançado no caixa, mas não foi possível anexar: ${uploadFailed.join(', ')}. ` +
+        'Anexe pela tela Movimentações.',
+        'error'
+      );
+    } else {
+      showToast('Pagamento registrado e lançado em Movimentações.', 'success');
+    }
 
     resetPaymentForm(debtId);
+    applyPaymentCashDefaults(debtId).catch(() => {});
 
     await loadPayments(debtId);
     await refreshAll();
@@ -538,7 +573,7 @@ export async function submitPaymentForm(event) {
  * ────────────────────────────────────────────────────────────────────── */
 
 export async function deletePayment(paymentId) {
-  const ok = window.confirm('Deseja realmente excluir este pagamento?');
+  const ok = window.confirm('Deseja realmente excluir este pagamento? A movimentação dele no caixa (e os anexos) também será excluída.');
   if (!ok) return;
 
   try {
