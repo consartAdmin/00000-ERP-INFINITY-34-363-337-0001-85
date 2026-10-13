@@ -61,7 +61,9 @@ export function coletarCreate(dom) {
 
     observacao: dom.elObsHidden?.value || null,
 
-    is_deductible: dom.elIsDeductible?.checked === true,
+    is_deductible: dom.elIsDeductible?.value !== 'false',
+    deduct_charges_only: dom.elIsDeductible?.value === 'encargos',
+    is_pis_cofins_creditable: dom.elIsPisCofinsCreditable?.value === 'true',
 
     /*
      * Os arquivos binários não são enviados neste JSON.
@@ -222,7 +224,11 @@ function limparFormularioCadastro(dom, form) {
 
   // Mantém o padrão marcado após o reset
   if (dom.elIsDeductible) {
-    dom.elIsDeductible.checked = true;
+    dom.elIsDeductible.value = 'true';
+  }
+
+  if (dom.elIsPisCofinsCreditable) {
+    dom.elIsPisCofinsCreditable.value = 'false';
   }
 
   const inputArquivo =

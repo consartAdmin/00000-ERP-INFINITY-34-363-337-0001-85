@@ -26,6 +26,7 @@ import {
 } from './cashMoviments.create.js?v=8';
 
 import { openBatchEditModal } from './cashMoviments.batchEdit.js';
+import { isCmvSubcategory } from './cashMoviments.editModal.js';
 
 import { applyAnoMes } from './cashMoviments.filters.js';
 
@@ -203,14 +204,9 @@ export function bindEvents(dom) {
     await onSubmitEdicao(dom, event);
   });
 
-  document.addEventListener('keydown', (event) => {
-    if (
-      event.key === 'Escape' &&
-      dom.modal &&
-      !dom.modal.hasAttribute('hidden')
-    ) {
-      fecharModalEditar(dom);
-    }
+  // Esc é tratado pelo modal.js; aqui só limpa o formulário quando ele fecha.
+  dom.modal?.addEventListener('modal:close', () => {
+    if (state.movEmEdicao || window.__movIdEdicao) fecharModalEditar(dom);
   });
 
   // ────────────────────────────────────────────────────────────────────
@@ -390,6 +386,21 @@ export function bindEvents(dom) {
       dom.elEditCategoria,
       dom.elEditSubcategoria
     );
+  });
+
+  // Dedutível no PIS/COFINS: C.M.V (compra para revenda) sugere "Sim".
+  const sugerirPisCofins = (subSelect, pisSelect) => {
+    if (!subSelect || !pisSelect) return;
+    const name = subSelect.selectedOptions?.[0]?.textContent || '';
+    pisSelect.value = isCmvSubcategory(name) ? 'true' : 'false';
+  };
+
+  dom.elSubcategoria?.addEventListener('change', () => {
+    sugerirPisCofins(dom.elSubcategoria, dom.elIsPisCofinsCreditable);
+  });
+
+  dom.elEditSubcategoria?.addEventListener('change', () => {
+    sugerirPisCofins(dom.elEditSubcategoria, dom.elEditIsPisCofinsCreditable);
   });
 
   // ────────────────────────────────────────────────────────────────────

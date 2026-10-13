@@ -3,7 +3,7 @@
 // ║ CONSART ERP | Caixa                                                  ║
 // ║ - Modal no padrão MODALS.CSS (criado dinamicamente)                  ║
 // ║ - Campos: Tipo, Tipo de Documento, Conta, Conta Contábil,            ║
-// ║           Categoria, Subcategoria                                    ║
+// ║           Categoria, Subcategoria, Dedutível IRPJ/CSLL e PIS/COFINS  ║
 // ║ - "— Não alterar —" mantém o valor atual de cada movimentação        ║
 // ║ - PATCH /api/caixa/movimentacoes/lote { ids, changes }               ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -25,6 +25,7 @@ import { openChartAccountsModalSearch } from '/public/modalsSearch/chartAccounts
 const MODAL_ID = 'cashBatchEditModal';
 const KEEP = '';
 const CLEAR = '__clear__';
+const FROM_SUBCATEGORY = '__subcategory__';
 
 const escapeHtml = (value) => String(value ?? '')
   .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -116,6 +117,28 @@ function buildModal(count) {
                 </select>
               </div>
             </div>
+
+            <div class="modal-form-grid modal-form-grid--3">
+              <div class="fields fields-h-6 bem-field">
+                <label for="bemDedutivel">Dedutível no IRPJ/CSLL</label>
+                <select id="bemDedutivel">
+                  <option value="">— Não alterar —</option>
+                  <option value="true">Sim, dedutível</option>
+                  <option value="encargos">Só juros, multas e encargos</option>
+                  <option value="false">Não dedutível</option>
+                  <option value="${FROM_SUBCATEGORY}">Seguir o padrão da subcategoria</option>
+                </select>
+              </div>
+
+              <div class="fields fields-h-6 bem-field">
+                <label for="bemPisCofins">Dedutível no PIS/COFINS</label>
+                <select id="bemPisCofins">
+                  <option value="">— Não alterar —</option>
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
+            </div>
           </form>
         </div>
 
@@ -162,6 +185,8 @@ export async function openBatchEditModal(dom) {
   const chart = $('#bemChart');
   const categoria = $('#bemCategoria');
   const subcategoria = $('#bemSubcategoria');
+  const dedutivel = $('#bemDedutivel');
+  const pisCofins = $('#bemPisCofins');
   const submit = root.querySelector('button[form="bemForm"]');
 
   function close() {
@@ -182,7 +207,7 @@ export async function openBatchEditModal(dom) {
 
   // Destaque visual dos campos que serão alterados
   const markChanged = (select) => select.classList.toggle('bem-changed', select.value !== KEEP);
-  [tipo, docType, conta, chart, categoria, subcategoria].forEach((select) => {
+  [tipo, docType, conta, chart, categoria, subcategoria, dedutivel, pisCofins].forEach((select) => {
     select.addEventListener('change', () => markChanged(select));
   });
 
@@ -263,6 +288,17 @@ export async function openBatchEditModal(dom) {
       changes.subcategory_id = subcategoria.value ? Number(subcategoria.value) : null;
       summary.push(`Categoria: <b>${label(categoria)}</b>`);
       summary.push(`Subcategoria: <b>${subcategoria.value ? label(subcategoria) : 'sem subcategoria'}</b>`);
+    }
+
+    if (dedutivel.value) {
+      changes.is_deductible = dedutivel.value === FROM_SUBCATEGORY ? null : dedutivel.value !== 'false';
+      changes.deduct_charges_only = dedutivel.value === 'encargos';
+      summary.push(`Dedutível no IRPJ/CSLL: <b>${label(dedutivel)}</b>`);
+    }
+
+    if (pisCofins.value) {
+      changes.is_pis_cofins_creditable = pisCofins.value === 'true';
+      summary.push(`Dedutível no PIS/COFINS: <b>${label(pisCofins)}</b>`);
     }
 
     if (!summary.length) {

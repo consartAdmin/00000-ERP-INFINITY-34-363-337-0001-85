@@ -62,6 +62,7 @@ export function getDom() {
   const elChartAccountLabel = qs('#chartAccountLabel');
 
   const elIsDeductible = qs('#isDeductible');
+  const elIsPisCofinsCreditable = qs('#isPisCofinsCreditable');
   const elObsHidden = qs('#observacaoHidden');
 
   // Hidden anexos (cadastro e edição)
@@ -106,6 +107,7 @@ export function getDom() {
 
   const elEditObs = qs('#edit_observacao');
   const elEditIsDeductible = qs('#edit_isDeductible');
+  const elEditIsPisCofinsCreditable = qs('#edit_isPisCofinsCreditable');
   const elListaAnexosEdicao = qs('#listaAnexosEdicao');
 
   // th sort
@@ -165,6 +167,7 @@ export function getDom() {
     elChartAccountLabel,
 
     elIsDeductible,
+    elIsPisCofinsCreditable,
     elObsHidden,
 
     // anexos hidden
@@ -208,6 +211,7 @@ export function getDom() {
 
     elEditObs,
     elEditIsDeductible,
+    elEditIsPisCofinsCreditable,
     elListaAnexosEdicao,
 
     // sorting

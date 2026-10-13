@@ -8,6 +8,7 @@
 
 'use strict';
 
+import { Modal } from '/public/includes/js/modal.js';
 import { API, PATH_MOV } from './cashMoviments.config.js';
 import { state } from './cashMoviments.state.js';
 
@@ -54,6 +55,10 @@ function warnDed(...args) {
   }
 }
 
+export function isCmvSubcategory(name) {
+  return String(name || '').toUpperCase().replace(/[^A-Z]/g, '') === 'CMV';
+}
+
 function boolFromApi(value) {
   return (
     value === true ||
@@ -85,21 +90,16 @@ function abrirModalElement(modal) {
     throw new Error('Modal #modalEditar não encontrado no DOM.');
   }
 
+  // Abre/fecha pelo controlador global (/public/includes/js/modal.js).
+  Modal.setup();
   modal.removeAttribute('hidden');
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden', 'false');
-
-  document.body.classList.add('modal-open');
+  Modal.open(modal);
 }
 
 function fecharModalElement(modal) {
   if (!modal) return;
 
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden', 'true');
-  modal.setAttribute('hidden', '');
-
-  document.body.classList.remove('modal-open');
+  Modal.close(modal);
 }
 
 /* =========================================================================
@@ -156,69 +156,66 @@ function initEditAttachmentDropzone() {
     return true;
   };
 
-  const selectFile = (file, autoUpload = false) => {
+  // Envia assim que um arquivo válido é escolhido (quadrado de anexo: clique ou arrastar).
+  const autoUpload = () => {
+    // Evita dois envios quando o navegador dispara eventos muito próximos.
+    if (dropzone.dataset.uploadPending === 'true') return;
+
+    dropzone.dataset.uploadPending = 'true';
+
+    // Confirma novamente o ID no módulo de upload antes de disparar o botão.
+    window.setTimeout(async () => {
+      try {
+        const movementId = Number(
+          state.movEmEdicao ||
+          window.__movIdEdicao ||
+          document.getElementById('edit_id')?.value
+        );
+
+        if (!Number.isInteger(movementId) || movementId <= 0) {
+          throw new Error(
+            'Não foi possível identificar a movimentação para o anexo.'
+          );
+        }
+
+        await window.__caixaUpload?.setMovId?.(movementId);
+
+        // O modal pode ter sido fechado enquanto o hook era processado.
+        if (
+          Number(state.movEmEdicao) !== movementId ||
+          !fileInput.files?.length
+        ) {
+          return;
+        }
+
+        uploadButton.disabled = false;
+        uploadButton.click();
+      } catch (error) {
+        console.error(
+          '[CAIXA][ANEXO] Falha ao preparar upload:',
+          error
+        );
+
+        window.alert(
+          error?.message || 'Não foi possível enviar o anexo.'
+        );
+      } finally {
+        delete dropzone.dataset.uploadPending;
+      }
+    }, 0);
+  };
+
+  const selectFile = (file) => {
     if (!validateFile(file)) return;
 
     const transfer = new DataTransfer();
     transfer.items.add(file);
     fileInput.files = transfer.files;
 
-    dropzone.classList.remove('is-dragover', 'is-invalid');
-    dropzone.classList.add('has-file');
-    dropzone.dataset.fileName = file.name;
-    uploadButton.disabled = false;
-
+    // o listener de change valida, marca a dropzone e dispara o envio
     fileInput.dispatchEvent(
       new Event('change', { bubbles: true })
     );
-
-    if (autoUpload) {
-      // Evita dois envios quando o navegador dispara eventos muito próximos.
-      if (dropzone.dataset.uploadPending === 'true') return;
-
-      dropzone.dataset.uploadPending = 'true';
-
-      // Confirma novamente o ID no módulo de upload antes de disparar o botão.
-      window.setTimeout(async () => {
-        try {
-          const movementId = Number(
-            state.movEmEdicao ||
-            window.__movIdEdicao ||
-            document.getElementById('edit_id')?.value
-          );
-
-          if (!Number.isInteger(movementId) || movementId <= 0) {
-            throw new Error(
-              'Não foi possível identificar a movimentação para o anexo.'
-            );
-          }
-
-          await window.__caixaUpload?.setMovId?.(movementId);
-
-          // O modal pode ter sido fechado enquanto o hook era processado.
-          if (
-            Number(state.movEmEdicao) !== movementId ||
-            !fileInput.files?.length
-          ) {
-            return;
-          }
-
-          uploadButton.disabled = false;
-          uploadButton.click();
-        } catch (error) {
-          console.error(
-            '[CAIXA][ANEXO] Falha ao preparar upload:',
-            error
-          );
-
-          window.alert(
-            error?.message || 'Não foi possível enviar o anexo.'
-          );
-        } finally {
-          delete dropzone.dataset.uploadPending;
-        }
-      }, 0);
-    }
   };
 
   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(
@@ -267,7 +264,7 @@ function initEditAttachmentDropzone() {
       );
     }
 
-    selectFile(file, true);
+    selectFile(file);
   });
 
   fileInput.addEventListener('change', () => {
@@ -291,6 +288,7 @@ function initEditAttachmentDropzone() {
     dropzone.classList.add('has-file');
     dropzone.dataset.fileName = file.name;
     uploadButton.disabled = false;
+    autoUpload();
   });
 }
 
@@ -831,11 +829,39 @@ function preencherDedutibilidade(
     rawMovement.dedutivel_irpj_csll ??
     movement.is_deductible ??
     movement.dedutivel_irpj_csll ??
+    rawMovement.is_deductible_final ??
+    movement.is_deductible_final ??
     null;
 
   const checked = boolFromApi(rawValue);
 
-  dom.elEditIsDeductible.checked = checked;
+  const chargesOnly = boolFromApi(
+    rawMovement.deduct_charges_only ??
+    movement.deduct_charges_only ??
+    false
+  );
+
+  dom.elEditIsDeductible.value = !checked ? 'false' : (chargesOnly ? 'encargos' : 'true');
+
+  // PIS/COFINS: sem valor gravado, C.M.V (compra para revenda) gera crédito.
+  if (dom.elEditIsPisCofinsCreditable) {
+    const rawPis =
+      rawMovement.is_pis_cofins_creditable ??
+      movement.is_pis_cofins_creditable ??
+      null;
+
+    const subName =
+      rawMovement.subcategoria_nome ??
+      movement.subcategoria_nome ??
+      dom.elEditSubcategoria?.selectedOptions?.[0]?.textContent ??
+      '';
+
+    const pisCreditable = rawPis === null || rawPis === undefined
+      ? isCmvSubcategory(subName)
+      : boolFromApi(rawPis);
+
+    dom.elEditIsPisCofinsCreditable.value = pisCreditable ? 'true' : 'false';
+  }
 
   logDed('LOAD CHECKBOX', {
     id,
@@ -950,7 +976,13 @@ export async function onSubmitEdicao(dom, event) {
       dom.elEditObs?.value || null,
 
     is_deductible:
-      dom.elEditIsDeductible?.checked === true,
+      dom.elEditIsDeductible?.value !== 'false',
+
+    deduct_charges_only:
+      dom.elEditIsDeductible?.value === 'encargos',
+
+    is_pis_cofins_creditable:
+      dom.elEditIsPisCofinsCreditable?.value === 'true',
 
     anexos: attachments,
     is_active: true,
