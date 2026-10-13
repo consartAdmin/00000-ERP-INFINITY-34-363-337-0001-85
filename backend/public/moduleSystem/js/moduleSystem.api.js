@@ -18,12 +18,12 @@ export async function buscarModulos(search = '') {
   return unwrapArray(await request(url));
 }
 
-export function salvarModulo({ id, name, path, isActive }) {
+export function salvarModulo({ id, ...dados }) {
   const editando = Boolean(id);
   return request(editando ? `${API_BASE}/${encodeURIComponent(id)}` : API_BASE, {
     method: editando ? 'PUT' : 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, path, isActive }),
+    body: JSON.stringify(dados),
   });
 }
 

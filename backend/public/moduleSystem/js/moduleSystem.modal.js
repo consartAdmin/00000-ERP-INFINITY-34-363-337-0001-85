@@ -1,15 +1,31 @@
-export function showToast(message, type = 'info') {
-  const prefix = {
-    success: '✅',
-    error: '❌',
-    warn: '⚠️',
-    warning: '⚠️',
-    info: 'ℹ️',
-  }[type] || 'ℹ️';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
-  window.alert(`${prefix} ${message}`);
+const TITLES = {
+  success: 'Sucesso',
+  error: 'Erro',
+  warn: 'Atenção',
+  warning: 'Atenção',
+  info: 'Informação',
+};
+
+export function showToast(message, type = 'info') {
+  const variant = type === 'warn' ? 'warning' : type;
+
+  return showCenterModal({
+    variant,
+    title: TITLES[type] || TITLES.info,
+    message,
+  });
 }
 
-export function confirmarExclusao(nome) {
-  return window.confirm(`Tem certeza que deseja excluir o módulo "${nome}"?`);
+export async function confirmarExclusao(nome) {
+  const ok = await showCenterModal({
+    variant: 'warning',
+    title: 'Confirmar exclusão',
+    message: `Tem certeza que deseja excluir o módulo "${nome}"?`,
+    okText: 'Sim, excluir',
+    closeText: 'Cancelar',
+  });
+
+  return ok === true;
 }
