@@ -5,7 +5,8 @@
 export const TB_SCI = 'public."salesCommissionsFromInvoices"';
 export const TB_INVOICES = 'public."invoicesIssued"';
 export const TB_ORDERS = 'public."orders"';
-export const TB_ORDER_ITEMS = 'public."orderItems"';
+// Itens do pedido: a tabela é "ordersItems" (SKU na coluna product_code).
+export const TB_ORDER_ITEMS = 'public."ordersItems"';
 export const TB_PRICES = 'public."prices"';
 export const TB_PC = 'public."priceCommissions"';
 export const TB_SELLERS = 'public."sellers"';

@@ -1,254 +1,46 @@
-.sci-page {
-  height: calc(100vh - 70px);
-  overflow: hidden;
-  padding: 22px;
-  background: #f4f7fb;
-  color: #172033;
-}
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ salesCommissionsFromInvoices.css — ajustes locais                    ║
+   ║ O layout vem do padrão global (style.css); aqui só o que é da tela.  ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
 
-.sci-header {
+/* Botão de busca do vendedor: mesma altura dos campos (fields-h-6) */
+.sci-field-search {
   display: flex;
-  justify-content: space-between;
+  flex: 0 0 auto;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 16px;
+  align-self: flex-end;
+  height: var(--fields-height-6, 30px);
 }
 
-.sci-header h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 800;
-}
-
-.sci-header p {
-  margin: 4px 0 0;
-  color: #607086;
-}
-
-.sci-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.sci-filters {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(150px, 1fr)) auto auto;
-  gap: 12px;
-  align-items: end;
-  background: #fff;
-  border: 1px solid #dce4ef;
-  border-radius: 16px;
-  padding: 14px;
-  margin-bottom: 14px;
-}
-
-.sci-filters label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #44546a;
-}
-
-.sci-filters input {
-  height: 40px;
-  border: 1px solid #cbd6e2;
-  border-radius: 10px;
-  padding: 0 12px;
-  outline: none;
-}
-
-.sci-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
-.kpi-card {
-  background: #fff;
-  border: 1px solid #dce4ef;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 8px 22px rgba(15, 31, 56, 0.06);
-}
-
-.kpi-card span {
-  display: block;
-  color: #66778f;
-  font-size: 13px;
-  margin-bottom: 8px;
-}
-
-.kpi-card strong {
-  font-size: 22px;
-  color: #172033;
-}
-
-.sci-table-box {
-  height: calc(100vh - 330px);
-  background: #fff;
-  border: 1px solid #dce4ef;
-  border-radius: 18px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.table-top {
-  height: 58px;
-  padding: 0 16px;
-  border-bottom: 1px solid #e5edf5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.table-top h2 {
-  margin: 0;
-  font-size: 17px;
-}
-
-#statusText {
-  color: #6c7a8d;
-  font-size: 13px;
-}
-
-.table-scroll {
-  flex: 1;
-  overflow: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 1350px;
-}
-
-thead th {
-  position: sticky;
-  top: 0;
-  background: #eef3f9;
-  z-index: 2;
-  color: #334155;
-  font-size: 12px;
-  text-align: left;
-  padding: 11px 10px;
-  border-bottom: 1px solid #dce4ef;
-  white-space: nowrap;
-}
-
-tbody td {
-  padding: 10px;
-  border-bottom: 1px solid #edf2f7;
-  font-size: 13px;
-  color: #223044;
-  white-space: nowrap;
-}
-
-tbody tr:hover {
-  background: #f8fbff;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.badge {
-  display: inline-flex;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: #edf2ff;
-  color: #254b9b;
-  font-weight: 700;
-  font-size: 12px;
-}
-
-.btn {
-  height: 40px;
-  border: none;
-  border-radius: 10px;
-  padding: 0 14px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-}
-
-.btn.primary {
-  background: #1f5eff;
-  color: #fff;
-}
-
-.btn.warning {
-  background: #ffb020;
-  color: #2b1b00;
-}
-
-.btn.neutral {
-  background: #e9eef5;
-  color: #26364a;
-}
-
-.pagination {
-  height: 54px;
-  border-top: 1px solid #e5edf5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-}
-
-.empty-row {
-  text-align: center;
-  padding: 30px;
-  color: #718096;
-}
-
-@media (max-width: 1100px) {
-  .sci-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .sci-filters {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .sci-kpis {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .sci-table-box {
-    height: calc(100vh - 430px);
-  }
-}
-
-.seller-picker {
-  display: grid;
-  grid-template-columns: 1fr 44px;
-  gap: 8px;
-}
-
-.seller-picker input[readonly] {
-  background: #f8fafc;
-  cursor: pointer;
-}
-
-.seller-picker .btn {
+.sci-field-search > .action-icon {
+  height: var(--fields-height-6, 30px);
+  width: var(--fields-height-6, 30px);
   padding: 0;
 }
 
-.btn.pdf {
-  background: #111827;
-  color: #fff;
+#salesperson {
+  cursor: pointer;
 }
 
-.btn.pdf:hover {
-  background: #020617;
+/* Números alinhados à direita */
+#tableBody td.text-right {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Tipo da comissão */
+.sci-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+#tableBody td.empty-row {
+  padding: 24px;
+  text-align: center;
+  color: #94a3b8;
 }

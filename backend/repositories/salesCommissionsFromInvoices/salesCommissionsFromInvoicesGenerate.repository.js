@@ -28,22 +28,24 @@ export async function generateSalesCommissionsFromInvoices({
 
     const sql = `
         WITH source_rows AS (
-            SELECT
+            /*
+             * DISTINCT ON: um item de pedido entra uma vez só, mesmo que o
+             * pedido tenha mais de uma NF-e (fica a mais recente). Sem isso o
+             * ON CONFLICT (order_item_id) falha ao atualizar a mesma linha 2x.
+             */
+            SELECT DISTINCT ON (oi.order_item_id)
                 ii.invoice_id,
                 ii.order_id,
                 oi.order_item_id,
                 ii.issued_date AS issue_date,
 
-                COALESCE(
-                    NULLIF(regexp_replace(sb.seller_id::text, '[^0-9]', '', 'g'), '')::int,
-                    NULLIF(regexp_replace(b.seller_id::text, '[^0-9]', '', 'g'), '')::int
-                ) AS seller_id,
+                seller.seller_id,
 
                 COALESCE(s.name, 'SEM VENDEDOR') AS seller_name,
 
-                LEFT(COALESCE(oi.sku::text, ''), 20) AS product_id,
-                LEFT(COALESCE(oi.sku::text, ''), 40) AS product_code,
-                oi.sku,
+                LEFT(COALESCE(oi.product_code::text, ''), 20) AS product_id,
+                LEFT(COALESCE(oi.product_code::text, ''), 40) AS product_code,
+                oi.product_code AS sku,
 
                 COALESCE(
                     oi.price_id,
@@ -63,8 +65,8 @@ export async function generateSalesCommissionsFromInvoices({
                 )::numeric AS item_total,
 
                 COALESCE(
-                    o.customer_name,
-                    o.nome_razao_social,
+                    NULLIF(o.customer_name, ''),
+                    NULLIF(ii.customer_name, ''),
                     ''
                 ) AS customer_name,
 
@@ -87,20 +89,32 @@ export async function generateSalesCommissionsFromInvoices({
                     bi2.price_id
                 FROM ${TB_BUDGET_ITEMS} bi2
                 WHERE bi2.budget_id = o.budget_id
-                  AND TRIM(bi2.product_code::text) = TRIM(oi.sku::text)
+                  AND TRIM(bi2.product_code::text) = TRIM(oi.product_code::text)
                 ORDER BY bi2.budget_item_id DESC
                 LIMIT 1
             ) bi ON true
 
-            LEFT JOIN ${TB_SELLER_BY_BUDGETS} sb
-                ON sb.budget_id = o.budget_id
-               AND COALESCE(sb.active, true) = true
+            -- Um vendedor por orçamento (pode haver mais de um ativo)
+            LEFT JOIN LATERAL (
+                SELECT
+                    NULLIF(regexp_replace(sb2.seller_id::text, '[^0-9]', '', 'g'), '')::int AS seller_id
+                FROM ${TB_SELLER_BY_BUDGETS} sb2
+                WHERE sb2.budget_id = o.budget_id
+                  AND COALESCE(sb2.active, true) = true
+                ORDER BY sb2.seller_id
+                LIMIT 1
+            ) sb ON true
+
+            CROSS JOIN LATERAL (
+                SELECT COALESCE(
+                    sb.seller_id,
+                    NULLIF(regexp_replace(b.seller_id::text, '[^0-9]', '', 'g'), '')::int,
+                    NULLIF(regexp_replace(o.seller_id::text, '[^0-9]', '', 'g'), '')::int
+                ) AS seller_id
+            ) seller
 
             LEFT JOIN ${TB_SELLERS} s
-                ON s.id = COALESCE(
-                    NULLIF(regexp_replace(sb.seller_id::text, '[^0-9]', '', 'g'), '')::int,
-                    NULLIF(regexp_replace(b.seller_id::text, '[^0-9]', '', 'g'), '')::int
-                )
+                ON s.id = seller.seller_id
 
             LEFT JOIN ${TB_PRICES} p
                 ON p.price_id = COALESCE(
@@ -122,6 +136,8 @@ export async function generateSalesCommissionsFromInvoices({
               )
               AND ($1::date IS NULL OR ii.issued_date >= $1::date)
               AND ($2::date IS NULL OR ii.issued_date <= $2::date)
+
+            ORDER BY oi.order_item_id, ii.issued_date DESC, ii.invoice_id DESC
         )
 
         INSERT INTO ${TB_SCI} (

@@ -4,6 +4,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import { openSellersModalSearch } from '/public/modalsSearch/sellersModalSearch.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 const API_BASE = '/api/sales-commissions-from-invoices';
 
@@ -34,6 +35,8 @@ const els = {
     btnClear: $('btnClear'),
     btnPrev: $('btnPrev'),
     btnNext: $('btnNext'),
+    pageSize: $('pageSize'),
+    filtersForm: $('filtersForm'),
 
     tableBody: $('tableBody'),
     statusText: $('statusText'),
@@ -171,7 +174,7 @@ function renderRows() {
       <td>${r.price_table_name || r.price_id || '-'}</td>
       <td class="text-right">${number(r.quantity, 3)}</td>
       <td class="text-right">${money(r.item_total)}</td>
-      <td><span class="badge">${r.commission_type || '-'}</span></td>
+      <td><span class="sci-badge">${r.commission_type || '-'}</span></td>
       <td class="text-right">${r.percent_value ? number(r.percent_value, 4) : '-'}</td>
       <td class="text-right">${r.fixed_value ? money(r.fixed_value) : '-'}</td>
       <td class="text-right"><strong>${money(r.item_commission)}</strong></td>
@@ -220,7 +223,7 @@ async function loadItems() {
         renderRows();
         renderPagination();
 
-        els.statusText.textContent = `${state.total.toLocaleString('pt-BR')} registro(s) encontrado(s).`;
+        els.statusText.textContent = `${state.total.toLocaleString('pt-BR')} ${state.total === 1 ? 'registro' : 'registros'}`;
     } catch (err) {
         console.error('[SCI] loadItems:', err);
         els.statusText.textContent = 'Erro ao carregar.';
@@ -239,9 +242,13 @@ async function refreshAll() {
 
 async function generateCommissions() {
     try {
-        const confirmed = confirm(
-            'Deseja gerar as comissões com base nas NF-e emitidas dentro do período filtrado?'
-        );
+        const confirmed = await showCenterModal({
+            variant: 'warning',
+            title: 'Gerar comissões',
+            message: 'Deseja gerar as comissões com base nas NF-e emitidas dentro do período filtrado?',
+            okText: 'Gerar',
+            closeText: 'Cancelar',
+        });
 
         if (!confirmed) return;
 
@@ -259,22 +266,30 @@ async function generateCommissions() {
             body: JSON.stringify(body),
         });
 
-        alert(
-            `Comissões geradas com sucesso!\n\nInseridas: ${data.generated?.inserted || 0}\nRecalculadas: ${data.recalculated?.updated || 0}`
-        );
+        showCenterModal({
+            variant: 'success',
+            title: 'Comissões geradas',
+            message: `Inseridas: ${data.generated?.inserted || 0}<br>Recalculadas: ${data.recalculated?.updated || 0}`,
+        });
 
         state.offset = 0;
         await refreshAll();
     } catch (err) {
         console.error('[SCI] generateCommissions:', err);
-        alert(`Erro ao gerar comissões:\n${err.message}`);
+        showCenterModal({ variant: 'error', title: 'Erro ao gerar comissões', message: err.message });
         setLoading('Erro ao gerar.');
     }
 }
 
 async function recalcCommissions() {
     try {
-        const confirmed = confirm('Deseja recalcular as regras de comissão das NF-e?');
+        const confirmed = await showCenterModal({
+            variant: 'warning',
+            title: 'Recalcular comissões',
+            message: 'Deseja recalcular as regras de comissão das NF-e?',
+            okText: 'Recalcular',
+            closeText: 'Cancelar',
+        });
 
         if (!confirmed) return;
 
@@ -287,12 +302,12 @@ async function recalcCommissions() {
             }),
         });
 
-        alert(`Recalculo concluído!\n\nAtualizadas: ${data.updated || 0}`);
+        showCenterModal({ variant: 'success', title: 'Recálculo concluído', message: `Atualizadas: ${data.updated || 0}` });
 
         await refreshAll();
     } catch (err) {
         console.error('[SCI] recalcCommissions:', err);
-        alert(`Erro ao recalcular:\n${err.message}`);
+        showCenterModal({ variant: 'error', title: 'Erro ao recalcular', message: err.message });
         setLoading('Erro ao recalcular.');
     }
 }
@@ -328,7 +343,14 @@ function bindEvents() {
     els.btnRefresh.addEventListener('click', refreshAll);
     els.btnPdf.addEventListener('click', generatePdf);
 
-    els.btnSearch.addEventListener('click', () => {
+    els.filtersForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        state.offset = 0;
+        refreshAll();
+    });
+
+    els.pageSize.addEventListener('change', () => {
+        state.limit = Number(els.pageSize.value) || 100;
         state.offset = 0;
         loadItems();
     });

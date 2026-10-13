@@ -2,127 +2,205 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="icon" type="image/png" href="/public/imagens/brasaoConsartInfinity.png">
-    <title>Comissões por NF-e | CONSART ERP</title>
+  <title>COMISSÕES POR NF-E | CONSART ERP</title>
 
-    <link rel="stylesheet" href="/public/modalsSearch/sellersModalSearch.css" />
-    <link rel="stylesheet" href="/public/includes/css/style.css" />
-    <link rel="stylesheet" href="/public/salesCommissionsFromInvoices/salesCommissionsFromInvoices.css" />
+  <link rel="icon" type="image/png" href="/public/imagens/brasaoConsartInfinity.png" />
+
+  <link rel="stylesheet" href="/public/modalsSearch/sellersModalSearch.css" />
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/salesCommissionsFromInvoices/salesCommissionsFromInvoices.css?v=2" />
 </head>
 
-<body>
-    <div id="appMenu"></div>
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
 
-    <main class="sci-page">
-        <section class="sci-header">
-            <div>
-                <h1>Comissões por NF-e</h1>
-                <p>Comissões reais geradas a partir das notas fiscais emitidas.</p>
+    <section class="table-layout-integrated">
+      <div class="table-layout-integrated__filter">
+
+        <!-- =================================================== -->
+        <!-- HEADER: TITLE + SUMMARY + BUTTONS                    -->
+        <!-- =================================================== -->
+
+        <div class="fields-inline fields-gap-3">
+
+          <div>
+            <h1 class="page-header__title">
+              Comissões por NF-e
+            </h1>
+
+            <p class="page-header__subtitle">
+              Comissões reais geradas a partir das notas fiscais emitidas.
+            </p>
+          </div>
+
+          <div class="summary summary--center summary-gap-8 summary-width-auto summary-flex-1">
+
+            <div class="summary-pill summary-pill--info summary-width-6 summary-height-5">
+              <span>Registros:&nbsp;</span>
+              <strong id="kpiTotal">0</strong>
             </div>
 
-            <div class="sci-actions">
-                <button id="btnGenerate" class="btn primary">Gerar Comissões</button>
-                <button id="btnRecalc" class="btn warning">Recalcular</button>
-                <button id="btnRefresh" class="btn neutral">Atualizar</button>
-                <button id="btnPdf" class="btn pdf">Gerar PDF</button>
-            </div>
-        </section>
-
-        <section class="sci-filters">
-            <label>
-                Data inicial
-                <input type="date" id="dateStart" />
-            </label>
-
-            <label>
-                Data final
-                <input type="date" id="dateEnd" />
-            </label>
-
-            <label>
-                Vendedor
-                <div class="seller-picker">
-                    <input type="text" id="salesperson" placeholder="Selecione um vendedor" readonly />
-                    <input type="hidden" id="sellerId" />
-                    <button id="btnSellerSearch" class="btn neutral" type="button">🔎</button>
-                </div>
-            </label>
-
-            <label>
-                Tabela de preço
-                <input type="number" id="priceId" placeholder="price_id" />
-            </label>
-
-            <button id="btnSearch" class="btn primary">Pesquisar</button>
-            <button id="btnClear" class="btn neutral">Limpar</button>
-        </section>
-
-        <section class="sci-kpis">
-            <div class="kpi-card">
-                <span>Total registros</span>
-                <strong id="kpiTotal">0</strong>
+            <div class="summary-pill summary-pill--warning summary-width-6 summary-height-5">
+              <span>Faturado:&nbsp;</span>
+              <strong id="kpiRevenue">R$ 0,00</strong>
             </div>
 
-            <div class="kpi-card">
-                <span>Total faturado</span>
-                <strong id="kpiRevenue">R$ 0,00</strong>
+            <div class="summary-pill summary-pill--success summary-width-6 summary-height-5">
+              <span>Comissão:&nbsp;</span>
+              <strong id="kpiCommission">R$ 0,00</strong>
             </div>
 
-            <div class="kpi-card">
-                <span>Total comissão</span>
-                <strong id="kpiCommission">R$ 0,00</strong>
+            <div class="summary-pill summary-pill--danger summary-width-6 summary-height-5">
+              <span>Sem regra:&nbsp;</span>
+              <strong id="kpiMissingRule">0</strong>
             </div>
 
-            <div class="kpi-card">
-                <span>Sem regra</span>
-                <strong id="kpiMissingRule">0</strong>
-            </div>
-        </section>
+          </div>
 
-        <section class="sci-table-box">
-            <div class="table-top">
-                <h2>Itens de comissão</h2>
-                <span id="statusText">Carregando...</span>
-            </div>
+          <div class="btn-inline">
+            <button id="btnGenerate" class="btn btn-new btn-sm" type="button">
+              Gerar Comissões
+            </button>
 
-            <div class="table-scroll" data-table-settings="salescommissionsfrominvoices.tablebody">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>NF-e</th>
-                            <th>Pedido</th>
-                            <th>Cliente</th>
-                            <th>Vendedor</th>
-                            <th>SKU</th>
-                            <th>Produto</th>
-                            <th>Tabela</th>
-                            <th>Qtd</th>
-                            <th>Total Item</th>
-                            <th>Tipo</th>
-                            <th>%</th>
-                            <th>Fixo</th>
-                            <th>Comissão</th>
-                        </tr>
-                    </thead>
+            <button id="btnRecalc" class="btn btn-new btn-sm" type="button">
+              Recalcular
+            </button>
 
-                    <tbody id="tableBody"></tbody>
-                </table>
+            <button id="btnRefresh" class="btn btn-new btn-sm" type="button">
+              Atualizar
+            </button>
+
+            <button id="btnPdf" class="btn btn-new btn-sm" type="button">
+              Gerar PDF
+            </button>
+          </div>
+
+        </div>
+
+        <!-- =================================================== -->
+        <!-- FILTERS                                             -->
+        <!-- =================================================== -->
+
+        <form id="filtersForm">
+          <div class="fields-inline fields-gap-3">
+
+            <div class="fields fields-h-6 fields-w-10 fields-font-3">
+              <label for="dateStart">Data inicial</label>
+              <input id="dateStart" type="date" />
             </div>
 
-            <div class="pagination">
-                <button id="btnPrev" class="btn neutral">Anterior</button>
-                <span id="pageInfo">Página 1</span>
-                <button id="btnNext" class="btn neutral">Próxima</button>
+            <div class="fields fields-h-6 fields-w-10 fields-font-3">
+              <label for="dateEnd">Data final</label>
+              <input id="dateEnd" type="date" />
             </div>
-        </section>
-    </main>
 
-    <script type="module" src="/public/includes/js/core.js"></script>
-    <script type="module" src="/public/salesCommissionsFromInvoices/salesCommissionsFromInvoices.js"></script>
+            <div class="fields fields-h-6 fields-w-20 fields-font-3">
+              <label for="salesperson">Vendedor</label>
+              <input id="salesperson" type="text" placeholder="Selecione um vendedor" readonly />
+              <input id="sellerId" type="hidden" />
+            </div>
+
+            <div class="sci-field-search">
+              <button id="btnSellerSearch" class="action-icon action-icon--search" type="button"
+                title="Buscar vendedor" aria-label="Buscar vendedor">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              </button>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-10 fields-font-3">
+              <label for="priceId">Tabela de preço</label>
+              <input id="priceId" type="number" placeholder="price_id" />
+            </div>
+
+            <div class="btn-inline btn-gap-3">
+              <button class="btn btn-new btn-sm" type="button" id="btnClear">
+                Limpar
+              </button>
+
+              <button class="btn btn-new btn-sm" type="submit" id="btnSearch">
+                Pesquisar
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div class="table-scroll table-height-500 table-row-h-20"
+          data-table-settings="salescommissionsfrominvoices.tablebody">
+          <table class="table table-zebra table-zebra-hover table-sticky-head">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>NF-e</th>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th>Vendedor</th>
+                <th>SKU</th>
+                <th>Produto</th>
+                <th>Tabela</th>
+                <th>Qtd</th>
+                <th>Total Item</th>
+                <th>Tipo</th>
+                <th>%</th>
+                <th>Fixo</th>
+                <th>Comissão</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =================================================== -->
+      <!-- TABLE FOOTER                                        -->
+      <!-- =================================================== -->
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill-success summary-width-5 summary-left-space-3">
+            <span id="statusText">
+              Carregando...
+            </span>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button id="btnPrev" type="button" class="btn btn-toolbar btn-sm">
+            Anterior
+          </button>
+
+          <span id="pageInfo">
+            Página 1 de 1
+          </span>
+
+          <button id="btnNext" type="button" class="btn btn-toolbar btn-sm">
+            Próxima
+          </button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="pageSize">
+            Mostrar
+          </label>
+          <div class="fields fields-h-6 fields-w-4 fields-font-3">
+            <select id="pageSize" class="table-footer__page-size-select">
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+              <option value="200">200</option>
+            </select>
+          </div>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/salesCommissionsFromInvoices/salesCommissionsFromInvoices.js?v=2"></script>
 </body>
 
 </html>
