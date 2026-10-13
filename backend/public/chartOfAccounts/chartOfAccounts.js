@@ -7,13 +7,15 @@
 
 'use strict';
 
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+
 const API_BASE = '/api/chart-of-accounts';
 
 const state = {
   rows: [],
   loading: false,
   page: 1,
-  limit: 20,
+  limit: 50,
   total: 0,
   pages: 1,
   autoLimit: false,
@@ -267,35 +269,15 @@ function renderRows(rows) {
         </td>
 
         <td>
-          <div class="coa-actions">
-            <button
-              type="button"
-              class="coa-action-btn coa-action-btn--edit"
-              data-action="edit"
-              data-id="${row.id}"
-            >
-              Editar
-            </button>
-
-            <button
-              type="button"
-              class="coa-action-btn coa-action-btn--toggle"
-              data-action="toggle"
-              data-id="${row.id}"
-              data-active="${isActive ? 'true' : 'false'}"
-            >
-              ${isActive ? 'Inativar' : 'Ativar'}
-            </button>
-
-            <button
-              type="button"
-              class="coa-action-btn coa-action-btn--delete"
-              data-action="delete"
-              data-id="${row.id}"
-            >
-              Excluir
-            </button>
-          </div>
+          ${actionIconsHtml([
+            { action: 'edit', title: 'Editar', attrs: { 'data-action': 'edit', 'data-id': row.id } },
+            {
+              action: isActive ? 'pause' : 'play',
+              title: isActive ? 'Inativar' : 'Ativar',
+              attrs: { 'data-action': 'toggle', 'data-id': row.id, 'data-active': isActive ? 'true' : 'false' },
+            },
+            { action: 'delete', title: 'Excluir', attrs: { 'data-action': 'delete', 'data-id': row.id } },
+          ])}
         </td>
       </tr>
     `;
@@ -548,7 +530,7 @@ function bindToolbar() {
   });
 
   els.rowsPerPage?.addEventListener('change', () => {
-    state.limit = Number(els.rowsPerPage.value) || 20;
+    state.limit = Number(els.rowsPerPage.value) || 50;
     resetToFirstPageAndReload();
   });
 

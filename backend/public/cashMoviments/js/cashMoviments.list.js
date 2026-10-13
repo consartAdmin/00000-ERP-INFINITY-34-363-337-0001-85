@@ -15,6 +15,7 @@ import {
 } from './cashMoviments.utils.js';
 
 import { buildQueryFromFilters } from './cashMoviments.filters.js';
+import { actionIconSvg, actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { atualizarBadgeAnexo } from './cashMoviments.attachments.js';
 
 function getPageSize(dom) {
@@ -411,7 +412,7 @@ export function renderTabela(dom, items) {
   ${row.observacao
         ? `
       <span
-        class="hover-mouse-shows hover-mouse-shows-trigger hover-shows-bottom hover-shows-width-md"
+        class="action-icon action-icon--document hover-mouse-shows hover-shows-bottom hover-shows-width-md"
         tabindex="0"
         aria-label="Visualizar observação"
         data-hover-text="${String(row.observacao)
@@ -419,34 +420,17 @@ export function renderTabela(dom, items) {
           .replace(/"/g, '&quot;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')}"
-      >
-        📝
-      </span>
+      >${actionIconSvg('document')}</span>
     `
         : '—'
       }
 </td>
   <td data-label="Anexos" class="col-anexo">${badgeAnexo('loading')}</td>
 <td data-label="Ações" class="col-acoes">
-  <button
-    type="button"
-    class="btn btn-edit btn-sm"
-    data-act="edit"
-    data-id="${row.id}"
-    title="Editar movimentação"
-  >
-    ✏️
-  </button>
-
-  <button
-    type="button"
-    class="btn btn-light btn-sm"
-    data-act="del"
-    data-id="${row.id}"
-    title="Excluir movimentação"
-  >
-    🗑️
-  </button>
+  ${actionIconsHtml([
+    { action: 'edit', title: 'Editar movimentação', attrs: { 'data-act': 'edit', 'data-id': row.id } },
+    { action: 'delete', title: 'Excluir movimentação', attrs: { 'data-act': 'del', 'data-id': row.id } },
+  ])}
 </td>
 `;
 

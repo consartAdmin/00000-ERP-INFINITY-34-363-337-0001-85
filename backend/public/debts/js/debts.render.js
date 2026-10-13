@@ -14,6 +14,7 @@ import {
   showToast
 } from './debts.utils.js';
 import { getFilters } from './debts.filters.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 export function renderTable() {
   const rows = Array.isArray(state.rows) ? state.rows : [];
@@ -80,35 +81,11 @@ export function renderTable() {
           </td>
 
           <td class="td-actions">
-            <div class="btn-inline">
-              <button
-                class="btn btn-new btn-sm"
-                type="button"
-                data-action="edit"
-                data-id="${debtId}"
-              >
-                ✏️
-              </button>
-
-              <button
-                class="btn btn-new btn-sm"
-                type="button"
-                data-action="payments"
-                data-id="${debtId}"
-                data-description="${description}"
-              >
-                💰
-              </button>
-
-              <button
-                class="btn btn-new btn-sm"
-                type="button"
-                data-action="delete"
-                data-id="${debtId}"
-              >
-                🗑️
-              </button>
-            </div>
+            ${actionIconsHtml([
+              { action: 'edit', title: 'Editar dívida', attrs: { 'data-action': 'edit', 'data-id': row.id || row.debt_id || '' } },
+              { action: 'payment', title: 'Pagamentos', attrs: { 'data-action': 'payments', 'data-id': row.id || row.debt_id || '', 'data-description': row.description || '' } },
+              { action: 'delete', title: 'Excluir dívida', attrs: { 'data-action': 'delete', 'data-id': row.id || row.debt_id || '' } },
+            ])}
           </td>
         </tr>
       `;
