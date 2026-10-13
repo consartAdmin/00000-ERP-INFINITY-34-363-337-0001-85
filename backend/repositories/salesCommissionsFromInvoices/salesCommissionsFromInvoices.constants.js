@@ -20,4 +20,13 @@ export const TB_SELLER_BY_BUDGETS = 'public."sellerByBudgets"';
  */
 export const TB_BUDGET_ITEMS = 'public."budgetsItems"';
 
+// Tentativas de NF-e (fonte da geração das comissões)
+export const TB_BUDGETS_NFE_ATTEMPTS = 'public."budgetsNfeAttempts"';
+export const TB_BUDGETS_NFE_ATTEMPT_ITEMS = 'public."budgetsNfeAttemptItems"';
+export const TB_ORDERS_NFE_ATTEMPTS = 'public."ordersNfeAttempts"';
+export const TB_ORDERS_NFE_ATTEMPT_ITEMS = 'public."ordersNfeAttemptItems"';
+
+// nfeStatusMap: 3 = AUTORIZADA
+export const NFE_STATUS_AUTHORIZED_ID = 3;
+
 export const DEFAULT_PRICE_ID = 1;

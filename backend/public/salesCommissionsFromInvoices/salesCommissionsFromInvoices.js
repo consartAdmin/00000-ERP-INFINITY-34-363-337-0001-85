@@ -166,7 +166,7 @@ function renderRows() {
     <tr>
       <td>${dateBR(r.issue_date)}</td>
       <td>${r.invoice_id || '-'}</td>
-      <td>${r.order_id || '-'}</td>
+      <td>${r.order_id || (r.budget_id ? `Orç. ${r.budget_id}` : '-')}</td>
       <td>${r.customer_name || '-'}</td>
       <td>${r.seller_name || r.seller_id || '-'}</td>
       <td>${r.sku || '-'}</td>
