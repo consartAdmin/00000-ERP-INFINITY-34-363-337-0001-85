@@ -2025,8 +2025,9 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
 
         const opt = document.createElement('option');
         opt.value = String(productGradeId);
-        opt.textContent = `${g.grade_id ?? ''} ${g.description ?? g.grade_description ?? g.name ?? ''}`.trim()
-          || `Grade #${productGradeId}`;
+        // Mostra só a descrição; o id fica no value.
+        opt.textContent = String(g.description ?? g.grade_description ?? g.name ?? '').trim()
+          || `Grade #${g.grade_id ?? productGradeId}`;
         select.appendChild(opt);
       }
 
