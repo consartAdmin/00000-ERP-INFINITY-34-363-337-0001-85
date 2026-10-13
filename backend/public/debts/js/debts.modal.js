@@ -281,7 +281,7 @@ function injectPaymentModal() {
 
   document.body.insertAdjacentHTML('beforeend', `
     <div id="paymentModal" class="modal modal-width-9 modal-height-8" hidden aria-hidden="true">
-      <div class="modal__backdrop" data-close-modal="paymentModal">
+      <div class="modal__backdrop" data-close-modal="paymentModal"></div>
 
       <div class="modal__dialog">
       <section class="modal__panel"
@@ -410,6 +410,7 @@ function injectPaymentModal() {
       </footer>
      </section>
      </div>
+    </div>
   `);
 }
 
