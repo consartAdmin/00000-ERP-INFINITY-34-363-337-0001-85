@@ -10,6 +10,7 @@ import {
   diagnostics,
   items,
   pdf,
+  excel,
 } from '../controllers/salesCommissionsFromInvoicesController.js';
 
 const router = Router();
@@ -19,5 +20,6 @@ router.post('/recalc', recalc);
 router.get('/diagnostics', diagnostics);
 router.get('/items', items);
 router.get('/pdf', pdf);
+router.get('/excel', excel);
 
 export default router;

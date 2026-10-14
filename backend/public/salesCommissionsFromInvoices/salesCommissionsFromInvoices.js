@@ -4,7 +4,9 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import { openSellersModalSearch } from '/public/modalsSearch/sellersModalSearch.js';
+import { openPricesModalSearch } from '/public/modalsSearch/pricesModalSearch.js';
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import '/public/includes/js/date-range-field.js'; // registra <date-range-field>
 
 const API_BASE = '/api/sales-commissions-from-invoices';
 
@@ -19,18 +21,20 @@ const state = {
 const $ = (id) => document.getElementById(id);
 
 const els = {
-    dateStart: $('dateStart'),
-    dateEnd: $('dateEnd'),
+    dateRange: $('dateRange'),
     salesperson: $('salesperson'),
     sellerId: $('sellerId'),
     priceId: $('priceId'),
+    priceName: $('priceName'),
 
     btnSellerSearch: $('btnSellerSearch'),
+    btnPriceSearch: $('btnPriceSearch'),
 
     btnGenerate: $('btnGenerate'),
     btnRecalc: $('btnRecalc'),
     btnRefresh: $('btnRefresh'),
     btnPdf: $('btnPdf'),
+    btnExcel: $('btnExcel'),
     btnSearch: $('btnSearch'),
     btnClear: $('btnClear'),
     btnPrev: $('btnPrev'),
@@ -42,7 +46,6 @@ const els = {
     statusText: $('statusText'),
     pageInfo: $('pageInfo'),
 
-    kpiTotal: $('kpiTotal'),
     kpiRevenue: $('kpiRevenue'),
     kpiCommission: $('kpiCommission'),
     kpiMissingRule: $('kpiMissingRule'),
@@ -88,6 +91,21 @@ function openSellerSearch() {
     });
 }
 
+function openPriceSearch() {
+    openPricesModalSearch({
+        apiBase: window.location.origin,
+        onPick: (price) => {
+            const id = price?.price_id ?? price?.id ?? '';
+
+            els.priceId.value = id;
+            els.priceName.value = price?.name ? `${id} - ${price.name}` : String(id);
+
+            state.offset = 0;
+            refreshAll();
+        },
+    });
+}
+
 function money(value) {
     return Number(value || 0).toLocaleString('pt-BR', {
         style: 'currency',
@@ -113,11 +131,23 @@ function dateBR(value) {
     return `${d}/${m}/${y}`;
 }
 
+// Período (De/Até) do <date-range-field>, em YYYY-MM-DD
+function getPeriod() {
+    const range = els.dateRange?.value || {};
+
+    return {
+        dateStart: range.startDate || '',
+        dateEnd: range.endDate || '',
+    };
+}
+
 function getFilters() {
     const params = new URLSearchParams();
 
-    if (els.dateStart.value) params.set('dateStart', els.dateStart.value);
-    if (els.dateEnd.value) params.set('dateEnd', els.dateEnd.value);
+    const { dateStart, dateEnd } = getPeriod();
+
+    if (dateStart) params.set('dateStart', dateStart);
+    if (dateEnd) params.set('dateEnd', dateEnd);
     if (els.sellerId.value.trim()) {
         params.set('salesperson', els.sellerId.value.trim());
     } else if (els.salesperson.value.trim()) {
@@ -152,6 +182,9 @@ function setLoading(text = 'Carregando...') {
     els.statusText.textContent = text;
 }
 
+const COMMISSION_TYPE_LABELS = { PERCENT: 'PERCENTUAL', FIXED: 'FIXO' };
+const commissionTypeLabel = (t) => COMMISSION_TYPE_LABELS[String(t || '').toUpperCase()] || t || '';
+
 function renderRows() {
     if (!state.rows.length) {
         els.tableBody.innerHTML = `
@@ -174,7 +207,7 @@ function renderRows() {
       <td>${r.price_table_name || r.price_id || '-'}</td>
       <td class="text-right">${number(r.quantity, 3)}</td>
       <td class="text-right">${money(r.item_total)}</td>
-      <td><span class="sci-badge">${r.commission_type || '-'}</span></td>
+      <td><span class="sci-badge">${commissionTypeLabel(r.commission_type) || '-'}</span></td>
       <td class="text-right">${r.percent_value ? number(r.percent_value, 4) : '-'}</td>
       <td class="text-right">${r.fixed_value ? money(r.fixed_value) : '-'}</td>
       <td class="text-right"><strong>${money(r.item_commission)}</strong></td>
@@ -194,7 +227,6 @@ function renderPagination() {
 function renderDiagnostics() {
     const d = state.diagnostics || {};
 
-    els.kpiTotal.textContent = Number(d.total || state.total || 0).toLocaleString('pt-BR');
     els.kpiRevenue.textContent = money(d.total_faturado || 0);
     els.kpiCommission.textContent = money(d.total_comissao || 0);
     els.kpiMissingRule.textContent = Number(d.sem_commission_id || 0).toLocaleString('pt-BR');
@@ -255,8 +287,8 @@ async function generateCommissions() {
         setLoading('Gerando comissões...');
 
         const body = {
-            dateStart: els.dateStart.value || null,
-            dateEnd: els.dateEnd.value || null,
+            dateStart: getPeriod().dateStart || null,
+            dateEnd: getPeriod().dateEnd || null,
             forceRegenerate: false,
             recalcAfter: true,
         };
@@ -323,12 +355,21 @@ function generatePdf() {
     window.open(url, '_blank');
 }
 
+function exportExcel() {
+    const params = getFilters();
+
+    params.delete('limit');
+    params.delete('offset');
+
+    window.open(`${API_BASE}/excel?${params.toString()}`, '_blank');
+}
+
 function clearFilters() {
-    els.dateStart.value = '';
-    els.dateEnd.value = '';
+    els.dateRange.value = { startDate: '', endDate: '' };
     els.salesperson.value = '';
     els.sellerId.value = '';
     els.priceId.value = '';
+    els.priceName.value = '';
 
     state.offset = 0;
     loadItems();
@@ -337,11 +378,19 @@ function clearFilters() {
 function bindEvents() {
     els.btnSellerSearch.addEventListener('click', openSellerSearch);
     els.salesperson.addEventListener('click', openSellerSearch);
+    els.btnPriceSearch.addEventListener('click', openPriceSearch);
+    els.priceName.addEventListener('click', openPriceSearch);
+
+    els.dateRange.addEventListener('range-change', () => {
+        state.offset = 0;
+        refreshAll();
+    });
 
     els.btnGenerate.addEventListener('click', generateCommissions);
     els.btnRecalc.addEventListener('click', recalcCommissions);
     els.btnRefresh.addEventListener('click', refreshAll);
     els.btnPdf.addEventListener('click', generatePdf);
+    els.btnExcel.addEventListener('click', exportExcel);
 
     els.filtersForm.addEventListener('submit', (event) => {
         event.preventDefault();

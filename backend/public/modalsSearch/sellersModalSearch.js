@@ -1,324 +1,256 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ sellersModalSearch.js — Modal CONSART para buscar VENDEDORES         ║
 // ║ exporta: openSellersModalSearch({ apiBase, onPick(seller), opts })   ║
+// ║ Layout padrão MODALS.CSS + controle pelo MODAL.JS                    ║
+// ║ (.modal > backdrop + dialog > panel com header / body / footer).     ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
+import { Modal } from '/public/includes/js/modal.js';
+
+const LAYER_ID = 'sellers-modal-layer-consart';
+const CSS_HREF = '/public/modalsSearch/sellersModalSearch.css';
+
+// Garante o CSS mesmo em telas que não o incluem no <head>
+function ensureCss() {
+  const loaded = [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .some((link) => (link.getAttribute('href') || '').startsWith(CSS_HREF));
+  if (loaded) return;
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = CSS_HREF;
+  document.head.appendChild(link);
+}
+
+const esc = (v) => String(v ?? '')
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#039;');
+
+function normalizeRows(data) {
+  const payload = data && data.ok && data.data ? data.data : data;
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== 'object') return [];
+  return payload.rows || payload.data || payload.items || payload.result || [];
+}
+
+function pickSellerId(s) {
+  return s?.seller_id ?? s?.id ?? s?.sellerId ?? s?.vendedor_id ?? s?.vendedorId ?? null;
+}
+
+function pickName(s) {
+  return s?.name ?? s?.nome ?? s?.full_name ?? s?.fullName ?? s?.apelido ?? s?.nickname ?? '';
+}
+
+function pickDoc(s) {
+  return s?.cpf ?? s?.cnpj ?? s?.document ?? s?.doc ?? s?.tax_id ?? '';
+}
+
 export function openSellersModalSearch({ apiBase = '', onPick, opts = {} } = {}) {
-  apiBase = String(apiBase || '').replace(/\/$/, '');
+  const base = String(apiBase || '').trim().replace(/\/$/, '') || window.location.origin;
 
   const cfg = {
-    title: '🔎 Buscar Vendedor',
-    placeholder: 'Digite nome, ID, documento…',
-    hint: 'Use ↑↓ e Enter para selecionar. ESC fecha.',
+    title: 'Buscar Vendedor',
+    placeholder: 'Digite nome, ID ou documento do vendedor...',
     limit: 50,
     ...opts,
   };
 
-  const esc = (v) => String(v ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+  // Título sem emoji, como nos demais modais padrão
+  const title = String(cfg.title || '').replace(/^[^\p{L}\p{N}]+/u, '').trim() || 'Buscar Vendedor';
 
-  function resolveBase() {
-    return apiBase && apiBase.trim()
-      ? apiBase.replace(/\/$/, '')
-      : window.location.origin;
-  }
+  ensureCss();
+  Modal.setup();
 
-  async function fetchJSON(url) {
-    const r = await fetch(url, {
-      headers: { Accept: 'application/json' },
-      credentials: 'include'
-    });
+  document.getElementById(LAYER_ID)?.remove();
 
-    const t = await r.text();
+  const layer = document.createElement('div');
+  layer.id = LAYER_ID;
+  layer.className = 'modal sellers-search-modal';
+  layer.setAttribute('aria-hidden', 'true');
+  layer.innerHTML = `
+    <div class="modal__backdrop" data-modal-close></div>
 
-    if (!r.ok) {
-      throw new Error(`${r.status} ${r.statusText}: ${t}`);
-    }
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true"
+        aria-labelledby="sellerSearchTitle" tabindex="-1">
+        <header class="modal__header modal-header-color-3">
+          <h2 id="sellerSearchTitle" class="modal__title">${esc(title)}</h2>
+          <button type="button" class="modal__close" data-modal-close
+            title="Fechar" aria-label="Fechar">&times;</button>
+        </header>
 
-    try {
-      return JSON.parse(t);
-    } catch {
-      return t;
-    }
-  }
+        <div class="modal__body modal-section">
+          <div class="fields fields-h-6 fields-w-full fields-font-3">
+            <label for="sellerSearchInput">Pesquisar</label>
+            <input id="sellerSearchInput" type="text" autocomplete="off"
+              placeholder="${esc(cfg.placeholder)}" />
+          </div>
 
-  function normalizeRows(data) {
-    if (Array.isArray(data)) return data;
-    if (!data || typeof data !== 'object') return [];
-    return data.rows || data.data || data.items || data.result || [];
-  }
+          <div class="modal-divider"></div>
 
-  function pickSellerId(s) {
-    return s?.seller_id ?? s?.id ?? s?.sellerId ?? s?.vendedor_id ?? s?.vendedorId ?? null;
-  }
+          <div class="slms-results">
+            <table class="slms-table">
+              <thead>
+                <tr>
+                  <th class="slms-col-code">Código</th>
+                  <th>Nome</th>
+                  <th class="slms-col-doc">Documento</th>
+                </tr>
+              </thead>
+              <tbody id="sellerSearchTbody">
+                <tr><td colspan="3" class="slms-empty">Digite para buscar vendedores.</td></tr>
+              </tbody>
+            </table>
+          </div>
 
-  function pickName(s) {
-    return s?.name ?? s?.nome ?? s?.full_name ?? s?.fullName ?? s?.apelido ?? s?.nickname ?? '';
-  }
+          <p class="slms-hint">Use ↑ ↓ e Enter para selecionar.</p>
+        </div>
 
-  function pickDoc(s) {
-    return s?.cpf ?? s?.cnpj ?? s?.document ?? s?.doc ?? s?.tax_id ?? '';
-  }
-
-  const overlay = document.createElement('div');
-  overlay.className = 'sms-overlay';
-
-  const dialog = document.createElement('div');
-  dialog.className = 'sms-dialog';
-  dialog.setAttribute('role', 'dialog');
-  dialog.setAttribute('aria-modal', 'true');
-
-  dialog.innerHTML = `
-    <div class="sms-header">
-      <strong class="sms-title">${esc(cfg.title)}</strong>
-      <span class="sms-hint-top">ESC para fechar</span>
-      <button id="sms-close" class="sms-close" type="button" aria-label="Fechar" title="Fechar">×</button>
+        <footer class="modal__footer modal-footer-color-3">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+        </footer>
+      </section>
     </div>
-
-    <div class="sms-searchbar">
-      <input id="sms-q" class="sms-input" type="text" placeholder="${esc(cfg.placeholder)}" />
-      <button id="sms-btn" class="sms-button" type="button">Buscar</button>
-    </div>
-
-    <div class="sms-hint">${esc(cfg.hint)}</div>
-
-    <div class="sms-table-wrap">
-      <table class="sms-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Documento</th>
-          </tr>
-        </thead>
-        <tbody id="sms-tbody"></tbody>
-      </table>
-    </div>
-
-    <div id="sms-status" class="sms-status">Digite para buscar vendedores.</div>
   `;
 
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
+  document.body.appendChild(layer);
 
-  const $ = (sel) => dialog.querySelector(sel);
-  const q = $('#sms-q');
-  const btn = $('#sms-btn');
-  const tbody = $('#sms-tbody');
-  const status = $('#sms-status');
+  const input = layer.querySelector('#sellerSearchInput');
+  const tbody = layer.querySelector('#sellerSearchTbody');
 
   let rows = [];
   let activeIndex = -1;
-  let destroyed = false;
+  let timer = null;
+  let requestSeq = 0;
+  let picked = null;
 
-  function close() {
-    destroyed = true;
-    overlay.remove();
-    document.removeEventListener('keydown', handleGlobalKeydown, true);
-  }
+  // modal.js fecha pelo X, Cancelar, backdrop e ESC; aqui só limpamos
+  layer.addEventListener('modal:close', () => {
+    clearTimeout(timer);
+    requestSeq++;
+    layer.remove();
+    if (picked && typeof onPick === 'function') onPick(picked);
+  });
 
-  function setStatus(text) {
-    if (status) status.textContent = text || '';
+  function renderEmpty(msg) {
+    rows = [];
+    activeIndex = -1;
+    tbody.innerHTML = `<tr><td colspan="3" class="slms-empty">${esc(msg)}</td></tr>`;
   }
 
   function setActiveRow(idx) {
     activeIndex = idx;
-
-    const trs = tbody.querySelectorAll('tr[data-idx]');
-    trs.forEach((tr) => {
-      const i = Number(tr.dataset.idx);
-      tr.classList.toggle('active', i === activeIndex);
+    tbody.querySelectorAll('tr[data-idx]').forEach((tr) => {
+      tr.classList.toggle('is-active', Number(tr.dataset.idx) === activeIndex);
     });
-
-    const tr = tbody.querySelector(`tr[data-idx="${activeIndex}"]`);
-    if (tr) tr.scrollIntoView({ block: 'nearest' });
+    tbody.querySelector(`tr[data-idx="${activeIndex}"]`)?.scrollIntoView({ block: 'nearest' });
   }
 
-  function renderTable() {
-    if (!rows.length) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="3" class="sms-empty">Nenhum resultado.</td>
-        </tr>
-      `;
-      activeIndex = -1;
-      return;
-    }
+  function renderRows(list) {
+    if (!list.length) return renderEmpty('Nenhum vendedor encontrado.');
 
-    tbody.innerHTML = rows.map((s, idx) => {
-      const id = pickSellerId(s);
-      const nome = pickName(s);
-      const doc = pickDoc(s);
-
-      return `
-        <tr class="sms-row" data-idx="${idx}">
-          <td>${esc(id ?? '')}</td>
-          <td class="sms-name">${esc(nome || '—')}</td>
-          <td>${esc(doc || '')}</td>
-        </tr>
-      `;
-    }).join('');
+    rows = list;
+    tbody.innerHTML = rows.map((s, idx) => `
+      <tr class="slms-row" data-idx="${idx}">
+        <td>${esc(pickSellerId(s) ?? '')}</td>
+        <td>${esc(pickName(s) || '—')}</td>
+        <td>${esc(pickDoc(s))}</td>
+      </tr>
+    `).join('');
 
     setActiveRow(0);
   }
 
-  async function tryEndpoints(term) {
-    const base = resolveBase();
-
+  async function fetchRows(term) {
+    const params = { limit: String(cfg.limit), offset: '0' };
     const candidates = [
-      ['/api/sellers/search', { q: term, limit: String(cfg.limit), offset: '0' }],
-      ['/api/sellers', { q: term, limit: String(cfg.limit), offset: '0' }],
-      ['/api/sellers', { search: term, limit: String(cfg.limit), offset: '0' }],
-      ['/api/vendedores/search', { q: term, limit: String(cfg.limit), offset: '0' }],
-      ['/api/vendedores', { q: term, limit: String(cfg.limit), offset: '0' }],
-      ['/api/vendedores', { search: term, limit: String(cfg.limit), offset: '0' }],
-      ['/api/salesmen/search', { q: term, limit: String(cfg.limit), offset: '0' }],
-      ['/api/salesmen', { q: term, limit: String(cfg.limit), offset: '0' }],
+      ['/api/sellers/search', { q: term, ...params }],
+      ['/api/sellers', { q: term, ...params }],
+      ['/api/sellers', { search: term, ...params }],
+      ['/api/vendedores/search', { q: term, ...params }],
+      ['/api/vendedores', { q: term, ...params }],
     ];
 
     let lastErr = null;
 
-    for (const [path, params] of candidates) {
+    for (const [path, query] of candidates) {
       try {
         const url = new URL(path, base);
-        Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+        Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
 
-        const data = await fetchJSON(url.toString());
-        const r = normalizeRows(data);
+        const res = await fetch(url.toString(), {
+          headers: { Accept: 'application/json' },
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        if (Array.isArray(r)) return r;
-      } catch (e) {
-        lastErr = e;
+        return normalizeRows(await res.json());
+      } catch (err) {
+        lastErr = err;
       }
     }
 
     throw lastErr || new Error('Nenhum endpoint respondeu.');
   }
 
-  async function buscar() {
-    const term = (q.value || '').trim();
+  function runSearch() {
+    clearTimeout(timer);
 
+    const term = input.value.trim();
     if (!term) {
-      rows = [];
-      tbody.innerHTML = '';
-      setStatus('Informe um termo de busca.');
-      return;
+      requestSeq++;
+      return renderEmpty('Digite para buscar vendedores.');
     }
 
-    setStatus('Pesquisando…');
-
-    try {
-      const result = await tryEndpoints(term);
-      if (destroyed) return;
-
-      rows = result || [];
-      renderTable();
-      setStatus(rows.length ? `${rows.length} vendedor(es) encontrado(s).` : 'Nenhum resultado encontrado.');
-    } catch (e) {
-      console.error('[sellersModalSearch] erro ao buscar vendedores:', e);
-      rows = [];
-      renderTable();
-      setStatus('Erro ao buscar vendedores. Verifique os endpoints no backend.');
-    }
+    timer = setTimeout(async () => {
+      const seq = ++requestSeq;
+      try {
+        renderEmpty('Buscando...');
+        const list = await fetchRows(term);
+        if (seq === requestSeq) renderRows(list);
+      } catch (err) {
+        if (seq !== requestSeq) return;
+        console.error('[sellersModalSearch]', err);
+        renderEmpty(`Erro ao buscar vendedores: ${err.message || err}`);
+      }
+    }, 250);
   }
 
   function pickIndex(idx) {
-    const s = rows[idx];
-    if (!s) return;
-
-    try {
-      if (typeof onPick === 'function') onPick(s);
-    } finally {
-      close();
-    }
+    const seller = rows[idx];
+    if (!seller) return;
+    picked = seller;
+    Modal.close(layer);
   }
 
-  function handleGlobalKeydown(ev) {
-    if (destroyed) return;
+  input.addEventListener('input', runSearch);
 
-    if (ev.key === 'Escape') {
-      ev.preventDefault();
-      close();
-      return;
-    }
-
-    if (ev.key === 'Enter' && document.activeElement !== q) {
-      if (activeIndex >= 0) {
-        ev.preventDefault();
-        pickIndex(activeIndex);
-      }
-      return;
-    }
-
-    if (ev.key === 'ArrowDown' && document.activeElement !== q) {
-      if (!rows.length) return;
+  input.addEventListener('keydown', (ev) => {
+    if (ev.key === 'ArrowDown' && rows.length) {
       ev.preventDefault();
       setActiveRow(Math.min(activeIndex + 1, rows.length - 1));
-      return;
-    }
-
-    if (ev.key === 'ArrowUp' && document.activeElement !== q) {
-      if (!rows.length) return;
+    } else if (ev.key === 'ArrowUp' && rows.length) {
       ev.preventDefault();
       setActiveRow(Math.max(activeIndex - 1, 0));
-    }
-  }
-
-  $('#sms-close')?.addEventListener('click', close);
-
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) close();
-  });
-
-  btn?.addEventListener('click', buscar);
-
-  q?.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') {
+    } else if (ev.key === 'Enter') {
       ev.preventDefault();
-      buscar();
-      return;
-    }
-
-    if (ev.key === 'Escape') {
-      ev.preventDefault();
-      close();
-      return;
-    }
-
-    if (ev.key === 'ArrowDown') {
-      ev.preventDefault();
-      if (!rows.length) return;
-      setActiveRow(Math.min(activeIndex + 1, rows.length - 1));
-      return;
-    }
-
-    if (ev.key === 'ArrowUp') {
-      ev.preventDefault();
-      if (!rows.length) return;
-      setActiveRow(Math.max(activeIndex - 1, 0));
+      if (activeIndex >= 0) pickIndex(activeIndex);
+      else runSearch();
     }
   });
 
-  tbody?.addEventListener('mousemove', (ev) => {
+  tbody.addEventListener('mousemove', (ev) => {
     const tr = ev.target.closest('tr[data-idx]');
-    if (!tr) return;
-
-    const idx = Number(tr.dataset.idx);
-    if (!Number.isNaN(idx)) setActiveRow(idx);
+    if (tr) setActiveRow(Number(tr.dataset.idx));
   });
 
-  tbody?.addEventListener('click', (ev) => {
+  tbody.addEventListener('click', (ev) => {
     const tr = ev.target.closest('tr[data-idx]');
-    if (!tr) return;
-
-    pickIndex(Number(tr.dataset.idx));
+    if (tr) pickIndex(Number(tr.dataset.idx));
   });
 
-  document.addEventListener('keydown', handleGlobalKeydown, true);
-
-  setTimeout(() => q?.focus(), 0);
+  Modal.open(layer, { focusSelector: '#sellerSearchInput' });
 }

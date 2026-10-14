@@ -14,6 +14,9 @@ import {
 import generateSalesCommissionsFromInvoicesPdf
     from '../generationPdf/generationSalesCommissionsFromInvoicesPdf.js';
 
+import buildSalesCommissionsFromInvoicesWorkbook
+    from '../generationPdf/generationSalesCommissionsFromInvoicesExcel.js';
+
 const ok = (res, data = {}) => res.json({ ok: true, ...data });
 
 const bad = (res, message = 'Erro', code = 400, extra = {}) =>
@@ -355,5 +358,51 @@ export async function pdf(req, res) {
                 detail: String(err.message || err),
             }
         );
+    }
+}
+
+/* ======================================================================
+   EXCEL
+====================================================================== */
+
+export async function excel(req, res) {
+    try {
+        const dateStart = (req.query.dateStart || '').trim() || null;
+        const dateEnd = (req.query.dateEnd || '').trim() || null;
+        const salesperson = (req.query.salesperson || '').trim() || null;
+        const priceId = toIntOrNull(req.query.priceId);
+
+        if (dateStart && !isIsoDate(dateStart)) {
+            return bad(res, 'dateStart inválido (YYYY-MM-DD)');
+        }
+
+        if (dateEnd && !isIsoDate(dateEnd)) {
+            return bad(res, 'dateEnd inválido (YYYY-MM-DD)');
+        }
+
+        const data = await getSalesCommissionsFromInvoicesPdfData({
+            dateStart,
+            dateEnd,
+            salesperson,
+            priceId: priceId && priceId > 0 ? priceId : null,
+        });
+
+        const workbook = await buildSalesCommissionsFromInvoicesWorkbook({
+            filters: data.filters,
+            diagnostics: data.diagnostics,
+            rows: data.rows,
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="comissoes-nfe-${Date.now()}.xlsx"`);
+
+        await workbook.xlsx.write(res);
+        return res.end();
+    } catch (err) {
+        console.error('[SCI] excel ERR:', err);
+
+        return bad(res, 'Falha ao gerar Excel das comissões por NF-e.', 500, {
+            detail: String(err.message || err),
+        });
     }
 }
