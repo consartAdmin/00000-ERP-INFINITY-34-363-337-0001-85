@@ -14,7 +14,9 @@ import {
   createDebtPayment,
   deleteDebtPayment,
   getDebtPaymentsSummary,
-  getDebtPaymentsCashDefaults
+  getDebtPaymentsCashDefaults,
+  updateDebtPayment,
+  getDebtPaymentCash
 } from '../controllers/debtPaymentsController.js';
 
 const router = Router();
@@ -41,6 +43,12 @@ router.post('/debts/:debtId/payments', createDebtPayment);
 
 // Buscar pagamento por ID
 router.get('/debt-payments/:id', getDebtPaymentById);
+
+// Classificação atual da SAÍDA no caixa do pagamento (edição)
+router.get('/debt-payments/:id/cash', getDebtPaymentCash);
+
+// Editar pagamento (atualiza também a movimentação no caixa)
+router.put('/debt-payments/:id', updateDebtPayment);
 
 // Excluir pagamento
 router.delete('/debt-payments/:id', deleteDebtPayment);

@@ -5,6 +5,8 @@
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import sellersApi from '../repositories/sellers/sellers.index.js';
+import generateSellersPdf from '../generationPdf/generationSellersPdf.js';
+import buildSellersWorkbook from '../generationPdf/generationSellersExcel.js';
 
 /* ====================================================================
  * Helpers
@@ -137,6 +139,65 @@ export async function deleteSeller(req, res) {
 }
 
 /* ====================================================================
+ * EXPORT (PDF / EXCEL)
+ * - Mesmos filtros da tela: busca (sem acento) + status
+ * ==================================================================== */
+function normalizeSearchText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+async function loadSellersForExport(query = {}) {
+  const q = String(query.q || '').trim();
+  const active = parseActiveFlag(query.active);
+
+  const all = await sellersApi.list({ active, limit: 10000, offset: 0 });
+  const term = normalizeSearchText(q);
+
+  const sellers = term
+    ? all.filter((s) => [s.id, s.name, s.nickname, s.document, s.email, s.phone, s.mobile]
+      .map(normalizeSearchText)
+      .join(' ')
+      .includes(term))
+    : all;
+
+  return { filters: { q, active }, sellers };
+}
+
+export async function exportSellersPdf(req, res) {
+  try {
+    const data = await loadSellersForExport(req.query);
+    const pdf = await generateSellersPdf(data);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="vendedores-${Date.now()}.pdf"`);
+    res.setHeader('Content-Length', pdf.length);
+    return res.end(pdf);
+  } catch (err) {
+    console.error('[sellersController] exportSellersPdf error:', err);
+    return res.status(500).json({ ok: false, error: 'Erro ao gerar PDF de vendedores.' });
+  }
+}
+
+export async function exportSellersExcel(req, res) {
+  try {
+    const data = await loadSellersForExport(req.query);
+    const workbook = await buildSellersWorkbook(data);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="vendedores-${Date.now()}.xlsx"`);
+    await workbook.xlsx.write(res);
+    return res.end();
+  } catch (err) {
+    console.error('[sellersController] exportSellersExcel error:', err);
+    return res.status(500).json({ ok: false, error: 'Erro ao gerar Excel de vendedores.' });
+  }
+}
+
+/* ====================================================================
  * Export default
  * ==================================================================== */
 export default {
@@ -146,4 +207,6 @@ export default {
   createSeller,
   updateSeller,
   deleteSeller,
+  exportSellersPdf,
+  exportSellersExcel,
 };

@@ -30,6 +30,16 @@ export function safeText(value, max = 255) {
 
 export function normalizeDate(value) {
   if (!value) return null;
+
+  // Coluna DATE vinda do pg chega como Date (meia-noite local)
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, '0');
+    const d = String(value.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   const str = String(value).trim();
   if (!str) return null;
 

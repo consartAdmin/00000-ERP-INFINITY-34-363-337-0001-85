@@ -156,3 +156,31 @@
     padding: 6px 8px;
   }
 }
+
+/* ===== Header separado da tabela ===== */
+.sellers-page-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: var(--table-border-width, 1px) solid var(--table-border-color, #cbd5e1);
+  border-radius: var(--table-radius-top, 8px);
+  background-color: var(--table-filter-bg, #f3f4f6);
+  box-sizing: border-box;
+}
+
+.sellers-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== Exportar PDF / Excel à direita da linha de filtros ===== */
+.table-layout-integrated__filter > .fields-inline {
+  width: 100%;
+}
+
+.sellers-export-actions {
+  margin-left: auto;
+  align-self: flex-end;
+}

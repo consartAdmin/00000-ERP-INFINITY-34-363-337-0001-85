@@ -142,6 +142,48 @@ export async function getDebtPaymentsCashDefaults(req, res) {
   }
 }
 
+export async function updateDebtPayment(req, res) {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        ok: false,
+        message: 'ID do pagamento inválido.'
+      });
+    }
+
+    const result = await debtPaymentsApi.updatePayment(id, req.body || {});
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Pagamento atualizado com sucesso.',
+      ...result
+    });
+  } catch (error) {
+    return sendError(res, error, 'Erro ao atualizar pagamento.');
+  }
+}
+
+export async function getDebtPaymentCash(req, res) {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({
+        ok: false,
+        message: 'ID do pagamento inválido.'
+      });
+    }
+
+    const data = await debtPaymentsApi.getDebtPaymentCash(id);
+
+    return res.status(200).json({ ok: true, data: data || {} });
+  } catch (error) {
+    return sendError(res, error, 'Erro ao buscar a movimentação do pagamento.');
+  }
+}
+
 export async function deleteDebtPayment(req, res) {
   try {
     const id = Number(req.params.id);
@@ -191,6 +233,8 @@ export default {
   listDebtPayments,
   getDebtPaymentById,
   createDebtPayment,
+  updateDebtPayment,
+  getDebtPaymentCash,
   deleteDebtPayment,
   getDebtPaymentsSummary
 };

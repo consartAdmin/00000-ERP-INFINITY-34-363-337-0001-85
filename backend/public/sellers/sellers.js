@@ -43,7 +43,7 @@ const state = {
   },
 
   page: 1,
-  pageSize: 20,
+  pageSize: 50,
   totalRecords: 0,
   totalPages: 1,
 
@@ -67,7 +67,7 @@ async function init() {
   cacheDom();
   attachEvents();
 
-  state.pageSize = Number(dom.pageSize?.value || 20);
+  state.pageSize = Number(dom.pageSize?.value || 50);
 
   await loadSellers();
 }
@@ -81,6 +81,8 @@ function cacheDom() {
   dom.searchInput = document.getElementById('sellers-search');
   dom.activeSelect = document.getElementById('sellers-active');
   dom.btnNew = document.getElementById('sellers-btn-new');
+  dom.btnPdf = document.getElementById('sellers-btn-pdf');
+  dom.btnExcel = document.getElementById('sellers-btn-excel');
 
   // Tabela
   dom.tableBody = document.getElementById('tableBody');
@@ -153,6 +155,9 @@ function attachEvents() {
   // -------------------------------------------------------------------------
   // Novo vendedor
   // -------------------------------------------------------------------------
+
+  dom.btnPdf?.addEventListener('click', () => openExport('pdf'));
+  dom.btnExcel?.addEventListener('click', () => openExport('excel'));
 
   dom.btnNew?.addEventListener('click', () => {
     openModalForCreate();
@@ -360,6 +365,19 @@ function normalizeSellersResponse(json) {
 // ---------------------------------------------------------------------------
 // 9. FILTRAR
 // ---------------------------------------------------------------------------
+
+// Exportar PDF / Excel com os mesmos filtros da tela (busca + status)
+function openExport(kind) {
+  const params = new URLSearchParams();
+  const q = String(state.filters.q || '').trim();
+
+  if (q) params.set('q', q);
+  if (state.filters.active && state.filters.active !== 'all') {
+    params.set('active', state.filters.active);
+  }
+
+  window.open(`${SELLERS_API}/export/${kind}?${params.toString()}`, '_blank');
+}
 
 function applyFiltersAndRender() {
   const query = normalizeSearchText(state.filters.q);

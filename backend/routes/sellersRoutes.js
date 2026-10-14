@@ -14,6 +14,8 @@ const router = Router();
  * ==================================================================== */
 router.get('/sellers',        sellersController.listSellers);
 router.get('/sellers/search', sellersController.searchSellers);
+router.get('/sellers/export/pdf',   sellersController.exportSellersPdf);
+router.get('/sellers/export/excel', sellersController.exportSellersExcel);
 router.get('/sellers/:id',    sellersController.getSellerById);
 router.post('/sellers',       sellersController.createSeller);
 router.put('/sellers/:id',    sellersController.updateSeller);

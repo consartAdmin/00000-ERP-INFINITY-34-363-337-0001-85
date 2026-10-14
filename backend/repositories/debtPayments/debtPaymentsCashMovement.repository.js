@@ -6,7 +6,7 @@
 
 import pool from '../../config/db.js';
 import { TB_PAYMENTS } from './debtPayments.constants.js';
-import { roundMoney, safeText } from './debtPayments.utils.js';
+import { normalizeDate, roundMoney, safeText } from './debtPayments.utils.js';
 
 const TB_CASH_MOVEMENTS = 'public."cashMoviments"';
 const TB_BANK_ACCOUNTS = 'public."bankAccounts"';
@@ -129,18 +129,17 @@ function pick(cash, defaults, key, defaultsKey = key) {
 }
 
 /**
- * Cria a SAÍDA de caixa do pagamento (dentro da transação do pagamento).
+ * Monta os parâmetros ($1..$17) da SAÍDA de caixa de um pagamento.
  *
  * @param {object} client  client da transação
  * @param {object} args
- * @param {object} args.payment linha recém inserida em debt_payments
- * @param {object} args.debt    linha de public.debts
- * @param {object} [args.cash]  escolhas do modal: bank_account_id, category_id,
- *                              subcategory_id, chart_account_id, document_type
+ * @param {object} args.payment  linha de debt_payments
+ * @param {object} args.debt     linha de public.debts
+ * @param {object} [args.cash]   escolhas do modal: bank_account_id, category_id,
+ *                               subcategory_id, chart_account_id, document_type
+ * @param {object} [args.defaults] classificação usada quando o modal não informa
  */
-export async function createDebtPaymentCashMovement(client, { payment, debt, cash = {} }) {
-  const defaults = await getDebtCashDefaults(debt.id, client);
-
+async function buildCashMovementValues(client, { payment, debt, cash = {}, defaults = {} }) {
   const bankAccountId = toIdOrNull(pick(cash, defaults, 'bank_account_id'));
   let cashAccount = null;
   if (bankAccountId) {
@@ -184,6 +183,34 @@ export async function createDebtPaymentCashMovement(client, { payment, debt, cas
   const subcategoryId = toIdOrNull(pick(cash, defaults, 'subcategory_id'));
   const chartAccountId = toIdOrNull(pick(cash, defaults, 'chart_account_id'));
 
+  return [
+    `${normalizeDate(payment.payment_date)} 00:00:00`,
+    cashAccount,
+    amount,
+    documentType,
+    documentNumber,
+    safeText(debt.creditor_name, 255),
+    notes,
+    roundMoney(payment.fine_amount),
+    roundMoney(payment.interest_amount),
+    categoryId != null ? String(categoryId) : null,
+    subcategoryId != null ? String(subcategoryId) : null,
+    chartAccountId,
+    defaults?.is_deductible ?? null,
+    defaults?.is_pis_cofins_creditable ?? null,
+    defaults?.deduct_charges_only ?? null,
+    payment.id,
+    bankAccountId,
+  ];
+}
+
+/**
+ * Cria a SAÍDA de caixa do pagamento (dentro da transação do pagamento).
+ */
+export async function createDebtPaymentCashMovement(client, { payment, debt, cash = {} }) {
+  const defaults = await getDebtCashDefaults(debt.id, client);
+  const values = await buildCashMovementValues(client, { payment, debt, cash, defaults });
+
   const { rows } = await client.query(
     `
     INSERT INTO ${TB_CASH_MOVEMENTS} (
@@ -208,25 +235,67 @@ export async function createDebtPaymentCashMovement(client, { payment, debt, cas
     )
     RETURNING id
     `,
-    [
-      `${payment.payment_date} 00:00:00`,
-      cashAccount,
-      amount,
-      documentType,
-      documentNumber,
-      safeText(debt.creditor_name, 255),
-      notes,
-      roundMoney(payment.fine_amount),
-      roundMoney(payment.interest_amount),
-      categoryId != null ? String(categoryId) : null,
-      subcategoryId != null ? String(subcategoryId) : null,
-      chartAccountId,
-      defaults?.is_deductible ?? null,
-      defaults?.is_pis_cofins_creditable ?? null,
-      defaults?.deduct_charges_only ?? null,
-      payment.id,
-      bankAccountId,
-    ]
+    values
+  );
+
+  return { id: Number(rows[0].id) };
+}
+
+/** Classificação atual da SAÍDA de um pagamento (para a edição). */
+export async function getDebtPaymentCash(paymentId, executor = pool) {
+  await ensureDebtPaymentCashColumn();
+
+  const { rows } = await executor.query(
+    `${DEFAULTS_SELECT}
+     WHERE m.debt_payment_id = $1
+     LIMIT 1`,
+    [paymentId]
+  );
+
+  return rows[0] || null;
+}
+
+/**
+ * Pagamento editado → atualiza a SAÍDA vinculada (mantém id e anexos).
+ * Sem movimentação vinculada (pagamentos antigos) → cria uma nova.
+ */
+export async function updateDebtPaymentCashMovement(client, { payment, debt, cash = {} }) {
+  const current = await getDebtPaymentCash(payment.id, client);
+
+  if (!current) {
+    return createDebtPaymentCashMovement(client, { payment, debt, cash });
+  }
+
+  const values = await buildCashMovementValues(client, { payment, debt, cash, defaults: current });
+
+  const { rows } = await client.query(
+    `
+    UPDATE ${TB_CASH_MOVEMENTS} SET
+      movement_date = $1,
+      cash_account = $2,
+      amount = $3,
+      document_type = $4,
+      document_number = $5,
+      supplier_name = $6,
+      notes = $7,
+      penalty_amount = $8,
+      interest_amount = $9,
+      category = $10,
+      subcategory = $11,
+      chart_account_id = $12,
+      is_deductible = $13,
+      is_pis_cofins_creditable = $14,
+      deduct_charges_only = $15,
+      bank_account_id = COALESCE(
+        $17::bigint,
+        (SELECT ba.id FROM ${TB_BANK_ACCOUNTS} ba
+          WHERE UPPER(TRIM(ba.name)) = UPPER(TRIM($2::varchar))
+          ORDER BY ba.is_active DESC, ba.id ASC LIMIT 1)
+      )
+    WHERE debt_payment_id = $16
+    RETURNING id
+    `,
+    values
   );
 
   return { id: Number(rows[0].id) };

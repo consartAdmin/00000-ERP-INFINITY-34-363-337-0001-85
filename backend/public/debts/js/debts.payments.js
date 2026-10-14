@@ -22,8 +22,10 @@ import {
 
 import { refreshAll } from './debts.filters.js';
 import { openDebtPaymentsModal } from './debts.modal.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import {
   applyPaymentCashDefaults,
+  setPaymentCashValues,
   getPaymentCashPayload,
   hasPaymentCashFiles,
   uploadPaymentCashFiles
@@ -221,7 +223,21 @@ function renderInstallmentSelect(installments = []) {
  * Payment Form
  * ────────────────────────────────────────────────────────────────────── */
 
+function setPaymentEditMode(paymentId = null) {
+  state.editingPaymentId = paymentId;
+
+  const saveBtn = document.getElementById('btnSavePayment');
+  if (saveBtn) {
+    saveBtn.textContent = paymentId ? 'Atualizar Pagamento' : 'Salvar Pagamento';
+  }
+
+  if (els.payment_installment && !paymentId) {
+    els.payment_installment.disabled = false;
+  }
+}
+
 function resetPaymentForm(debtId) {
+  setPaymentEditMode(null);
   els.paymentForm?.reset();
 
   if (els.payment_debt_id) {
@@ -389,15 +405,10 @@ function renderPayments(installments = []) {
         <td>${escapeHtml(row.receipt_number || '-')}</td>
         <td class="td-actions">
           <div class="row-actions">
-            ${isPaid && row.payment_id ? `
-              <button
-                class="btn btn-new btn-sm"
-                type="button"
-                data-action="delete-payment"
-                data-id="${row.payment_id}">
-                🗑️
-              </button>
-            ` : '<span class="muted">Em aberto</span>'}
+            ${isPaid && row.payment_id ? actionIconsHtml([
+              { action: 'edit', title: 'Editar pagamento', attrs: { 'data-action': 'edit-payment', 'data-id': row.payment_id } },
+              { action: 'delete', title: 'Excluir pagamento', attrs: { 'data-action': 'delete-payment', 'data-id': row.payment_id } },
+            ]) : '<span class="muted">Em aberto</span>'}
           </div>
         </td>
       </tr>
@@ -493,6 +504,11 @@ export async function submitPaymentForm(event) {
       throw new Error('Dívida inválida para pagamento.');
     }
 
+    if (state.editingPaymentId) {
+      await submitPaymentUpdate(debtId);
+      return;
+    }
+
     const installmentNumber = Number(els.payment_installment?.value || 0);
 
     if (!installmentNumber) {
@@ -566,6 +582,115 @@ export async function submitPaymentForm(event) {
     console.error('[debts] submitPaymentForm', error);
     showToast(error.message || 'Erro ao registrar pagamento.', 'error');
   }
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Edit Payment
+ * ────────────────────────────────────────────────────────────────────── */
+
+function moneyInput(value) {
+  return toNumber(value).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+/** Carrega um pagamento já feito no formulário para edição. */
+export async function startEditPayment(paymentId) {
+  const payment = (state.activeDebtPayments || []).find(
+    (row) => Number(row.id) === Number(paymentId)
+  );
+
+  if (!payment) {
+    showToast('Pagamento não encontrado.', 'error');
+    return;
+  }
+
+  const installmentNumber = Number(payment.installment_number || 0);
+  const label = String(installmentNumber).padStart(3, '0');
+
+  if (els.payment_installment) {
+    els.payment_installment.innerHTML = `
+      <option value="${installmentNumber}">Parcela ${label} (editando pagamento)</option>
+    `;
+    els.payment_installment.value = String(installmentNumber);
+    els.payment_installment.disabled = true;
+  }
+
+  if (els.payment_date) els.payment_date.value = parseDateOnly(payment.payment_date);
+  if (els.payment_amount) els.payment_amount.value = moneyInput(payment.amount);
+  if (els.payment_interest) els.payment_interest.value = moneyInput(payment.interest_amount);
+  if (els.payment_fine) els.payment_fine.value = moneyInput(payment.fine_amount);
+  if (els.payment_discount) els.payment_discount.value = moneyInput(payment.discount_amount);
+  if (els.payment_method) els.payment_method.value = payment.payment_method || '';
+  if (els.receipt_number) els.receipt_number.value = payment.receipt_number || '';
+  if (els.payment_notes) els.payment_notes.value = payment.notes || '';
+
+  setPaymentEditMode(Number(paymentId));
+
+  try {
+    const res = await fetchJSON(`${API_BASE}/debt-payments/${paymentId}/cash`);
+    if (res?.data && Object.keys(res.data).length) {
+      await setPaymentCashValues(res.data);
+    }
+  } catch (error) {
+    console.warn('[debts] caixa do pagamento', error);
+  }
+
+  els.payment_amount?.focus();
+  showToast(`Editando o pagamento da parcela ${label}. Altere e clique em Atualizar Pagamento.`, 'info');
+}
+
+async function submitPaymentUpdate(debtId) {
+  const paymentId = state.editingPaymentId;
+
+  const payload = {
+    payment_date: els.payment_date?.value,
+    amount: toNumber(els.payment_amount?.value),
+    interest_amount: toNumber(els.payment_interest?.value),
+    fine_amount: toNumber(els.payment_fine?.value),
+    discount_amount: toNumber(els.payment_discount?.value),
+    payment_method: els.payment_method?.value || null,
+    receipt_number: els.receipt_number?.value.trim() || null,
+    notes: els.payment_notes?.value.trim() || null,
+    cash: getPaymentCashPayload()
+  };
+
+  if (!payload.payment_date) {
+    throw new Error('Informe a data do pagamento.');
+  }
+
+  if (payload.amount <= 0) {
+    throw new Error('Informe um valor de pagamento maior que zero.');
+  }
+
+  const result = await fetchJSON(`${API_BASE}/debt-payments/${paymentId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  });
+
+  const cashMovementId = Number(result?.cash_movement_id || 0);
+  let uploadFailed = [];
+
+  if (cashMovementId && hasPaymentCashFiles()) {
+    const upload = await uploadPaymentCashFiles(cashMovementId);
+    uploadFailed = upload.failed;
+  }
+
+  if (uploadFailed.length) {
+    showToast(
+      `Pagamento atualizado, mas não foi possível anexar: ${uploadFailed.join(', ')}. Anexe pela tela Movimentações.`,
+      'error'
+    );
+  } else {
+    showToast('Pagamento atualizado (Movimentações também).', 'success');
+  }
+
+  resetPaymentForm(debtId);
+  applyPaymentCashDefaults(debtId).catch(() => {});
+
+  await loadPayments(debtId);
+  await refreshAll();
 }
 
 /* ──────────────────────────────────────────────────────────────────────

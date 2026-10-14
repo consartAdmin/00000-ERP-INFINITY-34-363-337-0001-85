@@ -155,6 +155,13 @@ export async function applyPaymentCashDefaults(debtId) {
     console.warn('[debts][caixa] padrões', error);
   }
 
+  await setPaymentCashValues(defaults);
+}
+
+/** Preenche Conta, Categoria, Subcategoria e Conta Contábil do modal. */
+export async function setPaymentCashValues(defaults = {}) {
+  await initPaymentCashFields();
+
   const account = $('payment_cash_account');
   if (account) account.value = defaults.bank_account_id ? String(defaults.bank_account_id) : '';
 
@@ -182,37 +189,30 @@ export function hasPaymentCashFiles() {
   return selectedFiles.length > 0;
 }
 
+// Mesmo endpoint do cadastro em Movimentações (upload passa pelo servidor;
+// o PUT direto no bucket esbarra no CORS do navegador).
 async function uploadOne(movId, file) {
-  const mimeType = file.type || 'application/octet-stream';
+  const formData = new FormData();
+  formData.append('movId', String(movId));
+  formData.append('arquivo', file, file.name);
 
-  const signed = await fetchJSON(`${API_BASE}/upload/anexo/sign`, {
+  const res = await fetch(`${API_BASE}/upload/anexo`, {
     method: 'POST',
-    body: JSON.stringify({ movId, filename: file.name, mimeType }),
+    body: formData,
   });
 
-  const put = await fetch(signed.url, {
-    method: 'PUT',
-    headers: { 'Content-Type': mimeType },
-    body: file,
-  });
-  if (!put.ok) throw new Error(`Falha ao enviar ${file.name} (${put.status}).`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const detail = body?.details || body?.detail || body?.message || body?.error || '';
+    throw new Error(`Falha ao enviar ${file.name} (${res.status})${detail ? `: ${detail}` : ''}`);
+  }
 
-  await fetchJSON(`${API_BASE}/upload/anexo/confirm`, {
-    method: 'POST',
-    body: JSON.stringify({
-      movId,
-      filename: file.name,
-      mimeType,
-      sizeBytes: file.size,
-      bucket: signed.bucket,
-      object: signed.object,
-    }),
-  });
+  return res.json().catch(() => null);
 }
 
 /**
- * Envia os anexos escolhidos para a movimentação criada (mesmo fluxo da
- * tela Movimentações: sign → PUT no bucket → confirm).
+ * Envia os anexos escolhidos para a movimentação do pagamento
+ * (POST /api/upload/anexo, o mesmo do cadastro em Movimentações).
  * @returns {Promise<{ sent: number, failed: string[] }>}
  */
 export async function uploadPaymentCashFiles(movId) {

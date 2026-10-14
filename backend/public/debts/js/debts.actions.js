@@ -26,7 +26,8 @@ import {
 import {
   openPaymentsModal,
   submitPaymentForm,
-  deletePayment
+  deletePayment,
+  startEditPayment
 } from './debts.payments.js';
 
 function closeAllModals() {
@@ -50,7 +51,7 @@ export function bindEvents() {
     }
 
     state.page = 1;
-    state.limit = Number(els.pageSize?.value || 20);
+    state.limit = Number(els.pageSize?.value || 50);
 
     await refreshAll();
   });
@@ -62,7 +63,7 @@ export function bindEvents() {
   });
 
   els.pageSize?.addEventListener('change', async () => {
-    state.limit = Number(els.pageSize?.value || 20);
+    state.limit = Number(els.pageSize?.value || 50);
     state.page = 1;
 
     await loadDebts();
@@ -137,6 +138,11 @@ export function bindEvents() {
 
       if (action === 'payments' && id) {
         await openPaymentsModal(id, description);
+        return;
+      }
+
+      if (action === 'edit-payment' && id) {
+        await startEditPayment(id);
         return;
       }
 
