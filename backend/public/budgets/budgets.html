@@ -752,68 +752,73 @@
     </div>
     </header>
     <!-- ======================= MODAL DESCONTO GERAL ======================= -->
-    <div class="c-modal-backdrop hidden" id="globalDiscountModalBackdrop" aria-hidden="true"></div>
+    <div id="globalDiscountModal" class="modal global-discount-modal" aria-hidden="true">
+      <div class="modal__backdrop" data-modal-close></div>
 
-    <div class="c-modal hidden" id="globalDiscountModal" role="dialog" aria-modal="true"
-      aria-labelledby="globalDiscountModalTitle">
-      <div class="c-modal__card">
-        <div class="c-modal__header">
-          <h3 id="globalDiscountModalTitle">Desconto geral do orçamento</h3>
-          <button type="button" class="btn btn-toolbar btn-sm" id="btnGlobalDiscountClose">✖</button>
-        </div>
+      <div class="modal__dialog">
+        <section class="modal__panel modal-width-3" role="dialog" aria-modal="true"
+          aria-labelledby="globalDiscountModalTitle" tabindex="-1">
+          <header class="modal__header modal-header-color-3">
+            <div>
+              <h2 id="globalDiscountModalTitle" class="modal__title">Desconto geral do orçamento</h2>
+              <p class="modal__subtitle">Aplicado sobre o total dos itens após os descontos individuais.</p>
+            </div>
+            <button type="button" class="modal__close" id="btnGlobalDiscountClose" data-modal-close
+              title="Fechar" aria-label="Fechar">&times;</button>
+          </header>
 
-        <div class="c-modal__body">
-          <div class="stack" style="gap:12px;">
-            <label class="field-group">
-              <span class="muted" style="font-weight:600;">Tipo do desconto</span>
-              <select id="globalDiscountTypeModal" class="field-select">
-                <option value="value">Valor (R$)</option>
-                <option value="percent">Percentual (%)</option>
-              </select>
-            </label>
+          <div class="modal__body modal-section">
+            <div class="fields-inline fields-gap-3">
+              <div class="fields fields-h-6 fields-w-16 fields-font-3">
+                <label for="globalDiscountTypeModal">Tipo do desconto</label>
+                <select id="globalDiscountTypeModal">
+                  <option value="value">Valor (R$)</option>
+                  <option value="percent">Percentual (%)</option>
+                </select>
+              </div>
 
-            <label class="field-group">
-              <span class="muted" style="font-weight:600;">Valor</span>
-              <input id="globalDiscountValueModal" type="number" min="0" step="0.01" class="field-input"
-                placeholder="0,00" />
-            </label>
-
-            <div class="muted" style="font-size:.82rem;">
-              O desconto geral será aplicado sobre o total dos itens após os descontos individuais.
+              <div class="fields fields-h-6 fields-w-16 fields-font-3">
+                <label for="globalDiscountValueModal">Valor</label>
+                <input id="globalDiscountValueModal" type="number" min="0" step="0.01" placeholder="0,00" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="c-modal__footer">
-          <button type="button" class="btn btn-toolbar btn-sm" id="btnGlobalDiscountSave">💾 Aplicar</button>
-          <button type="button" class="btn btn-toolbar btn-sm" id="btnGlobalDiscountCancel">Cancelar</button>
-        </div>
+          <footer class="modal__footer modal-footer-color-3">
+            <button type="button" class="btn btn-cancel btn-sm" id="btnGlobalDiscountCancel" data-modal-close>Cancelar</button>
+            <button type="button" class="btn btn-save btn-sm" id="btnGlobalDiscountSave">Aplicar</button>
+          </footer>
+        </section>
       </div>
     </div>
 
     <!-- Modal Observação -->
-    <div class="c-modal-backdrop hidden" id="obsModalBackdrop" aria-hidden="true"></div>
+    <div id="obsModal" class="modal obs-modal" aria-hidden="true">
+      <div class="modal__backdrop" data-modal-close></div>
 
-    <div class="c-modal hidden" id="obsModal" role="dialog" aria-modal="true" aria-labelledby="obsModalTitle">
-      <div class="c-modal__card">
-        <div class="c-modal__header">
-          <button type="button" class="btn btn-toolbar btn-sm" id="btnObsClose">✖</button>
-        </div>
+      <div class="modal__dialog">
+        <section class="modal__panel modal-width-5" role="dialog" aria-modal="true"
+          aria-labelledby="obsModalTitle" tabindex="-1">
+          <header class="modal__header modal-header-color-3">
+            <div>
+              <h2 id="obsModalTitle" class="modal__title">Observação do orçamento</h2>
+              <p class="modal__subtitle">Observações internas ou para o cliente.</p>
+            </div>
+            <button type="button" class="modal__close" id="btnObsClose" data-modal-close
+              title="Fechar" aria-label="Fechar">&times;</button>
+          </header>
 
-        <div class="c-modal__body">
-          <label class="field-group" style="width:100%;">
-            <span class="muted" style="font-weight:600;">Digite a observação</span>
-            <textarea id="obsModalText" class="field-input" rows="6" placeholder="Obs internas / ao cliente"></textarea>
-          </label>
-          <div class="muted" style="margin-top:8px; font-size:.78rem;">
-            Dica: use Enter para quebrar linha.
+          <div class="modal__body modal-section">
+            <label for="obsModalText" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#1e293b;">Observação</label>
+            <textarea id="obsModalText" class="textarea" rows="7" placeholder="Digite a observação..."></textarea>
+            <p class="modal__subtitle" style="margin-top:6px;font-size:12px;">Dica: use Enter para quebrar linha.</p>
           </div>
-        </div>
 
-        <div class="c-modal__footer">
-          <button type="button" class="btn btn-toolbar btn-sm" id="btnObsSave">💾 Salvar</button>
-          <button type="button" class="btn btn-toolbar btn-sm" id="btnObsCancel">Cancelar</button>
-        </div>
+          <footer class="modal__footer modal-footer-color-3">
+            <button type="button" class="btn btn-cancel btn-sm" id="btnObsCancel" data-modal-close>Cancelar</button>
+            <button type="button" class="btn btn-save btn-sm" id="btnObsSave">Salvar</button>
+          </footer>
+        </section>
       </div>
     </div>
 

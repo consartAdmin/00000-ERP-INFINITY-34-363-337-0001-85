@@ -25,6 +25,7 @@ import {
 } from './budgets.items.js';
 import { onPaymentMethodChange } from './budgets.catalogs.js';
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { Modal } from '/public/includes/js/modal.js';
 import {
   persistBudgetPaymentsIfPossible,
   loadBudgetPaymentsForEditor,
@@ -1415,9 +1416,6 @@ function getGlobalDiscountEls() {
   return {
     openBtn: $('#btnGlobalDiscountModal'),
     modal: $('#globalDiscountModal'),
-    backdrop: $('#globalDiscountModalBackdrop'),
-    closeBtn: $('#btnGlobalDiscountClose'),
-    cancelBtn: $('#btnGlobalDiscountCancel'),
     saveBtn: $('#btnGlobalDiscountSave'),
     typeInput: $('#globalDiscountTypeModal'),
     valueInput: $('#globalDiscountValueModal'),
@@ -1431,7 +1429,7 @@ function openGlobalDiscountModal() {
   ensureEditingHeader();
 
   const els = getGlobalDiscountEls();
-  if (!els.modal || !els.backdrop) return;
+  if (!els.modal) return;
 
   const currentType =
     state.editing?.header?.global_discount_type ||
@@ -1447,23 +1445,14 @@ function openGlobalDiscountModal() {
   if (els.typeInput) els.typeInput.value = normalizeDiscountType(currentType);
   if (els.valueInput) els.valueInput.value = String(Math.max(0, currentValue));
 
-  els.modal.classList.remove('hidden');
-  els.backdrop.classList.remove('hidden');
-  els.modal.setAttribute('aria-hidden', 'false');
+  Modal.setup();
+  Modal.open(els.modal, { focusSelector: '#globalDiscountValueModal' });
 
-  setTimeout(() => {
-    els.valueInput?.focus();
-    els.valueInput?.select?.();
-  }, 30);
+  setTimeout(() => els.valueInput?.select?.(), 30);
 }
 
 function closeGlobalDiscountModal() {
-  const els = getGlobalDiscountEls();
-  if (!els.modal || !els.backdrop) return;
-
-  els.modal.classList.add('hidden');
-  els.backdrop.classList.add('hidden');
-  els.modal.setAttribute('aria-hidden', 'true');
+  Modal.close('globalDiscountModal');
 }
 
 function applyGlobalDiscountFromModal() {
@@ -1510,29 +1499,17 @@ function applyGlobalDiscountFromModal() {
 export function bindGlobalDiscountActions() {
   const els = getGlobalDiscountEls();
 
+  // modal.js cuida do X, Cancelar, backdrop e ESC (data-modal-close)
+  Modal.setup();
+
   if (els.openBtn && !els.openBtn.dataset.bound) {
     els.openBtn.addEventListener('click', openGlobalDiscountModal);
     els.openBtn.dataset.bound = '1';
   }
 
-  if (els.closeBtn && !els.closeBtn.dataset.bound) {
-    els.closeBtn.addEventListener('click', closeGlobalDiscountModal);
-    els.closeBtn.dataset.bound = '1';
-  }
-
-  if (els.cancelBtn && !els.cancelBtn.dataset.bound) {
-    els.cancelBtn.addEventListener('click', closeGlobalDiscountModal);
-    els.cancelBtn.dataset.bound = '1';
-  }
-
   if (els.saveBtn && !els.saveBtn.dataset.bound) {
     els.saveBtn.addEventListener('click', applyGlobalDiscountFromModal);
     els.saveBtn.dataset.bound = '1';
-  }
-
-  if (els.backdrop && !els.backdrop.dataset.bound) {
-    els.backdrop.addEventListener('click', closeGlobalDiscountModal);
-    els.backdrop.dataset.bound = '1';
   }
 
   if (els.valueInput && !els.valueInput.dataset.bound) {
@@ -1541,32 +1518,8 @@ export function bindGlobalDiscountActions() {
         e.preventDefault();
         applyGlobalDiscountFromModal();
       }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        closeGlobalDiscountModal();
-      }
     });
     els.valueInput.dataset.bound = '1';
-  }
-
-  if (els.typeInput && !els.typeInput.dataset.bound) {
-    els.typeInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        closeGlobalDiscountModal();
-      }
-    });
-    els.typeInput.dataset.bound = '1';
-  }
-
-  if (!document.body.dataset.globalDiscountEscBound) {
-    document.addEventListener('keydown', (e) => {
-      const modal = $('#globalDiscountModal');
-      if (!modal || modal.classList.contains('hidden')) return;
-      if (e.key === 'Escape') closeGlobalDiscountModal();
-    }, { passive: true });
-
-    document.body.dataset.globalDiscountEscBound = '1';
   }
 }
 

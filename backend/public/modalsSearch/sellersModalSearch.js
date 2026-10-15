@@ -48,7 +48,7 @@ function pickDoc(s) {
   return s?.cpf ?? s?.cnpj ?? s?.document ?? s?.doc ?? s?.tax_id ?? '';
 }
 
-export function openSellersModalSearch({ apiBase = '', onPick, opts = {} } = {}) {
+export function openSellersModalSearch({ apiBase = '', onPick, opts = {}, headers = {} } = {}) {
   const base = String(apiBase || '').trim().replace(/\/$/, '') || window.location.origin;
 
   const cfg = {
@@ -182,7 +182,7 @@ export function openSellersModalSearch({ apiBase = '', onPick, opts = {} } = {})
         Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
 
         const res = await fetch(url.toString(), {
-          headers: { Accept: 'application/json' },
+          headers: { Accept: 'application/json', ...headers },
           credentials: 'include',
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

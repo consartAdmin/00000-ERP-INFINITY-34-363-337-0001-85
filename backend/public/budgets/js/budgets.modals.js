@@ -5,45 +5,17 @@
 // ╚══════════════════════════════════════════════════════════════╝
 
 import { state } from './budgets.core.js';
+import { Modal } from '/public/includes/js/modal.js';
 
 export function setupObsModal() {
-  const obsInput =
-    document.getElementById('obs');
+  const obsInput = document.getElementById('obs');
+  const btnOpen = document.getElementById('btnObsModal');
+  const preview = document.getElementById('obsPreview');
+  const modal = document.getElementById('obsModal');
+  const txt = document.getElementById('obsModalText');
+  const btnSave = document.getElementById('btnObsSave');
 
-  const btnOpen =
-    document.getElementById('btnObsModal');
-
-  const preview =
-    document.getElementById('obsPreview');
-
-  const modal =
-    document.getElementById('obsModal');
-
-  const backdrop =
-    document.getElementById('obsModalBackdrop');
-
-  const txt =
-    document.getElementById('obsModalText');
-
-  const btnSave =
-    document.getElementById('btnObsSave');
-
-  const btnCancel =
-    document.getElementById('btnObsCancel');
-
-  const btnClose =
-    document.getElementById('btnObsClose');
-
-  if (
-    !obsInput ||
-    !btnOpen ||
-    !modal ||
-    !backdrop ||
-    !txt ||
-    !btnSave ||
-    !btnCancel ||
-    !btnClose
-  ) {
+  if (!obsInput || !btnOpen || !modal || !txt || !btnSave) {
     return;
   }
 
@@ -56,47 +28,16 @@ export function setupObsModal() {
 
   modal.dataset.bound = '1';
 
+  // modal.js cuida do X, Cancelar, backdrop e ESC (data-modal-close)
+  Modal.setup();
+
   const open = () => {
-    txt.value =
-      obsInput.value || '';
-
-    modal.classList.remove('hidden');
-    backdrop.classList.remove('hidden');
-
-    modal.setAttribute(
-      'aria-hidden',
-      'false'
-    );
-
-    backdrop.setAttribute(
-      'aria-hidden',
-      'false'
-    );
-
-    setTimeout(
-      () => txt.focus(),
-      0
-    );
-  };
-
-  const close = () => {
-    modal.classList.add('hidden');
-    backdrop.classList.add('hidden');
-
-    modal.setAttribute(
-      'aria-hidden',
-      'true'
-    );
-
-    backdrop.setAttribute(
-      'aria-hidden',
-      'true'
-    );
+    txt.value = obsInput.value || '';
+    Modal.open(modal, { focusSelector: '#obsModalText' });
   };
 
   const applyPreview = () => {
-    const value =
-      (obsInput.value || '').trim();
+    const value = (obsInput.value || '').trim();
 
     if (!preview) {
       return;
@@ -107,67 +48,19 @@ export function setupObsModal() {
       : 'Sem observação';
   };
 
-  btnOpen.addEventListener(
-    'click',
-    open
-  );
+  btnOpen.addEventListener('click', open);
 
-  btnSave.addEventListener(
-    'click',
-    () => {
-      obsInput.value =
-        (txt.value || '').trim();
+  btnSave.addEventListener('click', () => {
+    obsInput.value = (txt.value || '').trim();
 
-      obsInput.dispatchEvent(
-        new Event(
-          'input',
-          { bubbles: true }
-        )
-      );
+    obsInput.dispatchEvent(new Event('input', { bubbles: true }));
+    obsInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-      obsInput.dispatchEvent(
-        new Event(
-          'change',
-          { bubbles: true }
-        )
-      );
+    applyPreview();
+    Modal.close(modal);
+  });
 
-      applyPreview();
-      close();
-    }
-  );
-
-  btnCancel.addEventListener(
-    'click',
-    close
-  );
-
-  btnClose.addEventListener(
-    'click',
-    close
-  );
-
-  backdrop.addEventListener(
-    'click',
-    close
-  );
-
-  document.addEventListener(
-    'keydown',
-    (event) => {
-      if (
-        event.key === 'Escape' &&
-        !modal.classList.contains('hidden')
-      ) {
-        close();
-      }
-    }
-  );
-
-  obsInput.addEventListener(
-    'input',
-    applyPreview
-  );
+  obsInput.addEventListener('input', applyPreview);
 
   applyPreview();
 }

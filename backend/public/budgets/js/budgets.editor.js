@@ -46,6 +46,7 @@ import {
 } from './budgets.nfePreview.js';
 
 import { openTransportersModalSearch } from '/public/modalsSearch/transportersModalSearch.js';
+import { openSellersModalSearch } from '/public/modalsSearch/sellersModalSearch.js';
 import {
   bindBudgetOperationType,
   loadBudgetOperationTypes,
@@ -427,64 +428,33 @@ async function autoPickSellerByCustomer(customerId, { force = false } = {}) {
 }
 
 /**
- * Manual seller picker (simple, functional):
- * - prompt search
- * - hits /api/sellers/search?q=...&limit=20
- * - user chooses by number
+ * Manual seller picker: modal padrão Buscar Vendedor (modals.css / modal.js).
  * NOTE: marks seller_manual=true to prevent auto overwrite
  */
-async function openSellerPicker() {
-  try {
-    ensureEditingShape();
+function openSellerPicker() {
+  ensureEditingShape();
 
-    const q = (window.prompt('Buscar vendedor (nome/apelido/documento):') || '').trim();
-    if (!q) return;
+  openSellersModalSearch({
+    apiBase: getApiBase(),
+    headers: authHeaders(),
+    onPick: (seller) => {
+      const chosenId = seller?.seller_id ?? seller?.id ?? seller?.user_id ?? null;
+      const chosenName = seller?.nickname || seller?.name || seller?.nome || '';
 
-    const url = `${getApiBase()}/api/sellers/search?q=${encodeURIComponent(q)}&limit=20`;
-    const out = await fetchSafe(url, { headers: authHeaders(), method: 'GET' });
+      if (!chosenId) return toast.error('Vendedor', 'Vendedor selecionado sem ID.');
 
-    if (!out.ok) {
-      if (handleAuthFail(out.status, out.text)) return;
-      return toast.error('Vendedor', 'Não foi possível buscar vendedores.');
-    }
+      ensureEditingShape();
+      setSellerOnHeader({ seller_id: chosenId, seller_name: chosenName });
+      state.editing.header.seller_manual = true;
 
-    const j = out.json || {};
-    const list = j?.data || j?.items || (Array.isArray(j) ? j : []) || [];
-
-    if (!Array.isArray(list) || !list.length) {
-      return toast.warn('Vendedor', 'Nenhum vendedor encontrado.');
-    }
-
-    const lines = list.slice(0, 10).map((s, idx) => {
-      const id = s.seller_id ?? s.id ?? s.user_id ?? '';
-      const name = s.nickname || s.name || `ID ${id}`;
-      return `${idx + 1}) ${name} (id=${id})`;
-    });
-
-    const pickRaw = (window.prompt(
-      `Selecione o vendedor:\n\n${lines.join('\n')}\n\nDigite o número (1-${lines.length})`
-    ) || '').trim();
-
-    const n = Number(pickRaw);
-    if (!Number.isFinite(n) || n < 1 || n > lines.length) return;
-
-    const chosen = list[n - 1];
-    const chosenId = chosen.seller_id ?? chosen.id ?? chosen.user_id ?? null;
-
-    if (!chosenId) return toast.error('Vendedor', 'Vendedor selecionado sem ID.');
-
-    setSellerOnHeader({
-      seller_id: chosenId,
-      seller_name: chosen.nickname || chosen.name || '',
-    });
-
-    state.editing.header.seller_manual = true;
-
-    toast.success('Vendedor', `✅ Selecionado: ${chosen.nickname || chosen.name || 'Vendedor'}`);
-  } catch (e) {
-    console.warn('[budgets][seller] openSellerPicker error:', e?.message || e);
-    toast.error('Vendedor', 'Erro ao selecionar vendedor.');
-  }
+      toast.success('Vendedor', `✅ Selecionado: ${chosenName || 'Vendedor'}`);
+    },
+    opts: {
+      title: 'Buscar Vendedor',
+      placeholder: 'Digite nome, apelido ou documento do vendedor...',
+      limit: 50,
+    },
+  });
 }
 
 /* ──────────────────────────────────────────────────────────────
