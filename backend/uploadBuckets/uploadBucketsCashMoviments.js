@@ -56,6 +56,13 @@ function buildObjectPath({ basePrefix = BASE_PREFIX, movId, originalName, date =
   return `${basePrefix}/${y}/${m}/${d}/mov-${movId}/${ts}-${safe}`;
 }
 
+// Pasta raiz do anexo no bucket (ex.: cashMoviments, debts). Só letras,
+// números, '-' e '_'; qualquer outro valor cai no padrão do Caixa.
+function safeBasePrefix(v) {
+  const p = String(v || '').replace(/^\/+|\/+$/g, '');
+  return /^[A-Za-z0-9_-]{1,40}$/.test(p) ? p : BASE_PREFIX;
+}
+
 function isFinitePositiveInt(v) {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 && Number.isInteger(n);
@@ -177,8 +184,9 @@ async function handleUploadAnexo(req, res) {
       });
     }
 
+    const basePrefix = safeBasePrefix(req.body?.basePrefix);
     const objectName = buildObjectPath({
-      basePrefix: (req.body.basePrefix || BASE_PREFIX).replace(/^\/+|\/+$/g, ''),
+      basePrefix,
       movId: movIdNum,
       originalName: req.file.originalname,
     });
@@ -200,7 +208,7 @@ async function handleUploadAnexo(req, res) {
         metadata: {
           cacheControl: 'no-store',
           metadata: {
-            module: 'cashMoviments',
+            module: basePrefix,
             cash_movement_id: String(movIdNum),
             originalName: req.file.originalname || '',
           },

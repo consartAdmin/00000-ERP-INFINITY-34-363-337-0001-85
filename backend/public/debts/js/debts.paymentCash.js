@@ -66,6 +66,8 @@ function renderFiles() {
     ? selectedFiles.map((file) => file.name).join(', ')
     : 'Nenhum arquivo';
   label.title = label.textContent;
+  label.style.color = selectedFiles.length ? '#0f2747' : '#64748b';
+  label.style.fontWeight = selectedFiles.length ? '600' : '';
 }
 
 function addFiles(fileList) {
@@ -190,10 +192,12 @@ export function hasPaymentCashFiles() {
 }
 
 // Mesmo endpoint do cadastro em Movimentações (upload passa pelo servidor;
-// o PUT direto no bucket esbarra no CORS do navegador).
+// o PUT direto no bucket esbarra no CORS do navegador). O arquivo fica na
+// pasta debts/ do bucket e é vinculado à movimentação do pagamento.
 async function uploadOne(movId, file) {
   const formData = new FormData();
   formData.append('movId', String(movId));
+  formData.append('basePrefix', 'debts');
   formData.append('arquivo', file, file.name);
 
   const res = await fetch(`${API_BASE}/upload/anexo`, {

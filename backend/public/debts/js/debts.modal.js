@@ -396,10 +396,10 @@ function injectPaymentModal() {
               <label for="payment_cash_files_btn">Anexos (vão para a movimentação)</label>
               <div id="payment_cash_files_box" style="display:flex;align-items:center;gap:6px;height:25px;min-width:0;">
                 <button type="button" id="payment_cash_files_btn" class="btn btn-flat btn-sm">Anexar</button>
-                <span id="payment_cash_files_label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#64748b;">Nenhum arquivo</span>
+                <span id="payment_cash_files_label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#64748b;" title="Nenhum arquivo">Nenhum arquivo</span>
                 <button type="button" id="payment_cash_files_clear" class="action-icon action-icon--cancel"
                   title="Remover anexos escolhidos" aria-label="Remover anexos escolhidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-                <input type="file" id="payment_cash_files" accept=".pdf,.xml,.png,.jpg,.jpeg,.webp" multiple hidden>
+                <input type="file" id="payment_cash_files" accept=".pdf,.xml,.png,.jpg,.jpeg,.webp" multiple hidden style="display:none !important;">
               </div>
             </div>
           </div>
