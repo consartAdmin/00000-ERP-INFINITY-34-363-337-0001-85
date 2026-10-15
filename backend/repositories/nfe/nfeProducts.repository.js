@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfeProducts.repository.js — Produtos NF-e                  ║
+// ║ nfeProducts.repository.js — Produtos NF-e                            ║
 // ║ ✔ Cache de unidades + coluna SKU                                     ║
 // ║ ✔ Fiscal por SKU + rateio de desconto global                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -7,7 +7,7 @@
 import pool from '../../config/db.js';
 import {
   round2,
-} from './tecnoSpeedNfe.utils.js';
+} from './nfe.utils.js';
 
 /* =========================================================================
  * 🧠 Unidades NF-e

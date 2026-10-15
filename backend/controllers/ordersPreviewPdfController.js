@@ -9,7 +9,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import ordersApi from '../repositories/orders/orders.index.js';
-import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import tecnospeedNfeApi from '../repositories/nfe/nfe.index.js';
 import { generateDanfeFromXml } from '../services/danfeConsartService.js';
 
 /* ──────────────────────────────────────────────────────────────

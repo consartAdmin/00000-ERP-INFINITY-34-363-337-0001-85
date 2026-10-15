@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfeValidation.repository.js — Validação fiscal pré-envio   ║
+// ║ nfeValidation.repository.js — Validação fiscal pré-envio             ║
 // ║ ✔ Checagens completas do payload NF-e                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
@@ -8,7 +8,7 @@ import {
   money,
   nearlyEqual,
   sum,
-} from './tecnoSpeedNfe.utils.js';
+} from './nfe.utils.js';
 
 /* =========================================================================
  * ✅ Validação fiscal completa pré-envio

@@ -4,7 +4,7 @@
 // ║ Downloads XML/DANFE via PlugNotas/TecnoSpeed                                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { obterXml } from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import { obterXml } from '../repositories/nfe/nfe.index.js';
 
 import pool from '../config/db.js';
 

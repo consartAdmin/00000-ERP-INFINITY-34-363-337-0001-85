@@ -11,7 +11,7 @@ import {
 } from './tecnoSpeedNfeClient.repository.js';
 import {
   normalizarIbscbsAntesDoEnvio,
-} from './tecnoSpeedNfe.reformaTributaria.js';
+} from '../nfe/nfe.reformaTributaria.js';
 
 /* =========================================================================
  * 📤 Emitir NF-e

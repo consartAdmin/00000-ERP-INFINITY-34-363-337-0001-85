@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 
 import ordersApi from '../repositories/orders/orders.index.js';
 import customersApi from '../repositories/customers/customers.index.js'; // 🔗 hidratar dados do cliente
-import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import tecnospeedNfeApi from '../repositories/nfe/nfe.index.js';
 import {
   debitOrderStock,
   rollbackOrderStock,

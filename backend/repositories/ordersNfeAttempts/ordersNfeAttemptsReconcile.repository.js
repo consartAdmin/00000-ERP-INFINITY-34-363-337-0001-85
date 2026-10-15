@@ -4,7 +4,7 @@
 
 import pool from '../../config/db.js';
 import ordersApi from '../orders/orders.index.js';
-import tecnospeedNfeApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import tecnospeedNfeApi from '../nfe/nfe.index.js';
 import invoicesIssuedApi from '../invoicesIssued/invoicesIssued.index.js';
 import nfeAsaasSyncApi from '../nfeAsaasSync/nfeAsaasSync.index.js';
 import * as stockFromOrdersService from '../../services/stockFromOrdersService.js';

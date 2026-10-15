@@ -8,7 +8,7 @@
 'use strict';
 
 import pool from '../config/db.js';
-import tecnoSpeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import tecnoSpeedNfeApi from '../repositories/nfe/nfe.index.js';
 import nfeCceApi from '../repositories/nfeCce/nfeCce.index.js';
 
 /* =========================================================================

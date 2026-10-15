@@ -4,7 +4,7 @@
 // ╚═══════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import * as tecnospeedNfeApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import * as tecnospeedNfeApi from '../nfe/nfe.index.js';
 import { ATTEMPTS_TABLE } from './nfeIssuance.constants.js';
 import { providerDocument, providerIdFrom, providerProtocolFrom, providerMessageFrom, findProviderDocumentByIntegrationId, normalizeProviderStatus, logProviderResult } from './nfeIssuance.provider.js';
 import { getBudgetIssuedData } from './nfeIssuanceFiscalContext.repository.js';

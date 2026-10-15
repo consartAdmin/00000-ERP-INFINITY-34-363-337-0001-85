@@ -4,7 +4,7 @@
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import tecnoSpeedNfeApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import tecnoSpeedNfeApi from '../nfe/nfe.index.js';
 import { TABLE_HEAD } from './supplierReturns.constants.js';
 import { toNumber } from './supplierReturns.utils.js';
 import { toNfeStatusCode, nfeStatusIdSql } from './supplierReturns.sql.js';

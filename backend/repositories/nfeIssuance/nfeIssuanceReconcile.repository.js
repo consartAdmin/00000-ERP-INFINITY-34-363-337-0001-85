@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import * as tecnospeedNfeApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import * as tecnospeedNfeApi from '../nfe/nfe.index.js';
 import invoicesIssuedApi from '../../repositories/invoicesIssued/invoicesIssued.index.js';
 import {
   syncAuthorizedBudgetNfe,

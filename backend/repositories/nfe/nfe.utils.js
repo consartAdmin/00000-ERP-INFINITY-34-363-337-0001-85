@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfe.utils.js — Helpers gerais NF-e                         ║
+// ║ nfe.utils.js — Helpers gerais NF-e                                   ║
 // ║ ✔ Modo de estoque, arredondamento, somatórios                        ║
 // ║ ✔ IBGE da cidade + config da empresa (ENV)                           ║
 // ╚══════════════════════════════════════════════════════════════════════╝

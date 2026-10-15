@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfe.sanitizers.js — Sanitização / datas / moeda            ║
+// ║ nfe.sanitizers.js — Sanitização / datas / moeda                      ║
 // ║ ✔ CPF/CNPJ, telefone, CEP, logradouro                                ║
 // ║ ✔ Parse/format de datas e valores BR                                 ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -7,7 +7,7 @@
 import {
   round2,
   onlyDigits,
-} from './tecnoSpeedNfe.utils.js';
+} from './nfe.utils.js';
 
 export function formatLocalISODate(date) {
   const d = parseDateOrNull(date);

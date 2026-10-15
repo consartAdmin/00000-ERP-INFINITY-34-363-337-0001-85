@@ -16,7 +16,7 @@ import { cancelarNfeByOrder }
 import { getOrderDanfe }
     from '../controllers/ordersDanfeController.js';
 import tecnospeedNfeApi
-    from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+    from '../repositories/nfe/nfe.index.js';
 import * as ordersNfeAttemptsApi
     from '../repositories/ordersNfeAttempts/ordersNfeAttempts.index.js';
 import { queueErrorEmail } from '../errorEmailReporter.js';

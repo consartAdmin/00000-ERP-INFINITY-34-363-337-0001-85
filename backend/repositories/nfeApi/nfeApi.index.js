@@ -1,6 +1,6 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ nfeApi.index.js — provedor NF-e API própria (substitui a TecnoSpeed) ║
-// ║ Mesmas funções e formatos de retorno de tecnoSpeedNfe.index.js       ║
+// ║ Mesmas funções e formatos de retorno de nfe/nfe.index.js            ║
 // ║ ✔ emitirNFe, listarNFe, consultarNFe, obterXml, obterPdf, cancelarNFe║
 // ║ Ativado por NFE_PROVIDER=nfe-api (padrão: tecnospeed)                ║
 // ╚══════════════════════════════════════════════════════════════════════╝

@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfeBuild.repository.js — Monta JSON NF-e do pedido         ║
+// ║ nfeBuild.repository.js — Monta JSON NF-e do pedido                   ║
 // ║ ✔ buildNFeFromOrder (padrão PlugNotas)                               ║
 // ║ ✔ Persiste data de emissão no pedido                                 ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -7,7 +7,7 @@
 import pool from '../../config/db.js';
 import {
   NFE_DEBUG,
-} from './tecnoSpeedNfeClient.repository.js';
+} from '../tecnoSpeedNfe/tecnoSpeedNfeClient.repository.js';
 import {
   resolveActiveStockMode,
   round2,
@@ -15,23 +15,23 @@ import {
   sum,
   onlyDigits,
   getEmpresaConfig,
-} from './tecnoSpeedNfe.utils.js';
+} from './nfe.utils.js';
 import {
   formatLocalISODate,
   sanitizeCpfCnpj,
   splitPhone,
   isValidDateObj,
   formatMoneyBRComplete,
-} from './tecnoSpeedNfe.sanitizers.js';
+} from './nfe.sanitizers.js';
 import {
   buildReformaTributariaFromFiscal,
   buildReformaTotals,
-} from './tecnoSpeedNfe.reformaTributaria.js';
+} from './nfe.reformaTributaria.js';
 import {
   peekNextNfeNumber,
   resolveOrderIdForNfe,
   getNextNfeNumberForOrder,
-} from './tecnoSpeedNfeNumbering.repository.js';
+} from './nfeNumbering.repository.js';
 import {
   buildPagamentosFromOrderHeader,
   normalizeCobrancaToTotal,
@@ -39,26 +39,26 @@ import {
   loadBudgetPaymentsForNfe,
   buildPaymentDescriptionFromPayload,
   isPagamentoAVistaReal,
-} from './tecnoSpeedNfePayments.repository.js';
+} from './nfePayments.repository.js';
 import {
   loadUnitsMap,
   loadFiscalBySku,
   loadProductUnitsBySku,
   distribuirDescontoGlobalNosItens,
-} from './tecnoSpeedNfeProducts.repository.js';
+} from './nfeProducts.repository.js';
 import {
   buildIdIntegracaoFromOrder,
   buildDestinatarioFromOrderHeader,
   loadBudgetObservation,
   loadBudgetPaymentDescription,
-} from './tecnoSpeedNfeRecipient.repository.js';
+} from './nfeRecipient.repository.js';
 import {
   validarNFeFiscalmente,
-} from './tecnoSpeedNfeValidation.repository.js';
+} from './nfeValidation.repository.js';
 import {
   buildTransporteFromOrder,
   loadOrderDeliveryForNfe,
-} from './tecnoSpeedNfeTransport.repository.js';
+} from './nfeTransport.repository.js';
 
 /* =========================================================================
  * 🧱 Monta JSON NFe (padrão TecnoSpeed / PlugNotas)

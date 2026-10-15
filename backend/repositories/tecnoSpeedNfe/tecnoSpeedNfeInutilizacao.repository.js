@@ -9,7 +9,7 @@ import {
 } from './tecnoSpeedNfeClient.repository.js';
 import {
   sanitizeCpfCnpj,
-} from './tecnoSpeedNfe.sanitizers.js';
+} from '../nfe/nfe.sanitizers.js';
 
 // ╔════════════════════════════════════════════════════════════╗
 // ║ INUTILIZAR NUMERAÇÃO NF-e                                 ║

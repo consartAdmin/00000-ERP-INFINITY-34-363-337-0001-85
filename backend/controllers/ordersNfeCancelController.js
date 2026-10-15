@@ -4,7 +4,7 @@
 // ║ a API realmente confirmar o cancelamento                             ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import tecnospeedNfeApi from '../repositories/tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import tecnospeedNfeApi from '../repositories/nfe/nfe.index.js';
 import ordersApi from '../repositories/orders/orders.index.js';
 
 // -----------------------------------------------------------------------

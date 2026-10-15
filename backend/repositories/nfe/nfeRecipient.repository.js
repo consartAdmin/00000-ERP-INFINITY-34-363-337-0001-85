@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfeRecipient.repository.js — Destinatário NF-e             ║
+// ║ nfeRecipient.repository.js — Destinatário NF-e                       ║
 // ║ ✔ idIntegracao do pedido/orçamento                                   ║
 // ║ ✔ Destinatário + observação/pagto do orçamento                       ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -10,17 +10,17 @@ import {
   round2,
   toUpperSafe,
   resolveCodigoCidadeIbge,
-} from './tecnoSpeedNfe.utils.js';
+} from './nfe.utils.js';
 import {
   splitPhone,
   sanitizeCep,
   montarLogradouroNfe,
   formatDateBR,
   formatMoneyBR,
-} from './tecnoSpeedNfe.sanitizers.js';
+} from './nfe.sanitizers.js';
 import {
   resolveOrderIdForNfe,
-} from './tecnoSpeedNfeNumbering.repository.js';
+} from './nfeNumbering.repository.js';
 
 /* =========================================================================
  * 🧱 Helpers integração / destinatário / observação

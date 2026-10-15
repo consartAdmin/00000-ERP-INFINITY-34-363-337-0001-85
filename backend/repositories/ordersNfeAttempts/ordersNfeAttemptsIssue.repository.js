@@ -4,7 +4,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import ordersApi from '../orders/orders.index.js';
-import tecnospeedNfeApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import tecnospeedNfeApi from '../nfe/nfe.index.js';
 import { ORDERS_NFE_ATTEMPTS_TABLE } from './ordersNfeAttempts.catalog.js';
 import { NFE_STATUS_ID } from './ordersNfeAttempts.constants.js';
 import { positiveBigInt } from './ordersNfeAttempts.sanitizers.js';

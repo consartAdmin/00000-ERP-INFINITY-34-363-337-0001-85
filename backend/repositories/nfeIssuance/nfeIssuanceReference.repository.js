@@ -4,7 +4,7 @@
 // ╚═════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import * as tecnospeedNfeApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import * as tecnospeedNfeApi from '../nfe/nfe.index.js';
 import { ATTEMPTS_TABLE, STATUS_TABLE } from './nfeIssuance.constants.js';
 import { positiveInteger } from './nfeIssuance.utils.js';
 import { providerIdFrom, findProviderDocumentByIntegrationId } from './nfeIssuance.provider.js';

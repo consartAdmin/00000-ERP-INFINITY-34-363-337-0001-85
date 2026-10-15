@@ -6,7 +6,7 @@
 import pool from '../../config/db.js';
 import {
   emitirNFeUsoConsumo,
-} from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+} from '../nfe/nfe.index.js';
 
 export async function emitNfe(usoConsumoId) {
   const id = Number(usoConsumoId);

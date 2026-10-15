@@ -3,7 +3,7 @@
 // ║ download do XML e da DANFE da NF-e do orçamento ║
 // ╚═════════════════════════════════════════════════╝
 
-import * as tecnospeedNfeApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import * as tecnospeedNfeApi from '../nfe/nfe.index.js';
 import { getBudgetNfeReference, resolveProviderId } from './nfeIssuanceReference.repository.js';
 
 export async function getBudgetNfeXml(budgetId) {

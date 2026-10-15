@@ -8,21 +8,21 @@ import {
   round4,
   onlyDigits,
   getEmpresaConfig,
-} from './tecnoSpeedNfe.utils.js';
+} from '../nfe/nfe.utils.js';
 import {
   sanitizeCpfCnpj,
   splitPhone,
-} from './tecnoSpeedNfe.sanitizers.js';
+} from '../nfe/nfe.sanitizers.js';
 import {
   buildReformaTributariaFromFiscal,
   buildReformaTotals,
-} from './tecnoSpeedNfe.reformaTributaria.js';
+} from '../nfe/nfe.reformaTributaria.js';
 import {
   getNextNfeNumberFromBasicTable,
-} from './tecnoSpeedNfeNumbering.repository.js';
+} from '../nfe/nfeNumbering.repository.js';
 import {
   loadFiscalBySku,
-} from './tecnoSpeedNfeProducts.repository.js';
+} from '../nfe/nfeProducts.repository.js';
 import {
   emitirNFe,
 } from './tecnoSpeedNfeEmit.repository.js';

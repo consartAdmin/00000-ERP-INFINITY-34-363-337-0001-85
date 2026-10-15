@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfe.reformaTributaria.js — Reforma Tributária (IBS/CBS)    ║
+// ║ nfe.reformaTributaria.js — Reforma Tributária (IBS/CBS)              ║
 // ║ ✔ Monta grupos IBS/CBS por item e totais                             ║
 // ║ ✔ Normaliza IBS/CBS antes do envio                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -8,7 +8,7 @@ import {
   round2,
   round4,
   onlyDigits,
-} from './tecnoSpeedNfe.utils.js';
+} from './nfe.utils.js';
 
 /* =========================================================================
  * Reforma Tributária — grupos IS e IBS/CBS (PlugNotas)

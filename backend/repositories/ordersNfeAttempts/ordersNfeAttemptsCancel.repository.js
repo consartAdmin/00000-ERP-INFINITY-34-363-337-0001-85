@@ -3,7 +3,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import ordersApi from '../orders/orders.index.js';
-import tecnospeedNfeApi from '../tecnoSpeedNfe/tecnoSpeedNfe.index.js';
+import tecnospeedNfeApi from '../nfe/nfe.index.js';
 import { positiveBigInt } from './ordersNfeAttempts.sanitizers.js';
 import { providerDocument } from './ordersNfeAttempts.utils.js';
 import { getLatestTrackableByOrderId } from './ordersNfeAttemptsQuery.repository.js';

@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfeNumbering.repository.js — Numeração NF-e                ║
+// ║ nfeNumbering.repository.js — Numeração NF-e                          ║
 // ║ ✔ Tabela basic NF-e + reserva de número                              ║
 // ║ ✔ Reuso de nfe_number em orders/budgets                              ║
 // ╚══════════════════════════════════════════════════════════════════════╝

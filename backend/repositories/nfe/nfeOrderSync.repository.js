@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfeOrderSync.repository.js — Sincroniza NF-e com ORDERS    ║
+// ║ nfeOrderSync.repository.js — Sincroniza NF-e com ORDERS              ║
 // ║ ✔ Mapeia resumo → campos do pedido                                   ║
 // ║ ✔ reconcileOrderNfe + baixa de estoque                               ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -8,10 +8,10 @@ import pool from '../../config/db.js';
 import * as stockFromOrdersService from '../../services/stockFromOrdersService.js';
 import {
   toUpperSafe,
-} from './tecnoSpeedNfe.utils.js';
+} from './nfe.utils.js';
 import {
   consultarNFe,
-} from './tecnoSpeedNfeQuery.repository.js';
+} from '../tecnoSpeedNfe/tecnoSpeedNfeQuery.repository.js';
 
 /* =========================================================================
  * 🔁 Atualização de ORDERS com dados da NF-e

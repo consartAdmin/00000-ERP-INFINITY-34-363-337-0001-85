@@ -1,36 +1,36 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfe.index.js — Integração TecnoSpeed / PlugNotas NF-e      ║
+// ║ nfe.index.js — Integração TecnoSpeed / PlugNotas NF-e                ║
 // ║ Mantém a mesma API pública do antigo tecnoSpeedNfeApi.js             ║
 // ║ ✔ Emissão, consulta, listagem, cancelamento, CC-e e inutilização     ║
 // ║ ✔ NF-e de devolução ao fornecedor e de uso e consumo                 ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 // Cliente primeiro: carrega dotenv + axios e registra os logs de boot.
-import { getEffectiveConfig } from './tecnoSpeedNfeClient.repository.js';
+import { getEffectiveConfig } from '../tecnoSpeedNfe/tecnoSpeedNfeClient.repository.js';
 import { cancelarNFe } from '../cancelarNfe/cancelarNfe.index.js';
-import { buildNFeFromOrder } from './tecnoSpeedNfeBuild.repository.js';
-import { emitirNFe as emitirNFeTecnospeed } from './tecnoSpeedNfeEmit.repository.js';
+import { buildNFeFromOrder } from './nfeBuild.repository.js';
+import { emitirNFe as emitirNFeTecnospeed } from '../tecnoSpeedNfe/tecnoSpeedNfeEmit.repository.js';
 import {
   consultarNFe as consultarNFeTecnospeed,
   obterXml as obterXmlTecnospeed,
   obterPdf as obterPdfTecnospeed,
   extrairTpAmb,
-} from './tecnoSpeedNfeQuery.repository.js';
-import { listarNFe as listarNFeTecnospeed } from './tecnoSpeedNfeList.repository.js';
+} from '../tecnoSpeedNfe/tecnoSpeedNfeQuery.repository.js';
+import { listarNFe as listarNFeTecnospeed } from '../tecnoSpeedNfe/tecnoSpeedNfeList.repository.js';
 import { routeProvider } from '../nfeApi/nfeApi.index.js';
-import { reconcileOrderNfe } from './tecnoSpeedNfeOrderSync.repository.js';
+import { reconcileOrderNfe } from './nfeOrderSync.repository.js';
 import {
   emitirCCe as emitirCCeTecnospeed,
   consultarStatusCCe as consultarStatusCCeTecnospeed,
   obterPdfCCe as obterPdfCCeTecnospeed,
   obterXmlCCe as obterXmlCCeTecnospeed,
-} from './tecnoSpeedNfeCce.repository.js';
+} from '../tecnoSpeedNfe/tecnoSpeedNfeCce.repository.js';
 import {
   inutilizarNumeracao as inutilizarNumeracaoTecnospeed,
   consultarInutilizacao,
-} from './tecnoSpeedNfeInutilizacao.repository.js';
-import { emitirNFeSupplierReturn } from './tecnoSpeedNfeSupplierReturn.repository.js';
-import { emitirNFeUsoConsumo } from './tecnoSpeedNfeUsoConsumo.repository.js';
+} from '../tecnoSpeedNfe/tecnoSpeedNfeInutilizacao.repository.js';
+import { emitirNFeSupplierReturn } from '../tecnoSpeedNfe/tecnoSpeedNfeSupplierReturn.repository.js';
+import { emitirNFeUsoConsumo } from '../tecnoSpeedNfe/tecnoSpeedNfeUsoConsumo.repository.js';
 
 /* =========================================================================
  * 🔀 Provedor: NFE_PROVIDER=nfe-api usa a NF-e API própria; padrão TecnoSpeed.

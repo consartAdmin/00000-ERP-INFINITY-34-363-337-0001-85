@@ -16,7 +16,7 @@ import '../appFeatures/appFeatures.index.js';
 import axios from 'axios';
 import {
   sanitizeCpfCnpj,
-} from './tecnoSpeedNfe.sanitizers.js';
+} from '../nfe/nfe.sanitizers.js';
 
 /* =========================================================================
  * 🔧 Carregamento de variáveis de ambiente ANTES de tudo (força backend/.env)

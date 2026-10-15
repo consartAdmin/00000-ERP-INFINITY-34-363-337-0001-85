@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfePayments.repository.js — Pagamentos / Cobrança          ║
+// ║ nfePayments.repository.js — Pagamentos / Cobrança                    ║
 // ║ ✔ tPag, meios de pagamento, parcelas                                 ║
 // ║ ✔ Pagamentos reais do orçamento                                      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -9,7 +9,7 @@ import paymentMethodsApi from '../paymentMethods/paymentMethods.index.js';
 import {
   round2,
   sum,
-} from './tecnoSpeedNfe.utils.js';
+} from './nfe.utils.js';
 import {
   formatLocalISODate,
   isValidDateObj,
@@ -17,7 +17,7 @@ import {
   addDays,
   formatDateBR,
   formatMoneyBR,
-} from './tecnoSpeedNfe.sanitizers.js';
+} from './nfe.sanitizers.js';
 
 /* =========================================================================
  * 💳 Pagamentos

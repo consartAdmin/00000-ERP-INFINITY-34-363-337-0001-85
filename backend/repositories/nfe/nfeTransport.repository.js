@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ tecnoSpeedNfeTransport.repository.js — Transporte NF-e               ║
+// ║ nfeTransport.repository.js — Transporte NF-e                         ║
 // ║ ✔ Monta grupo transporte + entrega do pedido                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
@@ -7,7 +7,7 @@ import pool from '../../config/db.js';
 import {
   onlyDigits,
   toUpperSafe,
-} from './tecnoSpeedNfe.utils.js';
+} from './nfe.utils.js';
 
 export function buildTransporteFromOrder(header = {}, totalFrete = 0, { strict = true } = {}) {
   const shipping =
@@ -131,21 +131,25 @@ export function buildTransporteFromOrder(header = {}, totalFrete = 0, { strict =
       .map((v) => Number(v))
       .find((n) => Number.isFinite(n) && n > 0) || 0;
 
-  if (quantidade > 0) {
-    const volume = {
-      quantidade,
-      pesoBruto: Number(shipping.gross_weight || 0),
-      pesoLiquido: Number(shipping.net_weight || 0),
-    };
+  // Peso bruto/líquido vão para a NF-e mesmo sem quantidade de volumes
+  // (o DANFE da prévia já mostra o peso; antes ele sumia na emissão).
+  const pesoBruto = Number(shipping.gross_weight || 0);
+  const pesoLiquido = Number(shipping.net_weight || 0);
 
-    const especie = limit(shipping.volume_species, 60);
-    const marca = limit(shipping.volume_brand, 60);
-    const numeracao = limit(shipping.volume_numbering, 60);
+  const volume = {};
+  if (quantidade > 0) volume.quantidade = quantidade;
+  if (Number.isFinite(pesoBruto) && pesoBruto > 0) volume.pesoBruto = pesoBruto;
+  if (Number.isFinite(pesoLiquido) && pesoLiquido > 0) volume.pesoLiquido = pesoLiquido;
 
-    if (especie) volume.especie = especie;
-    if (marca) volume.marca = marca;
-    if (numeracao) volume.numeracao = numeracao;
+  const especie = limit(shipping.volume_species, 60);
+  const marca = limit(shipping.volume_brand, 60);
+  const numeracao = limit(shipping.volume_numbering, 60);
 
+  if (especie) volume.especie = especie;
+  if (marca) volume.marca = marca;
+  if (numeracao) volume.numeracao = numeracao;
+
+  if (Object.keys(volume).length) {
     transporte.volumes = [volume];
   }
 
