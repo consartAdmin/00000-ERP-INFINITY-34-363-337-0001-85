@@ -27,7 +27,7 @@ const qsa = (sel, el = document) => [...el.querySelectorAll(sel)];
 
 let state = {
   page: 1,
-  pageSize: 20,
+  pageSize: 50,
   total: 0,
   search: '',
   status: '',
@@ -422,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (pageSizeSelect) {
     pageSizeSelect.addEventListener('change', () => {
-      state.pageSize = Number(pageSizeSelect.value) || 20;
+      state.pageSize = Number(pageSizeSelect.value) || 50;
       state.page = 1;
       loadList();
     });

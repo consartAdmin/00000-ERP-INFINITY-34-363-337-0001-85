@@ -3,6 +3,8 @@
 // ║ CONSART ERP                                                          ║
 // ║                                                                      ║
 // ║ Tabela: altura das linhas, largura e altura da área da tabela.       ║
+// ║ Exibição: linhas por página (select "Mostrar" do rodapé) e ordenação ║
+// ║   inicial (cabeçalhos th[data-sort-column] do sortableTable.js).     ║
 // ║ Por coluna: visível, largura e alinhamento (título e dados).         ║
 // ║ Salvo por USUÁRIO no banco (/api/user-table-preferences/:tableKey).  ║
 // ║ O localStorage fica só como cache para aplicar o layout sem piscar.  ║
@@ -15,6 +17,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import { apiFetch } from '/public/includes/js/apiFetch.js';
+import { Modal } from '/public/includes/js/modal.js';
 
 const PREFS_URL = '/api/user-table-preferences/';
 const CACHE_PREFIX = 'consart.tableSettings.v1.';
@@ -26,6 +29,10 @@ const COL_WIDTH = { min: 40, max: 1200 };
 const ROW_HEIGHT = { min: 18, max: 120 };
 const TABLE_HEIGHT = { min: 120, max: 3000 };
 const TABLE_WIDTH = { '%': { min: 20, max: 100 }, px: { min: 300, max: 6000 } };
+const PAGE_SIZE = { min: 1, max: 1000 };
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
+const SORT_COLUMN_PATTERN = /^[a-zA-Z0-9._-]{1,80}$/;
+const PAGE_SIZE_SELECT = '.table-footer__page-size-select';
 
 const ALIGNS = [
   { value: '', label: 'Padrão' },
@@ -54,6 +61,43 @@ function inRange(value, { min, max }) {
 
 function resolveElement(value) {
   return typeof value === 'string' ? document.querySelector(value) : value;
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Espera o elemento ficar sem mutações por `quietMs` (a tela terminou de renderizar). */
+function waitIdle(el, { quietMs = 300, maxMs = 6000 } = {}) {
+  return new Promise((resolve) => {
+    let quietTimer = null;
+    const done = () => {
+      observer.disconnect();
+      clearTimeout(quietTimer);
+      clearTimeout(maxTimer);
+      resolve();
+    };
+    const observer = new MutationObserver(() => {
+      clearTimeout(quietTimer);
+      quietTimer = setTimeout(done, quietMs);
+    });
+    observer.observe(el, { childList: true, subtree: true, attributes: true, characterData: true });
+    quietTimer = setTimeout(done, quietMs);
+    const maxTimer = setTimeout(done, maxMs);
+  });
+}
+
+/** Espera o <tbody> receber a primeira linha (dados carregados). */
+function waitFirstRows(getTable, maxMs = 15000) {
+  const hasRows = () => (getTable()?.tBodies[0]?.rows.length || 0) > 0;
+  if (hasRows()) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const tick = () => {
+      if (hasRows()) return resolve(true);
+      if (Date.now() - started > maxMs) return resolve(false);
+      setTimeout(tick, 150);
+    };
+    tick();
+  });
 }
 
 /* ------------------------------------------------------------ instância */
@@ -168,7 +212,76 @@ export function createTableSettings(options = {}) {
       height: inRange(t.height, TABLE_HEIGHT),
       width: inRange(t.width, TABLE_WIDTH[widthUnit]),
       widthUnit,
+      pageSize: inRange(t.pageSize, PAGE_SIZE),
+      sortColumn: SORT_COLUMN_PATTERN.test(String(t.sortColumn || '')) ? t.sortColumn : '',
+      sortDir: t.sortDir === 'desc' ? 'desc' : 'asc',
     };
+  }
+
+  /* ---------------- exibição: linhas por página e ordenação */
+
+  /** Select "Mostrar" do rodapé mais próximo da tabela. */
+  function findPageSizeSelect() {
+    for (let el = inst.wrapper.parentElement; el && el !== document.body; el = el.parentElement) {
+      const select = el.querySelector(PAGE_SIZE_SELECT);
+      if (select) return select;
+    }
+    return null;
+  }
+
+  /** Cabeçalhos ordenáveis (sortableTable.js): [{ column, label, th }]. */
+  function getSortColumns() {
+    const headers = getTable()?.querySelectorAll(':scope > thead th[data-sort-column]') || [];
+    return [...headers].map((th) => ({
+      column: th.dataset.sortColumn,
+      label: th.textContent.replace(/[↕↑↓]/g, '').replace(/\s+/g, ' ').trim() || th.dataset.sortColumn,
+      th,
+    })).filter((c) => SORT_COLUMN_PATTERN.test(c.column));
+  }
+
+  let behaviorRun = 0;
+
+  /**
+   * Aplica linhas por página e ordenação pelos próprios controles da tela
+   * (dispara o "change" do Mostrar e clica no cabeçalho), então funciona
+   * tanto com paginação/ordenação no navegador quanto no backend.
+   */
+  async function applyBehavior() {
+    const run = ++behaviorRun;
+    const t = tablePrefs();
+    if (!t.pageSize && !t.sortColumn) return;
+
+    const select = t.pageSize ? findPageSizeSelect() : null;
+    if (select && select.value !== String(t.pageSize)) {
+      if (![...select.options].some((o) => o.value === String(t.pageSize))) {
+        select.add(new Option(`${t.pageSize} linhas`, String(t.pageSize)));
+      }
+      select.value = String(t.pageSize);
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      await waitIdle(inst.wrapper);
+      if (run !== behaviorRun) return;
+    }
+
+    if (!t.sortColumn) return;
+    const want = t.sortDir === 'desc' ? 'descending' : 'ascending';
+    // 1º clique numa coluna nova = crescente; 2º = decrescente
+    for (let i = 0; i < 3; i += 1) {
+      const sortCol = getSortColumns().find((c) => c.column === t.sortColumn);
+      if (!sortCol || sortCol.th.getAttribute('aria-sort') === want) return;
+      const button = sortCol.th.querySelector('[data-sort-button]') || sortCol.th;
+      for (let w = 0; button.disabled && w < 40; w += 1) await sleep(150); // ordenação anterior em andamento
+      button.click();
+      await waitIdle(inst.wrapper);
+      if (run !== behaviorRun) return;
+    }
+  }
+
+  /** Na abertura da tela: espera os dados chegarem e aplica uma vez. */
+  async function applyBehaviorOnLoad() {
+    const loaded = await waitFirstRows(getTable);
+    if (!loaded) return;
+    await waitIdle(inst.wrapper);
+    await applyBehavior();
   }
 
   /* ---------------- aplicação */
@@ -183,6 +296,11 @@ export function createTableSettings(options = {}) {
 
     const rules = [];
     const t = tablePrefs();
+
+    // a ⚙️ injetada fica no canto direito do cabeçalho: reserva espaço no último título
+    if (!options.trigger) {
+      rules.push(`${tableSel} > thead > tr > th:last-child { padding-right: 32px !important; }`);
+    }
 
     if (t.rowHeight) {
       const pad = `max(1px, calc((${t.rowHeight}px - var(--table-cell-line-height, 16px)) / 2))`;
@@ -247,6 +365,7 @@ export function createTableSettings(options = {}) {
     }
     inst.savedPrefs = clone(inst.prefs);
     writeCache(cacheKey, inst.prefs);
+    applyBehavior();
   }
 
   /** Busca o layout do usuário no banco; na 1ª vez, migra o que estava no navegador. */
@@ -359,6 +478,7 @@ export function createTableSettings(options = {}) {
 
   Object.assign(inst, {
     getColumns, isVisible, widthOf, alignOf, tablePrefs, applyStyles, save, attach,
+    findPageSizeSelect, getSortColumns,
     markDirty() {
       inst.dirty = true;
     },
@@ -395,7 +515,7 @@ export function createTableSettings(options = {}) {
 
   instances.set(tableKey, inst);
   attach(wrapper);
-  loadServerPrefs();
+  loadServerPrefs().finally(applyBehaviorOnLoad);
 
   return inst.api;
 }
@@ -430,15 +550,15 @@ function ensureModal() {
   if (modal) return modal;
 
   modal = document.createElement('div');
-  modal.className = 'modal ts-modal';
+  modal.className = 'modal modal-width-8 modal-height-8 ts-modal';
   modal.id = 'tableSettingsModal';
   modal.setAttribute('aria-hidden', 'true');
   modal.innerHTML = `
     <div class="modal__backdrop" data-ts-close></div>
     <div class="modal__dialog">
-      <div class="modal__panel modal-width-8 modal-height-8 modal-header-color-2 modal-footer-color-1" role="dialog"
+      <section class="modal__panel" role="dialog"
         aria-modal="true" aria-labelledby="tableSettingsModalTitle" tabindex="-1">
-        <header class="modal__header">
+        <header class="modal__header modal-header-color-3">
           <div>
             <h2 class="modal__title" id="tableSettingsModalTitle">⚙️ Configurar tabela</h2>
             <p class="ts-subtitle">As mudanças aparecem na tabela e só valem após Salvar.</p>
@@ -474,6 +594,28 @@ function ensureModal() {
             <p class="ts-hint">Vazio = tamanho padrão da tela.</p>
           </section>
 
+          <section class="ts-section" data-ts-behavior-section>
+            <h3 class="ts-section__title">Exibição</h3>
+            <div class="ts-table-fields">
+              <label class="ts-field" data-ts-pagesize-field>
+                <span>Linhas por página</span>
+                <select class="ts-input" data-ts-table="pageSize"></select>
+              </label>
+              <label class="ts-field" data-ts-sort-field>
+                <span>Ordenar por</span>
+                <select class="ts-input ts-input--wide" data-ts-table="sortColumn"></select>
+              </label>
+              <label class="ts-field" data-ts-sort-field>
+                <span>Ordem</span>
+                <select class="ts-input" data-ts-table="sortDir">
+                  <option value="asc">↑ Crescente</option>
+                  <option value="desc">↓ Decrescente</option>
+                </select>
+              </label>
+            </div>
+            <p class="ts-hint">Aplicado ao abrir a tela e ao Salvar. Padrão = como a tela já abre hoje.</p>
+          </section>
+
           <section class="ts-section" data-ts-columns-section>
             <h3 class="ts-section__title">Colunas</h3>
             <table class="table table-zebra ts-cols" aria-label="Configuração das colunas">
@@ -497,9 +639,10 @@ function ensureModal() {
           <button type="button" class="btn btn-cancel btn-sm" data-ts-close>Fechar</button>
           <button type="button" class="btn btn-save btn-sm" data-ts-save disabled>💾 Salvar</button>
         </footer>
-      </div>
+      </section>
     </div>`;
   document.body.appendChild(modal);
+  Modal.setup(); // foco preso no modal (Tab); Esc/fechar passam pelo closeModal abaixo
 
   modal.addEventListener('click', (event) => {
     if (event.target.closest('[data-ts-close]')) closeModal();
@@ -584,6 +727,33 @@ function renderTableFields() {
   width.min = range.min;
   width.max = range.max;
   set('widthUnit', t.widthUnit);
+  renderBehaviorFields(t);
+}
+
+function renderBehaviorFields(t) {
+  const pageSelect = active.findPageSizeSelect();
+  const sortColumns = active.getSortColumns();
+
+  modal.querySelector('[data-ts-pagesize-field]').hidden = !pageSelect;
+  modal.querySelectorAll('[data-ts-sort-field]').forEach((el) => { el.hidden = sortColumns.length === 0; });
+  modal.querySelector('[data-ts-behavior-section]').hidden = !pageSelect && sortColumns.length === 0;
+
+  const sizes = new Set(PAGE_SIZE_OPTIONS);
+  if (pageSelect) [...pageSelect.options].forEach((o) => { const n = inRange(o.value, PAGE_SIZE); if (n) sizes.add(n); });
+  if (t.pageSize) sizes.add(t.pageSize);
+  const pageOpts = [...sizes].sort((a, b) => a - b)
+    .map((n) => `<option value="${n}" ${n === t.pageSize ? 'selected' : ''}>${n} linhas</option>`).join('');
+  modal.querySelector('[data-ts-table="pageSize"]').innerHTML =
+    `<option value="" ${t.pageSize ? '' : 'selected'}>Padrão da tela</option>${pageOpts}`;
+
+  const sortOpts = sortColumns.map((c) =>
+    `<option value="${esc(c.column)}" ${c.column === t.sortColumn ? 'selected' : ''}>${esc(c.label)}</option>`).join('');
+  modal.querySelector('[data-ts-table="sortColumn"]').innerHTML =
+    `<option value="" ${t.sortColumn ? '' : 'selected'}>Padrão da tela</option>${sortOpts}`;
+
+  const dir = modal.querySelector('[data-ts-table="sortDir"]');
+  dir.value = t.sortDir;
+  dir.disabled = !t.sortColumn;
 }
 
 function renderModal() {
@@ -623,10 +793,8 @@ function openModal(inst) {
   active = inst;
   renderModal();
   markClean();
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden', 'false');
+  Modal.open(modal, { focusSelector: '.modal__close' });
   inst.trigger?.setAttribute('aria-expanded', 'true');
-  requestAnimationFrame(() => modal.querySelector('.modal__close')?.focus());
 }
 
 /** Fecha o modal; com alterações não salvas, pergunta antes de descartar. */
@@ -636,10 +804,8 @@ function closeModal() {
     if (!confirm('Há alterações não salvas na tabela. Descartar e fechar?')) return false;
     active.discard();
   }
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden', 'true');
+  Modal.close(modal); // devolve o foco para a ⚙️
   active.trigger?.setAttribute('aria-expanded', 'false');
-  active.trigger?.focus();
   active = null;
   return true;
 }
@@ -651,6 +817,17 @@ function handleColumnChange(event) {
     // trocar a unidade invalida o número digitado
     active.update(TABLE_PREF, { widthUnit: event.target.value === 'px' ? 'px' : null, width: null });
     renderTableFields();
+    markDirty();
+    return;
+  }
+
+  const behaviorField = event.target.dataset.tsTable;
+  if (behaviorField === 'pageSize' || behaviorField === 'sortColumn' || behaviorField === 'sortDir') {
+    const value = event.target.value;
+    if (behaviorField === 'pageSize') active.update(TABLE_PREF, { pageSize: inRange(value, PAGE_SIZE) });
+    else if (behaviorField === 'sortColumn') active.update(TABLE_PREF, value ? { sortColumn: value } : { sortColumn: null, sortDir: null });
+    else active.update(TABLE_PREF, { sortDir: value === 'desc' ? 'desc' : null });
+    renderBehaviorFields(active.tablePrefs());
     markDirty();
     return;
   }

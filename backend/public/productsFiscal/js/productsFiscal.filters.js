@@ -12,7 +12,7 @@ import { value } from './productsFiscal.utils.js';
 export function readListFilters() {
   return {
     query: value('q').trim(),
-    limit: Number(value('limit') || 20),
+    limit: Number(value('limit') || 50),
     offset: state.currentOffset,
   };
 }
@@ -32,11 +32,11 @@ export function resetListOffset() {
 }
 
 export function previousListPage() {
-  const limit = Number(value('limit') || 20);
+  const limit = Number(value('limit') || 50);
   state.currentOffset = Math.max(0, state.currentOffset - limit);
 }
 
 export function nextListPage() {
-  const limit = Number(value('limit') || 20);
+  const limit = Number(value('limit') || 50);
   state.currentOffset += limit;
 }

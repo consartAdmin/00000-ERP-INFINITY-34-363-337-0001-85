@@ -31,7 +31,7 @@ function openForm(row = {}) {
 
 async function load() {
   try {
-    const result = await api.list({ q: $('opSearch').value.trim(), active: $('opActive').value, limit: Number($('apRowsPerPage')?.value || 20), offset: 0 });
+    const result = await api.list({ q: $('opSearch').value.trim(), active: $('opActive').value, limit: Number($('apRowsPerPage')?.value || 50), offset: 0 });
     rows = result.rows || [];
     $('opBody').innerHTML = rows.map((o) => `<tr><td>${o.operation_type_id}</td><td>${escapeHtml(o.code)}</td><td>${escapeHtml(o.name)}</td><td>${escapeHtml(o.nature_operation)}</td><td>${escapeHtml(o.cfop_internal || '—')}</td><td>${escapeHtml(o.cfop_interstate || '—')}</td><td>${o.generates_receivable ? 'Sim' : 'Não'}</td><td>${o.moves_stock ? 'Sim' : 'Não'}</td><td>${o.active ? 'Ativa' : 'Inativa'}</td><td><div class="op-actions"><button type="button" class="btn btn-sm" data-edit="${o.operation_type_id}">✏️</button><button type="button" class="btn btn-sm op-delete" data-delete="${o.operation_type_id}">🗑️</button></div></td></tr>`).join('');
     if ($('apTableInfo')) $('apTableInfo').textContent = `${Number(result.total || rows.length)} registro(s) encontrado(s)`;

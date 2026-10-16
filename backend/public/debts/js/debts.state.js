@@ -4,7 +4,7 @@
 export const state = {
   rows: [],
   page: 1,
-  limit: 20,
+  limit: 50,
   total: 0,
   pages: 1,
   activeDebtId: null,

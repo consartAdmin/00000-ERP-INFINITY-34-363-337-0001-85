@@ -1,0 +1,50 @@
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=bh3distribuidora-com-br.20251104.gappssmtp.com; s=20251104; t=1792054321; x=1792659121; darn=srsindicocom.br;
+        h=content-type:mime-version:date:message-id:subject:to:from:from:to
+         :cc:subject:date:message-id:reply-to:content-type;
+        bh=dfCa2AYuLMCwZnUW60bCdQorC2/sF5D8uDX+h1fOZSw=;
+        b=oCjP2qvkJYsqn3NqEQArI1Hr3vWxoOqzSwdTvhPKa8F2KEp640ujYGWbBAYv6/bDXF
+         bO4LDV1y6cQgA795s6UqQoXW719bw0zKhIOFmeqOsBAlsniW/mxeDaLe0Sn8+06iwPUu
+         fJx+vJtTqjErHe4XuKaD9moYD+nzPR0iH+TuPSEkV1v/AY63E8iHiYtwedZcIGo7fguX
+         EFHDGG/ChOkMYF7eaZns/5wujZO8nsPmfI1WE6/5KsJ8unZvI3O5Fdi/y5oFEye8Vzka
+         eWZO+nkJybaXkk/8MxVM9OOTfi+6OUTMk+CtDefB+2fCxk2NwuYoUV3xmXPmGoZSH9RL
+         +pXA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1792054321; x=1792659121;
+        h=content-type:mime-version:date:message-id:subject:to:from:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=dfCa2AYuLMCwZnUW60bCdQorC2/sF5D8uDX+h1fOZSw=;
+        b=hFZOyUqvy8ulNZ4X2sTsAowmYhZqNkSzOaMHXFmapc/GW5tuCYGU5dR2LDXLnsjZXj
+         j4HfapVG0hDkgg18wcDhKKBZWOgWJcyHn5YJpBoLop0A9Zdp9MAETOKQMje/duohYd5L
+         btpGWqCLpnaSyyxNnSsJItfVK+T4ukb43KArAfbJMbvMynZ1Ipl4KFuk+7x6o6IJVdzD
+         O4CD404vOg3myX4qCbNS0mjsYYMXyFnj75mMMo/ctqtb7lm1ODInvhvjfZFHJFkKASAM
+         7SFU8Jo4bkI7UaaX/Q3rgy+tjgW/xhjnRmKme7inf03Uwwkv8obsJ34Q5yhWfubVkMmu
+         rz+A==
+X-Gm-Message-State: AFq9FYIVXxfdnDRrm9CSX5ppKYDPTgdWJlHzFUnnW0hrYn8EZyFC1nmZ
+	iGxZI2xYFAyGnPYkwX5kltMpq/xIEiFBwYMHeg/9KhJICteDxrx25P86uwgctRE5JnCyUwUgmj+
+	B05Y+K9iF
+X-Gm-Gg: AYBFou15aaxo8BEhCVs9cLTnLjrvJlLgA8pYcxkcYT3E4JsxZrpiyOUVVIlb5is9oqq
+	frPE7kp1SUASL5tiVRgPTcPzMzOhZJrEYNADdj/idZv1nyjOrmro7/GRajfIpO02M54XP5xhJ96
+	hxz5t98uMQCVe7xc4hzv3E3K7RNxo9PBR49wfy2g01I94YIgWoFNeOb4vN6DytY8/9A/EKqzyHz
+	ss7CQDIQOT4xmSD3YgnPweIMBScCS9czafibdHaviauh1BJTCPKrHRJJMbch5rQ8uKeUAMIe7t2
+	Yg0WTT6L05Q2AlUh/ZvKQgjPIoDGEdI0a+H2+O+enr5cppFrlrgvZc0JXgx6DZ86P2BEfJ8Tgxn
+	7d8sLTKKNQXHo4Yj4B3IoOWq7Bg1ScMSRhxG9XxLLC/XGt14PUjaWBAh4513Q6DkdXpzQqK38Ho
+	kH6Spa96eDQ5OBR9Jo8zHhGPWTn/K8Z/em+SCdS/kYyPi9Qu6nGYte5wmRGcVCaLSQ09eJFcJUT
+	Y5941SBB3YMse/KzNc8ufUBOWIiRa7fGfE196vS/swCakrkKDA+XQ==
+X-Received: by 2002:a05:6830:82f8:b0:829:f7c6:72a5 with SMTP id 46e09a7af769-830991f4979mr13647341a34.16.1792054320453;
+        Thu, 15 Oct 2026 01:52:00 -0700 (PDT)
+Return-Path: <vendas1@bh3distribuidora.com.br>
+Received: from [127.0.0.1] (186.44.96.34.bc.googleusercontent.com. [34.96.44.186])
+        by smtp.gmail.com with ESMTPSA id 46e09a7af769-835c9da2b31sm12449423a34.5.2026.10.15.01.51.57
+        for <rafael@srsindicocom.br>
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 15 Oct 2026 01:51:58 -0700 (PDT)
+From: vendas1@bh3distribuidora.com.br
+To: rafael@srsindicocom.br
+Subject: =?UTF-8?Q?NF-e_8914_=E2=80=94_BH3_SUPPLY?=
+Message-ID: <18facfb7-664e-3e87-31f5-8130fabf39bd@bh3distribuidora.com.br>
+Date: Thu, 15 Oct 2026 08:51:57 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="--_NmP-c175bd327c38ea73-Part_1"
+

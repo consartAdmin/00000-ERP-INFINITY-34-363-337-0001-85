@@ -25,6 +25,8 @@ export async function createMovement(payload = {}) {
     'subcategory',
     'chart_account_id',
     'is_deductible',
+    'is_pis_cofins_creditable',
+    'deduct_charges_only',
     'is_active',
   ];
 
@@ -37,7 +39,7 @@ export async function createMovement(payload = {}) {
       return value === undefined ? true : !!value;
     }
 
-    if (c === 'is_deductible') {
+    if (c === 'is_deductible' || c === 'is_pis_cofins_creditable' || c === 'deduct_charges_only') {
       return value === undefined ? null : toBool(value, null);
     }
 

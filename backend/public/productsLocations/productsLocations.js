@@ -8,6 +8,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import { openProductsModalSearch } from '/public/modalsSearch/productsModalSearch.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 // ---------------------------------------------------------------------
 // Helper definitivo: utiliza a função global getApiBase() do apiBase.js
@@ -986,13 +987,24 @@ async function startEditLocation(id) {
 }
 
 async function deleteLocation(id) {
-  if (!confirm('Do you really want to delete this location?')) return;
+  const ok = await showCenterModal({
+    variant: 'warning',
+    title: 'Confirmar exclusão',
+    message: 'Deseja realmente excluir esta localização?',
+    okText: 'Sim, excluir',
+    closeText: 'Cancelar',
+  });
+  if (ok !== true) return;
 
   try {
     await apiDelete(`${LOC_API}/product-locations/${id}`);
     await loadLocations();
   } catch (err) {
     console.error('[localizacoes] deleteLocation error:', err);
-    alert('Error deleting location.');
+    showCenterModal({
+      variant: 'error',
+      title: 'Erro',
+      message: 'Não foi possível excluir a localização.',
+    });
   }
 }

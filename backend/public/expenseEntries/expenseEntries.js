@@ -93,8 +93,8 @@ async function uploadXml(url, file) {
 
 let state = {
   page: 1,
-  pageSize: Number($('#fPageSize')?.value || 20),
-  paging: { total: 0, page: 1, pageSize: 20 },
+  pageSize: Number($('#fPageSize')?.value || 50),
+  paging: { total: 0, page: 1, pageSize: 50 },
   rows: [],
   xmlItems: [],
 };
@@ -109,7 +109,7 @@ function readFilters() {
     dateFrom: $('#fDateFrom').value || '',
     dateTo: $('#fDateTo').value || '',
     orderBy: $('#fOrderBy').value || 'issueDate desc',
-    pageSize: Number($('#fPageSize').value || 20),
+    pageSize: Number($('#fPageSize').value || 50),
   };
 }
 
@@ -139,7 +139,7 @@ function render() {
   const rows = state.rows || [];
   const total = Number(state.paging?.total || 0);
   const page = Number(state.paging?.page || state.page || 1);
-  const pageSize = Number(state.paging?.pageSize || readFilters().pageSize || 20);
+  const pageSize = Number(state.paging?.pageSize || readFilters().pageSize || 50);
 
   const sum = rows.reduce((acc, r) => acc + Number(Number(r.totalExpenseValue || 0)), 0);
 
@@ -531,7 +531,7 @@ function bindEvents() {
   $('#btnNext').addEventListener('click', () => {
     const page = Number(state.paging?.page || state.page || 1);
     const total = Number(state.paging?.total || 0);
-    const pageSize = Number(state.paging?.pageSize || readFilters().pageSize || 20);
+    const pageSize = Number(state.paging?.pageSize || readFilters().pageSize || 50);
     const pages = Math.max(1, Math.ceil(total / pageSize));
     if (page >= pages) return;
     state.page = page + 1;

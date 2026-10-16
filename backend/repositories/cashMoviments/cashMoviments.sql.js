@@ -85,6 +85,8 @@ export function movementSelectSql({ includeAll = false } = {}) {
       m.is_deductible,
       s.is_deductible AS subcategoria_is_deductible,
       COALESCE(m.is_deductible, s.is_deductible, FALSE) AS is_deductible_final,
+      m.is_pis_cofins_creditable,
+      m.deduct_charges_only,
       s.dre_type AS dre_tipo,
 
       m.created_at,

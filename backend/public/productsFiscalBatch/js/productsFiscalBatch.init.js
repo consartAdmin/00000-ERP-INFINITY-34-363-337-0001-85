@@ -61,7 +61,7 @@ function bindEvents() {
   });
 
   dom.pageSize?.addEventListener('change', () => {
-    state.pageSize = Number(dom.pageSize.value) || 20;
+    state.pageSize = Number(dom.pageSize.value) || 50;
     state.page = 1;
     loadProducts();
   });

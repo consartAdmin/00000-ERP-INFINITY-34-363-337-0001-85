@@ -173,6 +173,13 @@ foreach ($k in $ENVALL.Keys) {
     continue
   }
 
+  # Caminho da chave no Windows: não existe no container e quebra o `new Storage()`.
+  # No Cloud Run o acesso ao bucket vem da service account do serviço (ver deploy-bucket.ps1).
+  if ($k -eq "GOOGLE_APPLICATION_CREDENTIALS") {
+    Write-Host "[ENV] Ignorando variável só local: $k" -ForegroundColor Yellow
+    continue
+  }
+
   $APPENV[$k] = $ENVALL[$k]
 }
 

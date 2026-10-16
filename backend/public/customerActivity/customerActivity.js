@@ -11,7 +11,7 @@ const API_BASE = '/api/customer-activity';
 
 const state = {
   page: 1,
-  limit: 20,
+  limit: 50,
   total: 0,
   status: '',
   search: '',
@@ -534,7 +534,7 @@ function bindEvents() {
   });
 
   els.limitFilter?.addEventListener('change', () => {
-    state.limit = Number(els.limitFilter.value) || 20;
+    state.limit = Number(els.limitFilter.value) || 50;
     state.page = 1;
     loadActivities();
   });

@@ -7,6 +7,7 @@
 
 'use strict';
 
+import { Modal } from '/public/includes/js/modal.js';
 import { openParentModal } from './chartOfAccountsParentModal.js';
 
 const API_BASE = '/api/chart-of-accounts';
@@ -17,6 +18,7 @@ const modalState = {
   id: null,
   saving: false,
   loadedParents: false,
+  onSaved: null,
 };
 
 function escapeHtml(value) {
@@ -75,105 +77,103 @@ function ensureModal() {
 
   modal = document.createElement('div');
   modal.id = MODAL_ID;
-  modal.className = 'coa-modal hidden';
+  modal.className = 'modal';
+  modal.setAttribute('aria-hidden', 'true');
   modal.innerHTML = `
-    <div class="coa-modal__backdrop" data-close="true"></div>
+    <div class="modal__backdrop" data-close="true"></div>
 
-    <div class="coa-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="coaModalTitle">
-      <div class="coa-modal__header">
-        <div>
-          <h2 id="coaModalTitle" class="coa-modal__title">Nova Conta</h2>
-          <p id="coaModalSubtitle" class="coa-modal__subtitle">Preencha os dados da conta contábil.</p>
-        </div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="coaModalTitle">
 
-        <button type="button" class="coa-modal__close" id="coaModalCloseBtn" aria-label="Fechar modal">✕</button>
-      </div>
+        <header class="modal__header modal-header-color-3">
+          <h3 id="coaModalTitle" class="modal__title">Nova Conta</h3>
+          <button type="button" class="modal__close" id="coaModalCloseBtn" aria-label="Fechar" title="Fechar">×</button>
+        </header>
 
-      <form id="coaModalForm" class="coa-modal__form" novalidate>
-        <div class="coa-form-grid">
-          <div class="coa-form-field">
-            <label for="coaCode">Código</label>
-            <input type="text" id="coaCode" name="code" placeholder="Ex: 1.1.1.001" autocomplete="off" />
-          </div>
+        <div class="modal__body">
+          <form id="coaModalForm" novalidate>
+            <p id="coaModalSubtitle" class="coa-modal__subtitle">Preencha os dados da conta contábil.</p>
 
-          <div class="coa-form-field coa-form-field--span-2">
-            <label for="coaDescription">Descrição</label>
-            <input type="text" id="coaDescription" name="description" placeholder="Ex: Caixa" autocomplete="off" />
-          </div>
+            <div class="modal-form-grid modal-form-grid--3">
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaCode">Código</label>
+                <input type="text" id="coaCode" name="code" placeholder="Ex: 1.1.1.001" autocomplete="off" />
+              </div>
 
-          <div class="coa-form-field">
-            <label for="coaType">Tipo</label>
-            <select id="coaType" name="account_type">
-              <option value="">Selecione...</option>
-              <option value="ASSET">Ativo</option>
-              <option value="LIABILITY">Passivo</option>
-              <option value="EQUITY">Patrimônio Líquido</option>
-              <option value="REVENUE">Receita</option>
-              <option value="EXPENSE">Despesa</option>
-            </select>
-          </div>
+              <div class="fields fields-h-6 fields-w-full modal-field--span-2">
+                <label for="coaDescription">Descrição</label>
+                <input type="text" id="coaDescription" name="description" placeholder="Ex: Caixa" autocomplete="off" />
+              </div>
 
-          <div class="coa-form-field">
-            <label for="coaNature">Natureza</label>
-            <select id="coaNature" name="nature">
-              <option value="">Selecione...</option>
-              <option value="DEBIT">Débito</option>
-              <option value="CREDIT">Crédito</option>
-            </select>
-          </div>
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaType">Tipo</label>
+                <select id="coaType" name="account_type">
+                  <option value="">Selecione...</option>
+                  <option value="ASSET">Ativo</option>
+                  <option value="LIABILITY">Passivo</option>
+                  <option value="EQUITY">Patrimônio Líquido</option>
+                  <option value="REVENUE">Receita</option>
+                  <option value="EXPENSE">Despesa</option>
+                </select>
+              </div>
 
-          <div class="coa-form-field">
-            <label for="coaLevel">Nível</label>
-            <input type="number" id="coaLevel" name="level" min="1" step="1" placeholder="Ex: 4" />
-          </div>
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaNature">Natureza</label>
+                <select id="coaNature" name="nature">
+                  <option value="">Selecione...</option>
+                  <option value="DEBIT">Débito</option>
+                  <option value="CREDIT">Crédito</option>
+                </select>
+              </div>
 
-          <div class="coa-form-field coa-form-field--span-2">
-            <label for="coaParent">Conta Pai</label>
-            <div class="coa-field-with-action">
-              <select id="coaParent" name="parent_account_id">
-                <option value="">Sem conta pai</option>
-              </select>
-              <button type="button" id="coaNewParentBtn" class="coa-modal-btn coa-field-action-btn"
-                title="Cadastrar nova conta pai" aria-label="Cadastrar nova conta pai">
-                ＋ Nova
-              </button>
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaLevel">Nível</label>
+                <input type="number" id="coaLevel" name="level" min="1" step="1" placeholder="Ex: 4" />
+              </div>
+
+              <div class="fields fields-h-6 fields-w-full modal-field--span-2">
+                <label for="coaParent">Conta Pai</label>
+                <div class="inline-field">
+                  <select id="coaParent" name="parent_account_id">
+                    <option value="">Sem conta pai</option>
+                  </select>
+                  <button type="button" id="coaNewParentBtn" class="btn btn-new btn-sm"
+                    title="Cadastrar nova conta pai" aria-label="Cadastrar nova conta pai">＋ Nova</button>
+                </div>
+              </div>
+
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaPosting">Aceita Lançamento</label>
+                <select id="coaPosting" name="allows_posting">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
+
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaActive">Status</label>
+                <select id="coaActive" name="is_active">
+                  <option value="true">Ativo</option>
+                  <option value="false">Inativo</option>
+                </select>
+              </div>
+
+              <div class="fields fields-w-full modal-field--span-full">
+                <label for="coaNotes">Observações</label>
+                <textarea id="coaNotes" name="notes" rows="4" placeholder="Observações da conta..."></textarea>
+              </div>
             </div>
-          </div>
 
-          <div class="coa-form-field">
-            <label for="coaPosting">Aceita Lançamento</label>
-            <select id="coaPosting" name="allows_posting">
-              <option value="true">Sim</option>
-              <option value="false">Não</option>
-            </select>
-          </div>
-
-          <div class="coa-form-field">
-            <label for="coaActive">Status</label>
-            <select id="coaActive" name="is_active">
-              <option value="true">Ativo</option>
-              <option value="false">Inativo</option>
-            </select>
-          </div>
-
-          <div class="coa-form-field coa-form-field--span-3">
-            <label for="coaNotes">Observações</label>
-            <textarea id="coaNotes" name="notes" rows="4" placeholder="Observações da conta..."></textarea>
-          </div>
+            <div id="coaModalError" class="coa-modal__error hidden"></div>
+          </form>
         </div>
 
-        <div id="coaModalError" class="coa-modal__error hidden"></div>
+        <footer class="modal__footer modal-footer-color-3">
+          <button type="button" id="coaModalCancelBtn" class="btn btn-cancel btn-sm">Cancelar</button>
+          <button type="submit" id="coaModalSaveBtn" class="btn btn-save btn-sm" form="coaModalForm">Salvar</button>
+        </footer>
 
-        <div class="coa-modal__footer">
-          <button type="button" id="coaModalCancelBtn" class="coa-modal-btn coa-modal-btn--secondary">
-            Cancelar
-          </button>
-
-          <button type="submit" id="coaModalSaveBtn" class="coa-modal-btn coa-modal-btn--primary">
-            Salvar
-          </button>
-        </div>
-      </form>
+      </section>
     </div>
   `;
 
@@ -344,6 +344,7 @@ async function saveForm(event) {
     setSaving(true);
 
     const payload = buildPayload();
+    let saved = null;
 
     if (modalState.mode === 'edit' && modalState.id) {
       await fetchJson(`${API_BASE}/${modalState.id}`, {
@@ -352,14 +353,20 @@ async function saveForm(event) {
       });
       showToast('Conta atualizada com sucesso.', 'success');
     } else {
-      await fetchJson(`${API_BASE}`, {
+      const res = await fetchJson(`${API_BASE}`, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
       showToast('Conta criada com sucesso.', 'success');
+      saved = res?.data ?? res;
     }
 
     closeChartOfAccountsModal();
+
+    // Callback opcional de quem abriu o modal (ex.: Edição de Clientes)
+    if (typeof modalState.onSaved === 'function') {
+      modalState.onSaved(saved);
+    }
 
     if (typeof window.chartOfAccountsReload === 'function') {
       window.chartOfAccountsReload();
@@ -413,25 +420,20 @@ function closeChartOfAccountsModal() {
   const modal = getModal();
   if (!modal) return;
 
-  modal.classList.add('hidden');
-  modal.classList.remove('is-open');
-  document.body.classList.remove('coa-modal-open');
+  Modal.close(modal);
   setError('');
 }
 
 function openModalUi() {
   const modal = ensureModal();
-  modal.classList.remove('hidden');
-  modal.classList.add('is-open');
-  document.body.classList.add('coa-modal-open');
-
-  const fields = getFields();
-  window.setTimeout(() => fields?.code?.focus(), 30);
+  Modal.open(modal, { focusSelector: '#coaCode' });
 }
 
-async function openChartOfAccountsModal({ mode = 'create', id = null } = {}) {
+async function openChartOfAccountsModal({ mode = 'create', id = null, onSaved = null } = {}) {
   ensureModal();
   resetForm();
+
+  modalState.onSaved = onSaved;
 
   modalState.mode = mode === 'edit' ? 'edit' : 'create';
   modalState.id = id ? Number(id) : null;
@@ -489,15 +491,8 @@ function bindModalEvents(modal) {
   fields.code.addEventListener('input', onCodeInput);
   fields.newParentBtn.addEventListener('click', onNewParentClick);
 
-  document.addEventListener('keydown', (event) => {
-    // Um modal global (.modal) aberto por cima tem prioridade no ESC
-    if (document.querySelector('.modal.is-open')) return;
-
-    if (event.key === 'Escape' && !modalState.saving) {
-      const isOpen = getModal() && !getModal().classList.contains('hidden');
-      if (isOpen) closeChartOfAccountsModal();
-    }
-  });
+  // ESC e foco ficam com o controlador global (modal.js)
+  Modal.setup();
 }
 
 window.openChartOfAccountsModal = openChartOfAccountsModal;

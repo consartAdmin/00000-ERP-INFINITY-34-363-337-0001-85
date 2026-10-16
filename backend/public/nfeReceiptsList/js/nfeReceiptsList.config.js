@@ -9,7 +9,7 @@ export const API_NFE_RECEIPTS = '/api/nfe-receipts';
 export const API_SIGNATURE_PNG = (accessKey) =>
   `${API_NFE_RECEIPTS}/key/${encodeURIComponent(accessKey)}/signature.png`;
 
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 50;
 
 // Limite máximo aceito pelo backend por página (usado na exportação).
 export const MAX_API_PAGE_SIZE = 100;

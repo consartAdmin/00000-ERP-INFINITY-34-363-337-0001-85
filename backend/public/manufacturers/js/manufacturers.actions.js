@@ -67,7 +67,7 @@ export function handleReload() {
 }
 
 export function handlePageSizeChange() {
-  const value = Number(elements.pageSizeSelect?.value || 20);
+  const value = Number(elements.pageSizeSelect?.value || 50);
   setLimit(Number.isFinite(value) && value > 0 ? value : 20);
   loadManufacturers({ page: 1, q: state.currentQuery });
 }

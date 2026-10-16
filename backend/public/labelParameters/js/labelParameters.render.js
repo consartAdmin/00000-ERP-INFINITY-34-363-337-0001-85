@@ -15,7 +15,7 @@ export function renderLoadError() {
 
 export function renderCurrentPage() {
   const totalRecords = state.currentList.length;
-  const rowsPerPage = Math.max(1, Number(state.pagination.rowsPerPage) || 20);
+  const rowsPerPage = Math.max(1, Number(state.pagination.rowsPerPage) || 50);
   const totalPages = Math.max(1, Math.ceil(totalRecords / rowsPerPage));
   state.pagination.page = Math.min(Math.max(1, state.pagination.page), totalPages);
 

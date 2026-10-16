@@ -17,7 +17,7 @@ export const state = {
   total: 0,
 
   page: 1,
-  limit: 20,
+  limit: 50,
 
   q: '',
   dateFrom: '',

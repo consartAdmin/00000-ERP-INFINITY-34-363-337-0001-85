@@ -1,6 +1,6 @@
 export const state = {
   page: 1,
-  pageSize: 20,
+  pageSize: 50,
   totalPages: 1,
 
   // Últimos registros efetivamente gerados primeiro

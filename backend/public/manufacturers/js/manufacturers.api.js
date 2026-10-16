@@ -14,7 +14,7 @@ async function request(url, options) {
   }
 }
 
-export async function apiList({ page = 1, limit = 20, q = '' } = {}) {
+export async function apiList({ page = 1, limit = 50, q = '' } = {}) {
   const url = new URL(API_URL);
   url.searchParams.set('page', String(page));
   url.searchParams.set('limit', String(limit));

@@ -8,7 +8,7 @@ export const state = {
   search: '',
   includeInactive: false,
   page: 1,
-  pageSize: 20,
+  pageSize: 50,
   editingId: null,
   loading: false,
   saving: false,

@@ -30,7 +30,7 @@ export const ROUTES = Object.freeze({
     const params = new URLSearchParams();
 
     params.set('q', q || '');
-    params.set('limit', limit || 20);
+    params.set('limit', limit || 50);
     params.set('offset', offset || 0);
 
     if (dateFrom) params.set('dateFrom', dateFrom);

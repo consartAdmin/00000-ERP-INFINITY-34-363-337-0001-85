@@ -66,7 +66,7 @@ const ROUTES = Object.freeze({
   ordersSearch: (q, limit, offset, dateFrom, dateTo, status) => {
     const params = new URLSearchParams();
     params.set('q', q || '');
-    params.set('limit', limit || 20);
+    params.set('limit', limit || 50);
     params.set('offset', offset || 0);
     if (dateFrom) params.set('dateFrom', dateFrom);
     if (dateTo) params.set('dateTo', dateTo);
@@ -99,7 +99,7 @@ const state = {
   list: [],
   total: 0,
   page: 1,
-  limit: 20,
+  limit: 50,
   q: '',
   dateFrom: '',
   dateTo: '',
@@ -296,7 +296,7 @@ function bindListUI() {
   });
 
   $('#limitPedidos')?.addEventListener('change', (e) => {
-    state.limit = Number(e.target.value) || 20;
+    state.limit = Number(e.target.value) || 50;
     state.page = 1;
     fetchPedidos();
   });

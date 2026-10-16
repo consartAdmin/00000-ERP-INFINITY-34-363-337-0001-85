@@ -129,7 +129,7 @@ export function renderRows() {
 ============================================================================ */
 
 export function renderFooter() {
-    const limit = Math.max(Number(state.limit) || 20, 1);
+    const limit = Math.max(Number(state.limit) || 50, 1);
     const total = Math.max(Number(state.total) || 0, 0);
     const totalPages = Math.max(Math.ceil(total / limit), 1);
 

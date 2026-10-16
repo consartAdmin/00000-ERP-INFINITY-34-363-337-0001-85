@@ -24,7 +24,7 @@ function bindEvents() {
     state.search = event.currentTarget.value.trim(); state.page = 1;
     clearTimeout(timer); timer = setTimeout(loadSuppliers, 350);
   });
-  qs('#pageSize')?.addEventListener('change', (event) => { state.limit = Number(event.currentTarget.value) || 20; state.page = 1; loadSuppliers(); });
+  qs('#pageSize')?.addEventListener('change', (event) => { state.limit = Number(event.currentTarget.value) || 50; state.page = 1; loadSuppliers(); });
   qs('#btnPrevious')?.addEventListener('click', () => { if (state.page > 1) { state.page -= 1; loadSuppliers(); } });
   qs('#btnNext')?.addEventListener('click', () => { if (state.page * state.limit < state.total) { state.page += 1; loadSuppliers(); } });
   qs('#btnReload')?.addEventListener('click', loadSuppliers);

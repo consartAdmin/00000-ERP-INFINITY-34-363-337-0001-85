@@ -31,6 +31,7 @@ const SORTABLE_COLUMNS = Object.freeze([
   'issuer',
   'recipient',
   'total_amount',
+  'issue_date',
   'created_at',
 ]);
 

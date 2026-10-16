@@ -8,6 +8,12 @@
 
 'use strict';
 
+/** Data de emissão da NF-e (coluna DATE): mostra dd/mm/aaaa sem deslocar o fuso. */
+function formatIssueDate(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+}
+
 export function initList({ core, ROUTES, state, refs, switchTab }) {
   const API_INBOUND = ROUTES.inboundBase();
 
@@ -135,6 +141,7 @@ export function initList({ core, ROUTES, state, refs, switchTab }) {
   <td>${row.issuer || ''}</td>
   <td>${row.recipient || ''}</td>
   <td>${core.moneyBR(row.total_amount || 0)}</td>
+  <td>${formatIssueDate(row.issue_date)}</td>
   <td>
     ${row.created_at
           ? new Date(row.created_at).toLocaleString('pt-BR')
@@ -162,7 +169,7 @@ export function initList({ core, ROUTES, state, refs, switchTab }) {
 
   function renderPagination() {
     const totalRecords = Number(state.total) || 0;
-    const pageSize = Number(state.pageSize) || 20;
+    const pageSize = Number(state.pageSize) || 50;
     const totalPages = Math.max(
       1,
       Math.ceil(totalRecords / pageSize)

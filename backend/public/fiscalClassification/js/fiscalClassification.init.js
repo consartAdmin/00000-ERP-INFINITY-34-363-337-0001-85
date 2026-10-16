@@ -32,7 +32,7 @@ function bindEvents() {
   $('#btnNext')?.addEventListener('click', goToNextPage);
   $('#btnLimpar')?.addEventListener('click', clearClassificationForm);
   $('#pageSize')?.addEventListener('change', (event) => {
-    state.pageSize = Number(event.target.value) || 20;
+    state.pageSize = Number(event.target.value) || 50;
     state.page = 1;
     loadClassifications();
   });

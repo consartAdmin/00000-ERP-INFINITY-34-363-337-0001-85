@@ -7,7 +7,7 @@
 
 export const state = {
   page: 1,
-  limit: 20,
+  limit: 50,
   total: 0,
   q: '',
   status: '',

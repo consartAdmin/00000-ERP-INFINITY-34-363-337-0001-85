@@ -517,7 +517,7 @@ function bindUI() {
   };
 
   el('citiesLimit').onchange = async (ev) => {
-    S.citiesLimit = Number(ev.target.value || 20) || 20;
+    S.citiesLimit = Number(ev.target.value || 50) || 50;
     S.citiesOffset = 0;
     S.citiesTotal = null;
     await loadCities();

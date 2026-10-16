@@ -120,7 +120,7 @@ export function bindActions() {
   });
   dom.rowsPerPage?.addEventListener('change', () => {
     const pageSize = Number(dom.rowsPerPage.value);
-    state.pageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 20;
+    state.pageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 50;
     state.page = 1;
     renderActiveTable();
   });

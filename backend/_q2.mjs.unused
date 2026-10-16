@@ -1,0 +1,5 @@
+await import('./config/loadEnv.js');
+const pool=(await import('./config/db.js')).default;
+const r=await pool.query(`SELECT id,name,path,menu_type,parent_id,sort_order,html_id,feature,is_active,is_public FROM public."moduleSystem" WHERE path ILIKE '%fiscal%' OR path ILIKE '%enterprise%' OR name ILIKE '%fiscal%' OR name ILIKE '%tribut%' OR path ILIKE '%regime%' ORDER BY id`);
+console.table(r.rows);
+process.exit(0);

@@ -11,7 +11,7 @@
 /* ========================================================================== */
 let state = {
   page: 1,
-  limit: 20,
+  limit: 50,
   q: '',
   loading: false,
   aborter: null,
@@ -193,13 +193,13 @@ async function exportStockPositionPdf() {
 /* ========================================================================== */
 /* Lista de produtos com busca e paginação                                     */
 /* ========================================================================== */
-async function loadFromApi({ q = '', page = 1, limit = 20 } = {}) {
+async function loadFromApi({ q = '', page = 1, limit = 50 } = {}) {
   const signal = state?.aborter?.signal;
 
   const sp = new URLSearchParams();
   if (q) sp.set('q', q);
   sp.set('page', String(page || 1));
-  sp.set('limit', String(limit || 20));
+  sp.set('limit', String(limit || 50));
 
   const url = q
     ? `${API_BASE}/api/products/search?${sp.toString()}`

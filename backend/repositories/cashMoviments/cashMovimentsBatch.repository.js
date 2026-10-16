@@ -5,6 +5,7 @@
 
 import pool from '../../config/db.js';
 import { normalizeTipoMovimentacao } from './cashMoviments.sanitizers.js';
+import { ensureCashTaxColumns } from './cashMoviments.utils.js';
 
 /**
  * Alteração em lote das movimentações selecionadas.
@@ -15,6 +16,9 @@ import { normalizeTipoMovimentacao } from './cashMoviments.sanitizers.js';
  *   chart_account_id   id de "chartOfAccounts" ou null (remove)
  *   category_id        id de "cashCategories" (sem subcategory_id → limpa a subcategoria)
  *   subcategory_id     id de "cashSubcategories" ou null; exige category_id
+ *   is_deductible      true | false | null (null = segue a subcategoria)
+ *   is_pis_cofins_creditable  true | false
+ *   deduct_charges_only true | false (dedutível: só juros, multas e encargos)
  */
 export async function updateMovementsBatch(ids = [], changes = {}) {
   const badRequest = (message) => Object.assign(new Error(message), { statusCode: 400 });
@@ -37,6 +41,7 @@ export async function updateMovementsBatch(ids = [], changes = {}) {
     throw badRequest('É permitido alterar no máximo 500 movimentações por operação.');
   }
 
+  await ensureCashTaxColumns();
   const client = await pool.connect();
 
   try {
@@ -109,6 +114,29 @@ export async function updateMovementsBatch(ids = [], changes = {}) {
       }
       // Subcategoria antiga pertence à categoria antiga → limpa quando não informada
       add('subcategory = ?', subcategoryId ? String(subcategoryId) : null);
+    }
+
+    if (has('is_deductible')) {
+      const value = changes.is_deductible;
+      if (value !== null && typeof value !== 'boolean') {
+        throw badRequest('Valor inválido para "Dedutível no IRPJ/CSLL".');
+      }
+      add('is_deductible = ?', value);
+    }
+
+    if (has('deduct_charges_only')) {
+      if (typeof changes.deduct_charges_only !== 'boolean') {
+        throw badRequest('Valor inválido para "Dedutível no IRPJ/CSLL".');
+      }
+      add('deduct_charges_only = ?', changes.deduct_charges_only);
+    }
+
+    if (has('is_pis_cofins_creditable')) {
+      const value = changes.is_pis_cofins_creditable;
+      if (typeof value !== 'boolean') {
+        throw badRequest('Valor inválido para "Dedutível no PIS/COFINS".');
+      }
+      add('is_pis_cofins_creditable = ?', value);
     }
 
     if (!sets.length) throw badRequest('Escolha pelo menos um campo para alterar.');

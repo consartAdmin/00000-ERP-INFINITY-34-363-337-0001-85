@@ -5,7 +5,7 @@ export const state = {
   alertHandler: null,
   activeTab: 'day',
   page: 1,
-  pageSize: 20,
+  pageSize: 50,
   reportData: {
     byDay: [],
     byCustomer: [],

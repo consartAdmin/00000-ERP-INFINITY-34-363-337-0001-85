@@ -8,6 +8,9 @@ import { moduleSystemController as ctrl } from '../controllers/moduleSystemContr
 
 const router = Router();
 
+// GET /api/module-system/menu — árvore do menu (antes de '/:id')
+router.get('/menu', (req, res) => ctrl.menu(req, res));
+
 // GET /api/module-system?onlyActive=1&search=texto
 router.get('/', (req, res) => ctrl.list(req, res));
 

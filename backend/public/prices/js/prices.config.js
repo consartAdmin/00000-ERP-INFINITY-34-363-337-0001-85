@@ -9,7 +9,7 @@ export const ROUTES = Object.freeze({
 
 export const DEFAULT_FILTERS = Object.freeze({
   page: 1,
-  limit: 20,
+  limit: 50,
   q: '',
   status: 'all',
   sort: 'name',

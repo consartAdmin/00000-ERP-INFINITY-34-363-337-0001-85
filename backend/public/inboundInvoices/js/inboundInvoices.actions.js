@@ -116,6 +116,9 @@ export function initImportXml({ core, ROUTES, state, refs, switchTab }) {
     if (refs.fldSeries) refs.fldSeries.value = d.series ?? refs.fldSeries.value;
     if (refs.fldIssuer) refs.fldIssuer.value = d.issuerCnpj ?? refs.fldIssuer.value;
     if (refs.fldRec) refs.fldRec.value = d.recipientCnpj ?? refs.fldRec.value;
+    // datas do XML (dhEmi / dhSaiEnt): sem elas o Salvar gravava a nota com data de emissão vazia
+    if (refs.fldIssueDate && d.issueDate) refs.fldIssueDate.value = String(d.issueDate).slice(0, 10);
+    if (refs.fldEntryDate && d.entryDate) refs.fldEntryDate.value = String(d.entryDate).slice(0, 10);
 
     if (refs.fldTotal && d.totalAmount != null) {
       refs.fldTotal.value = Number(d.totalAmount).toFixed(2);

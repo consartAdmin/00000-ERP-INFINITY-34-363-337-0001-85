@@ -43,7 +43,7 @@ export function bindEvents() {
     loadEmployees({ page: state.page + 1 }).catch(e => alert(e.message));
   });
   el.empRowsPerPage.addEventListener('change', () => {
-    state.pageSize = Number(el.empRowsPerPage.value) || 20;
+    state.pageSize = Number(el.empRowsPerPage.value) || 50;
     loadEmployees({ page: 1 }).catch(e => alert(e.message));
   });
 

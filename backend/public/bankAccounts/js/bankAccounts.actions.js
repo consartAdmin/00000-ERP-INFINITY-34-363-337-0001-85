@@ -22,5 +22,5 @@ export function bindBankAccountActions() {
   $('#bankAccountsClear')?.addEventListener('click', () => { $('#bankAccountsSearch').value = ''; $('#bankAccountsProvider').value = ''; $('#bankAccountsActive').value = 'true'; state.search = ''; state.provider = ''; state.active = 'true'; state.page = 1; loadBankAccounts(); });
   $('#btnPreviousPage')?.addEventListener('click', () => { if (state.page > 1) { state.page -= 1; renderCurrentPage(); } });
   $('#btnNextPage')?.addEventListener('click', () => { if (state.page < state.totalPages) { state.page += 1; renderCurrentPage(); } });
-  $('#apRowsPerPage')?.addEventListener('change', (event) => { state.pageSize = Number(event.target.value) || 20; state.page = 1; renderCurrentPage(); });
+  $('#apRowsPerPage')?.addEventListener('change', (event) => { state.pageSize = Number(event.target.value) || 50; state.page = 1; renderCurrentPage(); });
 }

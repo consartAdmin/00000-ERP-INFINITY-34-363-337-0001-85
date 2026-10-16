@@ -60,7 +60,7 @@ const el = {
 /* ──────────────────────────────────────────────────────────────
    STATE
 ────────────────────────────────────────────────────────────── */
-let limit = 20;
+let limit = 50;
 let offset = 0;
 let total = 0;
 
@@ -170,7 +170,7 @@ function buildQuery({ includePaging = true } = {}) {
 
   q.set('order_by', v(el.fOrderBy?.value) || 'created_at_desc');
 
-  limit = Number(el.pageSize?.value || el.fPageSize?.value || 20);
+  limit = Number(el.pageSize?.value || el.fPageSize?.value || 50);
 
   if (includePaging) {
     q.set('limit', String(limit));

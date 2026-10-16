@@ -603,7 +603,7 @@ export function renderPagination() {
   const limit =
     Number(
       state.limit
-    ) || 20;
+    ) || 50;
 
   const offset =
     Number(

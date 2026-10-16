@@ -174,3 +174,5 @@ backend/employees/
 
 # Chaves de service account GCP (nunca commitar)
 backend/keys/
+backend/.env
+backend/public/boletos/

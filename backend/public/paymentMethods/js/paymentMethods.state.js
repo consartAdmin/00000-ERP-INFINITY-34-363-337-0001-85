@@ -13,7 +13,7 @@ export const paymentMethodsState = {
     tpag: '',
   },
   page: 1,
-  pageSize: 20,
+  pageSize: 50,
 };
 
 export function setRows(rows) {
@@ -46,7 +46,7 @@ export function setPage(page) {
 }
 
 export function setPageSize(pageSize) {
-  paymentMethodsState.pageSize = Math.max(Number(pageSize) || 20, 1);
+  paymentMethodsState.pageSize = Math.max(Number(pageSize) || 50, 1);
   paymentMethodsState.page = 1;
 }
 

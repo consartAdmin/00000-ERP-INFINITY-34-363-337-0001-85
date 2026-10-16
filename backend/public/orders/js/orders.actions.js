@@ -362,7 +362,7 @@ function updatePagerInfo() {
   const pageInfo = $('#infoPagina');
 
   const total = Number(state.total || 0);
-  const limit = Number(state.limit || 20);
+  const limit = Number(state.limit || 50);
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   if (totalInfo) {
@@ -677,7 +677,7 @@ function readFiltersFromUI() {
     'TODOS';
 
   state.limit =
-    Number($('#apRowsPerPage')?.value || 20);
+    Number($('#apRowsPerPage')?.value || 50);
 }
 
 function handleBuscarClick() {
@@ -696,7 +696,7 @@ function handlePrevPage() {
 function handleNextPage() {
   const totalPages = Math.max(
     1,
-    Math.ceil(Number(state.total || 0) / Number(state.limit || 20))
+    Math.ceil(Number(state.total || 0) / Number(state.limit || 50))
   );
 
   if (state.page >= totalPages) return;

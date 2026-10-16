@@ -18,8 +18,8 @@ let subRequestSeq = 0;
 
 // paginação (client-side) de cada tabela
 const paginacao = {
-  cat: { page: 1, pageSize: 20 },
-  sub: { page: 1, pageSize: 20 },
+  cat: { page: 1, pageSize: 50 },
+  sub: { page: 1, pageSize: 50 },
 };
 
 /* ─────────────────────────────
@@ -481,7 +481,7 @@ for (const tipo of ['cat', 'sub']) {
   f.next.addEventListener('click', () => irParaPagina(tipo, paginacao[tipo].page + 1));
 
   f.pageSize.addEventListener('change', () => {
-    paginacao[tipo].pageSize = Number(f.pageSize.value) || 20;
+    paginacao[tipo].pageSize = Number(f.pageSize.value) || 50;
     irParaPagina(tipo, 1);
   });
 }
@@ -571,8 +571,8 @@ el.tbodySubcategorias.addEventListener('click', async (ev) => {
 ───────────────────────────── */
 function init() {
   // respeita o valor inicial dos <select> (selected="20" no HTML)
-  paginacao.cat.pageSize = Number(footer.cat.pageSize.value) || 20;
-  paginacao.sub.pageSize = Number(footer.sub.pageSize.value) || 20;
+  paginacao.cat.pageSize = Number(footer.cat.pageSize.value) || 50;
+  paginacao.sub.pageSize = Number(footer.sub.pageSize.value) || 50;
 
   setCategoriaHint();
   renderFooter('cat', 0);

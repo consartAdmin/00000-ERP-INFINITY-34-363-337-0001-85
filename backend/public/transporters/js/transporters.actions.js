@@ -303,7 +303,7 @@ export function nextPage() {
 
 export function changePageSize(value) {
   const pageSize = Number(value);
-  state.pageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 20;
+  state.pageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 50;
   resetPagination();
   renderTransportersTable();
 }

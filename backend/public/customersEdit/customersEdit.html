@@ -21,6 +21,7 @@
   <link href="/public/modalsSearch/ibgeCustomersModalSearch.css" rel="stylesheet" />
   <link href="/public/modalsSearch/customersStatusModal.css" rel="stylesheet" />
   <link href="/public/modalsSearch/chartAccountsModalSearch.css" rel="stylesheet" />
+  <link href="/public/chartOfAccounts/chartOfAccountsModal.css" rel="stylesheet" />
 
   <!-- 🎨 Design System -->
   <link href="/public/includes/css/style.css" rel="stylesheet" />
@@ -497,6 +498,8 @@
                 <div class="fields fields-w-30 fields-h-6">
                   <label for="default_chart_account_label">
                     Plano de Contas
+                    <button type="button" class="quick-add-btn" id="btnNewDefaultChartAccount"
+                      title="Cadastrar nova conta contábil" aria-label="Cadastrar nova conta contábil">+</button>
                   </label>
 
                   <div class="inline-field">
@@ -517,6 +520,8 @@
                 <div class="fields fields-w-20 fields-h-6">
                   <label for="default_cash_category_id">
                     Categoria
+                    <button type="button" class="quick-add-btn" id="btnNewDefaultCashCategory"
+                      title="Cadastrar nova categoria" aria-label="Cadastrar nova categoria">+</button>
                   </label>
 
                   <select id="default_cash_category_id" name="default_cash_category_id">
@@ -528,6 +533,9 @@
                 <div class="fields fields-w-20 fields-h-6">
                   <label for="default_cash_subcategory_id">
                     Subcategoria
+                    <button type="button" class="quick-add-btn" id="btnNewDefaultCashSubcategory"
+                      title="Cadastrar nova subcategoria (na categoria selecionada)"
+                      aria-label="Cadastrar nova subcategoria">+</button>
                   </label>
 
                   <select id="default_cash_subcategory_id" name="default_cash_subcategory_id">
@@ -677,6 +685,8 @@
                 <div class="fields fields-w-20 fields-h-6">
                   <label for="business_segment">
                     Segmento
+                    <button type="button" class="quick-add-btn" id="btnQuickAddSegment"
+                      title="Cadastrar novo segmento" aria-label="Cadastrar novo segmento">+</button>
                   </label>
 
                   <select id="business_segment"></select>
@@ -727,6 +737,8 @@
                 <div class="fields fields-w-20 fields-h-6">
                   <label for="customer-seller-select">
                     Vendedor
+                    <button type="button" class="quick-add-btn" id="btnQuickAddSeller"
+                      title="Cadastrar novo vendedor" aria-label="Cadastrar novo vendedor">+</button>
                   </label>
 
                   <select id="customer-seller-select">
@@ -740,6 +752,8 @@
                 <div class="fields fields-w-20 fields-h-5">
                   <label>
                     Status do Cliente
+                    <button type="button" class="quick-add-btn" id="btnQuickAddStatusType"
+                      title="Cadastrar novo tipo de status" aria-label="Cadastrar novo tipo de status">+</button>
                   </label>
 
                   <div class="inline-field inline-field--status">

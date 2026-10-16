@@ -3,28 +3,27 @@
 // ║ Tabela: public."moduleSystem"                                      ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import { TABLE } from './moduleSystem.constants.js';
+import { TABLE, COLUMNS } from './moduleSystem.constants.js';
 import { q } from './moduleSystem.utils.js';
 import { findById } from './moduleSystemQuery.repository.js';
 
-/** Atualiza módulo por ID */
-export async function update(id, { name, path, is_active }) {
+// Campos que podem ser atualizados (os booleanos são convertidos com !!)
+const UPDATABLE = Object.freeze([
+  'name', 'path', 'is_active', 'menu_type', 'parent_id', 'sort_order',
+  'html_id', 'css_class', 'feature', 'is_external', 'is_public',
+]);
+const BOOLEANS = new Set(['is_active', 'is_external', 'is_public']);
+
+/** Atualiza módulo por ID (só os campos presentes no payload) */
+export async function update(id, payload = {}) {
   const fields = [];
   const params = [];
-  let idx = 1;
 
-  if (name !== undefined) {
-    fields.push(`name = $${idx++}`);
-    params.push(name);
-  }
-  if (path !== undefined) {
-    fields.push(`path = $${idx++}`);
-    params.push(path);
-  }
-  if (is_active !== undefined) {
-    fields.push(`is_active = $${idx++}`);
-    params.push(!!is_active);
-  }
+  UPDATABLE.forEach((column) => {
+    if (payload[column] === undefined) return;
+    params.push(BOOLEANS.has(column) ? !!payload[column] : payload[column]);
+    fields.push(`${column} = $${params.length}`);
+  });
 
   if (!fields.length) {
     // nada para atualizar
@@ -38,7 +37,7 @@ export async function update(id, { name, path, is_active }) {
     SET ${fields.join(', ')},
         updated_at = now()
     WHERE id = $${params.length}
-    RETURNING id, name, path, is_active, created_at, updated_at;
+    RETURNING ${COLUMNS};
   `;
 
   const { rows } = await q(sql, params);

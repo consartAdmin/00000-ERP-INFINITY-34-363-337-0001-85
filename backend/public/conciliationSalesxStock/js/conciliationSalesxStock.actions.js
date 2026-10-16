@@ -186,7 +186,7 @@ export function bindActions() {
     const pages = Math.max(
       Math.ceil(
         Number(state.total || 0) /
-        Math.max(Number(state.pageSize || 20), 1),
+        Math.max(Number(state.pageSize || 50), 1),
       ),
       1,
     );

@@ -52,6 +52,98 @@ async function fetchJson(url, options = {}) {
   return data;
 }
 
+// Markup criado sob demanda: o modal funciona em qualquer página que abra o
+// "Nova Conta" (Plano de Contas, Edição de Clientes...), sem HTML na página.
+function ensureParentModal() {
+  if (document.getElementById(MODAL_ID)) return;
+
+  document.body.insertAdjacentHTML('beforeend', `
+  <div id="coaParentModal" class="modal" aria-hidden="true">
+
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true"
+        aria-labelledby="coaParentModalTitle">
+
+        <!-- HEADER -->
+        <header class="modal__header modal-header-color-3">
+          <h3 id="coaParentModalTitle" class="modal__title">Nova Conta Pai</h3>
+
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">
+            ×
+          </button>
+        </header>
+
+        <!-- BODY -->
+        <div class="modal__body">
+          <form id="coaParentForm" novalidate>
+
+            <div class="modal-form-grid modal-form-grid--3">
+
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaParentCode">Código</label>
+                <input id="coaParentCode" type="text" placeholder="Ex.: 3.2" autocomplete="off">
+              </div>
+
+              <div class="fields fields-h-6 fields-w-full modal-field--span-2">
+                <label for="coaParentDescription">Descrição</label>
+                <input id="coaParentDescription" type="text" placeholder="Ex.: Despesas com Vendas" autocomplete="off">
+              </div>
+
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaParentType">Tipo</label>
+                <select id="coaParentType">
+                  <option value="">Selecione...</option>
+                  <option value="ASSET">Ativo</option>
+                  <option value="LIABILITY">Passivo</option>
+                  <option value="EQUITY">Patrimônio Líquido</option>
+                  <option value="REVENUE">Receita</option>
+                  <option value="EXPENSE">Despesa</option>
+                </select>
+              </div>
+
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaParentNature">Natureza</label>
+                <select id="coaParentNature">
+                  <option value="">Selecione...</option>
+                  <option value="DEBIT">Débito</option>
+                  <option value="CREDIT">Crédito</option>
+                </select>
+              </div>
+
+              <div class="fields fields-h-6 fields-w-full">
+                <label for="coaParentLevel">Nível</label>
+                <input id="coaParentLevel" type="number" min="1" step="1" placeholder="Automático">
+              </div>
+
+              <div class="fields fields-h-6 fields-w-full modal-field--span-full">
+                <label for="coaParentParent">Conta Superior</label>
+                <select id="coaParentParent">
+                  <option value="">Sem conta superior (raiz)</option>
+                </select>
+              </div>
+
+            </div>
+
+            <div id="coaParentError" class="coa-modal__error hidden"></div>
+
+          </form>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="modal__footer modal-footer-color-3">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+          <button id="coaParentSaveBtn" class="btn btn-save btn-sm" type="submit" form="coaParentForm">Salvar</button>
+        </footer>
+
+      </section>
+    </div>
+  </div>
+`);
+}
+
 function getFields() {
   const modal = document.getElementById(MODAL_ID);
   if (!modal) return null;
@@ -235,6 +327,8 @@ async function saveParent(event) {
 
 function bindParentModal() {
   if (parentState.bound) return;
+
+  ensureParentModal();
 
   const fields = getFields();
   if (!fields) return;

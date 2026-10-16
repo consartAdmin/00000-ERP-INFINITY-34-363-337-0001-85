@@ -55,7 +55,7 @@ function init() {
   });
 
   dom.$pageSize?.addEventListener('change', () => {
-    state.pageSize = Number(dom.$pageSize.value) || 20;
+    state.pageSize = Number(dom.$pageSize.value) || 50;
     reloadFirstPage();
   });
 

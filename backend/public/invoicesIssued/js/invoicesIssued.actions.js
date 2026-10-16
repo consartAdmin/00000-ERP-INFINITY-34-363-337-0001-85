@@ -325,7 +325,7 @@ function renderPagination() {
     state.total || state.rows?.length || 0
   );
 
-  const limit = Number(state.limit) || 20;
+  const limit = Number(state.limit) || 50;
   const offset = Number(state.offset) || 0;
 
   const page =

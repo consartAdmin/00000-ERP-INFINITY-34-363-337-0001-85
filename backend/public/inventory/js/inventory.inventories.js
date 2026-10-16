@@ -21,7 +21,7 @@ function getInventoryNotes(inv) {
 }
 
 // ── Paginação da lista de inventários (rodapé: apTableInfo / infoPagina / pagAnterior / pagProxima / apRowsPerPage)
-const invPaging = { page: 1, limit: 20, total: 0, bound: false };
+const invPaging = { page: 1, limit: 50, total: 0, bound: false };
 
 function inventoryPagingEls() {
   return {
@@ -48,7 +48,7 @@ function bindInventoryPaging(els) {
     if (invPaging.page < totalPages) loadInventories(els, { page: invPaging.page + 1 });
   });
   p.rowsPerPage?.addEventListener('change', () => {
-    invPaging.limit = Number(p.rowsPerPage.value) || 20;
+    invPaging.limit = Number(p.rowsPerPage.value) || 50;
     loadInventories(els, { page: 1 });
   });
 }

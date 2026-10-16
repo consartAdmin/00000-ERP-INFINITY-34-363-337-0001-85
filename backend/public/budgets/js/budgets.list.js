@@ -233,7 +233,7 @@ export function bindListUI() {
   );
 
   $limit?.addEventListener('change', (event) => {
-    state.limit = Number(event.target.value) || 20;
+    state.limit = Number(event.target.value) || 50;
     state.page = 1;
     fetchBudgets();
   });
@@ -533,7 +533,7 @@ export function renderList() {
     Number(state.total || 0);
 
   const limit =
-    Number(state.limit || 20);
+    Number(state.limit || 50);
 
   const max =
     Math.max(

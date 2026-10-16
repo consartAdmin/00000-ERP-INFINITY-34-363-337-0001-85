@@ -150,7 +150,7 @@ export const state = {
   list: [],
   total: 0,
   page: 1,
-  limit: 20,
+  limit: 50,
   q: '',
   selectedId: null,
 

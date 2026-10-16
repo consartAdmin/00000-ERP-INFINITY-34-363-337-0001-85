@@ -76,7 +76,7 @@ export function goToNextPage() {
 }
 
 export function changePageSize(event) {
-  state.limit = Number(event.target.value) || 20;
+  state.limit = Number(event.target.value) || 50;
   state.offset = 0;
   loadGrades();
 }

@@ -3,7 +3,7 @@ export const state = {
   currentList: [],
   pagination: {
     page: 1,
-    rowsPerPage: 20,
+    rowsPerPage: 50,
   },
   designer: {
     selectedId: null,

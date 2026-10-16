@@ -7,6 +7,24 @@ import { toDateInput } from './invoicesIssued.utils.js';
 import { createInvoice, updateInvoice } from './invoicesIssued.api.js';
 import { getInvoiceFormPayload } from './invoicesIssued.form.js';
 import { normalizeNfeStatusCode } from './invoicesIssued.validation.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
+// Avisos no padrão CONSART (centerAlertModal); o texto é escapado e \n vira <br>.
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function notify(variant, title, text) {
+    return showCenterModal({
+        variant,
+        title,
+        message: escapeHtml(text).replace(/\n/g, '<br>'),
+    });
+}
 
 let afterSaveCallback = null;
 
@@ -75,7 +93,7 @@ export async function saveInvoice(event) {
         }
     } catch (err) {
         console.error('[modal.saveInvoice]', err);
-        alert(`Erro ao salvar: ${err.message}`);
+        notify('error', 'Erro ao salvar', err?.message || 'Falha ao salvar a nota.');
     }
 }
 
@@ -285,19 +303,21 @@ export async function sendInvoiceEmail() {
     const message = safe(elMessage?.value);
 
     if (!invoiceId) {
-        window.alert('invoice_id não encontrado.');
+        notify('error', 'Enviar NF-e por e-mail', 'invoice_id não encontrado.');
         return;
     }
 
     if (!recipients.length) {
         elEmailTo?.focus();
-        window.alert('Informe pelo menos um e-mail destinatário.');
+        notify('warning', 'Enviar NF-e por e-mail', 'Informe pelo menos um e-mail destinatário.');
         return;
     }
 
     if (invalidRecipients.length) {
         elEmailTo?.focus();
-        window.alert(
+        notify(
+            'warning',
+            'Enviar NF-e por e-mail',
             `Corrija os seguintes e-mails:\n${invalidRecipients.join('\n')}`,
         );
         return;
@@ -312,13 +332,13 @@ export async function sendInvoiceEmail() {
 
     if (!subject) {
         elSubject?.focus();
-        window.alert('Informe o assunto do e-mail.');
+        notify('warning', 'Enviar NF-e por e-mail', 'Informe o assunto do e-mail.');
         return;
     }
 
     if (!message) {
         elMessage?.focus();
-        window.alert('Informe a mensagem do e-mail.');
+        notify('warning', 'Enviar NF-e por e-mail', 'Informe a mensagem do e-mail.');
         return;
     }
 
@@ -390,7 +410,9 @@ export async function sendInvoiceEmail() {
             details.push(`${boletoCount} boleto(s)`);
         }
 
-        window.alert(
+        notify(
+            'success',
+            'E-mail enviado',
             details.length
                 ? `E-mail enviado com sucesso.\n${details.join(' · ')}`
                 : 'E-mail enviado com sucesso.',
@@ -401,7 +423,9 @@ export async function sendInvoiceEmail() {
     } catch (error) {
         console.error('[sendInvoiceEmail.error]', error);
 
-        window.alert(
+        notify(
+            'error',
+            'Erro ao enviar e-mail',
             error?.message ||
             'Erro ao enviar NF-e por e-mail.',
         );

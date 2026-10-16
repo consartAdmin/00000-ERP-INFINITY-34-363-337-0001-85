@@ -33,7 +33,7 @@ async function initDebts() {
     refreshDom();
 
     // Define o tamanho inicial da página.
-    state.limit = Number(els.pageSize?.value) || 20;
+    state.limit = Number(els.pageSize?.value) || 50;
 
     // Prepara o formulário para uma nova operação.
     resetDebtForm();

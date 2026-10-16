@@ -10,7 +10,7 @@ export const API_PUBLIC_CNPJ = (cnpj) => `/api/public-cnpj/${encodeURIComponent(
 export const API_IBGE_RESOLVE_CITY = (uf, city) =>
   `/api/ibge-locations/resolve?uf=${encodeURIComponent(uf)}&city=${encodeURIComponent(city)}`;
 
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 50;
 export const MODAL_ID = 'transportersModalOverlay';
 
 export const SELECTORS = Object.freeze({

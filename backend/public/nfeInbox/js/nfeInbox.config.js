@@ -8,7 +8,7 @@ export const API_BASE =
   (typeof window !== 'undefined' ? window.location.origin : '');
 
 export const INBOUND_ENTRY_PAGE = '/public/inbound/inbound.html';
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 50;
 export const IMPORT_BATCH_SIZE = 20;
 export const SEARCH_DEBOUNCE_MS = 350;
 export const SYNC_STATUS_POLL_MS = 60000;

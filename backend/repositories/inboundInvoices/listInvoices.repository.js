@@ -26,6 +26,7 @@ const ORDER_COLUMNS = Object.freeze({
   issuer: 'ii.issuer',
   recipient: 'ii.recipient',
   total_amount: 'ii.total_amount',
+  issue_date: 'ii.issue_date',
   created_at: 'ii.created_at',
   status: 'ii.status',
 });

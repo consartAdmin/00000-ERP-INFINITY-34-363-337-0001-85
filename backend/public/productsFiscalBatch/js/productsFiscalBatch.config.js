@@ -69,4 +69,4 @@ export const ROUTES = Object.freeze({
 // PAGINAÇÃO
 // ============================================================================
 
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 50;

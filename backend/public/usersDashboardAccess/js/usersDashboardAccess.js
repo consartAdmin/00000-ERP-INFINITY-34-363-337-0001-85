@@ -18,6 +18,8 @@ const state = {
   loaded: false,
   loading: false,
   saving: false,
+  page: 1,
+  pageSize: 50,
 };
 
 const elements = {};
@@ -32,6 +34,11 @@ function cacheElements() {
   elements.saveButton = document.getElementById('udaSaveButton');
   elements.status = document.getElementById('udaStatus');
   elements.tableBody = document.getElementById('udaTableBody');
+  elements.tableInfo = document.getElementById('apTableInfo');
+  elements.pageInfo = document.getElementById('apPageInfo');
+  elements.prevPage = document.getElementById('btnPreviousPage');
+  elements.nextPage = document.getElementById('btnNextPage');
+  elements.rowsPerPage = document.getElementById('apRowsPerPage');
 }
 
 function setStatus(message = '', type = 'info') {
@@ -86,8 +93,34 @@ function setActionsEnabled(enabled) {
   elements.saveButton.disabled = !enabled;
 }
 
+function totalPages() {
+  return Math.max(1, Math.ceil(DASHBOARDS.length / state.pageSize));
+}
+
+function renderFooter() {
+  const total = DASHBOARDS.length;
+  const pages = totalPages();
+
+  if (elements.tableInfo) {
+    elements.tableInfo.textContent =
+      `${total} ${total === 1 ? 'Registro' : 'Registros'}`;
+  }
+
+  if (elements.pageInfo) {
+    elements.pageInfo.textContent = `Página ${state.page} de ${pages}`;
+  }
+
+  if (elements.prevPage) elements.prevPage.disabled = state.page <= 1;
+  if (elements.nextPage) elements.nextPage.disabled = state.page >= pages;
+}
+
 function renderTable() {
+  state.page = Math.min(Math.max(1, state.page), totalPages());
+
+  const start = (state.page - 1) * state.pageSize;
+
   elements.tableBody.innerHTML = DASHBOARDS
+    .slice(start, start + state.pageSize)
     .map((dashboard) => {
       const checked =
         state.permissions.get(dashboard.key) === true
@@ -120,6 +153,8 @@ function renderTable() {
       `;
     })
     .join('');
+
+  renderFooter();
 }
 
 function syncStateFromCheckboxes() {
@@ -134,13 +169,12 @@ function syncStateFromCheckboxes() {
 }
 
 function applyAll(value) {
-  elements.tableBody
-    .querySelectorAll('[data-dashboard-key]')
-    .forEach((input) => {
-      input.checked = value;
-    });
+  // Applies to every dashboard, including the ones on other pages.
+  for (const dashboard of DASHBOARDS) {
+    state.permissions.set(dashboard.key, value);
+  }
 
-  syncStateFromCheckboxes();
+  renderTable();
 }
 
 async function loadPermissions() {
@@ -306,23 +340,34 @@ function bindEvents() {
     openUserSearch
   );
 
-  // Typing an ID manually invalidates the name picked in the modal.
-  elements.userId.addEventListener(
-    'input',
-    () => {
-      elements.userName.value = '';
-    }
-  );
+  // The ID is read-only and filled only by the user search modal.
+  elements.userId.addEventListener('click', openUserSearch);
 
   elements.userId.addEventListener(
     'keydown',
     (event) => {
-      if (event.key === 'Enter') {
+      if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        loadPermissions();
+        openUserSearch();
       }
     }
   );
+
+  elements.prevPage?.addEventListener('click', () => {
+    state.page -= 1;
+    renderTable();
+  });
+
+  elements.nextPage?.addEventListener('click', () => {
+    state.page += 1;
+    renderTable();
+  });
+
+  elements.rowsPerPage?.addEventListener('change', () => {
+    state.pageSize = Number.parseInt(elements.rowsPerPage.value, 10) || 50;
+    state.page = 1;
+    renderTable();
+  });
 
   elements.tableBody.addEventListener(
     'change',
@@ -342,6 +387,12 @@ function bindEvents() {
 
 function init() {
   cacheElements();
+
+  if (elements.rowsPerPage) {
+    state.pageSize =
+      Number.parseInt(elements.rowsPerPage.value, 10) || 50;
+  }
+
   renderTable();
   bindEvents();
 }

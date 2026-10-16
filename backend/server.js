@@ -500,6 +500,30 @@ app.use(
    salesAnalyticsRoutes
 );
 
+import salesTaxesDashboardRoutes
+   from './routes/salesTaxesDashboardRoutes.js';
+
+app.use(
+   '/api/dashboard/sales-taxes',
+   salesTaxesDashboardRoutes
+);
+
+import taxRegimesRoutes
+   from './routes/taxRegimesRoutes.js';
+
+app.use(
+   '/api/tax-regimes',
+   taxRegimesRoutes
+);
+
+import taxAssessmentDashboardRoutes
+   from './routes/taxAssessmentDashboardRoutes.js';
+
+app.use(
+   '/api/dashboard/tax-assessment',
+   taxAssessmentDashboardRoutes
+);
+
 /* ╔══════════════════════════════════════════════════════════╗
    ║               ROTA: fixedExpensesRoutes                  ║
    ╚══════════════════════════════════════════════════════════╝ */
@@ -1302,6 +1326,18 @@ app.use('/api/module-system', moduleSystemRoutes);
 import userModulesRoutes from './routes/userModulesRoutes.js';
 // registra com hífen (padrão recomendado)
 app.use('/api/user-modules', userModulesRoutes);
+
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║                        API — "usersProfileRoutes"                         ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+import usersProfileRoutes from './routes/usersProfileRoutes.js';
+app.use('/api/users-profile', usersProfileRoutes);
+
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║                       API — "accessProfilesRoutes"                        ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+import accessProfilesRoutes from './routes/accessProfilesRoutes.js';
+app.use('/api/access-profiles', accessProfilesRoutes);
 
 // ╔═══════════════════════════════════════════════════════════════════════════╗
 // ║                          API — "usersRoutes"                              ║

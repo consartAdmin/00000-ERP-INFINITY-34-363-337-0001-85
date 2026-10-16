@@ -19,11 +19,11 @@ let nextHandler = null;
 export function renderPagination({
   total = 0,
   page = 1,
-  limit = 20,
+  limit = 50,
   onPageChange,
 } = {}) {
   const normalizedTotal = Math.max(Number(total) || 0, 0);
-  const normalizedLimit = Math.max(Number(limit) || 20, 1);
+  const normalizedLimit = Math.max(Number(limit) || 50, 1);
 
   const pages = Math.max(
     Math.ceil(normalizedTotal / normalizedLimit),

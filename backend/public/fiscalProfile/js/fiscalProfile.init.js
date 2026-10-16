@@ -45,7 +45,7 @@ function bindPagination() {
   dom.previousButton?.addEventListener('click', previousPage);
   dom.nextButton?.addEventListener('click', nextPage);
   dom.pageSizeSelect?.addEventListener('change', (event) => {
-    state.pageSize = Number(event.target.value) || 20;
+    state.pageSize = Number(event.target.value) || 50;
     state.page = 1;
     loadProfiles();
   });

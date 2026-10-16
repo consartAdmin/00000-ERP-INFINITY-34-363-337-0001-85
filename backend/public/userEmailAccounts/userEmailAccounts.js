@@ -19,7 +19,7 @@ const API_EMAIL_ACCOUNTS = '/api/email/accounts';
 
 const state = {
     page: 1,
-    pageSize: 20,
+    pageSize: 50,
     totalPages: 1,
     total: 0,
     items: [],

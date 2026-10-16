@@ -23,7 +23,7 @@ const ROUTES = Object.freeze({
 // Estado simples de paginação
 // ---------------------------------------------------------------------
 const STATE = {
-  limit: 20,
+  limit: 50,
   offset: 0,
   total: 0
 };

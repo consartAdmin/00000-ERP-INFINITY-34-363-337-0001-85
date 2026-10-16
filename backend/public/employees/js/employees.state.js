@@ -12,6 +12,6 @@ export const state = {
 
   // paginação (server-side: limit/offset)
   page: 1,
-  pageSize: 20,
+  pageSize: 50,
   total: 0,
 };

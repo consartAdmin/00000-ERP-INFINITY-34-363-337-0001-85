@@ -249,6 +249,14 @@ function buildMovementPayloadFromBody(body = {}, { partial = false } = {}) {
       ? pickIf(body, 'is_deductible')
       : body.is_deductible ?? null,
 
+    is_pis_cofins_creditable: partial
+      ? pickIf(body, 'is_pis_cofins_creditable')
+      : body.is_pis_cofins_creditable ?? null,
+
+    deduct_charges_only: partial
+      ? pickIf(body, 'deduct_charges_only')
+      : body.deduct_charges_only ?? null,
+
     is_active: partial
       ? pickIf(body, 'is_active')
       : body.is_active ?? true,
@@ -897,6 +905,8 @@ function getMovementPayloadValue(payload, column) {
     subcategory: ['subcategory', 'subcategoria'],
     chart_account_id: ['chart_account_id', 'conta_contabil_id'],
     is_deductible: ['is_deductible'],
+    is_pis_cofins_creditable: ['is_pis_cofins_creditable'],
+    deduct_charges_only: ['deduct_charges_only'],
     is_active: ['is_active'],
   };
 

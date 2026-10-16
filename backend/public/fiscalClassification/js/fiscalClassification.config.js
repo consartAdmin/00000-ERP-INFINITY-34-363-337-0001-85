@@ -14,4 +14,4 @@ export const ROUTES = Object.freeze({
   fiscalProfiles: '/api/v2/fiscal-profiles',
 });
 
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 50;

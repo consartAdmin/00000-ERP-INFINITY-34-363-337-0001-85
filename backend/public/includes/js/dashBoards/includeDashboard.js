@@ -41,6 +41,11 @@ import * as payablesChartModule
 import { salesAnalyticsDashboard }
   from './salesAnalytics.js';
 
+import { salesTaxesDashboard }
+  from './salesTaxes.js';
+import { taxAssessmentDashboard }
+  from './taxAssessment.js';
+
 const receivablesChartDashboard =
   receivablesChartModule.receivablesChartDashboard ??
   receivablesChartModule.default;
@@ -104,6 +109,8 @@ const DASHBOARDS = [
   // --------------------------------------------------------------------
 
   salesAnalyticsDashboard,
+  salesTaxesDashboard,
+  taxAssessmentDashboard,
 ];
 
 const DASHBOARD_PAGES = Object.freeze([
@@ -130,6 +137,22 @@ const DASHBOARD_PAGES = Object.freeze([
     description: 'Curvas ABC, lucro bruto e indicadores comerciais',
     keys: new Set([
       'sales-analytics',
+    ]),
+  },
+  {
+    id: 'taxes',
+    title: 'Impostos',
+    description: 'Impostos sobre vendas por tipo e por produto',
+    keys: new Set([
+      'sales-taxes',
+    ]),
+  },
+  {
+    id: 'tax-assessment',
+    title: 'Apuração',
+    description: 'Débito × crédito dos impostos, saldo a recolher e IRPJ/CSLL',
+    keys: new Set([
+      'tax-assessment',
     ]),
   },
 ]);
@@ -485,6 +508,8 @@ function renderDashboards(
     'payables-chart': 'daily-payables',
     'total-receivables': 'daily-receivables',
     'total-payables': 'daily-payables',
+    'sales-taxes': 'sales-analytics',
+    'tax-assessment': 'sales-analytics',
   };
 
   const authorizedDashboards =
@@ -679,6 +704,12 @@ async function initIncludeDashboard() {
 
     if (allowedDashboards.has('daily-payables')) {
       allowedDashboards.add('payables-chart');
+    }
+
+    // The taxes slide inherits the Vendas (sales-analytics) permission.
+    if (allowedDashboards.has('sales-analytics')) {
+      allowedDashboards.add('sales-taxes');
+      allowedDashboards.add('tax-assessment');
     }
 
 

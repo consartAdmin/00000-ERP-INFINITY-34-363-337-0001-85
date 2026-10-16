@@ -115,7 +115,7 @@ export function renderTable(dom, state, rows = [], handlers = {}) {
 }
 
 export function updatePagination(dom, state) {
-  const pageSize = Number(state.pageSize) || 20;
+  const pageSize = Number(state.pageSize) || 50;
   const total = Number(state.total) || 0;
 
   state.totalPages = Math.max(

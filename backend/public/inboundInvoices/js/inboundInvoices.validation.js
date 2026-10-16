@@ -892,8 +892,9 @@ export function initSave({ core, ROUTES, state, refs, switchTab }) {
         series: String(refs.fldSeries?.value || '').trim(),
         issuer: String(refs.fldIssuer?.value || '').trim(),
         recipient: String(refs.fldRec?.value || '').trim(),
-        issue_date: refs.fldIssueDate?.value || null,
-        entry_date: refs.fldEntryDate?.value || null,
+        // campo vazio = não mexe (undefined some do JSON): não apaga a data já gravada na importação
+        issue_date: refs.fldIssueDate?.value || undefined,
+        entry_date: refs.fldEntryDate?.value || undefined,
         total_amount: toNumOrZero(refs.fldTotal?.value || 0),
         xml_url: xmlUrl,
         danfe_url: danfeUrl,

@@ -15,6 +15,7 @@ import {
   fillFinancialDefaults,
   readFinancialDefaults,
 } from '/public/includes/js/customerFinancialDefaults.js';
+import { initCustomerQuickAdd } from './customersEdit.quickAdd.js';
 
 // ---------------------------------------------------------------------
 // API BASE & ROTAS
@@ -723,6 +724,12 @@ export async function initializeCustomersEdit() {
   masks();
   await loadSelects(); // segmento + classificação
   await initFinancialDefaults(); // plano de contas / categoria / subcategoria
+
+  // "+" de cadastro rápido: segmento / vendedor / tipo de status
+  initCustomerQuickAdd({
+    reloadSegments: () => fillSelect('business_segment', ROUTES.segmentos),
+    reloadSellers: loadSellersOptions,
+  });
 
   // ✅ inicializa UF/Cidade via IBGE NOVO (API + datalist + modal)
   await initIbgeAddressUI();

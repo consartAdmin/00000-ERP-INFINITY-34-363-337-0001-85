@@ -267,7 +267,7 @@ function bindEvents(pageSize) {
       'change',
       () => {
         state.pageSize =
-          Number(pageSize.value) || 20;
+          Number(pageSize.value) || 50;
 
         state.page = 1;
 

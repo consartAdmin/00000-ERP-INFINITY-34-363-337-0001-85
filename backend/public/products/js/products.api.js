@@ -268,7 +268,7 @@ export async function exportStockPositionPdf(searchText = '') {
 export async function loadFromApi({
   q = '',
   page = 1,
-  limit = 20,
+  limit = 50,
   filters = {},
   signal,
 } = {}) {
@@ -280,7 +280,7 @@ export async function loadFromApi({
   }
 
   sp.set('page', String(page || 1));
-  sp.set('limit', String(limit || 20));
+  sp.set('limit', String(limit || 50));
 
   /* ✅ FILTROS NOVOS */
   if (filters.status) {

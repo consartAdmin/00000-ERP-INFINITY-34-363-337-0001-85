@@ -25,6 +25,8 @@ export async function updateMovement(id, payload = {}) {
     'subcategory',
     'chart_account_id',
     'is_deductible',
+    'is_pis_cofins_creditable',
+    'deduct_charges_only',
     'is_active',
   ];
 
@@ -42,7 +44,7 @@ export async function updateMovement(id, payload = {}) {
       continue;
     }
 
-    if (c === 'is_deductible') {
+    if (c === 'is_deductible' || c === 'is_pis_cofins_creditable' || c === 'deduct_charges_only') {
       sets.push(`${c} = $${i++}`);
       params.push(v === null ? null : toBool(v, null));
       continue;

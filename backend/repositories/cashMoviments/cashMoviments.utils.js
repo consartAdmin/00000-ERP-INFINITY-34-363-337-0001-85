@@ -8,7 +8,25 @@ import path from 'node:path';
 import pool from '../../config/db.js';
 import { CAIXA_PREFIX } from './cashMoviments.constants.js';
 
+// "Dedutível no PIS/COFINS" (crédito na apuração do Lucro Real).
+// NULL = sem escolha: a apuração usa a subcategoria C.M.V como padrão.
+let taxColumnsReady = null;
+
+export function ensureCashTaxColumns() {
+  taxColumnsReady ??= pool.query(`
+    ALTER TABLE "cashMoviments"
+      ADD COLUMN IF NOT EXISTS is_pis_cofins_creditable BOOLEAN NULL,
+      ADD COLUMN IF NOT EXISTS deduct_charges_only BOOLEAN NULL
+  `).catch((error) => {
+    taxColumnsReady = null;
+    throw error;
+  });
+
+  return taxColumnsReady;
+}
+
 export async function q(text, params = []) {
+  await ensureCashTaxColumns();
   return pool.query(text, params);
 }
 
@@ -108,6 +126,8 @@ export function getMovementPayloadValue(payload, column) {
     category: ['category', 'categoria'],
     subcategory: ['subcategory', 'subcategoria'],
     is_deductible: ['is_deductible'],
+    is_pis_cofins_creditable: ['is_pis_cofins_creditable'],
+    deduct_charges_only: ['deduct_charges_only'],
     is_active: ['is_active'],
   };
 

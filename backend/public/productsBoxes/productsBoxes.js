@@ -192,7 +192,7 @@ const toast = el('toast');
 ────────────────────────────────────────────────────────────── */
 let state = {
   page: 1,
-  pageSize: Number(pageSize?.value) || 20,
+  pageSize: Number(pageSize?.value) || 50,
   total: 0,
   rows: [],
   selectedBox: null,
@@ -420,7 +420,7 @@ function renderBoxesList() {
 
   if (listCount) listCount.textContent = String(state.total || 0);
 
-  const totalPages = Math.max(1, Math.ceil((state.total || 0) / (state.pageSize || 20)));
+  const totalPages = Math.max(1, Math.ceil((state.total || 0) / (state.pageSize || 50)));
   if (pageInfo) pageInfo.textContent = `${state.page} / ${totalPages}`;
 
   if (btnPrev) btnPrev.disabled = state.page <= 1;
@@ -570,7 +570,7 @@ function renderItems(items = []) {
    Loaders
 ────────────────────────────────────────────────────────────── */
 async function loadBoxes() {
-  state.pageSize = Number(pageSize?.value) || 20;
+  state.pageSize = Number(pageSize?.value) || 50;
 
   const qs = new URLSearchParams();
   const qv = normalizeStr(searchQ?.value);

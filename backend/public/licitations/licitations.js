@@ -9,7 +9,7 @@ const API_BASE = '/api/licitations';
 
 const state = {
   page: 1,
-  limit: 20,
+  limit: 50,
   totalPages: 1,
   total: 0,
   loading: false,
@@ -650,7 +650,7 @@ function clearFilters() {
   dom.filterLimit.value = '20';
 
   state.page = 1;
-  state.limit = 20;
+  state.limit = 50;
 
   refreshAll();
 }
@@ -658,7 +658,7 @@ function clearFilters() {
 function bindEvents() {
   dom.btnApplyFilters.addEventListener('click', () => {
     state.page = 1;
-    state.limit = Number(dom.filterLimit.value || 20);
+    state.limit = Number(dom.filterLimit.value || 50);
     refreshAll();
   });
 
@@ -681,7 +681,7 @@ function bindEvents() {
   });
 
   dom.filterLimit.addEventListener('change', () => {
-    state.limit = Number(dom.filterLimit.value || 20);
+    state.limit = Number(dom.filterLimit.value || 50);
     state.page = 1;
     loadLicitations();
   });

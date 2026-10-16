@@ -5,7 +5,7 @@
 
 export const state = {
   page: 1,
-  limit: 20,
+  limit: 50,
   q: '',
   loading: false,
   aborter: null,

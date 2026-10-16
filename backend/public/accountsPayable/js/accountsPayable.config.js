@@ -16,7 +16,7 @@ export const API = Object.freeze({
 });
 
 export const PAGE_SIZE_OPTIONS = Object.freeze([10, 20, 30, 50, 100]);
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024;
 export const ALLOWED_ATTACHMENT_EXTENSIONS =
   new Set(['pdf', 'xml', 'png', 'jpg', 'jpeg', 'webp']);

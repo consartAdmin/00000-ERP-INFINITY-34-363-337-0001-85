@@ -40,7 +40,7 @@ export function goToNextPage() {
 }
 
 export function changeRowsPerPage(value) {
-  state.pagination.rowsPerPage = Math.max(1, Number(value) || 20);
+  state.pagination.rowsPerPage = Math.max(1, Number(value) || 50);
   state.pagination.page = 1;
   renderCurrentPage();
 }

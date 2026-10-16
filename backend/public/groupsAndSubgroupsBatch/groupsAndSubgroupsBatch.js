@@ -97,7 +97,7 @@ function confirmCenterModal({
 ───────────────────────────────────────────────────────────── */
 const state = {
   page: 1,
-  limit: 20,
+  limit: 50,
   q: '',
   loading: false,
   products: [],
@@ -858,7 +858,7 @@ function initEvents() {
   if (els.pageSize) {
     els.pageSize.value = String(state.limit);
     els.pageSize.addEventListener('change', () => {
-      state.limit = Number(els.pageSize.value) || 20;
+      state.limit = Number(els.pageSize.value) || 50;
       state.page = 1;
       fetchProducts();
     });

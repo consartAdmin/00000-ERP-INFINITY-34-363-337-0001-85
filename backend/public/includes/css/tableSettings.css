@@ -128,6 +128,14 @@
     font-size: 12px;
 }
 
+.ts-modal .ts-input--wide {
+    width: 220px;
+}
+
+.ts-modal [hidden] {
+    display: none !important;
+}
+
 .ts-modal input[type="number"].ts-input {
     text-align: right;
 }

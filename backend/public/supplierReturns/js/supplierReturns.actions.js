@@ -284,7 +284,7 @@ export function bindSupplierReturnActions() {
   });
 
   qs('#apRowsPerPage')?.addEventListener('change', (ev) => {
-    state.limit = Number(ev.target.value) || 20;
+    state.limit = Number(ev.target.value) || 50;
     state.page = 1;
     loadReturns();
   });

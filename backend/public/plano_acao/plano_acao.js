@@ -78,7 +78,7 @@ const bulkResult = $('#bulkResult');
 // ======================================================================
 const state = {
   page: 1,
-  pageSize: Number(f_pageSize?.value || 20),
+  pageSize: Number(f_pageSize?.value || 50),
   total: 0,
   totalPages: 1,
   lastReqId: null,
@@ -149,7 +149,7 @@ function buildQuery() {
   const empresa = (f_empresa?.value || '').trim();
   const status = (f_status?.value || '').trim();
   const responsavel = (f_responsavel?.value || '').trim();
-  const pageSize = Number(f_pageSize?.value || 20);
+  const pageSize = Number(f_pageSize?.value || 50);
   const orderBy = (f_orderBy?.value || '').trim();
 
   if (q) params.set('q', q);
@@ -234,7 +234,7 @@ async function load() {
     state.total = Number(data.total || 0);
     state.lastReqId = data.reqId || null;
 
-    const pageSize = Number(data.pageSize || state.pageSize || 20);
+    const pageSize = Number(data.pageSize || state.pageSize || 50);
     state.totalPages = Math.max(1, Math.ceil(state.total / pageSize));
 
     state.page = Math.min(state.page, state.totalPages);

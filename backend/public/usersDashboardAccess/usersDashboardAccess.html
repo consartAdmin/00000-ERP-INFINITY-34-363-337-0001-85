@@ -45,8 +45,8 @@
 
             <div class="inline-field">
 
-              <input id="udaUserId" type="number" min="1" step="1" inputmode="numeric" placeholder="ID"
-                autocomplete="off" />
+              <input id="udaUserId" type="text" placeholder="ID" readonly
+                autocomplete="off" title="Selecione o usuário pela busca" style="cursor:pointer" />
 
               <button type="button" id="udaSearchUserButton" class="btn btn-search btn-sm" title="Buscar usuário">
                 🔎
@@ -129,6 +129,41 @@
         </table>
 
       </div>
+
+
+      <footer class="table-footer">
+
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="apTableInfo">0 Registros</span>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="btnPreviousPage" class="btn btn-clean btn-sm">
+            Anterior
+          </button>
+
+          <span id="apPageInfo">Página 1 de 1</span>
+
+          <button type="button" id="btnNextPage" class="btn btn-new btn-sm">
+            Próxima
+          </button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="apRowsPerPage">Mostrar</label>
+
+          <select id="apRowsPerPage" class="table-footer__page-size-select">
+            <option value="10">10 linhas</option>
+            <option value="20">20 linhas</option>
+            <option value="30">30 linhas</option>
+            <option value="50" selected>50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+
+      </footer>
 
     </section>
 

@@ -282,6 +282,24 @@ async function prepareModalFields() {
 }
 
 // ---------------------------------------------------------------------
+// Abre o modal com um tipo já selecionado (ex.: tipo recém-criado pelo
+// "+" da Edição de Clientes). Recarrega os tipos para incluir o novo.
+// ---------------------------------------------------------------------
+export async function openCustomerStatusModalWithType(statusTypeId) {
+  if (!els.overlay || !currentCustomerId) return;
+
+  statusTypesCache = null;
+  await ensureStatusTypesLoaded();
+  await prepareModalFields();
+
+  if (els.statusSelect && statusTypeId) {
+    els.statusSelect.value = String(statusTypeId);
+  }
+
+  openModal();
+}
+
+// ---------------------------------------------------------------------
 // Salvar
 // ---------------------------------------------------------------------
 async function onSaveStatusClick() {
