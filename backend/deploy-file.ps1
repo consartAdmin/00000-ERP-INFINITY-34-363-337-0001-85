@@ -91,11 +91,17 @@ $gcloudExe = ""
 if ($gcloudCommand) {
     $gcloudExe = $gcloudCommand.Source
 }
-else {
+elseif ($env:LOCALAPPDATA) {
     $known = Join-Path $env:LOCALAPPDATA "Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
     if (Test-Path -LiteralPath $known -PathType Leaf) {
         $gcloudExe = $known
     }
+}
+
+# Linux/macOS (ex.: GitHub Actions): gcloud sem .cmd
+if ([string]::IsNullOrWhiteSpace($gcloudExe)) {
+    $gcloudCommand = Get-Command gcloud -ErrorAction SilentlyContinue
+    if ($gcloudCommand) { $gcloudExe = $gcloudCommand.Source }
 }
 
 if ([string]::IsNullOrWhiteSpace($gcloudExe)) {
