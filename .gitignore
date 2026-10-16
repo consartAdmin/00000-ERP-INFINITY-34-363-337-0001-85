@@ -176,3 +176,5 @@ backend/employees/
 backend/keys/
 backend/.env
 backend/public/boletos/
+
+*.sql
