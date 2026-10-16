@@ -2,8 +2,10 @@
 # Roda o mesmo backend/deploy.ps1 usado no PC, num runner Linux com PowerShell.
 #
 # Configuração única (Settings > Secrets and variables > Actions):
-#   GCP_SA_KEY  JSON da chave da service account que faz o deploy
-#   ENV_FILE    conteúdo completo do backend/.env (só para o modo "completo")
+#   Variable GCP_WIF_PROVIDER  provider do Workload Identity (login sem chave)
+#   Variable GCP_SA_EMAIL      service account do deploy (opcional; padrão abaixo)
+#   Secret   GCP_SA_KEY        alternativa ao Workload Identity: JSON da chave
+#   Secret   ENV_FILE          conteúdo completo do backend/.env
 # Outro cliente: crie outro secret (ex.: ENV_FILE_00001) e informe o nome ao rodar.
 
 name: Deploy Cloud Run
@@ -42,6 +44,7 @@ concurrency:
 
 permissions:
   contents: read
+  id-token: write  # login sem chave (Workload Identity)
 
 jobs:
   deploy:
@@ -53,7 +56,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Autenticar no Google Cloud
+      - name: Autenticar no Google Cloud (sem chave)
+        if: ${{ vars.GCP_WIF_PROVIDER != '' }}
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SA_EMAIL || 'github-deploy@erp-infinity-0-to-9.iam.gserviceaccount.com' }}
+
+      - name: Autenticar no Google Cloud (chave JSON)
+        if: ${{ vars.GCP_WIF_PROVIDER == '' }}
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
