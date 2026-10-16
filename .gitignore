@@ -178,3 +178,5 @@ backend/.env
 backend/public/boletos/
 
 *.sql
+
+*.sql
