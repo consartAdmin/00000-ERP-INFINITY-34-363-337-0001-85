@@ -4,7 +4,8 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, ALIAS } from './customerStatus.constants.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
+import { tbl, ALIAS } from './customerStatus.constants.js';
 import { toNumOrNull } from './customerStatus.sanitizers.js';
 import { mapRow, mapRowWithStatus } from './customerStatus.mappers.js';
 
@@ -13,7 +14,7 @@ export async function getById(id) {
   const sid = toNumOrNull(id);
   if (!sid) throw new Error('invalid customerStatus id');
 
-  const { rows } = await pool.query(`SELECT * FROM ${TB} WHERE id = $1`, [sid]);
+  const { rows } = await pool.query(`SELECT * FROM ${tbl()} WHERE id = $1`, [sid]);
   return rows[0] ? mapRow(rows[0]) : null;
 }
 
@@ -33,8 +34,8 @@ export async function getByCustomerId(customerId) {
       cst.name_pt       AS status_name_pt,
       cst.internal_code AS status_code,
       cst.color_hex     AS status_color_hex
-    FROM ${TB} ${ALIAS}
-    JOIN public."customerStatusTypes" cst
+    FROM ${tbl()} ${ALIAS}
+    JOIN ${erpTable('public."customerStatusTypes"')} cst
       ON cst.id = ${ALIAS}.status_type_id
     WHERE ${ALIAS}.customer_id = $1
     LIMIT 1;

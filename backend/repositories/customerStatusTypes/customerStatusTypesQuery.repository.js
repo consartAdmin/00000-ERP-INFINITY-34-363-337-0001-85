@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, ALIAS } from './customerStatusTypes.constants.js';
+import { tbl, ALIAS } from './customerStatusTypes.constants.js';
 import { toNumOrNull } from './customerStatusTypes.sanitizers.js';
 import { mapRow, mapSearchRow } from './customerStatusTypes.mappers.js';
 
@@ -46,7 +46,7 @@ export async function list({
 
   const sql = `
     SELECT *
-    FROM ${TB} ${ALIAS}
+    FROM ${tbl()} ${ALIAS}
     ${whereSql}
     ORDER BY ${ALIAS}."${orderSafe}" ${dir}
     LIMIT $${params.length - 1}
@@ -55,7 +55,7 @@ export async function list({
 
   const countSql = `
     SELECT COUNT(*)::INT AS total
-    FROM ${TB} ${ALIAS}
+    FROM ${tbl()} ${ALIAS}
     ${whereSql};
   `;
 
@@ -102,7 +102,7 @@ export async function search({ q, is_active = true, limit = 20, offset = 0 } = {
       ${ALIAS}.name_pt,
       ${ALIAS}.internal_code,
       ${ALIAS}.color_hex
-    FROM ${TB} ${ALIAS}
+    FROM ${tbl()} ${ALIAS}
     ${whereSql}
     ORDER BY ${ALIAS}."sort_order" ASC, LOWER(${ALIAS}.name_pt) ASC
     LIMIT $${limIdx}

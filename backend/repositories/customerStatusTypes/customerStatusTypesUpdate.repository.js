@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB } from './customerStatusTypes.constants.js';
+import { tbl } from './customerStatusTypes.constants.js';
 import { sanitizeUpdate, toNumOrNull } from './customerStatusTypes.sanitizers.js';
 import { mapRow } from './customerStatusTypes.mappers.js';
 
@@ -23,13 +23,13 @@ export async function updateById(id, payload) {
   }
 
   if (!sets.length) {
-    const { rows } = await pool.query(`SELECT * FROM ${TB} WHERE id = $1`, [sid]);
+    const { rows } = await pool.query(`SELECT * FROM ${tbl()} WHERE id = $1`, [sid]);
     return rows[0] ? mapRow(rows[0]) : null;
   }
 
   params.push(sid);
   const sql = `
-    UPDATE ${TB}
+    UPDATE ${tbl()}
        SET ${sets.join(', ')}
      WHERE id = $${params.length}
      RETURNING *;

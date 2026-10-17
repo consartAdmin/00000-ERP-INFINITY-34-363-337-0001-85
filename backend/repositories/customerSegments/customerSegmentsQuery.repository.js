@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB } from './customerSegments.constants.js';
+import { tbl } from './customerSegments.constants.js';
 import { toBool } from './customerSegments.sanitizers.js';
 import { ensureTable } from './customerSegmentsSchema.repository.js';
 
@@ -40,7 +40,7 @@ export async function list({
   const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
 
   const countRes = await pool.query(
-    `SELECT COUNT(*)::int AS total FROM ${TB} ${whereSql};`,
+    `SELECT COUNT(*)::int AS total FROM ${tbl()} ${whereSql};`,
     params
   );
 
@@ -49,7 +49,7 @@ export async function list({
   const { rows } = await pool.query(
     `
       SELECT *
-      FROM ${TB}
+      FROM ${tbl()}
       ${whereSql}
       ORDER BY segment_name ASC
       LIMIT ${Number(limit)} OFFSET ${Number(offset)};
@@ -67,7 +67,7 @@ export async function getById(id) {
   await ensureTable();
 
   const { rows } = await pool.query(
-    `SELECT * FROM ${TB} WHERE segment_id = $1 LIMIT 1;`,
+    `SELECT * FROM ${tbl()} WHERE segment_id = $1 LIMIT 1;`,
     [Number(id)]
   );
 

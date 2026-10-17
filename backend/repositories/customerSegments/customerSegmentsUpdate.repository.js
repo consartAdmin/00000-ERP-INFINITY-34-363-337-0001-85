@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, nowSql } from './customerSegments.constants.js';
+import { tbl, nowSql } from './customerSegments.constants.js';
 import { normalizePayload } from './customerSegments.sanitizers.js';
 import { ensureTable } from './customerSegmentsSchema.repository.js';
 import { getById } from './customerSegmentsQuery.repository.js';
@@ -30,7 +30,7 @@ export async function update(id, input = {}) {
   });
 
   const sql = `
-    UPDATE ${TB}
+    UPDATE ${tbl()}
     SET ${sets.join(', ')}, updated_at = ${nowSql}
     WHERE segment_id = $${vals.length + 1}
     RETURNING *;
@@ -47,13 +47,13 @@ export async function remove(id, { hard = false } = {}) {
   await ensureTable();
 
   if (hard) {
-    await pool.query(`DELETE FROM ${TB} WHERE segment_id = $1;`, [Number(id)]);
+    await pool.query(`DELETE FROM ${tbl()} WHERE segment_id = $1;`, [Number(id)]);
     return { ok: true, hard: true };
   }
 
   await pool.query(
     `
-      UPDATE ${TB}
+      UPDATE ${tbl()}
       SET is_active = FALSE, updated_at = ${nowSql}
       WHERE segment_id = $1;
     `,

@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, nowSql } from './customerSubSegments.constants.js';
+import { tbl, nowSql } from './customerSubSegments.constants.js';
 import { normalizePayload } from './customerSubSegments.sanitizers.js';
 import { ensureTable } from './customerSubSegmentsSchema.repository.js';
 
@@ -31,7 +31,7 @@ export async function create(input = {}) {
     await client.query('BEGIN');
 
     const insertSql = `
-      INSERT INTO ${TB} (${cols.join(', ')})
+      INSERT INTO ${tbl()} (${cols.join(', ')})
       VALUES (${params.join(', ')})
       RETURNING *;
     `;
@@ -42,7 +42,7 @@ export async function create(input = {}) {
 
     const updateRes = await client.query(
       `
-        UPDATE ${TB}
+        UPDATE ${tbl()}
         SET subsegment_code = $1, updated_at = ${nowSql}
         WHERE subsegment_id = $2
         RETURNING *;

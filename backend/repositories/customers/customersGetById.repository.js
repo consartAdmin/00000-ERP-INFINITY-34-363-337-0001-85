@@ -26,7 +26,7 @@ export async function getById(id) {
 
     FROM ${tb()} ${ALIAS}
 
-    ${CUSTOMER_FULL_JOINS}
+    ${CUSTOMER_FULL_JOINS()}
 
     WHERE ${ALIAS}.customer_id = $1
     LIMIT 1;

@@ -6,6 +6,7 @@
 import pool from '../../config/db.js';
 import { buildError, normalizeSellerIdsArr, normalizeCrmCompany } from './crmDeals.utils.js';
 import { mapDealRow } from './crmDeals.mappers.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
 
 /* =========================================================================
  * DEALS (KANBAN mostra só ABERTOS)
@@ -90,7 +91,7 @@ export async function listDeals({ company, stageCode, stageId, sellerId, sellerI
         d.updated_at
       FROM public."crmDeals" d
       JOIN public."crmDealsStages" s ON s.id = d.stage_id
-      LEFT JOIN public."customerStatusTypes" cst ON cst.id = d.status_type_id
+      LEFT JOIN ${erpTable('public."customerStatusTypes"')} cst ON cst.id = d.status_type_id
       LEFT JOIN public."crmLeadSources" ls ON ls.id = d.lead_source_id
       LEFT JOIN public."crmDealsOutcomes" o ON o.id = d.outcome_id
       LEFT JOIN public."crmLossReasons" lr ON lr.id = d.loss_reason_id
@@ -154,7 +155,7 @@ export async function getDealById(id) {
         d.updated_at
       FROM public."crmDeals" d
       JOIN public."crmDealsStages" s ON s.id = d.stage_id
-      LEFT JOIN public."customerStatusTypes" cst ON cst.id = d.status_type_id
+      LEFT JOIN ${erpTable('public."customerStatusTypes"')} cst ON cst.id = d.status_type_id
       LEFT JOIN public."crmLeadSources" ls ON ls.id = d.lead_source_id
       LEFT JOIN public."crmDealsOutcomes" o ON o.id = d.outcome_id
       LEFT JOIN public."crmLossReasons" lr ON lr.id = d.loss_reason_id

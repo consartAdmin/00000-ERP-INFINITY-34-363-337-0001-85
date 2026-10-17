@@ -3,7 +3,7 @@
 // ║ Tabela: public."SellerForCustomer"                                 ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import { TB } from './sellerForCustomer.constants.js';
+import { tbl } from './sellerForCustomer.constants.js';
 import { toInt } from './sellerForCustomer.sanitizers.js';
 import { q } from './sellerForCustomer.utils.js';
 
@@ -16,7 +16,7 @@ export async function createSellerForCustomer(payload = {}) {
   const active = payload.active === undefined || payload.active === null ? true : !!payload.active;
 
   const sql = `
-    INSERT INTO ${TB} (seller_id, customer_id, active)
+    INSERT INTO ${tbl()} (seller_id, customer_id, active)
     VALUES ($1, $2, $3)
     RETURNING *;
   `;

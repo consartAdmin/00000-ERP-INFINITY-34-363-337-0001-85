@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB } from './sellers.constants.js';
+import { tbl } from './sellers.constants.js';
 import { normalizePayload } from './sellers.sanitizers.js';
 import { rowToModel } from './sellers.mappers.js';
 import { getById } from './sellersQuery.repository.js';
@@ -28,7 +28,7 @@ export async function update(id, data = {}) {
   }
 
   const sql = `
-    UPDATE ${TB}
+    UPDATE ${tbl()}
     SET ${sets.join(', ')}, updated_at = NOW()
     WHERE id = $${i}
     RETURNING *;

@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, nowSql } from './customerSubSegments.constants.js';
+import { tbl, nowSql } from './customerSubSegments.constants.js';
 import { normalizePayload } from './customerSubSegments.sanitizers.js';
 import { ensureTable } from './customerSubSegmentsSchema.repository.js';
 import { getById } from './customerSubSegmentsQuery.repository.js';
@@ -26,7 +26,7 @@ export async function update(id, input = {}) {
   });
 
   const sql = `
-    UPDATE ${TB}
+    UPDATE ${tbl()}
     SET ${sets.join(', ')}, updated_at = ${nowSql}
     WHERE subsegment_id = $${vals.length + 1}
     RETURNING *;
@@ -41,11 +41,11 @@ export async function update(id, input = {}) {
 export async function remove(id, { hard = false } = {}) {
   await ensureTable();
   if (hard) {
-    await pool.query(`DELETE FROM ${TB} WHERE subsegment_id = $1;`, [Number(id)]);
+    await pool.query(`DELETE FROM ${tbl()} WHERE subsegment_id = $1;`, [Number(id)]);
     return { ok: true, hard: true };
   }
   await pool.query(
-    `UPDATE ${TB} SET is_active = FALSE, updated_at = ${nowSql} WHERE subsegment_id = $1;`,
+    `UPDATE ${tbl()} SET is_active = FALSE, updated_at = ${nowSql} WHERE subsegment_id = $1;`,
     [Number(id)]
   );
   return { ok: true, hard: false };

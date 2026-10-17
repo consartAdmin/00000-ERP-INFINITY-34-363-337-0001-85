@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, FIELDS } from './customerStatusTypes.constants.js';
+import { tbl, FIELDS } from './customerStatusTypes.constants.js';
 import { sanitizeCreate } from './customerStatusTypes.sanitizers.js';
 import { mapRow } from './customerStatusTypes.mappers.js';
 
@@ -28,7 +28,7 @@ export async function create(payload) {
   }
 
   const sql = `
-    INSERT INTO ${TB} (${cols.join(', ')})
+    INSERT INTO ${tbl()} (${cols.join(', ')})
     VALUES (${vals.join(', ')})
     RETURNING *;
   `;

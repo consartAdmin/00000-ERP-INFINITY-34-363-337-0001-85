@@ -3,6 +3,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
 
 /* =========================================================================
  * LOOKUPS
@@ -13,9 +14,9 @@ export async function fetchCustomerName(customerId) {
   const attempts = [
     `SELECT nome_fantasia AS name FROM public.clientes WHERE id = $1 LIMIT 1`,
     `SELECT nome_fantasia AS name FROM public.clientes WHERE cliente_id = $1 LIMIT 1`,
-    `SELECT nome_fantasia AS name FROM public.customers WHERE customer_id = $1 LIMIT 1`,
-    `SELECT nome_fantasia AS name FROM public.customers WHERE cliente_id = $1 LIMIT 1`,
-    `SELECT name FROM public.customers WHERE customer_id = $1 LIMIT 1`,
+    `SELECT nome_fantasia AS name FROM ${erpTable('public."customers"')} WHERE customer_id = $1 LIMIT 1`,
+    `SELECT nome_fantasia AS name FROM ${erpTable('public."customers"')} WHERE cliente_id = $1 LIMIT 1`,
+    `SELECT COALESCE(trade_name, legal_name) AS name FROM ${erpTable('public."customers"')} WHERE customer_id = $1 LIMIT 1`,
   ];
 
   for (const sql of attempts) {
@@ -33,7 +34,7 @@ export async function fetchSellerName(sellerId) {
 
   const sql = `
     SELECT name, nickname
-    FROM public."sellers"
+    FROM ${erpTable('public."sellers"')}
     WHERE id = $1
     LIMIT 1
   `;

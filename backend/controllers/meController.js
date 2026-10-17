@@ -8,6 +8,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import pool from '../config/db.js';
+import { currentErpCompany } from '../utils/erpCompanyContext.js';
 
 const TB_SELLER_BY_USER = 'public."sellerByUser"';
 const TB_SELLERS = 'public."sellers"';
@@ -225,6 +226,16 @@ export async function getMySeller(req, res) {
     const userId = Number(req.user?.user_id);
     if (!Number.isFinite(userId) || userId <= 0) {
       return res.status(401).json({ ok: false, error: 'UNAUTHORIZED' });
+    }
+
+    // Consart ERP tem vendedores próprios (sellersConsart) e o vínculo
+    // usuário→vendedor (sellerByUser) é só da BH3: lá ninguém tem vendedor fixo.
+    if (currentErpCompany() === 'CONSART') {
+      return res.status(404).json({
+        ok: false,
+        error: 'SELLER_NOT_LINKED',
+        message: 'Na Consart ERP o vendedor é escolhido na tela.',
+      });
     }
 
     const client = await pool.connect();

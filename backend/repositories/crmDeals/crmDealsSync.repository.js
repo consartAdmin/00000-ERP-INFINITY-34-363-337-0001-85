@@ -5,6 +5,7 @@
 
 import { applyCrmOutcomeToCustomerActivity } from '../customerActivity/customerActivity.index.js';
 import { toPositiveNumOrNull } from './crmDeals.utils.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
 
 export async function syncCustomerActivityFromOutcome({
   dealId,
@@ -50,13 +51,13 @@ export async function resolveCustomersCustomerId({ client, crmCustomerId }) {
   if (!Number.isFinite(id) || id <= 0) return null;
 
   let r = await client.query(
-    `SELECT customer_id FROM public.customers WHERE customer_id = $1 LIMIT 1`,
+    `SELECT customer_id FROM ${erpTable('public."customers"')} WHERE customer_id = $1 LIMIT 1`,
     [id]
   );
   if (r.rowCount) return r.rows[0].customer_id;
 
   r = await client.query(
-    `SELECT customer_id FROM public.customers WHERE cliente_id = $1 LIMIT 1`,
+    `SELECT customer_id FROM ${erpTable('public."customers"')} WHERE cliente_id = $1 LIMIT 1`,
     [id]
   );
   if (r.rowCount) return r.rows[0].customer_id;
@@ -81,12 +82,12 @@ export async function upsertCustomerStatus({ client, customerId, statusTypeId, n
 
   await client.query(
     `
-      INSERT INTO public."customerStatus" (customer_id, status_type_id, note, updated_at, updated_by)
+      INSERT INTO ${erpTable('public."customerStatus"')} (customer_id, status_type_id, note, updated_at, updated_by)
       VALUES ($1, $2, $3, now(), $4)
       ON CONFLICT (customer_id)
       DO UPDATE SET
         status_type_id = EXCLUDED.status_type_id,
-        note = COALESCE(EXCLUDED.note, public."customerStatus".note),
+        note = COALESCE(EXCLUDED.note, ${erpTable('public."customerStatus"')}.note),
         updated_at = now(),
         updated_by = EXCLUDED.updated_by
     `,

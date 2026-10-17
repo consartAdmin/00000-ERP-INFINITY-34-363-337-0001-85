@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, FIELDS } from './customerStatus.constants.js';
+import { tbl, FIELDS } from './customerStatus.constants.js';
 import { sanitizeCreate, toNumOrNull, trimOrNull } from './customerStatus.sanitizers.js';
 import { mapRow } from './customerStatus.mappers.js';
 
@@ -28,7 +28,7 @@ export async function create(payload) {
   }
 
   const sql = `
-    INSERT INTO ${TB} (${cols.join(', ')})
+    INSERT INTO ${tbl()} (${cols.join(', ')})
     VALUES (${vals.join(', ')})
     RETURNING *;
   `;
@@ -52,13 +52,13 @@ export async function setStatusForCustomer(customerId, statusTypeId, { note, upd
   const byClean = toNumOrNull(updated_by);
 
   const sql = `
-    INSERT INTO ${TB} (customer_id, status_type_id, note, updated_by)
+    INSERT INTO ${tbl()} (customer_id, status_type_id, note, updated_by)
     VALUES ($1, $2, $3, $4)
     ON CONFLICT (customer_id)
     DO UPDATE SET
       status_type_id = EXCLUDED.status_type_id,
-      note           = COALESCE(EXCLUDED.note, ${TB}.note),
-      updated_by     = COALESCE(EXCLUDED.updated_by, ${TB}.updated_by),
+      note           = COALESCE(EXCLUDED.note, ${tbl()}.note),
+      updated_by     = COALESCE(EXCLUDED.updated_by, ${tbl()}.updated_by),
       updated_at     = NOW()
     RETURNING *;
   `;

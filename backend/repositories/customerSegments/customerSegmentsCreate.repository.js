@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, nowSql } from './customerSegments.constants.js';
+import { tbl, nowSql } from './customerSegments.constants.js';
 import { normalizePayload } from './customerSegments.sanitizers.js';
 import { ensureTable } from './customerSegmentsSchema.repository.js';
 
@@ -27,7 +27,7 @@ export async function create(input = {}) {
 
     const insertRes = await client.query(
       `
-        INSERT INTO ${TB}
+        INSERT INTO ${tbl()}
           (segment_code, segment_name, description, is_active)
         VALUES
           (NULL, $1, $2, COALESCE($3, TRUE))
@@ -45,7 +45,7 @@ export async function create(input = {}) {
 
     const updateRes = await client.query(
       `
-        UPDATE ${TB}
+        UPDATE ${tbl()}
         SET segment_code = $1, updated_at = ${nowSql}
         WHERE segment_id = $2
         RETURNING *;
