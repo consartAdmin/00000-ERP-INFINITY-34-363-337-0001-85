@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { tb } from './customers.table.js';
 import { TB, FIELDS } from './customers.constants.js';
 import { sanitizeCreate } from './customers.sanitizers.js';
 import { saveDeliveryAddress } from './customersDeliveryAddress.repository.js';
@@ -38,7 +39,7 @@ export async function create(payload = {}) {
     }
 
     const { rows } = await client.query(
-      `INSERT INTO ${TB}
+      `INSERT INTO ${tb()}
         (${cols.join(', ')})
        VALUES
         (${vals.join(', ')})

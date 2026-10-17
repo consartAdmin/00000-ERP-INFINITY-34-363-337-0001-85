@@ -23,7 +23,7 @@ import { askExportKey } from './customersList.validation.js';
 
 export function bindActions(loadAndRender) {
   $('#btnNew')?.addEventListener('click', () => {
-    location.href = '/public/customersRegistration/customersRegistration.html';
+    location.href = (window.erpCompanyUrl ? window.erpCompanyUrl('/public/customersRegistration/customersRegistration.html') : '/public/customersRegistration/customersRegistration.html');
   });
   $('#btnBack')?.addEventListener('click', () => {
     location.href = '/public/home/home.html';
@@ -80,7 +80,7 @@ async function onExportPdf() {
     const key = await getExportKey('PDF');
     if (key === null) return;
     const query = buildReportQuery({ export_key: key });
-    const url = `${ROUTES.customersReportPdf}?${query}`;
+    const url = (window.erpCompanyUrl ? window.erpCompanyUrl(`${ROUTES.customersReportPdf}?${query}`) : `${ROUTES.customersReportPdf}?${query}`);
     window.open(url, '_blank', 'noopener,noreferrer');
   } catch (error) {
     console.error('[customersList.onExportPdf]', error);
@@ -93,7 +93,7 @@ async function onExportExcel() {
     const key = await getExportKey('EXCEL');
     if (key === null) return;
     const query = buildReportQuery({ export_key: key });
-    window.location.href = `${ROUTES.customersReportExcel}?${query}`;
+    window.location.href = (window.erpCompanyUrl ? window.erpCompanyUrl(`${ROUTES.customersReportExcel}?${query}`) : `${ROUTES.customersReportExcel}?${query}`);
   } catch (error) {
     console.error('[customersList.onExportExcel]', error);
     showError(

@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { tb } from './customers.table.js';
 import { TB } from './customers.constants.js';
 import { toNumOrNull } from './customers.utils.js';
 
@@ -19,7 +20,7 @@ export async function removeById(id, { hard = false } = {}) {
 
   if (hard) {
     const { rowCount } = await pool.query(
-      `DELETE FROM ${TB}
+      `DELETE FROM ${tb()}
         WHERE customer_id = $1`,
       [cid]
     );
@@ -31,7 +32,7 @@ export async function removeById(id, { hard = false } = {}) {
   }
 
   const { rowCount } = await pool.query(
-    `UPDATE ${TB}
+    `UPDATE ${tb()}
         SET is_active = FALSE,
             updated_at = NOW()
       WHERE customer_id = $1`,

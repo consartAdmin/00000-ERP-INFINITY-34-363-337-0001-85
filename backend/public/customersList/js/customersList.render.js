@@ -139,7 +139,7 @@ export function renderRows(rows) {
     renderStatus(row.querySelector('.col-status'), statusLabel, statusColor);
     row.querySelector('[data-edit]')?.addEventListener('click', () => {
       if (id == null || id === '') return;
-      location.href = `/public/customersEdit/customersEdit.html?id=${encodeURIComponent(id)}`;
+      location.href = (window.erpCompanyUrl ? window.erpCompanyUrl(`/public/customersEdit/customersEdit.html?id=${encodeURIComponent(id)}`) : `/public/customersEdit/customersEdit.html?id=${encodeURIComponent(id)}`);
     });
     tbody.appendChild(row);
   }

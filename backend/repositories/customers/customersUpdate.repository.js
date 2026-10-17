@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { tb } from './customers.table.js';
 import { TB } from './customers.constants.js';
 import { toNumOrNull } from './customers.utils.js';
 import { sanitizeUpdate } from './customers.sanitizers.js';
@@ -33,7 +34,7 @@ export async function updateById(id, payload = {}) {
 
     const currentResult = await client.query(
       `SELECT *
-         FROM ${TB}
+         FROM ${tb()}
         WHERE customer_id = $1
         FOR UPDATE`,
       [cid]
@@ -59,7 +60,7 @@ export async function updateById(id, payload = {}) {
       params.push(cid);
 
       const updatedResult = await client.query(
-        `UPDATE ${TB}
+        `UPDATE ${tb()}
             SET ${sets.join(', ')}
           WHERE customer_id = $${params.length}
           RETURNING *`,

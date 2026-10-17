@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { tb } from './customers.table.js';
 import { TB } from './customers.constants.js';
 import { toNumOrNull, trimOrNull } from './customers.utils.js';
 
@@ -27,7 +28,7 @@ export async function listWithoutAsaasId({ limit = 100 } = {}) {
         phone_number,
         mobile_number,
         asaas_id
-      FROM ${TB}
+      FROM ${tb()}
       WHERE NULLIF(BTRIM(COALESCE(asaas_id, '')), '') IS NULL
       ORDER BY customer_id ASC
       LIMIT $1
@@ -52,7 +53,7 @@ export async function saveAsaasId(customerId, asaasId) {
 
   const { rows } = await pool.query(
     `
-      UPDATE ${TB}
+      UPDATE ${tb()}
       SET
         asaas_id = $1,
         updated_at = NOW()
@@ -68,7 +69,7 @@ export async function saveAsaasId(customerId, asaasId) {
 export async function countWithoutAsaasId() {
   const { rows } = await pool.query(`
     SELECT COUNT(*)::INT AS total
-    FROM ${TB}
+    FROM ${tb()}
     WHERE NULLIF(BTRIM(COALESCE(asaas_id, '')), '') IS NULL
   `);
 

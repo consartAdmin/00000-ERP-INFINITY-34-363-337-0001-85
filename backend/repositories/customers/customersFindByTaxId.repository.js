@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { tb } from './customers.table.js';
 import { TB } from './customers.constants.js';
 
 /**
@@ -16,7 +17,7 @@ export async function findByTaxId(taxId) {
 
   const { rows } = await pool.query(
     `SELECT customer_id, trade_name, legal_name
-       FROM ${TB}
+       FROM ${tb()}
       WHERE regexp_replace(COALESCE(tax_id, ''), '\\D+', '', 'g') = $1
       ORDER BY customer_id
       LIMIT 1`,
