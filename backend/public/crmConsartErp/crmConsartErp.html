@@ -23,7 +23,7 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/crmDeals/crmDeals.css?v=4" />
+  <link rel="stylesheet" href="/crmDeals/crmDeals.css?v=5" />
   <link rel="stylesheet" href="/crmDeals/crmOutcomesModal.css" />
   <link rel="stylesheet" href="/crmDeals/crmConclusionSummaryModal/crmConclusionSummaryModal.css" />
 </head>
@@ -50,13 +50,33 @@
           </div>
         </div>
 
-        <div class="crm-header__filters">
-          <label for="crm-vendedor" class="crm-label">Vendedor</label>
-          <select id="crm-vendedor" class="crm-select">
-            <option value="all">Todos os vendedores</option>
-          </select>
-          <small class="crm-hint">
-            Dica: dê <strong>duplo clique</strong> para buscar um vendedor.
+        <div class="crm-header__filters crm-header__filters--grid">
+          <div class="crm-filter">
+            <label for="crm-estado" class="crm-label">Estado</label>
+            <select id="crm-estado" class="crm-select">
+              <option value="">Todos os estados</option>
+            </select>
+          </div>
+          <div class="crm-filter">
+            <label for="crm-cidade" class="crm-label">Cidade</label>
+            <select id="crm-cidade" class="crm-select">
+              <option value="">Todas as cidades</option>
+            </select>
+          </div>
+          <div class="crm-filter">
+            <label for="crm-segmento" class="crm-label">Segmento</label>
+            <select id="crm-segmento" class="crm-select">
+              <option value="">Todos os segmentos</option>
+            </select>
+          </div>
+          <div class="crm-filter">
+            <label for="crm-vendedor" class="crm-label">Vendedor</label>
+            <select id="crm-vendedor" class="crm-select">
+              <option value="all">Todos os vendedores</option>
+            </select>
+          </div>
+          <small class="crm-hint crm-filter--full">
+            Dica: dê <strong>duplo clique</strong> no vendedor para buscar.
           </small>
         </div>
       </header>
@@ -254,6 +274,6 @@
   <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/apiBase.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/crmDeals/js/index.js?v=4"></script>
+  <script type="module" src="/crmDeals/js/index.js?v=5"></script>
 </body>
 </html>

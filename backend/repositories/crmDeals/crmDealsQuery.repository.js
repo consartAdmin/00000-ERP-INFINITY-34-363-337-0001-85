@@ -12,7 +12,7 @@ import { erpTable } from '../../utils/erpCompanyContext.js';
  * DEALS (KANBAN mostra só ABERTOS)
  * ========================================================================= */
 
-export async function listDeals({ company, stageCode, stageId, sellerId, sellerIds, search, limit = 50, offset = 0 } = {}) {
+export async function listDeals({ company, stageCode, stageId, sellerId, sellerIds, search, state, city, segmentId, limit = 50, offset = 0 } = {}) {
   try {
     const params = [normalizeCrmCompany(company)];
     let where = 'WHERE COALESCE(d.is_closed, FALSE) = FALSE AND d.crm_company = $1';
@@ -40,6 +40,27 @@ export async function listDeals({ company, stageCode, stageId, sellerId, sellerI
         UPPER(COALESCE(d.customer_name, '')) LIKE $${params.length}
         OR UPPER(COALESCE(d.seller_name, '')) LIKE $${params.length}
         OR UPPER(COALESCE(ls.name, '')) LIKE $${params.length}
+      )`;
+    }
+
+    // Filtros pelo cadastro do cliente (Estado, Cidade, Segmento)
+    const customerCond = [];
+    if (state && String(state).trim()) {
+      params.push(String(state).trim().toUpperCase());
+      customerCond.push(`UPPER(TRIM(c.state)) = $${params.length}`);
+    }
+    if (city && String(city).trim()) {
+      params.push(String(city).trim().toUpperCase());
+      customerCond.push(`UPPER(TRIM(c.city)) = $${params.length}`);
+    }
+    if (Number(segmentId) > 0) {
+      params.push(Number(segmentId));
+      customerCond.push(`c.segment_id = $${params.length}`);
+    }
+    if (customerCond.length) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM ${erpTable('public."customers"')} c
+         WHERE c.customer_id = d.customer_id AND ${customerCond.join(' AND ')}
       )`;
     }
 
@@ -166,5 +187,23 @@ export async function getDealById(id) {
     return { ok: true, data: mapDealRow(rows[0]) };
   } catch (err) {
     return buildError(err, 'crmDealsApi.getDealById');
+  }
+}
+
+/* =========================================================================
+ * Estados e cidades dos clientes (opções dos filtros do Kanban)
+ * ========================================================================= */
+
+export async function listCustomerLocations() {
+  try {
+    const { rows } = await pool.query(`
+      SELECT DISTINCT UPPER(TRIM(state)) AS state, TRIM(city) AS city
+        FROM ${erpTable('public."customers"')}
+       WHERE COALESCE(TRIM(state), '') <> '' AND COALESCE(TRIM(city), '') <> ''
+       ORDER BY 1, 2
+    `);
+    return { ok: true, data: rows };
+  } catch (err) {
+    return buildError(err, 'CUSTOMER_LOCATIONS_ERROR');
   }
 }

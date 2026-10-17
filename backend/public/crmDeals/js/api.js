@@ -85,6 +85,9 @@ async function fetchDeals({
   stageId,
   sellerId,
   search,
+  state,
+  city,
+  segmentId,
   limit,
   offset,
 } = {}) {
@@ -94,6 +97,9 @@ async function fetchDeals({
     stageId: toPositiveInt(stageId),
     sellerId: toPositiveInt(sellerId),
     search,
+    state: normalizeString(state),
+    city: normalizeString(city),
+    segmentId: toPositiveInt(segmentId),
     limit: toPositiveInt(limit),
     offset: Number.isFinite(Number(offset)) ? Number(offset) : undefined,
   });

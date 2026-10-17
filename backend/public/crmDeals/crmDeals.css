@@ -91,6 +91,28 @@
   color: #94a3b8;
 }
 
+/* Filtros em grade (CRM Consart: Estado, Cidade, Segmento, Vendedor) */
+.crm-header__filters--grid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 220px));
+  gap: 6px 10px;
+}
+
+.crm-filter{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.crm-filter .crm-select{
+  width: 100%;
+}
+
+.crm-filter--full{
+  grid-column: 1 / -1;
+}
+
 .crm-header__center{
   flex: 1;
   display: flex;

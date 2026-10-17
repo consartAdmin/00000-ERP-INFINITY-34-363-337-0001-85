@@ -205,7 +205,7 @@ async function listDealOutcomes(req, res) {
  * ========================================================================= */
 async function listDeals(req, res) {
   try {
-    const { stageCode, stageId, sellerId, search, limit, offset } = req.query;
+    const { stageCode, stageId, sellerId, search, state, city, segmentId, limit, offset } = req.query;
 
     const parsedLimit = limit ? Number(limit) : 50;
     const parsedOffset = offset ? Number(offset) : 0;
@@ -222,6 +222,9 @@ async function listDeals(req, res) {
       sellerId: scope.is_admin ? (sellerId ? Number(sellerId) : undefined) : undefined,
       sellerIds: sellerIds?.length ? sellerIds : undefined,
       search: search || undefined,
+      state: state || undefined,
+      city: city || undefined,
+      segmentId: segmentId ? Number(segmentId) : undefined,
       limit: Number.isNaN(parsedLimit) ? 50 : parsedLimit,
       offset: Number.isNaN(parsedOffset) ? 0 : parsedOffset,
     });
@@ -231,6 +234,17 @@ async function listDeals(req, res) {
   } catch (err) {
     console.error('[crmDealsController.listDeals]', err);
     return sendError(res, 500, 'DEALS_LIST_EXCEPTION');
+  }
+}
+
+async function listCustomerLocations(_req, res) {
+  try {
+    const { ok, data, error } = await crmDealsApi.listCustomerLocations();
+    if (!ok) return sendError(res, 500, error || 'CUSTOMER_LOCATIONS_ERROR');
+    return res.json({ ok: true, data });
+  } catch (err) {
+    console.error('[crmDealsController.listCustomerLocations]', err);
+    return sendError(res, 500, 'CUSTOMER_LOCATIONS_EXCEPTION');
   }
 }
 
@@ -554,6 +568,7 @@ const crmDealsController = {
   listDealOutcomes,
 
   listDeals,
+  listCustomerLocations,
   getDeal,
   createDeal,
   updateDeal,
