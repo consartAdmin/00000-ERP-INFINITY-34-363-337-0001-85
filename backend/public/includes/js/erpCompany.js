@@ -56,6 +56,16 @@
       var url = typeof input === 'string' ? input : (input && input.url) || String(input);
       if (!isOwnApi(url)) return originalFetch(input, init);
 
+      if (typeof input === 'string') {
+        try {
+          var withCompany = new URL(input, window.location.href);
+          if (!withCompany.searchParams.has('company')) {
+            withCompany.searchParams.set('company', company);
+            input = withCompany.toString();
+          }
+        } catch (e) {}
+      }
+
       var opts = Object.assign({}, init || {});
       var headers = new Headers(opts.headers || (input instanceof Request ? input.headers : undefined));
       if (!headers.has('X-ERP-Company')) headers.set('X-ERP-Company', company);

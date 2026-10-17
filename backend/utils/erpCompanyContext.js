@@ -44,6 +44,8 @@ export function erpTable(table) {
 }
 
 /** Middleware Express: contexto da empresa da tela. */
-export function erpCompanyContext(req, _res, next) {
+export function erpCompanyContext(req, res, next) {
+  // A mesma URL responde diferente por empresa: caches não podem misturar
+  res.vary('X-ERP-Company');
   runWithErpCompany(getErpCompany(req), next);
 }
