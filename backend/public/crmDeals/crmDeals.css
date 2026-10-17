@@ -520,103 +520,49 @@
 }
 
 /* ===========================
-   Modal Novo Card
+   Modais Novo Card / Queda de Venda
+   (estrutura e tamanhos vêm do modals.css)
    =========================== */
 
-.crm-modal{
-  position: fixed;
-  inset: 0;
-  display: flex;
+.crm-deal-modal .modal-form-grid{
+  align-items: start;
+}
+
+.crm-deal-modal .crm-quick-add-btn{
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.38);
-  z-index: 9999;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
 }
 
-.crm-modal.hidden{
-  display: none !important;
-}
-
-.crm-modal__dialog{
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 22px 26px 18px;
-  max-width: 560px;
-  width: 100%;
-  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.35);
-}
-
-.crm-modal__dialog h2{
-  margin: 0 0 12px 0;
-  font-size: 1.3rem;
-  color: #0f172a;
-}
-
-.crm-modal__form{
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.crm-modal__form label{
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.8rem;
-  color: #475569;
-  font-weight: 500;
-}
-
-.crm-modal__form input,
-.crm-modal__form textarea,
-.crm-modal__form select{
-  border-radius: 10px;
-  border: 1px solid #d1d5db;
-  padding: 6px 10px;
-  font-size: 0.88rem;
+.crm-deal-modal .crm-quick-add-btn:hover,
+.crm-deal-modal .crm-quick-add-btn:focus-visible{
+  background: #dbeafe;
+  color: #2563eb;
   outline: none;
 }
 
-.crm-modal__form input:focus,
-.crm-modal__form textarea:focus,
-.crm-modal__form select:focus{
-  border-color: #2563eb;
-  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+.crm-deal-modal .crm-quick-error{
+  margin: 8px 0 0;
+  color: #b91c1c;
+  font-size: 12px;
 }
 
-.crm-modal__actions{
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.crm-modal__actions .btn-primary,
-.crm-modal__actions .btn-secondary{
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: none;
-  font-size: 0.86rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.crm-modal__actions .btn-primary{
-  background: #2563eb;
-  color: #ffffff;
-}
-
-.crm-modal__actions .btn-primary:hover{
-  background: #1d4ed8;
-}
-
-.crm-modal__actions .btn-secondary{
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.crm-modal__actions .btn-secondary:hover{
-  background: #d1d5db;
+.crm-deal-modal .crm-hint{
+  display: block;
+  margin-top: 3px;
 }
 
 /* ===========================

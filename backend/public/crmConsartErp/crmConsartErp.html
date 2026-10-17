@@ -23,7 +23,7 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/crmDeals/crmDeals.css" />
+  <link rel="stylesheet" href="/crmDeals/crmDeals.css?v=4" />
   <link rel="stylesheet" href="/crmDeals/crmOutcomesModal.css" />
   <link rel="stylesheet" href="/crmDeals/crmConclusionSummaryModal/crmConclusionSummaryModal.css" />
 </head>
@@ -96,118 +96,155 @@
     </section>
   </main>
 
-  <!-- Modal Novo Card -->
-  <div id="crm-modal-new-card" class="crm-modal hidden" aria-hidden="true">
-    <div class="crm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="crmModalTitle">
-      <h2 id="crmModalTitle">Novo card</h2>
+  <!-- Modal Novo Card (padrão modals.css / modal.js) -->
+  <div id="crm-modal-new-card" class="modal crm-deal-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
 
-      <div class="crm-modal__form">
-        <label>
-          Cliente
-          <input
-            type="text"
-            id="crm-new-customer"
-            placeholder="Nome do cliente (duplo clique para buscar)"
-            autocomplete="off"
-          >
-        </label>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="crmModalTitle">
 
-        <label>
-          Vendedor
-          <input
-            type="text"
-            id="crm-new-seller"
-            placeholder="Selecione o vendedor (duplo clique para buscar)"
-            autocomplete="off"
-          >
-        </label>
+        <header class="modal__header modal-header-color-3">
+          <h2 id="crmModalTitle" class="modal__title">Novo Card</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </header>
 
-        <label>
-          Origem do lead
-          <select id="crm-new-lead-source" class="crm-select">
-            <option value="">Carregando...</option>
-          </select>
-          <small class="crm-hint">
-            Obs.: esta lista é carregada do cadastro <strong>crmLeadSources</strong>.
-          </small>
-        </label>
+        <div class="modal__body">
 
-        <label>
-          Valor estimado
-          <input
-            type="number"
-            id="crm-new-value"
-            placeholder="0,00"
-            step="0.01"
-            min="0"
-            inputmode="decimal"
-          >
-        </label>
+          <div class="modal-section">
+            <div class="modal-form-grid modal-form-grid--4">
 
-        <label>
-          Tag / Status
-          <select id="crm-new-tag-status" class="crm-select">
-            <option value="">Carregando...</option>
-          </select>
-          <small class="crm-hint">
-            Obs.: esta lista é carregada do cadastro <strong>customerStatusTypes</strong>.
-          </small>
-        </label>
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="crm-new-customer">Cliente *</label>
+                <input type="text" id="crm-new-customer" placeholder="Duplo clique para buscar o cliente" autocomplete="off">
+              </div>
 
-        <input type="hidden" id="crm-new-tag" value="">
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="crm-new-seller">Vendedor</label>
+                <input type="text" id="crm-new-seller" placeholder="Duplo clique para buscar o vendedor" autocomplete="off">
+              </div>
 
-        <label>
-          Próxima ação
-          <textarea
-            id="crm-new-nextstep"
-            rows="3"
-            placeholder="Ligar, visitar, enviar proposta..."
-          ></textarea>
-        </label>
+              <div class="fields fields-w-full fields-h-6">
+                <label for="crm-new-lead-source">Origem do lead</label>
+                <select id="crm-new-lead-source">
+                  <option value="">Carregando...</option>
+                </select>
+                <small class="crm-hint">Cadastro: crmLeadSources</small>
+              </div>
 
-        <label>
-          Coluna inicial
-          <select id="crm-new-stage" class="crm-select"></select>
-        </label>
-      </div>
+              <div class="fields fields-w-full fields-h-6">
+                <label for="crm-new-tag-status">Tag / Status</label>
+                <select id="crm-new-tag-status">
+                  <option value="">Carregando...</option>
+                </select>
+                <small class="crm-hint">Cadastro: customerStatusTypes</small>
+              </div>
 
-      <div class="crm-modal__actions">
-        <button id="crm-modal-save" class="btn-primary" type="button">Salvar</button>
-        <button id="crm-modal-cancel" class="btn-secondary" type="button">Cancelar</button>
-      </div>
+              <div class="fields fields-w-full fields-h-6">
+                <label for="crm-new-value">Valor estimado (R$)</label>
+                <input type="number" id="crm-new-value" placeholder="0,00" step="0.01" min="0" inputmode="decimal">
+              </div>
+
+              <div class="fields fields-w-full fields-h-6">
+                <label for="crm-new-stage">Coluna inicial</label>
+                <select id="crm-new-stage"></select>
+              </div>
+
+              <input type="hidden" id="crm-new-tag" value="">
+
+              <div class="fields fields-w-full modal-field--span-full">
+                <label for="crm-new-nextstep">Próxima ação</label>
+                <textarea id="crm-new-nextstep" rows="3" placeholder="Ligar, visitar, enviar proposta..."></textarea>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <button id="crm-modal-cancel" class="btn btn-cancel btn-sm" type="button">Cancelar</button>
+          <button id="crm-modal-save" class="btn btn-save btn-sm" type="button">Salvar Card</button>
+        </footer>
+
+      </section>
     </div>
   </div>
 
-  <!-- Modal Queda de Venda -->
-  <div id="crm-modal-loss-reason" class="crm-modal hidden" aria-hidden="true">
-    <div class="crm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="crmLossReasonTitle">
-      <h2 id="crmLossReasonTitle">Queda de Venda</h2>
+  <!-- Modal Queda de Venda (padrão modals.css / modal.js) -->
+  <div id="crm-modal-loss-reason" class="modal crm-deal-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
 
-      <div class="crm-modal__form">
-        <label>
-          Motivo da perda
-          <select id="crm-loss-reason-select" class="crm-select">
-            <option value="">Selecione o motivo</option>
-          </select>
-          <small class="crm-hint">
-            Obs.: esta lista é carregada do cadastro <strong>crmLossReasons</strong>.
-          </small>
-        </label>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true" aria-labelledby="crmLossReasonTitle">
 
-        <label>
-          Observação
-          <textarea
-            id="crm-loss-reason-notes"
-            rows="4"
-            placeholder="Descreva detalhes desta perda..."
-          ></textarea>
-        </label>
-      </div>
+        <header class="modal__header modal-header-color-9">
+          <h2 id="crmLossReasonTitle" class="modal__title">Queda de Venda</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </header>
 
-      <div class="crm-modal__actions">
-        <button id="crm-loss-reason-confirm" class="btn-primary" type="button">Confirmar</button>
-        <button id="crm-loss-reason-cancel" class="btn-secondary" type="button">Cancelar</button>
-      </div>
+        <div class="modal__body">
+
+          <div class="modal-section">
+            <div class="modal-form-grid">
+
+              <div class="fields fields-w-full fields-h-6">
+                <label for="crm-loss-reason-select">Motivo da perda *
+                  <button type="button" id="crm-loss-reason-add" class="crm-quick-add-btn"
+                    title="Cadastrar novo motivo da perda" aria-label="Cadastrar novo motivo da perda">+</button>
+                </label>
+                <select id="crm-loss-reason-select">
+                  <option value="">Selecione o motivo</option>
+                </select>
+                <small class="crm-hint">Cadastro: crmLossReasons</small>
+              </div>
+
+              <div class="fields fields-w-full">
+                <label for="crm-loss-reason-notes">Observação</label>
+                <textarea id="crm-loss-reason-notes" rows="4" placeholder="Descreva detalhes desta perda..."></textarea>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <footer class="modal__footer modal-footer-color-9">
+          <button id="crm-loss-reason-cancel" class="btn btn-cancel btn-sm" type="button">Cancelar</button>
+          <button id="crm-loss-reason-confirm" class="btn btn-save btn-sm" type="button">Confirmar</button>
+        </footer>
+
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal Novo Motivo da Perda (botão + do Queda de Venda) -->
+  <div id="crm-modal-new-loss-reason" class="modal crm-deal-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-3" role="dialog" aria-modal="true" aria-labelledby="crmNewLossReasonTitle">
+
+        <header class="modal__header modal-header-color-9">
+          <h2 id="crmNewLossReasonTitle" class="modal__title">Novo Motivo da Perda</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </header>
+
+        <div class="modal__body">
+          <form id="crm-new-loss-reason-form" class="modal-section" novalidate>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="crm-new-loss-reason-name">Motivo *</label>
+              <input type="text" id="crm-new-loss-reason-name" maxlength="120" autocomplete="off" placeholder="Ex.: Preço acima do concorrente">
+            </div>
+            <p id="crm-new-loss-reason-error" class="crm-quick-error" hidden></p>
+          </form>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-9">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+          <button id="crm-new-loss-reason-save" class="btn btn-save btn-sm" type="submit" form="crm-new-loss-reason-form">Salvar</button>
+        </footer>
+
+      </section>
     </div>
   </div>
 
@@ -217,6 +254,6 @@
   <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/apiBase.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/crmDeals/js/index.js?v=3"></script>
+  <script type="module" src="/crmDeals/js/index.js?v=4"></script>
 </body>
 </html>
