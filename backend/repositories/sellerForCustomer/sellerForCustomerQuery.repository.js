@@ -4,7 +4,8 @@
 // ║ Tabela: public."SellerForCustomer" (JOIN sellers + customers)      ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import { TB } from './sellerForCustomer.constants.js';
+import { tbl } from './sellerForCustomer.constants.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
 import { toInt, toBool } from './sellerForCustomer.sanitizers.js';
 import { q, parseOrder } from './sellerForCustomer.utils.js';
 
@@ -61,10 +62,10 @@ export async function listSellerForCustomer({
       sfc.updated_at,
       COALESCE(s.nickname, s.name)        AS seller_name,
       COALESCE(c.trade_name, c.legal_name) AS customer_name
-    FROM ${TB} sfc
-    LEFT JOIN public.sellers s
+    FROM ${tbl()} sfc
+    LEFT JOIN ${erpTable('public."sellers"')} s
       ON s.id = sfc.seller_id
-    LEFT JOIN public."customers" c
+    LEFT JOIN ${erpTable('public."customers"')} c
       ON c.customer_id = sfc.customer_id
     ${whereSql}
     ${orderSql}
@@ -74,7 +75,7 @@ export async function listSellerForCustomer({
 
   const countSql = `
     SELECT COUNT(*)::INT AS total
-    FROM ${TB} sfc
+    FROM ${tbl()} sfc
     ${whereSql};
   `;
 
@@ -112,10 +113,10 @@ export async function listByCustomerIds(customerIds = []) {
       sfc.updated_at,
       COALESCE(s.nickname, s.name)         AS seller_name,
       COALESCE(c.trade_name, c.legal_name) AS customer_name
-    FROM ${TB} sfc
-    LEFT JOIN public.sellers s
+    FROM ${tbl()} sfc
+    LEFT JOIN ${erpTable('public."sellers"')} s
       ON s.id = sfc.seller_id
-    LEFT JOIN public."customers" c
+    LEFT JOIN ${erpTable('public."customers"')} c
       ON c.customer_id = sfc.customer_id
     WHERE sfc.customer_id = ANY($1::INT[])
       AND (sfc.active IS NULL OR sfc.active = TRUE)
@@ -144,10 +145,10 @@ export async function getSellerForCustomerById(id) {
       sfc.updated_at,
       COALESCE(s.nickname, s.name)         AS seller_name,
       COALESCE(c.trade_name, c.legal_name) AS customer_name
-    FROM ${TB} sfc
-    LEFT JOIN public.sellers s
+    FROM ${tbl()} sfc
+    LEFT JOIN ${erpTable('public."sellers"')} s
       ON s.id = sfc.seller_id
-    LEFT JOIN public."customers" c
+    LEFT JOIN ${erpTable('public."customers"')} c
       ON c.customer_id = sfc.customer_id
     WHERE sfc.id = $1
     LIMIT 1;
@@ -172,8 +173,8 @@ export async function listCustomersBySeller(seller_id) {
       sfc.active     AS link_active,
       sfc.created_at AS link_created_at,
       sfc.updated_at AS link_updated_at
-    FROM ${TB} sfc
-    INNER JOIN public."customers" c
+    FROM ${tbl()} sfc
+    INNER JOIN ${erpTable('public."customers"')} c
       ON c.customer_id = sfc.customer_id
     WHERE sfc.seller_id = $1
     ORDER BY COALESCE(c.trade_name, c.legal_name) ASC;
@@ -193,8 +194,8 @@ export async function listSellersByCustomer(customer_id) {
       sfc.active     AS link_active,
       sfc.created_at AS link_created_at,
       sfc.updated_at AS link_updated_at
-    FROM ${TB} sfc
-    INNER JOIN public.sellers s
+    FROM ${tbl()} sfc
+    INNER JOIN ${erpTable('public."sellers"')} s
       ON s.id = sfc.seller_id
     WHERE sfc.customer_id = $1
     ORDER BY COALESCE(s.nickname, s.name) ASC;

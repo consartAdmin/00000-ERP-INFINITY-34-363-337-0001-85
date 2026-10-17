@@ -14,11 +14,14 @@
   var params = new URLSearchParams(window.location.search);
   var company = String(window.ERP_COMPANY || params.get('company') || '').trim().toUpperCase();
 
-  // Telas de clientes com página própria da Consart (nome real na URL)
+  // Telas com página própria da Consart (nome real na URL)
   var CONSART_PAGES = {
     '/public/customersList/customersList.html': '/public/customersListConsart/customersListConsart.html',
     '/public/customersRegistration/customersRegistration.html': '/public/customersRegistrationConsart/customersRegistrationConsart.html',
-    '/public/customersEdit/customersEdit.html': '/public/customersEditConsart/customersEditConsart.html'
+    '/public/customersEdit/customersEdit.html': '/public/customersEditConsart/customersEditConsart.html',
+    '/public/customerStatusTypes/customerStatusTypes.html': '/public/customerStatusTypesConsart/customerStatusTypesConsart.html',
+    '/public/customerSegments/customerSegments.html': '/public/customerSegmentsConsart/customerSegmentsConsart.html',
+    '/public/sellers/sellers.html': '/public/sellersConsart/sellersConsart.html'
   };
 
   window.erpCompanyUrl = function (url) {

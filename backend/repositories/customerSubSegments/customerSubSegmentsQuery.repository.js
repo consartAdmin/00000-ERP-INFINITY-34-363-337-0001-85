@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB } from './customerSubSegments.constants.js';
+import { tbl } from './customerSubSegments.constants.js';
 import { toBool } from './customerSubSegments.sanitizers.js';
 import { ensureTable } from './customerSubSegmentsSchema.repository.js';
 
@@ -45,7 +45,7 @@ export async function list({
   const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
 
   const countRes = await pool.query(
-    `SELECT COUNT(*)::int AS total FROM ${TB} ${whereSql};`,
+    `SELECT COUNT(*)::int AS total FROM ${tbl()} ${whereSql};`,
     params
   );
   const total = countRes.rows?.[0]?.total || 0;
@@ -53,7 +53,7 @@ export async function list({
   const { rows } = await pool.query(
     `
       SELECT *
-      FROM ${TB}
+      FROM ${tbl()}
       ${whereSql}
       ORDER BY subsegment_name ASC
       LIMIT ${limit} OFFSET ${offset};
@@ -70,7 +70,7 @@ export async function list({
 export async function getById(id) {
   await ensureTable();
   const { rows } = await pool.query(
-    `SELECT * FROM ${TB} WHERE subsegment_id = $1 LIMIT 1;`,
+    `SELECT * FROM ${tbl()} WHERE subsegment_id = $1 LIMIT 1;`,
     [Number(id)]
   );
   return rows[0] || null;

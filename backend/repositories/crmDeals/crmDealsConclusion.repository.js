@@ -8,6 +8,7 @@ import perfApi from '../crmDealsPerformance/crmDealsPerformance.index.js';
 import { buildError, toNumOrNull, normalizeSellerIdsArr, normalizeCrmCompany } from './crmDeals.utils.js';
 import { getCustomerStatusTypesCols } from './crmDealsMeta.repository.js';
 import { upsertCustomerStatus, syncCustomerActivityFromOutcome } from './crmDealsSync.repository.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
 
 /* =========================================================================
  * CONCLUSÃO DO LEAD (DROPZONE)
@@ -58,7 +59,7 @@ export async function concludeLeadStatusType({ dealId, statusTypeId, note = null
     const chk = await client.query(
       `
         SELECT t.id
-        FROM public."customerStatusTypes" t
+        FROM ${erpTable('public."customerStatusTypes"')} t
         WHERE t.id = $1
           AND ${activeExpr} = TRUE
         LIMIT 1

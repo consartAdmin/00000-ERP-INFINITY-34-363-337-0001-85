@@ -61,7 +61,7 @@ export async function list({
 
     FROM ${tb()} ${ALIAS}
 
-    ${CUSTOMER_FULL_JOINS}
+    ${CUSTOMER_FULL_JOINS()}
 
     ${whereSql}
 
@@ -75,7 +75,7 @@ export async function list({
     SELECT COUNT(*)::INT AS total
     FROM ${tb()} ${ALIAS}
 
-    ${CUSTOMER_FULL_JOINS}
+    ${CUSTOMER_FULL_JOINS()}
 
     ${whereSql};
   `;
@@ -179,9 +179,9 @@ export async function search({
 
     FROM ${tb()} ${ALIAS}
 
-    ${JOIN_STATUS}
+    ${JOIN_STATUS()}
 
-    ${JOIN_SEGMENT}
+    ${JOIN_SEGMENT()}
 
     ${whereSql}
 
@@ -231,7 +231,7 @@ export async function listAllForExport({
 
     FROM ${tb()} ${ALIAS}
 
-    ${CUSTOMER_FULL_JOINS}
+    ${CUSTOMER_FULL_JOINS()}
 
     ${whereSql}
 

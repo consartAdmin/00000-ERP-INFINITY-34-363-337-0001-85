@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, ALIAS } from './sellers.constants.js';
+import { tbl, ALIAS } from './sellers.constants.js';
 import { rowToModel } from './sellers.mappers.js';
 
 /* =======================================================================
@@ -44,7 +44,7 @@ export async function list(params = {}) {
 
   const sql = `
     SELECT ${ALIAS}.*
-    FROM ${TB} ${ALIAS}
+    FROM ${tbl()} ${ALIAS}
     WHERE ${wh.join(' AND ')}
     ORDER BY ${ALIAS}.name ASC, ${ALIAS}.id ASC
     LIMIT $${i} OFFSET $${i + 1};
@@ -64,7 +64,7 @@ export async function search(q, limit = 20) {
 * ======================================================================= */
 export async function getById(id) {
   const { rows } = await pool.query(
-    `SELECT * FROM ${TB} WHERE id = $1 LIMIT 1`,
+    `SELECT * FROM ${tbl()} WHERE id = $1 LIMIT 1`,
     [Number(id)]
   );
   return rowToModel(rows[0]);

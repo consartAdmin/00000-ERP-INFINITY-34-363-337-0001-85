@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB } from './sellers.constants.js';
+import { tbl } from './sellers.constants.js';
 import { normalizePayload } from './sellers.sanitizers.js';
 import { rowToModel } from './sellers.mappers.js';
 
@@ -29,7 +29,7 @@ export async function create(data = {}) {
   }
 
   const sql = `
-    INSERT INTO ${TB} (${cols.join(', ')})
+    INSERT INTO ${tbl()} (${cols.join(', ')})
     VALUES (${placeholders.join(', ')})
     RETURNING *;
   `;

@@ -6,6 +6,7 @@
 import pool from '../../config/db.js';
 import { buildError } from './crmDeals.utils.js';
 import { getCustomerStatusTypesCols } from './crmDealsMeta.repository.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
 
 /* =========================================================================
  * STATUS TYPES
@@ -66,7 +67,7 @@ export async function listStatusTypes({ active = true } = {}) {
         ${colorExpr} AS color_hex,
         COALESCE(${sortExpr}, 0) AS sort_order,
         ${activeExpr} AS is_active
-      FROM public."customerStatusTypes" t
+      FROM ${erpTable('public."customerStatusTypes"')} t
       WHERE ${activeExpr} = $1
       ORDER BY COALESCE(${sortExpr}, 0) ASC,
                COALESCE(${namePtExpr}, ${nameExpr}, ${labelExpr}, ${codeExpr}, ('Status #' || t.id::text)) ASC,

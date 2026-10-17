@@ -13,6 +13,7 @@ import { Storage } from '@google-cloud/storage';
 import https from 'node:https';
 import dns from "dns"; // (pode ser usado em checks futuros)
 import { AsyncLocalStorage } from "node:async_hooks";
+import { erpCompanyContext } from './utils/erpCompanyContext.js';
 import { queueErrorEmail, sendErrorEmail } from "./errorEmailReporter.js";
 
 import jwt from "jsonwebtoken";
@@ -321,6 +322,9 @@ app.use((req, res, next) => {
    if (req.method === "OPTIONS") return res.sendStatus(204);
    next();
 });
+
+// Empresa da tela (BH3 x CONSART): os repositórios escolhem a tabela por ela
+app.use(erpCompanyContext);
 
 // Access log inteligente
 app.use((req, res, next) => {

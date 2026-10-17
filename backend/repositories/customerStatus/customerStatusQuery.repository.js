@@ -4,7 +4,8 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, ALIAS } from './customerStatus.constants.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
+import { tbl, ALIAS } from './customerStatus.constants.js';
 import { toNumOrNull } from './customerStatus.sanitizers.js';
 import { mapRowWithStatus } from './customerStatus.mappers.js';
 
@@ -50,8 +51,8 @@ export async function list({
       cst.name_pt       AS status_name_pt,
       cst.internal_code AS status_code,
       cst.color_hex     AS status_color_hex
-    FROM ${TB} ${ALIAS}
-    JOIN public."customerStatusTypes" cst
+    FROM ${tbl()} ${ALIAS}
+    JOIN ${erpTable('public."customerStatusTypes"')} cst
       ON cst.id = ${ALIAS}.status_type_id
     ${whereSql}
     ORDER BY ${ALIAS}."${orderSafe}" ${dir}
@@ -61,7 +62,7 @@ export async function list({
 
   const countSql = `
     SELECT COUNT(*)::INT AS total
-    FROM ${TB} ${ALIAS}
+    FROM ${tbl()} ${ALIAS}
     ${whereSql};
   `;
 

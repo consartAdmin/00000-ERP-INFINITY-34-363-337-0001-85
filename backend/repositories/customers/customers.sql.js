@@ -13,6 +13,7 @@ import {
   TB_SELLER_FOR_CUSTOMER,
   TB_SELLERS,
 } from './customers.constants.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
 
 // ---------------------------------------------------------------------
 // Colunas da projeção completa (mapRow)
@@ -54,31 +55,31 @@ export const CUSTOMER_FULL_COLUMNS = `
 // ---------------------------------------------------------------------
 // JOINs
 // ---------------------------------------------------------------------
-export const JOIN_STATUS = `
-    LEFT JOIN ${TB_STATUS} cs
+export const JOIN_STATUS = () => `
+    LEFT JOIN ${erpTable(TB_STATUS)} cs
       ON cs.customer_id = ${ALIAS}.customer_id
 
-    LEFT JOIN ${TB_STATUS_TYPES} cst
+    LEFT JOIN ${erpTable(TB_STATUS_TYPES)} cst
       ON cst.id = cs.status_type_id
 `;
 
-export const JOIN_SEGMENT = `
-    LEFT JOIN ${TB_SEG} seg
+export const JOIN_SEGMENT = () => `
+    LEFT JOIN ${erpTable(TB_SEG)} seg
       ON seg.segment_id = ${ALIAS}.segment_id
 `;
 
 // Vendedor ativo mais recente
-export const JOIN_SELLER = `
+export const JOIN_SELLER = () => `
     LEFT JOIN LATERAL (
       SELECT sfc1.seller_id
-      FROM ${TB_SELLER_FOR_CUSTOMER} sfc1
+      FROM ${erpTable(TB_SELLER_FOR_CUSTOMER)} sfc1
       WHERE sfc1.customer_id = ${ALIAS}.customer_id
         AND (sfc1.active IS NULL OR sfc1.active = TRUE)
       ORDER BY sfc1.created_at DESC
       LIMIT 1
     ) sfc ON TRUE
 
-    LEFT JOIN ${TB_SELLERS} s
+    LEFT JOIN ${erpTable(TB_SELLERS)} s
       ON s.id = sfc.seller_id
 `;
 
@@ -92,10 +93,11 @@ export const JOIN_DELIVERY = `
       ON ad.customer_ad_id = ${ALIAS}.customer_ad_id
 `;
 
-export const CUSTOMER_FULL_JOINS = [
-  JOIN_STATUS,
-  JOIN_SEGMENT,
-  JOIN_SELLER,
+// Funções: as tabelas de status/segmento/vendedor dependem da empresa da request
+export const CUSTOMER_FULL_JOINS = () => [
+  JOIN_STATUS(),
+  JOIN_SEGMENT(),
+  JOIN_SELLER(),
   JOIN_IBGE,
   JOIN_DELIVERY,
 ].join('\n');

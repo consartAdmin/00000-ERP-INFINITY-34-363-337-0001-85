@@ -5,6 +5,7 @@
 
 import { ensureTable } from './customersSchema.repository.js';
 import { ensureCustomersConsartTable } from './customersConsart.schema.js';
+import { ensureConsartCatalogTables } from './consartCatalogs.schema.js';
 import { create } from './customersCreate.repository.js';
 import { updateById } from './customersUpdate.repository.js';
 import { getById } from './customersGetById.repository.js';
@@ -22,9 +23,12 @@ import {
 } from './customersAsaas.repository.js';
 
 // Tabela de clientes da Consart ERP (public."customersConsart").
+// Depois dela, Status / Segmento / Vendedor próprios da Consart.
 ensureCustomersConsartTable()
   .then(() => console.log('[customersApi] customersConsart OK'))
-  .catch((e) => console.warn('[customersApi] customersConsart falhou:', e?.message || e));
+  .then(() => ensureConsartCatalogTables())
+  .then(() => console.log('[customersApi] Status/Segmento/Vendedor Consart OK'))
+  .catch((e) => console.warn('[customersApi] tabelas Consart falharam:', e?.message || e));
 
 export {
   ensureTable,

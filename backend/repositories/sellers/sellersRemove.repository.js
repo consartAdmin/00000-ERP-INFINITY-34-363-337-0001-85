@@ -4,13 +4,13 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB } from './sellers.constants.js';
+import { tbl } from './sellers.constants.js';
 import { rowToModel } from './sellers.mappers.js';
 
 export async function remove(id) {
   const { rows } = await pool.query(
     `
-    UPDATE ${TB}
+    UPDATE ${tbl()}
     SET active = FALSE, updated_at = NOW()
     WHERE id = $1
     RETURNING *;

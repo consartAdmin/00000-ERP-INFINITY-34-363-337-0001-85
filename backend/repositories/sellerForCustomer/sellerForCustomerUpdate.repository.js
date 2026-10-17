@@ -3,7 +3,7 @@
 // ║ Tabela: public."SellerForCustomer"                                 ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import { TB } from './sellerForCustomer.constants.js';
+import { tbl } from './sellerForCustomer.constants.js';
 import { toInt } from './sellerForCustomer.sanitizers.js';
 import { q } from './sellerForCustomer.utils.js';
 import { getSellerForCustomerById } from './sellerForCustomerQuery.repository.js';
@@ -38,7 +38,7 @@ export async function updateSellerForCustomer(id, payload = {}) {
   sets.push(`updated_at = NOW()`);
 
   const sql = `
-    UPDATE ${TB}
+    UPDATE ${tbl()}
        SET ${sets.join(', ')}
      WHERE id = $${i}
      RETURNING *;
