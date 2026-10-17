@@ -9,6 +9,7 @@
 
 import crmDealsApi from '../repositories/crmDeals/crmDeals.index.js';
 import sellerByUserApi from '../repositories/sellerByUser/sellerByUser.index.js';
+import { normalizeCrmCompany } from '../repositories/crmDeals/crmDeals.utils.js';
 
 function sendError(res, statusCode = 500, error = 'UNKNOWN_ERROR') {
   return res.status(statusCode).json({ ok: false, error });
@@ -27,6 +28,12 @@ function getUserId(req) {
   return Number.isFinite(id) && id > 0
     ? id
     : null;
+}
+
+// Qual CRM a tela está usando: 'BH3' (Gestão de Vendas) ou 'CONSART' (CRM Consart ERP).
+// A tela envia o header X-CRM-Company; sem header = BH3 (comportamento antigo).
+function getCrmCompany(req) {
+  return normalizeCrmCompany(req.get('x-crm-company') || req.query.crmCompany);
 }
 
 function isAdmin(req) {
@@ -209,6 +216,7 @@ async function listDeals(req, res) {
     const sellerIds = scope.is_admin ? null : scope.sellerIds;
 
     const { ok, data, error } = await crmDealsApi.listDeals({
+      company: getCrmCompany(req),
       stageCode: stageCode || undefined,
       stageId: stageId ? Number(stageId) : undefined,
       sellerId: scope.is_admin ? (sellerId ? Number(sellerId) : undefined) : undefined,
@@ -260,6 +268,8 @@ async function createDeal(req, res) {
 
     const lossReasonId = normalizeLossReasonIdFromPayload(payload);
     if (lossReasonId !== null) payload.loss_reason_id = lossReasonId;
+
+    payload.crm_company = getCrmCompany(req);
 
     const scope = await getSellerScope(req);
     if (!scope.ok) return sendError(res, 401, scope.error || 'UNAUTHORIZED');
@@ -432,6 +442,7 @@ async function leadConclusionSummary(req, res) {
     if (!scope.ok) return sendError(res, 401, scope.error || 'UNAUTHORIZED');
 
     const { ok, data, error } = await crmDealsApi.getLeadConclusionSummary({
+      company: getCrmCompany(req),
       sellerId: scope.is_admin ? (Number.isFinite(sellerIdQuery) ? sellerIdQuery : undefined) : undefined,
       sellerIds: scope.is_admin ? undefined : (scope.sellerIds?.length ? scope.sellerIds : undefined),
     });
@@ -495,6 +506,7 @@ async function summaryOutcomes(req, res) {
     if (!scope.ok) return sendError(res, 401, scope.error || 'UNAUTHORIZED');
 
     const { ok, data, error } = await crmDealsApi.getOutcomesSummary({
+      company: getCrmCompany(req),
       sellerId: scope.is_admin ? (Number.isFinite(sellerIdQuery) ? sellerIdQuery : undefined) : undefined,
       sellerIds: scope.is_admin ? undefined : (scope.sellerIds?.length ? scope.sellerIds : undefined),
     });
@@ -518,6 +530,7 @@ async function listOutcomes(req, res) {
     if (!scope.ok) return sendError(res, 401, scope.error || 'UNAUTHORIZED');
 
     const { ok, data, error } = await crmDealsApi.listOutcomes({
+      company: getCrmCompany(req),
       outcomeType: outcomeRaw,
       sellerId: scope.is_admin ? (Number.isFinite(sellerIdQuery) ? sellerIdQuery : undefined) : undefined,
       sellerIds: scope.is_admin ? undefined : (scope.sellerIds?.length ? scope.sellerIds : undefined),

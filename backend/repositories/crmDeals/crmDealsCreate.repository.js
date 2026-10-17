@@ -5,7 +5,7 @@
 
 import pool from '../../config/db.js';
 import perfApi from '../crmDealsPerformance/crmDealsPerformance.index.js';
-import { buildError } from './crmDeals.utils.js';
+import { buildError, normalizeCrmCompany } from './crmDeals.utils.js';
 import {
   normalizeStatusTypeId,
   normalizeLeadSourceId,
@@ -79,9 +79,10 @@ export async function createDeal(payload = {}) {
         tag,
         next_step,
         last_activity_date,
-        notes
+        notes,
+        crm_company
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
       RETURNING id, customer_id, status_type_id, stage_id
     `;
 
@@ -101,6 +102,7 @@ export async function createDeal(payload = {}) {
       payload.next_step ?? null,
       lastActivityDate,
       notesValue,
+      normalizeCrmCompany(payload.crm_company),
     ];
 
     const { rows } = await client.query(sql, values);

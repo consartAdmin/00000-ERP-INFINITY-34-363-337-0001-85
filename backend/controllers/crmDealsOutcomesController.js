@@ -26,6 +26,12 @@ import {
   listOperationsByOutcomeCode,
   listOperationsByOutcomeId
 } from '../repositories/crmDealsOutcomes/crmDealsOutcomes.index.js';
+import { normalizeCrmCompany } from '../repositories/crmDeals/crmDeals.utils.js';
+
+// CRM da tela: header X-CRM-Company ('BH3' | 'CONSART'); sem header = BH3.
+function getCrmCompany(req) {
+  return normalizeCrmCompany(req.get('x-crm-company') || req.query.crmCompany);
+}
 
 /* =======================================================================
  * HELPERS
@@ -206,7 +212,7 @@ export async function deleteCrmDealsOutcomeController(req, res) {
 
 export async function getOperationsByOutcomeIdController(req, res) {
   try {
-    const result = await listOperationsByOutcomeId(req.params.id);
+    const result = await listOperationsByOutcomeId(req.params.id, getCrmCompany(req));
 
     return res.json({
       success: true,
@@ -226,7 +232,7 @@ export async function getOperationsByOutcomeIdController(req, res) {
 
 export async function getOperationsByOutcomeCodeController(req, res) {
   try {
-    const result = await listOperationsByOutcomeCode(req.params.code);
+    const result = await listOperationsByOutcomeCode(req.params.code, getCrmCompany(req));
 
     return res.json({
       success: true,

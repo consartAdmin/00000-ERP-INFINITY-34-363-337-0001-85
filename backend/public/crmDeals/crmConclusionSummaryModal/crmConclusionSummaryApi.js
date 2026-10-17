@@ -65,6 +65,7 @@ export async function fetchConclusionOperations(conclusionCode, options = {}) {
     signal,
     headers: {
       Accept: 'application/json',
+      ...(window.CRM_COMPANY ? { 'X-CRM-Company': window.CRM_COMPANY } : {}),
       ...headers,
     },
   });

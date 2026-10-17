@@ -6,6 +6,7 @@
 import pool from '../../config/db.js';
 import { TABLE, DEALS_TABLE, STAGES_TABLE } from './crmDealsOutcomes.constants.js';
 import { normalizeInteger } from './crmDealsOutcomes.sanitizers.js';
+import { normalizeCrmCompany } from '../crmDeals/crmDeals.utils.js';
 import {
   getCrmDealsOutcomeById,
   getCrmDealsOutcomeByCode,
@@ -48,7 +49,7 @@ export async function listCrmDealsOutcomesSummary() {
  * OPERATIONS BY OUTCOME
  * ======================================================================= */
 
-export async function listOperationsByOutcomeCode(code) {
+export async function listOperationsByOutcomeCode(code, company) {
   const outcome = await getCrmDealsOutcomeByCode(code);
 
   if (!outcome) {
@@ -106,10 +107,11 @@ export async function listOperationsByOutcomeCode(code) {
       ON s.id = d.stage_id
     WHERE o.code = $1
       AND COALESCE(d.is_closed, false) = true
+      AND d.crm_company = $2
     ORDER BY d.outcome_at DESC NULLS LAST, d.id DESC
   `;
 
-  const { rows } = await pool.query(sql, [code]);
+  const { rows } = await pool.query(sql, [code, normalizeCrmCompany(company)]);
 
   const totalValue = rows.reduce((sum, row) => sum + Number(row.value || 0), 0);
 
@@ -121,7 +123,7 @@ export async function listOperationsByOutcomeCode(code) {
   };
 }
 
-export async function listOperationsByOutcomeId(outcomeId) {
+export async function listOperationsByOutcomeId(outcomeId, company) {
   const outcome = await getCrmDealsOutcomeById(outcomeId);
 
   if (!outcome) {
@@ -179,10 +181,11 @@ export async function listOperationsByOutcomeId(outcomeId) {
       ON s.id = d.stage_id
     WHERE o.id = $1
       AND COALESCE(d.is_closed, false) = true
+      AND d.crm_company = $2
     ORDER BY d.outcome_at DESC NULLS LAST, d.id DESC
   `;
 
-  const { rows } = await pool.query(sql, [normalizeInteger(outcomeId, 0)]);
+  const { rows } = await pool.query(sql, [normalizeInteger(outcomeId, 0), normalizeCrmCompany(company)]);
 
   const totalValue = rows.reduce((sum, row) => sum + Number(row.value || 0), 0);
 

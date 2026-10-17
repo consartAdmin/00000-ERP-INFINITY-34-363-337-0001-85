@@ -5,7 +5,7 @@
 
 import pool from '../../config/db.js';
 import perfApi from '../crmDealsPerformance/crmDealsPerformance.index.js';
-import { buildError, toPositiveNumOrNull, normalizeSellerIdsArr } from './crmDeals.utils.js';
+import { buildError, toPositiveNumOrNull, normalizeSellerIdsArr, normalizeCrmCompany } from './crmDeals.utils.js';
 import { normalizeOutcomeType } from './crmDeals.sanitizers.js';
 import { fetchCustomerName, fetchSellerName } from './crmDealsLookup.repository.js';
 import { syncCustomerActivityFromOutcome } from './crmDealsSync.repository.js';
@@ -149,10 +149,10 @@ export async function registerOutcome({ dealId, outcomeType, outcomeId, note, re
   }
 }
 
-export async function getOutcomesSummary({ sellerId, sellerIds } = {}) {
+export async function getOutcomesSummary({ company, sellerId, sellerIds } = {}) {
   try {
-    const params = [];
-    let where = `WHERE COALESCE(d.is_closed, FALSE) = TRUE`;
+    const params = [normalizeCrmCompany(company)];
+    let where = `WHERE COALESCE(d.is_closed, FALSE) = TRUE AND d.crm_company = $1`;
 
     const scopeIds = normalizeSellerIdsArr(sellerIds);
     if (scopeIds?.length) {
@@ -218,10 +218,10 @@ export async function getOutcomesSummary({ sellerId, sellerIds } = {}) {
   }
 }
 
-export async function listOutcomes({ outcomeType, sellerId, sellerIds, search, limit = 200, offset = 0 } = {}) {
+export async function listOutcomes({ company, outcomeType, sellerId, sellerIds, search, limit = 200, offset = 0 } = {}) {
   try {
-    const params = [];
-    let where = 'WHERE 1=1';
+    const params = [normalizeCrmCompany(company)];
+    let where = `WHERE COALESCE(d.crm_company, 'BH3') = $1`;
 
     if (outcomeType) {
       params.push(String(outcomeType).trim().toUpperCase());

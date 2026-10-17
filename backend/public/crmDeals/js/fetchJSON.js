@@ -4,6 +4,7 @@
 // ║ ✅ Detecta token mesmo com chave desconhecida                         ║
 // ║ ✅ Cache control (noCache/cache) para evitar 304 em dashboards        ║
 // ║ ✅ Retorno: { ok, data, error, status }                               ║
+// ║ ✅ Header X-CRM-Company quando window.CRM_COMPANY existir             ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
@@ -66,6 +67,12 @@ async function fetchJSON(url, options = {}) {
 
   if (body && typeof body === 'object') {
     headers.set('Content-Type', 'application/json');
+  }
+
+  // CRM Consart ERP: a página define window.CRM_COMPANY = 'CONSART'
+  // para o backend separar os cards do CRM Gestão de Vendas (BH3).
+  if (window.CRM_COMPANY && !headers.has('X-CRM-Company')) {
+    headers.set('X-CRM-Company', window.CRM_COMPANY);
   }
 
   const opts = {
