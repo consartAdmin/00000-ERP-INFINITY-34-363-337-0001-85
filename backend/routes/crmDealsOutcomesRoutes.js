@@ -16,8 +16,12 @@ import {
   getOperationsByOutcomeIdController,
   getOperationsByOutcomeCodeController
 } from '../controllers/crmDealsOutcomesController.js';
+import { erpCompanyContext } from '../utils/erpCompanyContext.js';
 
 const router = Router();
+
+// Empresa da tela (BH3 x CONSART) também aqui, além do middleware global
+router.use(erpCompanyContext);
 
 /* =======================================================================
  * CATALOG

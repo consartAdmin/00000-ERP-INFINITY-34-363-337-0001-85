@@ -21,8 +21,12 @@ import {
   updateCustomerSegment,
   removeCustomerSegment
 } from '../controllers/customerSegmentsController.js';
+import { erpCompanyContext } from '../utils/erpCompanyContext.js';
 
 const router = Router();
+
+// Empresa da tela (BH3 x CONSART) também aqui, além do middleware global
+router.use(erpCompanyContext);
 
 /* ============================================================================
    ✅ LEGACY ENDPOINT (compatível com customersSegmentsBatch.js)
