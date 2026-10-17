@@ -5,8 +5,12 @@
 
 import { Router } from 'express';
 import customerStatusController from '../controllers/customerStatusController.js';
+import { erpCompanyContext } from '../utils/erpCompanyContext.js';
 
 const router = Router();
+
+// Empresa da tela (BH3 x CONSART) também aqui, além do middleware global
+router.use(erpCompanyContext);
 
 // Manutenção (criar tabela / índices)
 router.post('/customer-status/ensure-table', customerStatusController.ensureTable);

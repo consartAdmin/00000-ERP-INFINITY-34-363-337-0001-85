@@ -7,8 +7,12 @@
 
 import { Router } from 'express';
 import sellerForCustomerController from '../controllers/sellerForCustomerController.js';
+import { erpCompanyContext } from '../utils/erpCompanyContext.js';
 
 const router = Router();
+
+// Empresa da tela (BH3 x CONSART) também aqui, além do middleware global
+router.use(erpCompanyContext);
 
 /* =========================================================================
    FIXED ROUTES (must come BEFORE "/:id")

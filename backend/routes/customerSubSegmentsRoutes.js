@@ -6,8 +6,12 @@
 
 import express from 'express';
 import customerSubSegmentsController from '../controllers/customerSubSegmentsController.js';
+import { erpCompanyContext } from '../utils/erpCompanyContext.js';
 
 const router = express.Router();
+
+// Empresa da tela (BH3 x CONSART) também aqui, além do middleware global
+router.use(erpCompanyContext);
 
 const {
   listHandler,
