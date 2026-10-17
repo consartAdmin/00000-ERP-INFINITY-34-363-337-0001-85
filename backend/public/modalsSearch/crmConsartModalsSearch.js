@@ -2,6 +2,8 @@
 // ║ crmConsartModalsSearch.js — Modais de Busca CRM (CONSART ERP)       ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
+import { Modal } from '/public/includes/js/modal.js';
+
 function normalizeApiBase(apiBase = '') {
   return (apiBase || '').replace(/\/$/, '');
 }
@@ -19,130 +21,196 @@ function joinUrl(base = '', endpoint = '') {
   return base + endpoint;
 }
 
-function createBaseModal({ title = 'Buscar', subtitle = '' } = {}) {
+/* =======================================================================
+   ESTRUTURA PADRÃO (modals.css / modal.js)
+   ======================================================================= */
+
+const STYLE_ID = 'crm-search-modal-styles';
+
+function ensureStyles() {
+  if (document.getElementById(STYLE_ID)) return;
+
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    .crm-search-modal .modal__subtitle {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .crm-search-modal__row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .crm-search-modal__row .fields {
+      flex: 1 1 auto;
+    }
+
+    .crm-search-modal__results {
+      margin-top: 12px;
+      min-height: 120px;
+      max-height: 360px;
+      overflow: auto;
+      padding: 4px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #f9fafb;
+    }
+
+    .crm-search-modal__msg {
+      padding: 10px;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    .crm-search-modal__msg--error {
+      color: #b91c1c;
+    }
+
+    .crm-search-modal__card {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      margin-bottom: 6px;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 0.82rem;
+      background: #ffffff;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+      cursor: pointer;
+    }
+
+    .crm-search-modal__card:hover,
+    .crm-search-modal__card.is-selected {
+      background: #dbeafe;
+      border-color: #2563eb;
+    }
+
+    .crm-search-modal__card-title {
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .crm-search-modal__card-info {
+      color: #6b7280;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function createBaseModal({ title = 'Buscar', subtitle = '', placeholder = 'Buscar...', emptyText = '' } = {}) {
+  ensureStyles();
+
+  const uid = `crmSearch${Date.now()}`;
   const overlay = document.createElement('div');
-  overlay.style.cssText = `
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.40);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 99998;
+  overlay.className = 'modal crm-search-modal';
+  overlay.setAttribute('aria-hidden', 'true');
+
+  overlay.innerHTML = `
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-8" role="dialog" aria-modal="true" aria-labelledby="${uid}Title">
+
+        <header class="modal__header modal-header-color-3">
+          <div>
+            <h2 class="modal__title" id="${uid}Title"></h2>
+            <p class="modal__subtitle" data-subtitle></p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </header>
+
+        <div class="modal__body">
+          <div class="crm-search-modal__row">
+            <div class="fields fields-w-full fields-h-6">
+              <label for="${uid}Input">Pesquisar</label>
+              <input type="search" id="${uid}Input" autocomplete="off">
+            </div>
+            <button type="button" class="btn btn-search btn-sm" data-search>🔍 Buscar</button>
+          </div>
+
+          <div class="crm-search-modal__results" data-results>
+            <div class="crm-search-modal__msg"></div>
+          </div>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+        </footer>
+
+      </section>
+    </div>
   `;
 
-  const dialog = document.createElement('div');
-  dialog.style.cssText = `
-    width: min(960px, 92vw);
-    max-height: 86vh;
-    background: #ffffff;
-    border-radius: 18px;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  `;
+  overlay.querySelector('.modal__title').textContent = title;
 
-  const header = document.createElement('header');
-  header.style.cssText = `
-    padding: 14px 18px 10px;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  `;
+  const subtitleEl = overlay.querySelector('[data-subtitle]');
+  if (subtitle) subtitleEl.textContent = subtitle;
+  else subtitleEl.remove();
 
-  const titleWrap = document.createElement('div');
+  const input = overlay.querySelector('input[type="search"]');
+  input.placeholder = placeholder;
 
-  const h2 = document.createElement('h2');
-  h2.textContent = title;
-  h2.style.cssText = `
-    margin: 0;
-    font-size: 1.15rem;
-    color: #0f172a;
-  `;
+  const results = overlay.querySelector('[data-results]');
+  results.querySelector('.crm-search-modal__msg').textContent = emptyText;
 
-  const p = document.createElement('p');
-  p.textContent = subtitle;
-  p.style.cssText = `
-    margin: 2px 0 0 0;
-    font-size: 0.8rem;
-    color: #64748b;
-  `;
+  // Fechou (X, Cancelar, backdrop ou ESC pelo modal.js) → remove do DOM
+  overlay.addEventListener('modal:close', () => overlay.remove());
 
-  titleWrap.appendChild(h2);
-  if (subtitle) titleWrap.appendChild(p);
+  return {
+    overlay,
+    input,
+    results,
+    btnSearch: overlay.querySelector('[data-search]'),
+  };
+}
 
-  const btnClose = document.createElement('button');
-  btnClose.type = 'button';
-  btnClose.textContent = '×';
-  btnClose.title = 'Fechar';
-  btnClose.style.cssText = `
-    border: none;
-    background: transparent;
-    font-size: 1.3rem;
-    line-height: 1;
-    cursor: pointer;
-    color: #64748b;
-    padding: 4px 6px;
-    border-radius: 999px;
-  `;
-
-  header.appendChild(titleWrap);
-  header.appendChild(btnClose);
-
-  const content = document.createElement('div');
-  content.style.cssText = `
-    padding: 10px 16px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 220px;
-  `;
-
-  const footer = document.createElement('footer');
-  footer.style.cssText = `
-    padding: 10px 16px 12px;
-    border-top: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  `;
-
-  const btnCancel = document.createElement('button');
-  btnCancel.type = 'button';
-  btnCancel.textContent = 'Cancelar';
-  btnCancel.style.cssText = `
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: none;
-    background: #e5e7eb;
-    color: #374151;
-    font-size: 0.86rem;
-    font-weight: 500;
-    cursor: pointer;
-  `;
-
-  footer.appendChild(btnCancel);
-
-  dialog.appendChild(header);
-  dialog.appendChild(content);
-  dialog.appendChild(footer);
-  overlay.appendChild(dialog);
-
-  return { overlay, dialog, content, btnClose, btnCancel };
+function showModal(overlay, input) {
+  Modal.setup();
+  document.body.appendChild(overlay);
+  Modal.open(overlay);
+  input.focus();
 }
 
 function closeModal(overlay) {
-  if (!overlay || !overlay.parentNode) return;
+  if (!overlay) return;
+  if (!Modal.close(overlay)) overlay.remove();
+}
 
-  overlay.style.opacity = '0';
-  overlay.style.transition = 'opacity 120ms ease-out';
+function setMessage(results, text, isError = false) {
+  results.innerHTML = '';
 
-  setTimeout(() => {
-    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-  }, 130);
+  const msg = document.createElement('div');
+  msg.className = `crm-search-modal__msg${isError ? ' crm-search-modal__msg--error' : ''}`;
+  msg.textContent = text;
+
+  results.appendChild(msg);
+}
+
+function createResultCard(title, info) {
+  const card = document.createElement('button');
+  card.type = 'button';
+  card.className = 'crm-search-modal__card';
+
+  const line1 = document.createElement('div');
+  line1.className = 'crm-search-modal__card-title';
+  line1.textContent = title;
+
+  const line2 = document.createElement('div');
+  line2.className = 'crm-search-modal__card-info';
+  line2.textContent = info || 'Sem dados adicionais';
+
+  card.appendChild(line1);
+  card.appendChild(line2);
+
+  return card;
 }
 
 /* =======================================================================
@@ -158,66 +226,12 @@ export function openCrmCustomerSearchModal({
     apiBase || (typeof window !== 'undefined' ? window.apiBase : '') || ''
   );
 
-  const { overlay, content, btnClose, btnCancel } = createBaseModal({
+  const { overlay, input, results, btnSearch } = createBaseModal({
     title: 'Localizar cliente',
     subtitle: 'Digite parte do nome, código ou documento do cliente.',
+    placeholder: 'Buscar cliente...',
+    emptyText: 'Digite algo e clique em "Buscar" para localizar clientes.',
   });
-
-  const searchRow = document.createElement('div');
-  searchRow.style.cssText = `
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  `;
-
-  const input = document.createElement('input');
-  input.type = 'search';
-  input.placeholder = 'Buscar cliente...';
-  input.style.cssText = `
-    flex: 1;
-    padding: 7px 10px;
-    border-radius: 999px;
-    border: 1px solid #d1d5db;
-    font-size: 0.9rem;
-  `;
-
-  const btnSearch = document.createElement('button');
-  btnSearch.type = 'button';
-  btnSearch.textContent = 'Buscar';
-  btnSearch.style.cssText = `
-    padding: 7px 14px;
-    border-radius: 999px;
-    border: none;
-    background: #2563eb;
-    color: #ffffff;
-    font-size: 0.86rem;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-  `;
-
-  searchRow.appendChild(input);
-  searchRow.appendChild(btnSearch);
-
-  const results = document.createElement('div');
-  results.style.cssText = `
-    margin-top: 8px;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    max-height: 340px;
-    overflow: auto;
-    padding: 4px;
-    background: #f9fafb;
-  `;
-
-  results.innerHTML = `
-    <div style="padding:10px;font-size:0.8rem;color:#6b7280;">
-      Digite algo e clique em "Buscar" para localizar clientes.
-    </div>
-  `;
-
-  content.appendChild(searchRow);
-  content.appendChild(results);
 
   let selectedIndex = -1;
 
@@ -229,13 +243,7 @@ export function openCrmCustomerSearchModal({
     const cards = getCustomerCards();
 
     cards.forEach((card, index) => {
-      const selected = index === selectedIndex;
-
-      card.style.background = selected ? '#dbeafe' : '#ffffff';
-      card.style.outline = selected ? '2px solid #2563eb' : 'none';
-      card.style.boxShadow = selected
-        ? '0 4px 12px rgba(37, 99, 235, 0.22)'
-        : '0 1px 4px rgba(15, 23, 42, 0.06)';
+      card.classList.toggle('is-selected', index === selectedIndex);
     });
 
     if (cards[selectedIndex]) {
@@ -252,12 +260,7 @@ export function openCrmCustomerSearchModal({
     }
 
     selectedIndex = -1;
-
-    results.innerHTML = `
-      <div style="padding:10px;font-size:0.8rem;color:#6b7280;">
-        Buscando clientes...
-      </div>
-    `;
+    setMessage(results, 'Buscando clientes...');
 
     try {
       const href = joinUrl(apiBase || '', endpoint);
@@ -270,35 +273,11 @@ export function openCrmCustomerSearchModal({
       results.innerHTML = '';
 
       if (!list.length) {
-        results.innerHTML = `
-          <div style="padding:10px;font-size:0.8rem;color:#6b7280;">
-            Nenhum cliente encontrado com esse critério.
-          </div>
-        `;
+        setMessage(results, 'Nenhum cliente encontrado com esse critério.');
         return;
       }
 
       list.forEach((customer) => {
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.dataset.crmCustomerCard = '1';
-
-        card.style.cssText = `
-          width: 100%;
-          text-align: left;
-          border: none;
-          background: #ffffff;
-          border-radius: 10px;
-          padding: 8px 10px;
-          margin-bottom: 6px;
-          cursor: pointer;
-          box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-          font-size: 0.82rem;
-        `;
-
         const name =
           customer.trade_name ||
           customer.legal_name ||
@@ -321,26 +300,13 @@ export function openCrmCustomerSearchModal({
           customer.telefone ||
           '';
 
-        const line1 = document.createElement('div');
-        line1.textContent = name;
-        line1.style.cssText = `
-          font-weight: 600;
-          color: #0f172a;
-        `;
-
         const infos = [];
         if (doc) infos.push(`Doc: ${doc}`);
         if (customer.email) infos.push(`Email: ${customer.email}`);
         if (phone) infos.push(`Tel: ${phone}`);
 
-        const line2 = document.createElement('div');
-        line2.textContent = infos.join(' • ') || 'Sem dados adicionais';
-        line2.style.cssText = `
-          color: #6b7280;
-        `;
-
-        card.appendChild(line1);
-        card.appendChild(line2);
+        const card = createResultCard(name, infos.join(' • '));
+        card.dataset.crmCustomerCard = '1';
 
         card.addEventListener('click', () => {
           if (typeof onPick === 'function') {
@@ -372,12 +338,7 @@ export function openCrmCustomerSearchModal({
       updateCustomerSelection();
     } catch (err) {
       console.error('[CRM Modal Search] Erro ao buscar clientes:', err);
-
-      results.innerHTML = `
-        <div style="padding:10px;font-size:0.8rem;color:#b91c1c;">
-          Erro ao buscar clientes. Tente novamente.
-        </div>
-      `;
+      setMessage(results, 'Erro ao buscar clientes. Tente novamente.', true);
     }
   }
 
@@ -415,26 +376,10 @@ export function openCrmCustomerSearchModal({
       }
 
       doSearch();
-      return;
-    }
-
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      // Não deixa o ESC chegar no modal.js e fechar o modal do card por baixo
-      e.stopPropagation();
-      closeModal(overlay);
     }
   });
 
-  btnClose.addEventListener('click', () => closeModal(overlay));
-  btnCancel.addEventListener('click', () => closeModal(overlay));
-
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal(overlay);
-  });
-
-  document.body.appendChild(overlay);
-  input.focus();
+  showModal(overlay, input);
 }
 
 /* =======================================================================
@@ -450,66 +395,12 @@ export function openCrmSellerSearchModal({
     apiBase || (typeof window !== 'undefined' ? window.apiBase : '') || ''
   );
 
-  const { overlay, content, btnClose, btnCancel } = createBaseModal({
+  const { overlay, input, results, btnSearch } = createBaseModal({
     title: 'Localizar vendedor',
     subtitle: 'Digite parte do nome, apelido ou documento do vendedor.',
+    placeholder: 'Buscar vendedor...',
+    emptyText: 'Digite algo e clique em "Buscar" para localizar vendedores.',
   });
-
-  const searchRow = document.createElement('div');
-  searchRow.style.cssText = `
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  `;
-
-  const input = document.createElement('input');
-  input.type = 'search';
-  input.placeholder = 'Buscar vendedor...';
-  input.style.cssText = `
-    flex: 1;
-    padding: 7px 10px;
-    border-radius: 999px;
-    border: 1px solid #d1d5db;
-    font-size: 0.9rem;
-  `;
-
-  const btnSearch = document.createElement('button');
-  btnSearch.type = 'button';
-  btnSearch.textContent = 'Buscar';
-  btnSearch.style.cssText = `
-    padding: 7px 14px;
-    border-radius: 999px;
-    border: none;
-    background: #2563eb;
-    color: #ffffff;
-    font-size: 0.86rem;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-  `;
-
-  searchRow.appendChild(input);
-  searchRow.appendChild(btnSearch);
-
-  const results = document.createElement('div');
-  results.style.cssText = `
-    margin-top: 8px;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    max-height: 340px;
-    overflow: auto;
-    padding: 4px;
-    background: #f9fafb;
-  `;
-
-  results.innerHTML = `
-    <div style="padding:10px;font-size:0.8rem;color:#6b7280;">
-      Digite algo e clique em "Buscar" para localizar vendedores.
-    </div>
-  `;
-
-  content.appendChild(searchRow);
-  content.appendChild(results);
 
   async function doSearch() {
     const q = (input.value || '').trim();
@@ -519,11 +410,7 @@ export function openCrmSellerSearchModal({
       return;
     }
 
-    results.innerHTML = `
-      <div style="padding:10px;font-size:0.8rem;color:#6b7280;">
-        Buscando vendedores...
-      </div>
-    `;
+    setMessage(results, 'Buscando vendedores...');
 
     try {
       const href = joinUrl(apiBase || '', endpoint);
@@ -536,59 +423,25 @@ export function openCrmSellerSearchModal({
       results.innerHTML = '';
 
       if (!list.length) {
-        results.innerHTML = `
-          <div style="padding:10px;font-size:0.8rem;color:#6b7280;">
-            Nenhum vendedor encontrado com esse critério.
-          </div>
-        `;
+        setMessage(results, 'Nenhum vendedor encontrado com esse critério.');
         return;
       }
 
       list.forEach((seller) => {
-        const card = document.createElement('button');
-        card.type = 'button';
-
-        card.style.cssText = `
-          width: 100%;
-          text-align: left;
-          border: none;
-          background: #ffffff;
-          border-radius: 10px;
-          padding: 8px 10px;
-          margin-bottom: 6px;
-          cursor: pointer;
-          box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-          font-size: 0.82rem;
-        `;
-
         const name = seller.name || seller.nome || `Vendedor #${seller.id}`;
         const nickname = seller.nickname || seller.apelido || '';
         const doc = seller.document || seller.cpf_cnpj || '';
         const phone = seller.mobile || seller.phone || seller.telefone || '';
-
-        const line1 = document.createElement('div');
-        line1.textContent = nickname ? `${name} (${nickname})` : name;
-        line1.style.cssText = `
-          font-weight: 600;
-          color: #0f172a;
-        `;
 
         const extra = [];
         if (doc) extra.push(`Doc: ${doc}`);
         if (phone) extra.push(`Tel: ${phone}`);
         if (seller.email) extra.push(`Email: ${seller.email}`);
 
-        const line2 = document.createElement('div');
-        line2.textContent = extra.join(' • ') || 'Sem dados adicionais';
-        line2.style.cssText = `
-          color: #6b7280;
-        `;
-
-        card.appendChild(line1);
-        card.appendChild(line2);
+        const card = createResultCard(
+          nickname ? `${name} (${nickname})` : name,
+          extra.join(' • ')
+        );
 
         card.addEventListener('click', () => {
           if (typeof onPick === 'function') onPick(seller);
@@ -599,12 +452,7 @@ export function openCrmSellerSearchModal({
       });
     } catch (err) {
       console.error('[CRM Modal Search] Erro ao buscar vendedores:', err);
-
-      results.innerHTML = `
-        <div style="padding:10px;font-size:0.8rem;color:#b91c1c;">
-          Erro ao buscar vendedores. Tente novamente.
-        </div>
-      `;
+      setMessage(results, 'Erro ao buscar vendedores. Tente novamente.', true);
     }
   }
 
@@ -615,24 +463,9 @@ export function openCrmSellerSearchModal({
       e.preventDefault();
       doSearch();
     }
-
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      // Não deixa o ESC chegar no modal.js e fechar o modal do card por baixo
-      e.stopPropagation();
-      closeModal(overlay);
-    }
   });
 
-  btnClose.addEventListener('click', () => closeModal(overlay));
-  btnCancel.addEventListener('click', () => closeModal(overlay));
-
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal(overlay);
-  });
-
-  document.body.appendChild(overlay);
-  input.focus();
+  showModal(overlay, input);
 }
 
 const crmConsartModalsSearch = {
