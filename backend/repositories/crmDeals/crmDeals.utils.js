@@ -51,3 +51,13 @@ export function normalizeSellerIdsArr(sellerIds) {
 
   return norm.length ? Array.from(new Set(norm)) : null;
 }
+
+// Empresa dona do card (coluna "crmDeals".crm_company).
+// 'BH3' = CRM Gestão de Vendas original | 'CONSART' = CRM Consart ERP.
+export const CRM_COMPANY_DEFAULT = 'BH3';
+export const CRM_COMPANIES = ['BH3', 'CONSART'];
+
+export function normalizeCrmCompany(v) {
+  const c = String(v || '').trim().toUpperCase();
+  return CRM_COMPANIES.includes(c) ? c : CRM_COMPANY_DEFAULT;
+}

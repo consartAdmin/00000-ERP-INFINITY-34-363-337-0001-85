@@ -5,7 +5,7 @@
 
 import pool from '../../config/db.js';
 import perfApi from '../crmDealsPerformance/crmDealsPerformance.index.js';
-import { buildError, toNumOrNull, normalizeSellerIdsArr } from './crmDeals.utils.js';
+import { buildError, toNumOrNull, normalizeSellerIdsArr, normalizeCrmCompany } from './crmDeals.utils.js';
 import { getCustomerStatusTypesCols } from './crmDealsMeta.repository.js';
 import { upsertCustomerStatus, syncCustomerActivityFromOutcome } from './crmDealsSync.repository.js';
 
@@ -152,10 +152,10 @@ export async function concludeLeadStatusType({ dealId, statusTypeId, note = null
 /* =========================================================================
  * SUMMARY — Conclusão do Lead (topo)
  * ========================================================================= */
-export async function getLeadConclusionSummary({ sellerId, sellerIds } = {}) {
+export async function getLeadConclusionSummary({ company, sellerId, sellerIds } = {}) {
   try {
-    const params = [];
-    let where = `WHERE COALESCE(d.is_closed, FALSE) = TRUE AND d.status_type_id IS NOT NULL`;
+    const params = [normalizeCrmCompany(company)];
+    let where = `WHERE COALESCE(d.is_closed, FALSE) = TRUE AND d.status_type_id IS NOT NULL AND d.crm_company = $1`;
 
     const scopeIds = normalizeSellerIdsArr(sellerIds);
     if (scopeIds?.length) {

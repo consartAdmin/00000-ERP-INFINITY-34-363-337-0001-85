@@ -4,17 +4,17 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { buildError, normalizeSellerIdsArr } from './crmDeals.utils.js';
+import { buildError, normalizeSellerIdsArr, normalizeCrmCompany } from './crmDeals.utils.js';
 import { mapDealRow } from './crmDeals.mappers.js';
 
 /* =========================================================================
  * DEALS (KANBAN mostra só ABERTOS)
  * ========================================================================= */
 
-export async function listDeals({ stageCode, stageId, sellerId, sellerIds, search, limit = 50, offset = 0 } = {}) {
+export async function listDeals({ company, stageCode, stageId, sellerId, sellerIds, search, limit = 50, offset = 0 } = {}) {
   try {
-    const params = [];
-    let where = 'WHERE COALESCE(d.is_closed, FALSE) = FALSE';
+    const params = [normalizeCrmCompany(company)];
+    let where = 'WHERE COALESCE(d.is_closed, FALSE) = FALSE AND d.crm_company = $1';
 
     if (stageId) {
       params.push(stageId);
@@ -84,6 +84,7 @@ export async function listDeals({ stageCode, stageId, sellerId, sellerIds, searc
         d.notes,
 
         d.is_closed,
+        d.crm_company,
 
         d.created_at,
         d.updated_at
@@ -147,6 +148,7 @@ export async function getDealById(id) {
         d.notes,
 
         d.is_closed,
+        d.crm_company,
 
         d.created_at,
         d.updated_at

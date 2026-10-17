@@ -68,6 +68,7 @@ export function mapDealRow(row) {
     notes: row.notes,
 
     is_closed: row.is_closed ?? false,
+    crm_company: row.crm_company ?? 'BH3',
 
     created_at: row.created_at,
     updated_at: row.updated_at,

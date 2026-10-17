@@ -5,6 +5,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import perfApi from '../crmDealsPerformance/crmDealsPerformance.index.js';
+import { ensureCrmCompanyColumn } from './crmDealsSchema.repository.js';
 import { listStages, getStageById, getStageByCode } from './crmDealsStages.repository.js';
 import { listDeals, getDealById } from './crmDealsQuery.repository.js';
 import { createDeal } from './crmDealsCreate.repository.js';
@@ -32,6 +33,14 @@ perfApi.ensureTable?.()
     else console.warn('[crmDealsApi] ensureTable actions retorno:', r);
   })
   .catch((e) => console.warn('[crmDealsApi] ensureTable actions falhou:', e?.message || e));
+
+// Garante a coluna crm_company (CRM BH3 x CRM Consart ERP).
+ensureCrmCompanyColumn()
+  .then((r) => {
+    if (r?.ok) console.log('[crmDealsApi] crmDeals.crm_company OK');
+    else console.warn('[crmDealsApi] ensureCrmCompanyColumn retorno:', r);
+  })
+  .catch((e) => console.warn('[crmDealsApi] ensureCrmCompanyColumn falhou:', e?.message || e));
 
 const crmDealsApi = {
   listStages,

@@ -1,0 +1,220 @@
+<!-- ╔════════════════════════════════════════════════════════════════════╗
+     ║ crmConsartErp.html — CRM Consart ERP                              ║
+     ║ ✅ Mesmo código do CRM Gestão de Vendas (/crmDeals)               ║
+     ║ ✅ window.CRM_COMPANY = 'CONSART' → cards próprios, separados     ║
+     ║    dos cards do CRM Gestão de Vendas (crmDeals.crm_company)       ║
+     ║ ✅ Stages dinâmicos                                               ║
+     ║ ✅ Tag/Status = customerStatusTypes                               ║
+     ║ ✅ Origem do Lead = crmLeadSources                                ║
+     ║ ✅ Conclusão do Lead = crmDealsOutcomes                           ║
+     ║ ✅ Queda de venda abre modal com crmLossReasons                   ║
+     ║ ✅ Clique nos indicadores do topo abre modal de operações         ║
+     ╚════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>CRM CONSART ERP | CONSART ERP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/crmDeals/crmDeals.css" />
+  <link rel="stylesheet" href="/crmDeals/crmOutcomesModal.css" />
+  <link rel="stylesheet" href="/crmDeals/crmConclusionSummaryModal/crmConclusionSummaryModal.css" />
+</head>
+<body>
+  <div id="menuConsartMount"></div>
+
+  <main class="page-crm-consart">
+    <section class="section-card">
+      <header class="crm-header">
+        <div class="crm-header__titles">
+          <h1>CRM - Consart ERP</h1>
+          <p>Organize negociações, reativações e prospecções de clientes.</p>
+        </div>
+
+        <div class="crm-header__center">
+          <div
+            id="crm-outcome-summary"
+            class="crm-outcomes-summary"
+            aria-label="Indicadores de conclusão"
+          >
+            <div class="crm-outcomes-summary__placeholder">
+              Carregando indicadores...
+            </div>
+          </div>
+        </div>
+
+        <div class="crm-header__filters">
+          <label for="crm-vendedor" class="crm-label">Vendedor</label>
+          <select id="crm-vendedor" class="crm-select">
+            <option value="all">Todos os vendedores</option>
+          </select>
+          <small class="crm-hint">
+            Dica: dê <strong>duplo clique</strong> para buscar um vendedor.
+          </small>
+        </div>
+      </header>
+
+<div class="crm-actions">
+  <button id="crm-btn-add-card" class="crm-btn-add-card" type="button">
+    <span class="crm-btn-add-card__icon" aria-hidden="true">+</span>
+    <span class="crm-btn-add-card__text">Novo Card</span>
+  </button>
+</div>
+
+      <section class="crm-kanban" id="crm-kanban">
+        <div class="crm-kanban__stages" id="crm-kanban-stages"></div>
+
+        <aside class="crm-kanban__outcomes" aria-label="Conclusão do Lead">
+          <div class="crm-column crm-column--final">
+            <header class="crm-column__header">
+              <div class="crm-column__title-wrap">
+                <span
+                  class="crm-column__badge"
+                  style="background: linear-gradient(135deg,#94a3b8,#64748b)"
+                ></span>
+                <span class="crm-column__title">Conclusão do Lead</span>
+              </div>
+
+              <span class="crm-column__counter" id="counter-final">0</span>
+            </header>
+
+            <div
+              class="crm-column__body crm-column__body--final"
+              id="crm-lead-conclusion-zones"
+              aria-label="Dropzones de Conclusão do Lead"
+            ></div>
+          </div>
+        </aside>
+      </section>
+    </section>
+  </main>
+
+  <!-- Modal Novo Card -->
+  <div id="crm-modal-new-card" class="crm-modal hidden" aria-hidden="true">
+    <div class="crm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="crmModalTitle">
+      <h2 id="crmModalTitle">Novo card</h2>
+
+      <div class="crm-modal__form">
+        <label>
+          Cliente
+          <input
+            type="text"
+            id="crm-new-customer"
+            placeholder="Nome do cliente (duplo clique para buscar)"
+            autocomplete="off"
+          >
+        </label>
+
+        <label>
+          Vendedor
+          <input
+            type="text"
+            id="crm-new-seller"
+            placeholder="Selecione o vendedor (duplo clique para buscar)"
+            autocomplete="off"
+          >
+        </label>
+
+        <label>
+          Origem do lead
+          <select id="crm-new-lead-source" class="crm-select">
+            <option value="">Carregando...</option>
+          </select>
+          <small class="crm-hint">
+            Obs.: esta lista é carregada do cadastro <strong>crmLeadSources</strong>.
+          </small>
+        </label>
+
+        <label>
+          Valor estimado
+          <input
+            type="number"
+            id="crm-new-value"
+            placeholder="0,00"
+            step="0.01"
+            min="0"
+            inputmode="decimal"
+          >
+        </label>
+
+        <label>
+          Tag / Status
+          <select id="crm-new-tag-status" class="crm-select">
+            <option value="">Carregando...</option>
+          </select>
+          <small class="crm-hint">
+            Obs.: esta lista é carregada do cadastro <strong>customerStatusTypes</strong>.
+          </small>
+        </label>
+
+        <input type="hidden" id="crm-new-tag" value="">
+
+        <label>
+          Próxima ação
+          <textarea
+            id="crm-new-nextstep"
+            rows="3"
+            placeholder="Ligar, visitar, enviar proposta..."
+          ></textarea>
+        </label>
+
+        <label>
+          Coluna inicial
+          <select id="crm-new-stage" class="crm-select"></select>
+        </label>
+      </div>
+
+      <div class="crm-modal__actions">
+        <button id="crm-modal-save" class="btn-primary" type="button">Salvar</button>
+        <button id="crm-modal-cancel" class="btn-secondary" type="button">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Queda de Venda -->
+  <div id="crm-modal-loss-reason" class="crm-modal hidden" aria-hidden="true">
+    <div class="crm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="crmLossReasonTitle">
+      <h2 id="crmLossReasonTitle">Queda de Venda</h2>
+
+      <div class="crm-modal__form">
+        <label>
+          Motivo da perda
+          <select id="crm-loss-reason-select" class="crm-select">
+            <option value="">Selecione o motivo</option>
+          </select>
+          <small class="crm-hint">
+            Obs.: esta lista é carregada do cadastro <strong>crmLossReasons</strong>.
+          </small>
+        </label>
+
+        <label>
+          Observação
+          <textarea
+            id="crm-loss-reason-notes"
+            rows="4"
+            placeholder="Descreva detalhes desta perda..."
+          ></textarea>
+        </label>
+      </div>
+
+      <div class="crm-modal__actions">
+        <button id="crm-loss-reason-confirm" class="btn-primary" type="button">Confirmar</button>
+        <button id="crm-loss-reason-cancel" class="btn-secondary" type="button">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Separa os cards deste CRM (enviado no header X-CRM-Company) -->
+  <script>window.CRM_COMPANY = 'CONSART';</script>
+  <script type="module" src="/public/includes/js/apiBase.js"></script>
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/crmDeals/js/index.js?v=2"></script>
+</body>
+</html>
