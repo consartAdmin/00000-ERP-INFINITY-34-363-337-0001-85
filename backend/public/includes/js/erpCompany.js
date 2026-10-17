@@ -2,7 +2,7 @@
 // ║ erpCompany.js — Telas da Consart ERP (BH3 x CONSART)                 ║
 // ║ Script normal (não module), carregado ANTES dos módulos da página.   ║
 // ║ A empresa vem de window.ERP_COMPANY ou do ?company= da URL           ║
-// ║ (ex.: customersList.html?company=CONSART). Com empresa definida:     ║
+// ║ (ex.: customersListConsart.html ou ?company=CONSART). Com empresa:   ║
 // ║ • todo fetch para /api/ do próprio servidor leva X-ERP-Company;      ║
 // ║ • window.erpCompanyUrl(url) acrescenta ?company= em links/relatórios;║
 // ║ • o título da página ganha "(Consart ERP)" e uma faixa no topo.      ║
@@ -14,9 +14,19 @@
   var params = new URLSearchParams(window.location.search);
   var company = String(window.ERP_COMPANY || params.get('company') || '').trim().toUpperCase();
 
+  // Telas de clientes com página própria da Consart (nome real na URL)
+  var CONSART_PAGES = {
+    '/public/customersList/customersList.html': '/public/customersListConsart/customersListConsart.html',
+    '/public/customersRegistration/customersRegistration.html': '/public/customersRegistrationConsart/customersRegistrationConsart.html',
+    '/public/customersEdit/customersEdit.html': '/public/customersEditConsart/customersEditConsart.html'
+  };
+
   window.erpCompanyUrl = function (url) {
     if (!company) return url;
     var u = new URL(url, window.location.href);
+    if (company === 'CONSART' && CONSART_PAGES[u.pathname]) {
+      return CONSART_PAGES[u.pathname] + u.search + u.hash;
+    }
     u.searchParams.set('company', company);
     return u.origin === window.location.origin ? u.pathname + u.search + u.hash : u.toString();
   };
