@@ -852,3 +852,17 @@
   opacity: 1;
   visibility: visible;
 }
+/* ⚙️ Configurar Kanban (js/settings.kanban.js) */
+.crm-actions{
+  align-items: center;
+}
+
+.crm-actions .crm-kanban-settings{
+  position: static;
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  opacity: .7;
+  background: #f1f5f9;
+}

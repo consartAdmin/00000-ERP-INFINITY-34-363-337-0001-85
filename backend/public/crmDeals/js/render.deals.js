@@ -92,7 +92,7 @@ export function createDealCard(deal) {
       <div class="crm-card__value">${deal.estimated_value ? formatCurrency(deal.estimated_value) : 'R$ 0,00'}</div>
     </div>
 
-    <div class="crm-card__row-middle">
+    <div class="crm-card__row-middle crm-card__row-seller">
       <div class="crm-card__seller">Vendedor: ${escapeHtml(sellerLabel)}</div>
       <span class="crm-chip" style="border-color:${escapeAttr(statusColor)}; background:${escapeAttr(chipBg)};">
         ${escapeHtml(statusLabel)}
@@ -102,7 +102,7 @@ export function createDealCard(deal) {
     ${
       leadSourceLabel
         ? `
-          <div class="crm-card__row-middle">
+          <div class="crm-card__row-middle crm-card__row-origin">
             <div class="crm-card__seller">Origem: ${escapeHtml(leadSourceLabel)}</div>
             <span class="crm-chip crm-chip--lead">${escapeHtml(leadSourceLabel)}</span>
           </div>
