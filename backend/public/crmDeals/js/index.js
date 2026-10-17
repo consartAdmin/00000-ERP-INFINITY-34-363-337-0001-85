@@ -43,6 +43,7 @@ import {
 } from './modal.newCard.js';
 
 import { openCrmSellerSearchModal } from '/public/modalsSearch/crmConsartModalsSearch.js';
+import { initKanbanSettings } from './settings.kanban.js';
 
 import {
   initConclusionSummaryModal,
@@ -420,6 +421,12 @@ function initTopSummaryConclusionModal() {
     cacheDom();
     attachStaticEvents();
     initTopSummaryConclusionModal();
+
+    // ⚙️ layout do Kanban, salvo por usuário (uma configuração por CRM)
+    initKanbanSettings({
+      mount: document.querySelector('.crm-actions'),
+      key: window.CRM_COMPANY === 'CONSART' ? 'crmConsartErp.kanban' : 'crmDeals.kanban',
+    });
 
     await loadStages();
     await loadDeals();
