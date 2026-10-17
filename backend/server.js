@@ -293,6 +293,10 @@ const __dirname = path.dirname(__filename);
 
 app.set("trust proxy", true);
 
+// /logistica-demo → app de logística (LOGISTICA_DEMO_URL; vazio = desligado)
+import logisticaDemoProxy from "./middleware/logisticaDemoProxy.js";
+app.use(logisticaDemoProxy());
+
 /* ╔══════════════════════════════════════════════════════════╗
    ║ Middlewares globais                                      ║
    ╚══════════════════════════════════════════════════════════╝ */
