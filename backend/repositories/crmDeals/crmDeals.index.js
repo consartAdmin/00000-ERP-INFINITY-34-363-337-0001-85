@@ -7,7 +7,7 @@
 import perfApi from '../crmDealsPerformance/crmDealsPerformance.index.js';
 import { ensureCrmCompanyColumn } from './crmDealsSchema.repository.js';
 import { listStages, getStageById, getStageByCode } from './crmDealsStages.repository.js';
-import { listDeals, getDealById } from './crmDealsQuery.repository.js';
+import { listDeals, getDealById, listCustomerLocations } from './crmDealsQuery.repository.js';
 import { createDeal } from './crmDealsCreate.repository.js';
 import { updateDeal, moveDealToStage } from './crmDealsUpdate.repository.js';
 import { deleteDeal } from './crmDealsRemove.repository.js';
@@ -48,6 +48,7 @@ const crmDealsApi = {
   getStageByCode,
 
   listDeals,
+  listCustomerLocations,
   getDealById,
   createDeal,
   updateDeal,

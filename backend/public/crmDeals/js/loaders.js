@@ -21,6 +21,7 @@ import {
 } from './state.js';
 
 import { dom } from './dom.js';
+import { getCustomerFilterParams } from './filters.customer.js';
 import { normalizeCode } from './helpers.js';
 import { fillStatusTypesSelect, fillLeadSourcesSelect } from './modal.newCard.js';
 
@@ -124,6 +125,7 @@ async function loadDeals() {
       sellerId: state.currentSeller !== 'all'
         ? state.currentSeller
         : undefined,
+      ...getCustomerFilterParams(),
       limit: 500,
       offset: 0,
     });

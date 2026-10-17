@@ -44,6 +44,7 @@ import {
 
 import { openCrmSellerSearchModal } from '/public/modalsSearch/crmConsartModalsSearch.js';
 import { initKanbanSettings } from './settings.kanban.js';
+import { initCustomerFilters } from './filters.customer.js';
 
 import {
   initConclusionSummaryModal,
@@ -430,6 +431,12 @@ function initTopSummaryConclusionModal() {
 
     await loadOutcomesSummary();
     enhanceOutcomeSummaryCards();
+
+    // Estado / Cidade / Segmento (só nas telas que têm esses filtros)
+    await initCustomerFilters(async () => {
+      await loadDeals();
+      renderDeals();
+    });
 
     console.log('[CRM Deals] inicializado com sucesso');
   } catch (err) {
