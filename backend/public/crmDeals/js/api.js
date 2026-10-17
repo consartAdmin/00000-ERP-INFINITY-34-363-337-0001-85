@@ -23,6 +23,7 @@ export {
   fetchLeadSources,
   fetchDealOutcomes,
   fetchLossReasons,
+  apiCreateLossReason,
   fetchLeadConclusionSummary,
   fetchOutcomesSummary,
   fetchOutcomes,
@@ -148,6 +149,13 @@ async function fetchLossReasons({ includeInactive = false } = {}) {
     ),
     { method: 'GET' }
   );
+}
+
+async function apiCreateLossReason(reasonName) {
+  return fetchJSON(apiUrl(API_ROUTES.crm.lossReasons.create), {
+    method: 'POST',
+    body: { reason_name: reasonName, is_active: true },
+  });
 }
 
 async function fetchLeadConclusionSummary({ sellerId } = {}) {

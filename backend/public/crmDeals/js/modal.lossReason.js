@@ -14,6 +14,7 @@
 import { dom } from './dom.js';
 import { state, setLossReasons } from './state.js';
 import { loadLossReasons } from './loaders.js';
+import { apiCreateLossReason } from './api.js';
 import { Modal } from '/public/includes/js/modal.js';
 
 export {
@@ -157,6 +158,83 @@ async function openLossReasonModal() {
 }
 
 /* --------------------------------------------------------------------- */
+/* Novo motivo da perda (botão +)                                        */
+/* --------------------------------------------------------------------- */
+function getNewLossReasonEls() {
+  return {
+    modal: document.getElementById('crm-modal-new-loss-reason'),
+    form: document.getElementById('crm-new-loss-reason-form'),
+    input: document.getElementById('crm-new-loss-reason-name'),
+    error: document.getElementById('crm-new-loss-reason-error'),
+    save: document.getElementById('crm-new-loss-reason-save'),
+  };
+}
+
+function showNewLossReasonError(message) {
+  const { error } = getNewLossReasonEls();
+  if (!error) return;
+
+  error.textContent = message || '';
+  error.hidden = !message;
+}
+
+function openNewLossReasonModal() {
+  const { modal, input } = getNewLossReasonEls();
+  if (!modal) return;
+
+  if (input) input.value = '';
+  showNewLossReasonError('');
+
+  Modal.open(modal, { focusSelector: '#crm-new-loss-reason-name' });
+}
+
+async function saveNewLossReason() {
+  const { modal, input, save } = getNewLossReasonEls();
+  const name = String(input?.value || '').trim();
+
+  if (!name) {
+    showNewLossReasonError('Informe o motivo.');
+    input?.focus();
+    return;
+  }
+
+  if (save) save.disabled = true;
+  showNewLossReasonError('');
+
+  try {
+    const json = await apiCreateLossReason(name);
+    const body = json?.data && typeof json.data === 'object' ? json.data : {};
+    const created = body.data || body;
+
+    if (!json?.ok || body.success === false || !created?.id) {
+      const msg = body.message || json?.message || json?.error || '';
+      showNewLossReasonError(
+        json?.status === 409 || /already exists/i.test(msg)
+          ? 'Já existe um motivo com esse nome.'
+          : 'Não foi possível salvar o motivo.'
+      );
+      return;
+    }
+
+    const list = [...(Array.isArray(state.lossReasons) ? state.lossReasons : []), created];
+    setLossReasons(list);
+    fillLossReasonsSelect(list);
+
+    Modal.close(modal);
+
+    if (dom.modalLossReasonSelect) {
+      dom.modalLossReasonSelect.value = String(created.id);
+      dom.modalLossReasonSelect.focus();
+    }
+  } catch (err) {
+    console.error('[CRM] Erro ao criar motivo da perda:', err);
+    showNewLossReasonError('Não foi possível salvar o motivo.');
+  } finally {
+    if (save) save.disabled = false;
+  }
+}
+
+/* --------------------------------------------------------------------- */
 /* Bindings                                                              */
 /* --------------------------------------------------------------------- */
 function ensureLossReasonModalBindings() {
@@ -169,6 +247,22 @@ function ensureLossReasonModalBindings() {
 
     dom.modalLossReason.addEventListener('modal:close', () => {
       resolveLossReasonModal(null);
+    });
+  }
+
+  /* Botão + (novo motivo) */
+  const addBtn = document.getElementById('crm-loss-reason-add');
+  if (addBtn && addBtn.dataset.boundLossReasonAdd !== '1') {
+    addBtn.dataset.boundLossReasonAdd = '1';
+    addBtn.addEventListener('click', openNewLossReasonModal);
+  }
+
+  const { form } = getNewLossReasonEls();
+  if (form && form.dataset.boundNewLossReason !== '1') {
+    form.dataset.boundNewLossReason = '1';
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      saveNewLossReason();
     });
   }
 

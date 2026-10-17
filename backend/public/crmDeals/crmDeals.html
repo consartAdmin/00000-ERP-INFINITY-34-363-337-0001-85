@@ -185,7 +185,10 @@
             <div class="modal-form-grid">
 
               <div class="fields fields-w-full fields-h-6">
-                <label for="crm-loss-reason-select">Motivo da perda *</label>
+                <label for="crm-loss-reason-select">Motivo da perda *
+                  <button type="button" id="crm-loss-reason-add" class="crm-quick-add-btn"
+                    title="Cadastrar novo motivo da perda" aria-label="Cadastrar novo motivo da perda">+</button>
+                </label>
                 <select id="crm-loss-reason-select">
                   <option value="">Selecione o motivo</option>
                 </select>
@@ -205,6 +208,37 @@
         <footer class="modal__footer modal-footer-color-9">
           <button id="crm-loss-reason-cancel" class="btn btn-cancel btn-sm" type="button">Cancelar</button>
           <button id="crm-loss-reason-confirm" class="btn btn-save btn-sm" type="button">Confirmar</button>
+        </footer>
+
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal Novo Motivo da Perda (botão + do Queda de Venda) -->
+  <div id="crm-modal-new-loss-reason" class="modal crm-deal-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-3" role="dialog" aria-modal="true" aria-labelledby="crmNewLossReasonTitle">
+
+        <header class="modal__header modal-header-color-9">
+          <h2 id="crmNewLossReasonTitle" class="modal__title">Novo Motivo da Perda</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </header>
+
+        <div class="modal__body">
+          <form id="crm-new-loss-reason-form" class="modal-section" novalidate>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="crm-new-loss-reason-name">Motivo *</label>
+              <input type="text" id="crm-new-loss-reason-name" maxlength="120" autocomplete="off" placeholder="Ex.: Preço acima do concorrente">
+            </div>
+            <p id="crm-new-loss-reason-error" class="crm-quick-error" hidden></p>
+          </form>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-9">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+          <button id="crm-new-loss-reason-save" class="btn btn-save btn-sm" type="submit" form="crm-new-loss-reason-form">Salvar</button>
         </footer>
 
       </section>
