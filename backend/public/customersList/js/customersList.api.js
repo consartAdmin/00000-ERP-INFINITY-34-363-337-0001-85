@@ -62,6 +62,7 @@ async function loadSellersLookup() {
 
 async function loadSegmentsLookup() {
   lookups.segmentsByKey.clear();
+  lookups.segmentOptions.clear();
   const { response, json } = await fetchJson(ROUTES.segmentos);
   if (!response.ok) return;
 
@@ -75,6 +76,9 @@ async function loadSegmentsLookup() {
     );
     const display = name && code ? `${name} (${code})` : name || code || '';
     if (!display) continue;
+
+    const id = pick(segment.segment_id, segment.id, segment.segmentId);
+    if (/^\d+$/.test(String(id ?? ''))) lookups.segmentOptions.set(String(id), String(display));
 
     [
       code,

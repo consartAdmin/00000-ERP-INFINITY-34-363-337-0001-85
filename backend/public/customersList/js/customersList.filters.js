@@ -57,20 +57,9 @@ export function fillFiltersCombos() {
       .filter(([key]) => /^\d+$/.test(String(key)))
   );
 
-  const segments = Array.from(lookups.segmentsByKey.entries())
-    .filter(([key]) => String(key).length > 0 && String(key).length <= 40);
-  fillSelect('#segmento', uniqueEntries(segments));
+  // Uma opção por segmento (o filtro usa segment_id)
+  fillSelect('#segmento', Array.from(lookups.segmentOptions.entries()));
   fillSelect('#vendedor', Array.from(lookups.sellersById.entries()));
-}
-
-function uniqueEntries(entries) {
-  const seen = new Set();
-  return entries.filter(([key, label]) => {
-    const signature = `${key}::${label}`;
-    if (seen.has(signature)) return false;
-    seen.add(signature);
-    return true;
-  });
 }
 
 function fillSelect(selector, entries) {

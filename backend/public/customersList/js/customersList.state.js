@@ -26,6 +26,7 @@ export const state = {
 export const lookups = {
   sellersById: new Map(),
   segmentsByKey: new Map(),
+  segmentOptions: new Map(), // segment_id → rótulo (1 opção por segmento no filtro)
   statusById: new Map(),
   sellerByCustomerId: new Map(),
 };
