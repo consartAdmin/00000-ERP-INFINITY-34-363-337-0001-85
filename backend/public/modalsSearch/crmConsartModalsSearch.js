@@ -420,6 +420,8 @@ export function openCrmCustomerSearchModal({
 
     if (e.key === 'Escape') {
       e.preventDefault();
+      // Não deixa o ESC chegar no modal.js e fechar o modal do card por baixo
+      e.stopPropagation();
       closeModal(overlay);
     }
   });
@@ -616,6 +618,8 @@ export function openCrmSellerSearchModal({
 
     if (e.key === 'Escape') {
       e.preventDefault();
+      // Não deixa o ESC chegar no modal.js e fechar o modal do card por baixo
+      e.stopPropagation();
       closeModal(overlay);
     }
   });

@@ -13,6 +13,7 @@
 'use strict';
 
 import { dom } from './dom.js';
+import { Modal } from '/public/includes/js/modal.js';
 import { state } from './state.js';
 import { apiCreateDeal, apiUpdateDeal } from './api.js';
 import { renderDeals } from './render.deals.js';
@@ -320,7 +321,8 @@ function clearModalFields() {
   if (dom.modalTagStatus) dom.modalTagStatus.value = '';
   if (dom.modalTag) dom.modalTag.value = '';
   if (dom.modalNextStep) dom.modalNextStep.value = '';
-  if (dom.modalStageSelect) dom.modalStageSelect.value = '';
+  // Começa na primeira etapa (antes ficava vazio porque não existe opção '')
+  if (dom.modalStageSelect) dom.modalStageSelect.selectedIndex = dom.modalStageSelect.options.length ? 0 : -1;
 
   setSaveButtonLoading(false);
 }
@@ -426,7 +428,8 @@ export function openNewCardModal() {
   applyDefaultSellerToModal();
   setModalTitleAndButton();
 
-  dom.modalNewCard.classList.remove('hidden');
+  Modal.setup();
+  Modal.open(dom.modalNewCard, { focusSelector: '#crm-new-customer' });
 }
 
 /* --------------------------------------------------------------------- */
@@ -523,12 +526,13 @@ export function openDealModal({ mode = 'edit', deal } = {}) {
     dom.modalStageSelect.value = stageCode != null ? String(stageCode) : '';
   }
 
-  dom.modalNewCard.classList.remove('hidden');
+  Modal.setup();
+  Modal.open(dom.modalNewCard, { focusSelector: '#crm-new-customer' });
 }
 
 export function closeNewCardModal() {
   if (!dom.modalNewCard) return;
-  dom.modalNewCard.classList.add('hidden');
+  Modal.close(dom.modalNewCard);
 }
 
 /* --------------------------------------------------------------------- */

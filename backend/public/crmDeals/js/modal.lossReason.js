@@ -14,6 +14,7 @@
 import { dom } from './dom.js';
 import { state, setLossReasons } from './state.js';
 import { loadLossReasons } from './loaders.js';
+import { Modal } from '/public/includes/js/modal.js';
 
 export {
   ensureLossReasonModalBindings,
@@ -66,8 +67,7 @@ function fillLossReasonsSelect(listParam = null) {
 function closeLossReasonModal() {
   if (!dom.modalLossReason) return;
 
-  dom.modalLossReason.classList.add('hidden');
-  dom.modalLossReason.setAttribute('aria-hidden', 'true');
+  Modal.close(dom.modalLossReason);
 
   if (dom.modalLossReasonSelect) {
     dom.modalLossReasonSelect.value = '';
@@ -109,27 +109,13 @@ function confirmLossReasonModal() {
     return;
   }
 
-  closeLossReasonModal();
-
+  // Resolve antes de fechar: o evento modal:close resolve como cancelado
   resolveLossReasonModal({
     loss_reason_id: lossReasonId,
     note: note || null,
   });
-}
 
-/* --------------------------------------------------------------------- */
-/* ESC key                                                               */
-/* --------------------------------------------------------------------- */
-function onLossReasonKeydown(e) {
-  if (!dom.modalLossReason) return;
-
-  const isHidden = dom.modalLossReason.classList.contains('hidden');
-  if (isHidden) return;
-
-  if (e.key === 'Escape') {
-    e.preventDefault();
-    cancelLossReasonModal();
-  }
+  closeLossReasonModal();
 }
 
 /* --------------------------------------------------------------------- */
@@ -150,8 +136,8 @@ async function openLossReasonModal() {
 
   fillLossReasonsSelect(list);
 
-  dom.modalLossReason.classList.remove('hidden');
-  dom.modalLossReason.setAttribute('aria-hidden', 'false');
+  Modal.setup();
+  Modal.open(dom.modalLossReason, { focusSelector: '#crm-loss-reason-select' });
 
   if (dom.modalLossReasonSelect) {
     dom.modalLossReasonSelect.value = '';
@@ -174,17 +160,15 @@ async function openLossReasonModal() {
 /* Bindings                                                              */
 /* --------------------------------------------------------------------- */
 function ensureLossReasonModalBindings() {
-  /* Backdrop click */
+  /* Fechou pelo X, backdrop ou ESC (modal.js) = cancelar */
   if (
     dom.modalLossReason &&
     dom.modalLossReason.dataset.boundLossReasonModal !== '1'
   ) {
     dom.modalLossReason.dataset.boundLossReasonModal = '1';
 
-    dom.modalLossReason.addEventListener('click', (e) => {
-      if (e.target === dom.modalLossReason) {
-        cancelLossReasonModal();
-      }
+    dom.modalLossReason.addEventListener('modal:close', () => {
+      resolveLossReasonModal(null);
     });
   }
 
@@ -214,13 +198,4 @@ function ensureLossReasonModalBindings() {
     );
   }
 
-  /* ESC */
-  if (!document.body.dataset.boundLossReasonEsc) {
-    document.body.dataset.boundLossReasonEsc = '1';
-
-    document.addEventListener(
-      'keydown',
-      onLossReasonKeydown
-    );
-  }
 }

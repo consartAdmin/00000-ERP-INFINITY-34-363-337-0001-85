@@ -358,23 +358,7 @@ function attachStaticEvents() {
     dom.btnModalCancel.addEventListener('click', closeNewCardModal);
   }
 
-  if (document.body.dataset.boundEscCloseCrmModal !== '1') {
-    document.body.dataset.boundEscCloseCrmModal = '1';
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && dom.modalNewCard && !dom.modalNewCard.classList.contains('hidden')) {
-        closeNewCardModal();
-      }
-    });
-  }
-
-  if (dom.modalNewCard && dom.modalNewCard.dataset.boundBackdropClose !== '1') {
-    dom.modalNewCard.dataset.boundBackdropClose = '1';
-
-    dom.modalNewCard.addEventListener('click', (e) => {
-      if (e.target === dom.modalNewCard) closeNewCardModal();
-    });
-  }
+  // ESC, X e backdrop do modal ficam com o /includes/js/modal.js
 
   if (dom.outcomeSummary && dom.outcomeSummary.dataset.boundOutcomeClick !== '1') {
     dom.outcomeSummary.dataset.boundOutcomeClick = '1';
