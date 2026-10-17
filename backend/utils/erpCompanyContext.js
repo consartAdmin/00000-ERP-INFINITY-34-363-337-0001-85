@@ -33,8 +33,13 @@ export function runWithErpCompany(company, fn) {
 }
 
 /** Tabela que a request atual deve usar no lugar de `table` (nome BH3). */
+// Aceita o nome com ou sem aspas (public.sellers = public."sellers")
+const CONSART_BY_KEY = Object.fromEntries(
+  Object.entries(CONSART_TABLES).map(([k, v]) => [k.replace(/"/g, ''), v])
+);
+
 export function erpTable(table) {
-  if (currentErpCompany() === 'CONSART') return CONSART_TABLES[table] || table;
+  if (currentErpCompany() === 'CONSART') return CONSART_BY_KEY[String(table).replace(/"/g, '')] || table;
   return table;
 }
 
