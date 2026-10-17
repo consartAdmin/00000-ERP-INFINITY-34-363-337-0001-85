@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { tb } from './customers.table.js';
 import { TB, ALIAS } from './customers.constants.js';
 import { toNumOrNull, resolveCustomerOrder } from './customers.utils.js';
 import { mapRow, mapSearchRow } from './customers.mappers.js';
@@ -58,7 +59,7 @@ export async function list({
     SELECT
       ${CUSTOMER_FULL_COLUMNS}
 
-    FROM ${TB} ${ALIAS}
+    FROM ${tb()} ${ALIAS}
 
     ${CUSTOMER_FULL_JOINS}
 
@@ -72,7 +73,7 @@ export async function list({
 
   const countSql = `
     SELECT COUNT(*)::INT AS total
-    FROM ${TB} ${ALIAS}
+    FROM ${tb()} ${ALIAS}
 
     ${CUSTOMER_FULL_JOINS}
 
@@ -176,7 +177,7 @@ export async function search({
       cs.status_type_id,
       COALESCE(cst.name_pt, cst.internal_code) AS status_label
 
-    FROM ${TB} ${ALIAS}
+    FROM ${tb()} ${ALIAS}
 
     ${JOIN_STATUS}
 
@@ -228,7 +229,7 @@ export async function listAllForExport({
     SELECT
       ${CUSTOMER_FULL_COLUMNS}
 
-    FROM ${TB} ${ALIAS}
+    FROM ${tb()} ${ALIAS}
 
     ${CUSTOMER_FULL_JOINS}
 

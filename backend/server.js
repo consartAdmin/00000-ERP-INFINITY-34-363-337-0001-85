@@ -315,7 +315,7 @@ app.use((req, res, next) => {
    res.setHeader("Access-Control-Allow-Origin", "*");
    res.setHeader(
       "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept, Authorization, x-request-id, X-CRM-Company"
+      "Origin, X-Requested-With, Content-Type, Accept, Authorization, x-request-id, X-CRM-Company, X-ERP-Company"
    );
    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
    if (req.method === "OPTIONS") return res.sendStatus(204);

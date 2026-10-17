@@ -9,6 +9,7 @@ import {
   TB_DELIVERY,
   DELIVERY_COLUMN_MAP,
 } from './customers.constants.js';
+import { tb } from './customers.table.js';
 import { toNumOrNull } from './customers.utils.js';
 import {
   hasDeliveryAddressPayload,
@@ -27,7 +28,7 @@ export async function saveDeliveryAddress(client, customerId, payload = {}) {
 
   const linkResult = await client.query(
     `SELECT customer_ad_id
-       FROM ${TB}
+       FROM ${tb()}
       WHERE customer_id = $1
       FOR UPDATE`,
     [customerId]
@@ -90,7 +91,7 @@ export async function saveDeliveryAddress(client, customerId, payload = {}) {
     addressId = inserted.rows[0].customer_ad_id;
 
     await client.query(
-      `UPDATE ${TB}
+      `UPDATE ${tb()}
           SET customer_ad_id = $1,
               updated_at = NOW()
         WHERE customer_id = $2`,

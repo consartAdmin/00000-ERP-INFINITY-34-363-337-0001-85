@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { tb } from './customers.table.js';
 import { TB, ALIAS } from './customers.constants.js';
 import { toNumOrNull } from './customers.utils.js';
 import { mapRow } from './customers.mappers.js';
@@ -23,7 +24,7 @@ export async function getById(id) {
     SELECT
       ${CUSTOMER_FULL_COLUMNS}
 
-    FROM ${TB} ${ALIAS}
+    FROM ${tb()} ${ALIAS}
 
     ${CUSTOMER_FULL_JOINS}
 

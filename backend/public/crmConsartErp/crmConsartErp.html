@@ -212,7 +212,9 @@
   </div>
 
   <!-- Separa os cards deste CRM (enviado no header X-CRM-Company) -->
-  <script>window.CRM_COMPANY = 'CONSART';</script>
+  <script>window.CRM_COMPANY = 'CONSART'; window.ERP_COMPANY = 'CONSART';</script>
+  <!-- Busca de clientes usa a tabela customersConsart -->
+  <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/apiBase.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
   <script type="module" src="/crmDeals/js/index.js?v=2"></script>

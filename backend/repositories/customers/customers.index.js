@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import { ensureTable } from './customersSchema.repository.js';
+import { ensureCustomersConsartTable } from './customersConsart.schema.js';
 import { create } from './customersCreate.repository.js';
 import { updateById } from './customersUpdate.repository.js';
 import { getById } from './customersGetById.repository.js';
@@ -19,6 +20,11 @@ import {
   saveAsaasId,
   countWithoutAsaasId,
 } from './customersAsaas.repository.js';
+
+// Tabela de clientes da Consart ERP (public."customersConsart").
+ensureCustomersConsartTable()
+  .then(() => console.log('[customersApi] customersConsart OK'))
+  .catch((e) => console.warn('[customersApi] customersConsart falhou:', e?.message || e));
 
 export {
   ensureTable,

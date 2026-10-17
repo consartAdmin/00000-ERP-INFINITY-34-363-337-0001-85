@@ -116,7 +116,7 @@ function initCustomerTabs() {
 function goBack(event) {
   event?.preventDefault();
   if (history.length > 1) return history.back();
-  location.href = '/public/customersList/customersList.html';
+  location.href = (window.erpCompanyUrl ? window.erpCompanyUrl('/public/customersList/customersList.html') : '/public/customersList/customersList.html');
 }
 
 async function onSearchCep(event) {
@@ -167,7 +167,7 @@ async function onSubmit(event) {
     if (customerId != null && customerId !== '') {
       window.setTimeout(() => {
         const params = new URLSearchParams({ id: String(customerId) });
-        location.replace(`${CUSTOMERS_EDIT_URL}?${params.toString()}`);
+        location.replace((window.erpCompanyUrl ? window.erpCompanyUrl(`${CUSTOMERS_EDIT_URL}?${params.toString()}`) : `${CUSTOMERS_EDIT_URL}?${params.toString()}`));
       }, 300);
     }
   } catch (error) {

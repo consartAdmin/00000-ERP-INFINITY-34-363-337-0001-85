@@ -175,7 +175,12 @@ export async function create(req, res) {
     return res.status(201).json(item);
   } catch (err) {
     // CNPJ/CPF já cadastrado → informa o cliente existente
-    if (err.constraint === 'idx_customers_tax_id_unique' || /idx_customers_tax_id_unique/.test(err.message)) {
+    // (customersConsart tem índices com outro nome; o detail cita o tax_id)
+    if (
+      err.constraint === 'idx_customers_tax_id_unique' ||
+      /idx_customers_tax_id_unique/.test(err.message) ||
+      (err.code === '23505' && /tax_id/.test(String(err.detail || err.message)))
+    ) {
       const existing = await customersApi.findByTaxId(req.body?.tax_id).catch(() => null);
       const name = existing?.trade_name || existing?.legal_name || '';
       return res.status(409).json({

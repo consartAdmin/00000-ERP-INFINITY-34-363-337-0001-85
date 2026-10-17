@@ -999,7 +999,7 @@
             </button>
 
             <button class="btn btn-toolbar btn-sm" id="btnVoltar" type="button"
-              onclick="window.location.href='/public/customersList/customersList.html'">
+              onclick="window.location.href=(window.erpCompanyUrl ? window.erpCompanyUrl('/public/customersList/customersList.html') : '/public/customersList/customersList.html')">
               ↩ Voltar
             </button>
 
@@ -1083,6 +1083,8 @@
        ╚════════════════════════════════════════════════════════════════╝ -->
 
   <!-- Configuração global -->
+  <!-- ?company=CONSART → clientes da Consart ERP (tabela customersConsart) -->
+  <script src="/public/includes/js/erpCompany.js"></script>
   <script src="/config/apiBase.js"></script>
 
   <!-- Modais -->
