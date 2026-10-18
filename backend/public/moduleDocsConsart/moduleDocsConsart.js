@@ -146,6 +146,7 @@ function renderList(summary) {
       <td>${statusBadge(r.doc_status, r.doc_status_label)}</td>
       <td>${actionIconsHtml([
         { action: 'edit', title: 'Documentar', attrs: { 'data-act': 'edit', 'data-id': r.id } },
+        { action: 'delete', title: 'Excluir módulo', attrs: { 'data-act': 'delete', 'data-id': r.id } },
       ])}</td>
     </tr>
   `).join('');
@@ -162,7 +163,25 @@ function renderList(summary) {
 function onListClick(event) {
   const tr = event.target.closest('tr[data-id]');
   if (!tr) return;
-  openEditor(Number(tr.dataset.id));
+  const id = Number(tr.dataset.id);
+  if (event.target.closest('[data-act="delete"]')) {
+    deleteModule(id);
+    return;
+  }
+  openEditor(id);
+}
+
+async function deleteModule(id) {
+  const row = state.rows.find((r) => r.id === id);
+  const label = row ? row.breadcrumb : `#${id}`;
+  if (!confirm(`Excluir o módulo "${label}"?\n\nEle sai do menu e do cadastro de módulos (Criação de Módulos), junto com a documentação. Não dá para desfazer.`)) return;
+  try {
+    await apiFetch(`${API}/${id}`, { method: 'DELETE' });
+    await loadModules();
+    await loadList();
+  } catch (error) {
+    alert(`Não foi possível excluir: ${error.message}`);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────
