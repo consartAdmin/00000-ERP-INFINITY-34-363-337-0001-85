@@ -593,6 +593,30 @@ import tasksRoutes from './routes/tasksRoutes.js';
 app.use('/api/tasks', tasksRoutes);
 
 /* ╔══════════════════════════════════════════════════════════╗
+   ║          ROTA: proposalsConsart (Propostas Consart)      ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import proposalsConsartRoutes from './routes/proposalsConsartRoutes.js';
+app.use('/api/proposals-consart', proposalsConsartRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
+   ║   ROTA: proposalsServicesConsart (Propostas de Serviços) ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import proposalsServicesConsartRoutes from './routes/proposalsServicesConsartRoutes.js';
+app.use('/api/proposals-services-consart', proposalsServicesConsartRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
+   ║      ROTA: servicesConsart (Cadastro de serviços)        ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import servicesConsartRoutes from './routes/servicesConsartRoutes.js';
+app.use('/api/services-consart', servicesConsartRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
+   ║   ROTA: moduleDocsConsart (Documentação dos módulos)     ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import moduleDocsConsartRoutes from './routes/moduleDocsConsartRoutes.js';
+app.use('/api/module-docs-consart', moduleDocsConsartRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
    ║             ROTA: cashDocumentTypesRoutes                ║
    ╚══════════════════════════════════════════════════════════╝ */
 import cashDocumentTypesRoutes from './routes/cashDocumentTypesRoutes.js';
