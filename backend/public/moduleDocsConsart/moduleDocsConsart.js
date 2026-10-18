@@ -278,6 +278,111 @@ async function saveDoc({ goNext = false } = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Novo módulo (mesma API e regras da Criação de Módulos)
+// ─────────────────────────────────────────────────────────────────────
+
+const MODULE_API = '/api/module-system';
+
+// Onde cada tipo pode ficar (igual à validação do moduleSystemController)
+const ALLOWED_PARENTS = Object.freeze({
+  dropdown: [],
+  submenu: ['dropdown'],
+  link: ['', 'dropdown', 'submenu'],
+  '': [],
+});
+
+let allModules = [];
+
+async function openNew() {
+  try {
+    // Árvore completa (ativos e inativos) para escolher o pai
+    const json = await apiFetch(`${API}?active=`);
+    allModules = json.data || [];
+  } catch (error) {
+    alert(`Erro ao carregar os módulos: ${error.message}`);
+    return;
+  }
+
+  $('#new-form').reset();
+  $('#nf-active').checked = true;
+  $('#nf-document').checked = true;
+
+  // Já sugere o pai pelo filtro "Módulo" da tela
+  fillParentOptions($('#filterModule').value);
+  Modal.open('new-modal', { focusSelector: '#nf-name' });
+}
+
+function fillParentOptions(preferredId = '') {
+  const type = $('#nf-type').value;
+  const allowed = ALLOWED_PARENTS[type] || [];
+  const select = $('#nf-parent');
+
+  const options = [];
+  if (allowed.includes('')) options.push('<option value="">(Topo do menu)</option>');
+  allModules
+    .filter((m) => allowed.includes(m.menu_type))
+    .forEach((m) => {
+      options.push(`<option value="${m.id}">${esc(m.breadcrumb)}${m.is_active ? '' : ' (inativo)'}</option>`);
+    });
+
+  if (!options.length) options.push('<option value="">(Topo do menu)</option>');
+  select.innerHTML = options.join('');
+  select.disabled = !allowed.some(Boolean);
+
+  const preferred = String(preferredId || '');
+  if (preferred && [...select.options].some((o) => o.value === preferred)) select.value = preferred;
+
+  const isLink = type === 'link';
+  $('#nf-path').disabled = !isLink && type !== '';
+  $('#nf-path').placeholder = isLink || type === '' ? '../pasta/pagina.html' : '# (não abre página)';
+  if ($('#nf-path').disabled) $('#nf-path').value = '';
+}
+
+async function createModule() {
+  const type = $('#nf-type').value;
+  const name = $('#nf-name').value.trim();
+  let path = $('#nf-path').value.trim();
+
+  if (!name) {
+    alert('Informe o nome do módulo.');
+    $('#nf-name').focus();
+    return;
+  }
+  if (type === 'link' && !path) {
+    alert('Informe o endereço da tela (ex.: ../pasta/pagina.html).');
+    $('#nf-path').focus();
+    return;
+  }
+  if (!path) path = '#'; // Módulo e submenu não abrem página
+
+  const payload = {
+    name,
+    path,
+    menuType: type,
+    parentId: $('#nf-parent').disabled ? null : ($('#nf-parent').value || null),
+    sortOrder: $('#nf-order').value.trim() || null,
+    isActive: $('#nf-active').checked,
+    isExternal: $('#nf-external').checked,
+    isPublic: $('#nf-public').checked,
+  };
+
+  const btn = $('#nf-save');
+  btn.disabled = true;
+  try {
+    const json = await apiFetch(MODULE_API, { method: 'POST', body: JSON.stringify(payload) });
+    const created = json.data;
+    Modal.close('new-modal');
+    await loadModules();
+    await loadList();
+    if ($('#nf-document').checked && created?.id) await openEditor(Number(created.id));
+  } catch (error) {
+    alert(`Erro ao criar o módulo: ${error.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // PDF
 // ─────────────────────────────────────────────────────────────────────
 
@@ -341,6 +446,10 @@ function bindEvents() {
     await loadList();
   });
   $('#btnPdf').addEventListener('click', openPdf);
+  $('#btnNew').addEventListener('click', openNew);
+  $('#nf-type').addEventListener('change', () => fillParentOptions($('#nf-parent').value));
+  $('#nf-save').addEventListener('click', createModule);
+  $('#new-form').addEventListener('submit', (e) => { e.preventDefault(); createModule(); });
   $('#btnBack').addEventListener('click', () => history.back());
   $('#q').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadList(); });
   ['#filterModule', '#filterType', '#filterSystem', '#filterStatus', '#filterActive']

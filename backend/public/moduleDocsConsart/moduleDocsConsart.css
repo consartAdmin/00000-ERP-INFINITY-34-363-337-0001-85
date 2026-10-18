@@ -132,3 +132,13 @@
   font-size: 13px;
   cursor: pointer;
 }
+
+/* ── Novo módulo ───────────────────────────────────────────────────── */
+.doc-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  margin-top: 6px;
+}
+
+.doc-hint { margin: 4px 0 0; font-size: 11px; color: #64748b; }
