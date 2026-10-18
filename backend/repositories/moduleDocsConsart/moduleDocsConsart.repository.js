@@ -19,6 +19,20 @@ export const DOC_STATUS = Object.freeze({
   DOCUMENTADO: 'Documentado',
 });
 
+/** Sistemas (planos) em que o módulo funciona — ordem de exibição */
+export const SYSTEMS = Object.freeze({
+  CORE: 'Core',
+  EDGE: 'Edge',
+  INFINITY: 'Infinity',
+});
+
+/** ['edge', 'X', 'CORE'] → ['CORE', 'EDGE'] (só válidos, sem repetir, na ordem de SYSTEMS) */
+export function normalizeSystems(value) {
+  const list = Array.isArray(value) ? value : String(value ?? '').split(',');
+  const wanted = new Set(list.map((s) => String(s).trim().toUpperCase()));
+  return Object.keys(SYSTEMS).filter((key) => wanted.has(key));
+}
+
 /** Tipos do menu (NULL = fora do menu) */
 export const TYPE_LABELS = Object.freeze({
   dropdown: 'Módulo',
@@ -42,6 +56,7 @@ export function ensureModuleDocsConsartTable() {
         created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at   TIMESTAMP NOT NULL DEFAULT NOW()
       );
+      ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS systems TEXT[] NOT NULL DEFAULT '{}';
     `).catch((error) => {
       ready = null;
       throw error;
@@ -96,7 +111,7 @@ async function loadTree() {
 
   const { rows } = await pool.query(`
     SELECT m.id, m.name, m.path, m.menu_type, m.parent_id, m.sort_order, m.is_active,
-           d.description, d.functions, d.notes, d.status AS doc_status,
+           d.description, d.functions, d.notes, d.status AS doc_status, d.systems,
            d.updated_by AS doc_updated_by, d.updated_at AS doc_updated_at
       FROM ${MODULES_TB} m
       LEFT JOIN ${TB} d ON d.module_id = m.id
@@ -148,6 +163,8 @@ async function loadTree() {
         doc_status_label: DOC_STATUS[status],
         doc_updated_by: row.doc_updated_by || null,
         doc_updated_at: row.doc_updated_at || null,
+        systems: normalizeSystems(row.systems || []),
+        systems_label: normalizeSystems(row.systems || []).map((k) => SYSTEMS[k]).join(', '),
       });
 
       walk(key, level + 1, moduleRow, path);
@@ -172,13 +189,16 @@ async function loadTree() {
  *  type     dropdown | submenu | link | none
  *  status   PENDENTE | REVISAR | DOCUMENTADO
  *  active   true | false ('' = todos)
+ *  system   CORE | EDGE | INFINITY | NONE (sem sistema marcado)
  */
-export async function list({ q, module, type, status, active } = {}) {
+export async function list({ q, module, type, status, active, system } = {}) {
   const tree = await loadTree();
 
   const moduleId = positiveId(module);
   const typeFilter = TYPE_LABELS[type] ? type : '';
   const statusFilter = DOC_STATUS[status] ? status : '';
+  const sys = String(system ?? '').trim().toUpperCase();
+  const systemFilter = SYSTEMS[sys] || sys === 'NONE' ? sys : '';
   const act = String(active ?? '').trim().toLowerCase();
   const search = text(q)?.toLowerCase();
 
@@ -186,6 +206,8 @@ export async function list({ q, module, type, status, active } = {}) {
     if (moduleId && r.module_id !== moduleId) return false;
     if (typeFilter && r.type !== typeFilter) return false;
     if (statusFilter && r.doc_status !== statusFilter) return false;
+    if (systemFilter === 'NONE' && r.systems.length) return false;
+    if (systemFilter && systemFilter !== 'NONE' && !r.systems.includes(systemFilter)) return false;
     if (act === 'true' && !r.is_active) return false;
     if (act === 'false' && r.is_active) return false;
     if (search) {
@@ -237,16 +259,18 @@ export async function save(id, body = {}, user = null) {
   const notes = text(body.notes, 5000);
 
   await pool.query(
-    `INSERT INTO ${TB} (module_id, description, functions, notes, status, updated_by)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO ${TB} (module_id, description, functions, notes, status, updated_by, systems)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      ON CONFLICT (module_id) DO UPDATE SET
        description = EXCLUDED.description,
        functions   = EXCLUDED.functions,
        notes       = EXCLUDED.notes,
        status      = EXCLUDED.status,
+       systems     = EXCLUDED.systems,
        updated_by  = EXCLUDED.updated_by,
        updated_at  = NOW()`,
-    [moduleId, description, functions, notes, status || (description ? 'DOCUMENTADO' : 'PENDENTE'), text(user, 150)]
+    [moduleId, description, functions, notes, status || (description ? 'DOCUMENTADO' : 'PENDENTE'), text(user, 150),
+      normalizeSystems(body.systems)]
   );
 
   return getById(moduleId);

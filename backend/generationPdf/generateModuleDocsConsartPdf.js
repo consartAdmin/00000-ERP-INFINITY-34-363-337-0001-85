@@ -28,11 +28,15 @@ const STATUS_COLORS = Object.freeze({
 const TYPE_FILTER_LABELS = Object.freeze({
   dropdown: 'Módulos', submenu: 'Submenus', link: 'Telas', none: 'Fora do menu',
 });
+const SYSTEM_FILTER_LABELS = Object.freeze({
+  CORE: 'Core', EDGE: 'Edge', INFINITY: 'Infinity', NONE: 'Sem sistema',
+});
 const STATUS_FILTER_LABELS = Object.freeze({
   PENDENTE: 'Pendentes', REVISAR: 'A revisar', DOCUMENTADO: 'Documentados',
 });
 
 const clean = (v) => String(v ?? '').trim();
+const join = (values, sep = ' · ') => values.map(clean).filter(Boolean).join(sep);
 
 // Helvetica (WinAnsi) não tem emoji nem setas como '▹' dos nomes do menu
 const pdfText = (v) => clean(
@@ -62,6 +66,8 @@ function describeFilters(filters = {}) {
   const parts = [];
   if (clean(filters.moduleName)) parts.push(`Módulo: ${clean(filters.moduleName)}`);
   if (TYPE_FILTER_LABELS[filters.type]) parts.push(`Tipo: ${TYPE_FILTER_LABELS[filters.type]}`);
+  const system = clean(filters.system).toUpperCase();
+  if (SYSTEM_FILTER_LABELS[system]) parts.push(`Sistema: ${SYSTEM_FILTER_LABELS[system]}`);
   if (STATUS_FILTER_LABELS[filters.status]) parts.push(`Documentação: ${STATUS_FILTER_LABELS[filters.status]}`);
   const act = clean(filters.active).toLowerCase();
   if (act === 'true') parts.push('Somente ativos');
@@ -175,9 +181,9 @@ export async function generateModuleDocsConsartPdf({
 
     const title = `${r.name}${r.is_active ? '' : ' (inativo)'}`;
     doc.font('Helvetica-Bold').fontSize(isModule ? 10.5 : 9.5).fillColor(r.is_active ? '#111' : '#94a3b8')
-      .text(title, x + (isModule ? 6 : 0), y, { width: w - 150, lineBreak: false, ellipsis: true });
+      .text(title, x + (isModule ? 6 : 0), y, { width: w - 220, lineBreak: false, ellipsis: true });
     doc.font('Helvetica').fontSize(7.5).fillColor(MUTED)
-      .text(r.type_label, right - 145, y + 1.5, { width: 70, align: 'right', lineBreak: false });
+      .text(join([r.type_label, r.systems_label]), right - 215, y + 1.5, { width: 140, align: 'right', lineBreak: false });
     statusPill(r.doc_status, r.doc_status_label, right - 2, y - 0.5);
 
     doc.x = x;

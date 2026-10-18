@@ -41,6 +41,13 @@ function statusBadge(status, label) {
   return `<span class="doc-status doc-status--${esc(status)}">${esc(label)}</span>`;
 }
 
+const SYSTEM_LABELS = Object.freeze({ CORE: 'Core', EDGE: 'Edge', INFINITY: 'Infinity' });
+
+function systemsBadges(systems = []) {
+  if (!systems.length) return '—';
+  return systems.map((s) => `<span class="doc-system doc-system--${esc(s)}">${esc(SYSTEM_LABELS[s] || s)}</span>`).join('');
+}
+
 function dateTimeBR(value) {
   if (!value) return '';
   const d = new Date(value);
@@ -58,6 +65,7 @@ function filterParams() {
   if ($('#filterModule').value) params.set('module', $('#filterModule').value);
   if ($('#filterType').value) params.set('type', $('#filterType').value);
   if ($('#filterStatus').value) params.set('status', $('#filterStatus').value);
+  if ($('#filterSystem').value) params.set('system', $('#filterSystem').value);
   if ($('#filterActive').value) params.set('active', $('#filterActive').value);
   return params;
 }
@@ -71,6 +79,7 @@ function filtersDescription() {
   const parts = [];
   if (selectedText('#filterModule')) parts.push(`Módulo: ${selectedText('#filterModule')}`);
   if (selectedText('#filterType')) parts.push(`Tipo: ${selectedText('#filterType')}`);
+  if (selectedText('#filterSystem')) parts.push(`Sistema: ${selectedText('#filterSystem')}`);
   if (selectedText('#filterStatus')) parts.push(`Documentação: ${selectedText('#filterStatus')}`);
   if ($('#filterActive').value) parts.push(selectedText('#filterActive'));
   if ($('#q').value.trim()) parts.push(`Busca: "${$('#q').value.trim()}"`);
@@ -139,6 +148,7 @@ function renderList(summary) {
     <tr data-id="${r.id}" class="level-${state.sort ? 'x' : r.level} ${r.is_active ? '' : 'is-inactive'}">
       <td class="docs-col-left">${nameCell(r)}</td>
       <td>${esc(r.type_label)}</td>
+      <td>${systemsBadges(r.systems)}</td>
       <td class="docs-col-left" title="${esc(r.description)}">${r.description
         ? esc(r.description.replace(/\s+/g, ' '))
         : '<span class="docs-desc-empty">Sem descrição</span>'}</td>
@@ -197,6 +207,8 @@ function fillForm(r) {
   $('#df-path').textContent = r.type === 'link' && r.path ? r.path : '—';
   $('#df-path').title = r.path || '';
   $('#df-status').value = r.doc_status || 'PENDENTE';
+  const systems = r.systems || [];
+  document.querySelectorAll('#df-systems input').forEach((input) => { input.checked = systems.includes(input.value); });
   $('#df-description').value = r.description || '';
   $('#df-functions').value = r.functions || '';
   $('#df-notes').value = r.notes || '';
@@ -236,6 +248,7 @@ async function saveDoc({ goNext = false } = {}) {
     notes: $('#df-notes').value,
     // Escreveu a descrição e deixou "Pendente": vira Documentado
     status: status === 'PENDENTE' && description ? 'DOCUMENTADO' : status,
+    systems: [...document.querySelectorAll('#df-systems input:checked')].map((input) => input.value),
   };
 
   const buttons = [$('#df-save'), $('#df-save-next')];
@@ -330,7 +343,7 @@ function bindEvents() {
   $('#btnPdf').addEventListener('click', openPdf);
   $('#btnBack').addEventListener('click', () => history.back());
   $('#q').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadList(); });
-  ['#filterModule', '#filterType', '#filterStatus', '#filterActive']
+  ['#filterModule', '#filterType', '#filterSystem', '#filterStatus', '#filterActive']
     .forEach((sel) => $(sel).addEventListener('change', loadList));
   $('#docsBody').addEventListener('click', onListClick);
 

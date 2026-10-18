@@ -25,6 +25,7 @@
 
 .docs-col-name    { width: 320px; }
 .docs-col-type    { width: 110px; }
+.docs-col-systems { width: 215px; }
 .docs-col-count   { width: 80px; }
 .docs-col-status  { width: 120px; }
 .docs-col-actions { width: 90px; }
@@ -66,6 +67,29 @@
 .doc-status--PENDENTE    { background: #fef3c7; color: #b45309; }
 .doc-status--REVISAR     { background: #dbeafe; color: #1d4ed8; }
 .doc-status--DOCUMENTADO { background: #dcfce7; color: #15803d; }
+
+/* Sistemas (Core / Edge / Infinity) */
+.doc-system {
+  display: inline-block;
+  margin: 0 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.doc-system--CORE     { background: #e0e7ff; color: #3730a3; }
+.doc-system--EDGE     { background: #ffedd5; color: #c2410c; }
+.doc-system--INFINITY { background: #ccfbf1; color: #0f766e; }
+
+.doc-systems {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 34px;
+}
+
+.doc-systems .doc-check { margin: 0; }
 
 /* ── Modais ────────────────────────────────────────────────────────── */
 /* Abaixo da barra fixa do menu (que fica por cima dos modais) */
