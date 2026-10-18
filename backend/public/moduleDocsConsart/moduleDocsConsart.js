@@ -2,9 +2,10 @@
 // ║ moduleDocsConsart.js — Documentação dos módulos (CONSART ERP)        ║
 // ║ • Lista em árvore (ordem do menu) com filtros: texto, módulo, tipo,  ║
 // ║   documentação e status                                              ║
-// ║ • Editor em modal: nome, tipo, "Dentro de", endereço, ordem e flags  ║
-// ║   do menu (via /api/module-system) + descrição, funções, observações,║
-// ║   status; "Salvar e próximo" para documentar em sequência            ║
+// ║ • Controle interno: nada aqui altera o menu do sistema               ║
+// ║ • Editor em modal: nome, tipo, "Dentro de", endereço, ordem, ativo,  ║
+// ║   descrição, funções, observações, status, sistemas e softwares;     ║
+// ║   "Salvar e próximo" para documentar em sequência                    ║
 // ║ • PDF com os filtros da tela                                         ║
 // ║ API: /api/module-docs-consart                                        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -207,7 +208,7 @@ function onListClick(event) {
 async function deleteModule(id) {
   const row = state.rows.find((r) => r.id === id);
   const label = row ? row.breadcrumb : `#${id}`;
-  if (!confirm(`Excluir o módulo "${label}"?\n\nEle sai do menu e do cadastro de módulos (Criação de Módulos), junto com a documentação. Não dá para desfazer.`)) return;
+  if (!confirm(`Excluir "${label}" da documentação?\n\nO menu do sistema não muda; só sai daqui, junto com a descrição e as funções.`)) return;
   try {
     await apiFetch(`${API}/${id}`, { method: 'DELETE' });
     await loadModules();
@@ -246,8 +247,6 @@ function fillForm(r) {
   $('#df-order').value = r.sort_order ?? '';
   $('#df-path').value = r.path && r.path !== '#' ? r.path : '';
   $('#df-active').checked = r.is_active;
-  $('#df-external').checked = r.is_external;
-  $('#df-public').checked = r.is_public;
   fillParentSelect({ select: $('#df-parent'), type: r.menu_type || '', pathInput: $('#df-path'), preferredId: r.parent_id, excludeId: r.id });
   $('#df-status').value = r.doc_status || 'PENDENTE';
   const systems = r.systems || [];
@@ -284,43 +283,33 @@ function move(step) {
   if (next) openEditor(next.id);
 }
 
-/** Campos do menu que mudaram (camelCase, como a Criação de Módulos espera) */
-function menuChanges(r) {
+/** Nome/tipo/posição do item (só na documentação; o menu do sistema não muda) */
+function treeFields(r) {
   const type = $('#df-type').value;
   const name = $('#df-name').value.trim();
   const typedPath = $('#df-path').value.trim();
-  const parentId = $('#df-parent').disabled ? null : (Number($('#df-parent').value) || null);
   const orderText = $('#df-order').value.trim();
-  const sortOrder = orderText === '' ? null : Number(orderText);
 
   if (!name) throw new Error('Informe o nome.');
   if (type === 'link' && !typedPath) throw new Error('Informe o endereço da tela (ex.: ../pasta/pagina.html).');
-  if (orderText !== '' && !Number.isInteger(sortOrder)) throw new Error('Ordem inválida.');
-  // Módulo e submenu não abrem página; "fora do menu" mantém o endereço que tinha
-  const path = typedPath || (type === '' && r.path ? r.path : '#');
+  if (orderText !== '' && !Number.isInteger(Number(orderText))) throw new Error('Ordem inválida.');
 
-  const changes = {};
-  if (name !== r.name) changes.name = name;
-  if (type !== (r.menu_type || '')) changes.menuType = type;
-  if (parentId !== (r.parent_id ?? null)) changes.parentId = parentId;
-  if (sortOrder !== (r.sort_order ?? null)) changes.sortOrder = sortOrder;
-  if (path !== (r.path || '')) changes.path = path;
-  if ($('#df-active').checked !== r.is_active) changes.isActive = $('#df-active').checked;
-  if ($('#df-external').checked !== r.is_external) changes.isExternal = $('#df-external').checked;
-  if ($('#df-public').checked !== r.is_public) changes.isPublic = $('#df-public').checked;
-  // A regra da árvore olha tipo e pai juntos
-  if ('menuType' in changes || 'parentId' in changes) {
-    changes.menuType = type;
-    changes.parentId = parentId;
-  }
-  return changes;
+  return {
+    name,
+    menu_type: type || null,
+    parent_id: $('#df-parent').disabled ? null : (Number($('#df-parent').value) || null),
+    // Módulo e submenu não abrem página; "fora do menu" mantém o endereço que tinha
+    path: typedPath || (type === '' && r.path ? r.path : '#'),
+    sort_order: orderText,
+    is_active: $('#df-active').checked,
+  };
 }
 
 async function saveDoc({ goNext = false } = {}) {
-  const current = state.rows.find((x) => x.id === state.editingId);
-  let changes = {};
+  const current = state.rows.find((x) => x.id === state.editingId) || {};
+  let tree;
   try {
-    if (current) changes = menuChanges(current);
+    tree = treeFields(current);
   } catch (error) {
     alert(error.message);
     return;
@@ -329,6 +318,7 @@ async function saveDoc({ goNext = false } = {}) {
   const description = $('#df-description').value.trim();
   const status = $('#df-status').value;
   const payload = {
+    ...tree,
     description,
     functions: $('#df-functions').value,
     notes: $('#df-notes').value,
@@ -341,10 +331,6 @@ async function saveDoc({ goNext = false } = {}) {
   const buttons = [$('#df-save'), $('#df-save-next')];
   buttons.forEach((b) => { b.disabled = true; });
   try {
-    // 1º o menu (mesmas regras da Criação de Módulos); se recusar, nada é gravado
-    if (Object.keys(changes).length) {
-      await apiFetch(`${MODULE_API}/${state.editingId}`, { method: 'PUT', body: JSON.stringify(changes) });
-    }
     const json = await apiFetch(`${API}/${state.editingId}`, { method: 'PUT', body: JSON.stringify(payload) });
     const saved = json.data;
     const index = state.rows.findIndex((x) => x.id === saved.id);
@@ -358,9 +344,8 @@ async function saveDoc({ goNext = false } = {}) {
       Modal.close('doc-modal');
     }
     // Atualiza contadores/status sem perder a posição do editor
-    if (Object.keys(changes).length) {
-      await Promise.all([loadModules(), loadAllModules()]);
-    }
+    const moved = ['name', 'menu_type', 'parent_id', 'is_active'].some((k) => (current[k] ?? null) !== (saved[k] ?? null));
+    if (moved) await Promise.all([loadModules(), loadAllModules()]);
     await loadList();
     const latest = state.rows.find((x) => x.id === state.editingId);
     if (latest && Modal.isOpen('doc-modal')) fillForm(latest);
@@ -376,12 +361,10 @@ async function saveDoc({ goNext = false } = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Novo módulo (mesma API e regras da Criação de Módulos)
+// Novo item (só na documentação; o menu do sistema não muda)
 // ─────────────────────────────────────────────────────────────────────
 
-const MODULE_API = '/api/module-system';
-
-// Onde cada tipo pode ficar (igual à validação do moduleSystemController)
+// Onde cada tipo pode ficar (mesmas regras da Criação de Módulos)
 const ALLOWED_PARENTS = Object.freeze({
   dropdown: [],
   submenu: ['dropdown'],
@@ -430,7 +413,7 @@ function selfAndDescendants(id) {
   return ids;
 }
 
-/** Monta o "Dentro de" conforme o tipo (igual à validação do moduleSystemController) */
+/** Monta o "Dentro de" conforme o tipo */
 function fillParentSelect({ select, type, pathInput, preferredId = '', excludeId = null }) {
   const allowed = ALLOWED_PARENTS[type] || [];
   const excluded = excludeId != null ? selfAndDescendants(excludeId) : new Set();
@@ -485,25 +468,43 @@ async function createModule() {
   const payload = {
     name,
     path,
-    menuType: type,
-    parentId: $('#nf-parent').disabled ? null : ($('#nf-parent').value || null),
-    sortOrder: $('#nf-order').value.trim() || null,
-    isActive: $('#nf-active').checked,
-    isExternal: $('#nf-external').checked,
-    isPublic: $('#nf-public').checked,
+    menu_type: type || null,
+    parent_id: $('#nf-parent').disabled ? null : (Number($('#nf-parent').value) || null),
+    sort_order: $('#nf-order').value.trim(),
+    is_active: $('#nf-active').checked,
   };
 
   const btn = $('#nf-save');
   btn.disabled = true;
   try {
-    const json = await apiFetch(MODULE_API, { method: 'POST', body: JSON.stringify(payload) });
+    const json = await apiFetch(API, { method: 'POST', body: JSON.stringify(payload) });
     const created = json.data;
     Modal.close('new-modal');
     await loadModules();
     await loadList();
     if ($('#nf-document').checked && created?.id) await openEditor(Number(created.id));
   } catch (error) {
-    alert(`Erro ao criar o módulo: ${error.message}`);
+    alert(`Erro ao criar: ${error.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/** Traz do menu os itens que ainda não estão na documentação (o menu não muda) */
+async function importFromMenu() {
+  if (!confirm('Trazer para a documentação os itens do menu que ainda não estão aqui?\n\nO menu do sistema não muda. Itens que você excluiu da documentação não voltam.')) return;
+  const btn = $('#btnImport');
+  btn.disabled = true;
+  try {
+    const json = await apiFetch(`${API}/import`, { method: 'POST', body: '{}' });
+    const { added = 0, items = [] } = json.data || {};
+    await loadModules();
+    await loadList();
+    alert(added
+      ? `${plural(added, 'item trazido', 'itens trazidos')} do menu:\n\n${items.slice(0, 20).join('\n')}${items.length > 20 ? '\n...' : ''}`
+      : 'Nada novo: todos os itens do menu já estão na documentação.');
+  } catch (error) {
+    alert(`Erro ao importar do menu: ${error.message}`);
   } finally {
     btn.disabled = false;
   }
@@ -689,6 +690,7 @@ function bindEvents() {
   });
   $('#btnPdf').addEventListener('click', openPdf);
   $('#btnSoftware').addEventListener('click', openSoftware);
+  $('#btnImport').addEventListener('click', importFromMenu);
   $('#software-form').addEventListener('submit', (e) => { e.preventDefault(); saveSoftware(); });
   $('#sw-clear').addEventListener('click', () => resetSoftwareForm());
   $('#swBody').addEventListener('click', onSoftwareClick);

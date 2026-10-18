@@ -15,6 +15,8 @@ import {
   getById,
   save,
   remove,
+  create,
+  importMenu,
   softwareList,
   softwareSave,
   softwareRemove,
@@ -32,6 +34,8 @@ router.get('/software', softwareList);
 router.post('/software', softwareSave);
 router.put('/software/:id', softwareSave);
 router.delete('/software/:id', softwareRemove);
+router.post('/', create);
+router.post('/import', importMenu);
 router.get('/:id', getById);
 router.put('/:id', save);
 router.delete('/:id', remove);

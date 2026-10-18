@@ -53,7 +53,26 @@ export async function save(req, res) {
   }
 }
 
-/** DELETE /:id — exclui o módulo do sistema (não só a documentação) */
+/** POST / — novo item só na documentação (o menu do sistema não muda) */
+export async function create(req, res) {
+  try {
+    const user = req.user?.name || req.user?.email || null;
+    return res.status(201).json({ ok: true, data: await repo.create(req.body, user) });
+  } catch (error) {
+    return fail(res, 'create', error);
+  }
+}
+
+/** POST /import — traz do menu os itens que ainda não estão na documentação */
+export async function importMenu(req, res) {
+  try {
+    return res.json({ ok: true, data: await repo.importFromMenu() });
+  } catch (error) {
+    return fail(res, 'importMenu', error);
+  }
+}
+
+/** DELETE /:id — exclui o item só da documentação (o menu não muda) */
 export async function remove(req, res) {
   try {
     const removed = await repo.removeModule(req.params.id);
