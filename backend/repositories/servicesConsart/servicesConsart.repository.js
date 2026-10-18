@@ -101,7 +101,18 @@ function translateDbError(error) {
 // Consultas
 // ─────────────────────────────────────────────────────────────────────
 
-export async function list({ q, active, category, page = 1, limit = 50 } = {}) {
+// Colunas que a tela pode ordenar (nome no front → expressão SQL)
+const SORT_COLUMNS = Object.freeze({
+  code: 's.code',
+  description: 'lower(s.description)',
+  unit: 's.unit',
+  service_code: 's.service_code',
+  category: 'lower(s.category)',
+  price: 's.price',
+  active: 's.active',
+});
+
+export async function list({ q, active, category, sort, dir, page = 1, limit = 50 } = {}) {
   await ensureServicesConsartTable();
 
   const params = [];
@@ -137,9 +148,15 @@ export async function list({ q, active, category, page = 1, limit = 50 } = {}) {
   const pageSize = Math.min(Math.max(Math.trunc(num(limit, 50)), 1), 500);
   const pageNumber = Math.max(Math.trunc(num(page, 1)), 1);
 
+  const sortExpr = SORT_COLUMNS[String(sort || '').trim()];
+  const direction = String(dir || '').trim().toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+  const orderSql = sortExpr
+    ? `${sortExpr} ${direction} NULLS LAST, s.id ASC`
+    : 's.active DESC, s.description ASC, s.id ASC';
+
   const { rows } = await pool.query(
     `SELECT s.* FROM ${TB} s ${whereSql}
-      ORDER BY s.active DESC, s.description ASC, s.id ASC
+      ORDER BY ${orderSql}
       LIMIT ${pageSize} OFFSET ${(pageNumber - 1) * pageSize}`,
     params
   );

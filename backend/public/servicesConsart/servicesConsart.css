@@ -7,6 +7,18 @@
 .services-table th,
 .services-table td { text-align: center; }
 
+/* Cabeçalhos ordenáveis (sortableTable.css): alinhamento por coluna */
+.services-table th.services-col-left .table-sort-button  { justify-content: flex-start; }
+.services-table th.services-col-money .table-sort-button { justify-content: flex-end; }
+
+/* Rótulo "Consart ERP" à direita da barra de filtros */
+.services-company {
+  margin-left: auto;
+  align-self: center;
+}
+
+.services-company:empty { display: none; }
+
 .services-table .services-col-left,
 .services-table td.services-col-left { text-align: left; }
 
