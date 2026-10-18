@@ -4,10 +4,75 @@
 
 import { getById } from './budgetsGetById.repository.js';
 import { create } from './budgetsCreate.repository.js';
+import productsStockManager from '../productsStock/productsStock.manager.js';
 
 // ----------------------------------------------------------------------
 // Copy
 // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// Lots: the copy gets fresh lots from current stock (FEFO, same order as
+// the lot select in the editor), not the lots of the source budget.
+// Prefers the first lot whose free balance covers the quantity, then the
+// first lot with any balance; items sharing a lot consume its balance.
+// ----------------------------------------------------------------------
+async function assignLotsForCopy(items, ctx = {}) {
+  let mode = null;
+
+  try {
+    mode = await productsStockManager.resolveProductsStockMode(ctx);
+  } catch (err) {
+    console.warn('[budgetsApi.copyFromBudget] stock mode:', err?.message || err);
+    return;
+  }
+
+  if (!mode?.isWithLot) return;
+
+  const lotsByCode = new Map();
+  const usedByLot = new Map();
+
+  for (const it of items) {
+    const code = String(it.product_code || '').trim();
+    if (!code) continue;
+
+    if (!lotsByCode.has(code)) {
+      try {
+        lotsByCode.set(
+          code,
+          await productsStockManager.getProductsStockLotsByProductCode(code, null, ctx)
+        );
+      } catch (err) {
+        console.warn(`[budgetsApi.copyFromBudget] lots ${code}:`, err?.message || err);
+        lotsByCode.set(code, []);
+      }
+    }
+
+    const gradeId = it.grade_id != null ? Number(it.grade_id) : null;
+    const candidates = (lotsByCode.get(code) || [])
+      .filter((lot) => gradeId == null || Number(lot.grade_id) === gradeId)
+      .map((lot) => ({
+        lot_id: Number(lot.lot_id),
+        free:
+          Number(lot.qty_available || 0) -
+          (usedByLot.get(Number(lot.lot_id)) || 0),
+      }))
+      .filter((lot) => lot.free > 0);
+
+    const qty = Number(it.quantity || 0);
+    const chosen =
+      candidates.find((lot) => lot.free >= qty) ||
+      candidates[0] ||
+      null;
+
+    if (!chosen) continue;
+
+    it.lot_id = chosen.lot_id;
+    usedByLot.set(
+      chosen.lot_id,
+      (usedByLot.get(chosen.lot_id) || 0) + Math.min(qty, chosen.free)
+    );
+  }
+}
+
 // options.itemIds: budget_item_id list chosen in the copy modal. When it is
 // provided only those items are copied and the header totals are recomputed.
 // ----------------------------------------------------------------------
@@ -179,7 +244,7 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}, options = {}) {
       // Do not inherit commission from original budget
       commission_id: null,
 
-      // Do not inherit stock allocation / lot
+      // Lot is not inherited; assignLotsForCopy() picks one from stock
       lot_id: null,
 
       override_stock: false,
@@ -218,6 +283,8 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}, options = {}) {
       newHeader.total_discount = roundMoney(itemsDiscount + globalAmount);
       newHeader.total_amount = roundMoney(Math.max(0, base - globalAmount));
     }
+
+    await assignLotsForCopy(newItems, ctx);
 
     // ================================================================
     // VALIDATION
