@@ -15,7 +15,7 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/moduleDocsConsart/moduleDocsConsart.css?v=1" />
+  <link rel="stylesheet" href="/public/moduleDocsConsart/moduleDocsConsart.css?v=2" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -60,6 +60,13 @@
           </div>
 
           <div class="fields fields-h-5 fields-w-10 fields-font-3">
+            <span class="label">Software</span>
+            <select id="filterSoftware">
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-5 fields-w-10 fields-font-3">
             <span class="label">Documentação</span>
             <select id="filterStatus">
               <option value="">Todas</option>
@@ -81,6 +88,7 @@
           <div class="btn-inline btn-gap-4">
             <button id="btnSearch" class="btn btn-search btn-sm" type="button">Buscar</button>
             <button id="btnNew" class="btn btn-new btn-sm" type="button">➕ Novo Módulo</button>
+            <button id="btnSoftware" class="btn btn-toolbar btn-sm" type="button" title="Cadastro dos softwares (Consart Infinity, Logistics, ProdNex...)">Softwares</button>
             <button id="btnPdf" class="btn btn-pdf btn-sm" type="button">Gerar PDF</button>
             <button id="btnReload" class="btn btn-load btn-sm" type="button">Recarregar</button>
             <button id="btnBack" class="btn btn-back btn-sm" type="button">Voltar</button>
@@ -110,6 +118,12 @@
               <th class="docs-col-systems table-sortable" data-sort-column="systems_label" aria-sort="none">
                 <button type="button" class="table-sort-button" data-sort-button>
                   Sistemas
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="docs-col-software table-sortable" data-sort-column="software_label" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Software
                   <span data-sort-icon aria-hidden="true">↕</span>
                 </button>
               </th>
@@ -229,6 +243,11 @@
               <div class="doc-updated" id="df-updated"></div>
             </div>
 
+            <div class="fields fields-w-full">
+              <label>Software</label>
+              <div class="doc-systems" id="df-software"></div>
+            </div>
+
             <div class="fields fields-w-full doc-area">
               <label for="df-description">Descrição (para que serve)</label>
               <textarea id="df-description" rows="4" maxlength="5000" placeholder="Ex.: Cadastro e acompanhamento das propostas comerciais de serviços da Consart."></textarea>
@@ -325,6 +344,58 @@
     </div>
   </div>
 
+  <!-- Modal Softwares (cadastro simples) -->
+  <div id="software-modal" class="modal doc-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="softwareModalTitle">
+
+        <!-- div (não <header>): a barra de título da página se encaixa após o 1º <header> -->
+        <div class="modal__header modal-header-color-3">
+          <h2 id="softwareModalTitle" class="modal__title">Softwares</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="software-form" class="modal-section" novalidate>
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6">
+                <label for="sw-name">Nome *</label>
+                <input type="text" id="sw-name" maxlength="80" placeholder="Ex.: Consart Infinity">
+              </div>
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="sw-description">Voltado para</label>
+                <input type="text" id="sw-description" maxlength="200" placeholder="Ex.: Voltado para Distribuidoras">
+              </div>
+              <div class="fields fields-w-full fields-h-6">
+                <label for="sw-order">Ordem</label>
+                <input type="number" id="sw-order" step="1" placeholder="Fim da lista">
+              </div>
+            </div>
+            <div class="btn-inline btn-gap-3 software-form-actions">
+              <button id="sw-clear" class="btn btn-cancel btn-sm" type="button" hidden>Cancelar edição</button>
+              <button id="sw-save" class="btn btn-save btn-sm" type="submit">Adicionar</button>
+            </div>
+          </form>
+
+          <table class="table table-zebra software-table">
+            <thead>
+              <tr><th class="docs-col-left">Software</th><th class="docs-col-left">Voltado para</th><th>Módulos</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="swBody"></tbody>
+          </table>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <div class="btn-inline btn-gap-3">
+            <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Fechar</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </div>
+
   <!-- Modal PDF -->
   <div id="pdf-modal" class="modal doc-modal" aria-hidden="true">
     <div class="modal__backdrop" data-modal-close></div>
@@ -360,7 +431,7 @@
   <script>window.ERP_COMPANY = 'CONSART';</script>
   <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/moduleDocsConsart/moduleDocsConsart.js?v=1"></script>
+  <script type="module" src="/public/moduleDocsConsart/moduleDocsConsart.js?v=3"></script>
 </body>
 
 </html>
