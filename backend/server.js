@@ -611,6 +611,12 @@ import servicesConsartRoutes from './routes/servicesConsartRoutes.js';
 app.use('/api/services-consart', servicesConsartRoutes);
 
 /* ╔══════════════════════════════════════════════════════════╗
+   ║   ROTA: moduleDocsConsart (Documentação dos módulos)     ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import moduleDocsConsartRoutes from './routes/moduleDocsConsartRoutes.js';
+app.use('/api/module-docs-consart', moduleDocsConsartRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
    ║             ROTA: cashDocumentTypesRoutes                ║
    ╚══════════════════════════════════════════════════════════╝ */
 import cashDocumentTypesRoutes from './routes/cashDocumentTypesRoutes.js';

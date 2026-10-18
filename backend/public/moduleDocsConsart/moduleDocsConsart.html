@@ -1,0 +1,243 @@
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║ moduleDocsConsart.html — Documentação dos módulos (CONSART ERP)  ║
+     ║ Lista os módulos/submenus/telas da "Criação de Módulos" e guarda ║
+     ║ descrição, funções e observações de cada um. Gera PDF filtrado.  ║
+     ║ API: /api/module-docs-consart                                    ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>DOCUMENTAÇÃO DOS MÓDULOS | CONSART ERP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/moduleDocsConsart/moduleDocsConsart.css?v=1" />
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="table-layout-integrated table-max-height-700">
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-scroll fields-gap-3">
+
+          <div class="fields fields-h-5 fields-w-17 fields-font-3">
+            <span class="label">Buscar</span>
+            <input id="q" type="text" placeholder="Nome, descrição, função..." />
+          </div>
+
+          <div class="fields fields-h-5 fields-w-12 fields-font-3">
+            <span class="label">Módulo</span>
+            <select id="filterModule">
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-5 fields-w-8 fields-font-3">
+            <span class="label">Tipo</span>
+            <select id="filterType">
+              <option value="">Todos</option>
+              <option value="dropdown">Módulos</option>
+              <option value="submenu">Submenus</option>
+              <option value="link">Telas</option>
+              <option value="none">Fora do menu</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-5 fields-w-10 fields-font-3">
+            <span class="label">Documentação</span>
+            <select id="filterStatus">
+              <option value="">Todas</option>
+              <option value="PENDENTE">Pendentes</option>
+              <option value="REVISAR">A revisar</option>
+              <option value="DOCUMENTADO">Documentados</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-5 fields-w-8 fields-font-3">
+            <span class="label">Status</span>
+            <select id="filterActive">
+              <option value="true">Ativos</option>
+              <option value="false">Inativos</option>
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="btn-inline btn-gap-4">
+            <button id="btnSearch" class="btn btn-search btn-sm" type="button">Buscar</button>
+            <button id="btnPdf" class="btn btn-pdf btn-sm" type="button">Gerar PDF</button>
+            <button id="btnReload" class="btn btn-load btn-sm" type="button">Recarregar</button>
+            <button id="btnBack" class="btn btn-back btn-sm" type="button">Voltar</button>
+          </div>
+
+          <!-- Rótulo "Consart ERP" (erpCompany.js coloca aqui em vez da faixa no topo) -->
+          <div class="docs-company" data-erp-company-slot></div>
+        </div>
+      </div>
+
+      <div class="table-scroll table-height-flex table-row-h-28">
+        <table id="docsTable" class="table table-fixed table-zebra table-zebra-hover table-sticky-head docs-table">
+          <thead>
+            <tr>
+              <th class="docs-col-name docs-col-left table-sortable" data-sort-column="name" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Módulo / Submenu / Tela
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="docs-col-type table-sortable" data-sort-column="type_label" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Tipo
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="docs-col-left table-sortable" data-sort-column="description" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Descrição
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="docs-col-count table-sortable" data-sort-column="functions_count" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Funções
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="docs-col-status table-sortable" data-sort-column="doc_status" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Documentação
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="docs-col-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="docsBody"></tbody>
+        </table>
+        <div id="docsEmpty" class="docs-empty" hidden>Nenhum módulo encontrado com os filtros atuais.</div>
+      </div>
+
+      <footer class="table-footer">
+        <div class="table-footer__info docs-summary">
+          <div class="summary-pill summary-pill-success summary-left-space-3">
+            <span id="docsInfo">0 itens</span>
+          </div>
+          <span class="doc-status doc-status--DOCUMENTADO" id="sumDocumentado">0 documentados</span>
+          <span class="doc-status doc-status--REVISAR" id="sumRevisar">0 a revisar</span>
+          <span class="doc-status doc-status--PENDENTE" id="sumPendente">0 pendentes</span>
+        </div>
+        <div class="table-footer__pagination docs-hint">
+          Nome, caminho e posição no menu são alterados na tela Criação de Módulos.
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- Modal Documentação (padrão modals.css / modal.js) -->
+  <div id="doc-modal" class="modal doc-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="docModalTitle">
+
+        <!-- div (não <header>): a barra de título da página se encaixa após o 1º <header> -->
+        <div class="modal__header modal-header-color-3">
+          <h2 id="docModalTitle" class="modal__title">Documentar módulo</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="doc-form" class="modal-section" novalidate>
+            <div class="doc-info">
+              <div><span>Caminho no menu</span><strong id="df-breadcrumb">—</strong></div>
+              <div><span>Tipo</span><strong id="df-type">—</strong></div>
+              <div><span>Endereço</span><strong id="df-path">—</strong></div>
+            </div>
+
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6">
+                <label for="df-status">Documentação</label>
+                <select id="df-status">
+                  <option value="PENDENTE">Pendente</option>
+                  <option value="REVISAR">Revisar</option>
+                  <option value="DOCUMENTADO">Documentado</option>
+                </select>
+              </div>
+              <div class="doc-updated modal-field--span-3" id="df-updated"></div>
+            </div>
+
+            <div class="fields fields-w-full doc-area">
+              <label for="df-description">Descrição (para que serve)</label>
+              <textarea id="df-description" rows="4" maxlength="5000" placeholder="Ex.: Cadastro e acompanhamento das propostas comerciais de serviços da Consart."></textarea>
+            </div>
+
+            <div class="fields fields-w-full doc-area">
+              <label for="df-functions">Funções (uma por linha)</label>
+              <textarea id="df-functions" rows="6" maxlength="10000" placeholder="Cadastrar proposta&#10;Buscar serviço no catálogo&#10;Gerar PDF da proposta"></textarea>
+            </div>
+
+            <div class="fields fields-w-full doc-area">
+              <label for="df-notes">Observações</label>
+              <textarea id="df-notes" rows="2" maxlength="5000" placeholder="Regras, permissões, pendências..."></textarea>
+            </div>
+          </form>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <div class="btn-inline btn-gap-3 doc-nav">
+            <button id="df-prev" class="btn btn-toolbar btn-sm" type="button">◀ Anterior</button>
+            <button id="df-next" class="btn btn-toolbar btn-sm" type="button">Próximo ▶</button>
+          </div>
+          <div class="btn-inline btn-gap-3">
+            <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+            <button id="df-save-next" class="btn btn-save btn-sm" type="button">Salvar e próximo</button>
+            <button id="df-save" class="btn btn-save btn-sm" type="button">Salvar</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal PDF -->
+  <div id="pdf-modal" class="modal doc-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-3" role="dialog" aria-modal="true" aria-labelledby="pdfModalTitle">
+
+        <!-- div (não <header>): a barra de título da página se encaixa após o 1º <header> -->
+        <div class="modal__header modal-header-color-3">
+          <h2 id="pdfModalTitle" class="modal__title">Gerar PDF</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="modal-section">
+            <p class="pdf-filters">O PDF usa os filtros da tela:<br><strong id="pdf-filters">Todos os módulos</strong></p>
+            <label class="doc-check"><input id="pdf-empty" type="checkbox" checked /> Incluir itens sem descrição</label>
+            <label class="doc-check"><input id="pdf-paths" type="checkbox" checked /> Mostrar o endereço das telas</label>
+            <label class="doc-check"><input id="pdf-notes" type="checkbox" checked /> Mostrar observações</label>
+          </div>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <div class="btn-inline btn-gap-3">
+            <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+            <button id="pdf-generate" class="btn btn-pdf btn-sm" type="button">Gerar PDF</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script>window.ERP_COMPANY = 'CONSART';</script>
+  <script src="/public/includes/js/erpCompany.js"></script>
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/moduleDocsConsart/moduleDocsConsart.js?v=1"></script>
+</body>
+
+</html>
