@@ -5,11 +5,22 @@
 import pool from '../../config/db.js';
 import { normalizeSku10, toNumber, normalizeText } from './productsMobile.sanitizers.js';
 import { buildLocation } from './productsMobile.mappers.js';
+import { SINGLE_PRICE_ID } from '../productsPrices/productsPrices.single.js';
 
+// productsPrices é chaveado por product_code (ver repositories/productsPrices);
+// o preço de venda único fica na tabela de preço SINGLE_PRICE_ID.
 export async function findProductBaseByBarcodeOrSku(searchValue) {
   const raw = normalizeText(searchValue);
   const sku10 = normalizeSku10(raw);
 
+  if (!raw) return null;
+
+  /*
+   * Os vínculos (código de barras, localização, imagem) usam LATERAL ... LIMIT 1
+   * para não multiplicar linhas quando o produto tem vários registros, e para
+   * escolher sempre o mais relevante: o código de barras lido (ou o padrão),
+   * a localização mais recente e a imagem principal.
+   */
   const sql = `
   SELECT
     p.product_id,
@@ -37,44 +48,81 @@ export async function findProductBaseByBarcodeOrSku(searchValue) {
     pl.prateleira,
     pl.bandeja,
     pl.box,
-    pl.observacao AS location_observacao
+    pl.observacao AS location_observacao,
+
+    img.image_url
 
   FROM public.products p
 
-  LEFT JOIN public."productsBarCode" pb
-    ON pb.product_code = p.product_code
-   AND COALESCE(pb.is_active, true) = true
+  LEFT JOIN LATERAL (
+    SELECT b.barcode, b.unit, b.fator
+    FROM public."productsBarCode" b
+    WHERE b.product_code = p.product_code
+      AND COALESCE(b.is_active, true) = true
+    ORDER BY
+      (b.barcode = $1) DESC,
+      b.standard DESC NULLS LAST,
+      b.barcode_id ASC
+    LIMIT 1
+  ) pb ON true
 
   LEFT JOIN public."productsStock" ps
     ON ps.product_stock_id = p.product_stock_id
 
   LEFT JOIN public."productsPrices" pp
-    ON pp.product_id = p.product_id::text
-   AND pp.price_id = 1
+    ON pp.product_code = p.product_code
+   AND pp.price_id = $3
 
-  LEFT JOIN public."productsLocations" pl
-    ON pl.product_code = p.product_code
-   AND COALESCE(pl.is_active, true) = true
+  LEFT JOIN LATERAL (
+    SELECT l.id, l.store_id, l.corredor, l.prateleira, l.bandeja, l.box, l.observacao
+    FROM public."productsLocations" l
+    WHERE l.product_code = p.product_code
+      AND COALESCE(l.is_active, true) = true
+    ORDER BY
+      l.updated_at DESC NULLS LAST,
+      l.created_at DESC NULLS LAST,
+      l.id DESC
+    LIMIT 1
+  ) pl ON true
+
+  LEFT JOIN LATERAL (
+    SELECT i.image_url
+    FROM public."productsImages" i
+    WHERE i.product_code = p.product_code
+      AND COALESCE(i.is_active, true) = true
+      AND COALESCE(i.image_url, '') <> ''
+    ORDER BY
+      i.is_primary DESC NULLS LAST,
+      i.barcode_id ASC NULLS FIRST,
+      i.position ASC NULLS LAST,
+      i.product_image_id ASC
+    LIMIT 1
+  ) img ON true
 
   WHERE
-      pb.barcode = $1
-      OR p.product_code = $1
+      p.product_code = $1
       OR p.product_code = $2
+      OR EXISTS (
+        SELECT 1
+        FROM public."productsBarCode" bx
+        WHERE bx.product_code = p.product_code
+          AND bx.barcode = $1
+          AND COALESCE(bx.is_active, true) = true
+      )
 
   ORDER BY
       CASE
           WHEN pb.barcode = $1 THEN 1
-          WHEN p.product_code = $2 THEN 2
-          WHEN p.product_code = $1 THEN 3
+          WHEN p.product_code = $1 THEN 2
+          WHEN p.product_code = $2 THEN 3
           ELSE 4
       END,
-      pl.updated_at DESC NULLS LAST,
-      pl.created_at DESC NULLS LAST
+      p.product_id ASC
 
   LIMIT 1;
 `;
 
-  const { rows } = await pool.query(sql, [raw, sku10]);
+  const { rows } = await pool.query(sql, [raw, sku10, SINGLE_PRICE_ID]);
 
   return rows[0] || null;
 }
@@ -122,6 +170,7 @@ export async function listProductLots(productStockId) {
       qty_on_hand
     FROM public."productsStockLots"
     WHERE product_stock_id = $1
+      AND COALESCE(is_active, true) = true
     ORDER BY
       expires_at NULLS LAST,
       lot_id ASC;
@@ -199,6 +248,7 @@ export async function getByBarcodeOrSku(searchValue) {
       },
 
       product_imagem_id: base.product_imagem_id || null,
+      image_url: base.image_url || null,
     },
   };
 }
