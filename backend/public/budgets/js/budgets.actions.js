@@ -1559,9 +1559,68 @@ async function fetchBudgetItemsForCopy(budgetId) {
   return items.filter((it) => Number(it?.budget_item_id) > 0);
 }
 
+// Built on demand and appended to <body>: in budgets.html the markup
+// ended up inside other blocks and never showed when copying from the list.
+function ensureCopyBudgetModal() {
+  let modal = document.getElementById('copyBudgetModal');
+  if (modal) return modal;
+
+  modal = document.createElement('div');
+  modal.id = 'copyBudgetModal';
+  modal.className = 'modal copy-budget-modal';
+  modal.setAttribute('aria-hidden', 'true');
+  modal.innerHTML = `
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true"
+        aria-labelledby="copyBudgetModalTitle" tabindex="-1">
+        <header class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="copyBudgetModalTitle" class="modal__title">Copiar orçamento</h2>
+            <p class="modal__subtitle">Marque os produtos que irão para o novo orçamento.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close
+            title="Fechar" aria-label="Fechar">&times;</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <div class="copy-budget-table-wrap">
+            <table class="table table-zebra table-zebra-hover table-sticky-head">
+              <thead>
+                <tr>
+                  <th class="copy-budget-col-check">
+                    <input type="checkbox" id="copyBudgetSelectAll" title="Marcar/desmarcar todos"
+                      aria-label="Marcar ou desmarcar todos os produtos" checked />
+                  </th>
+                  <th>Código</th>
+                  <th>Descrição</th>
+                  <th class="num">Qtd</th>
+                  <th class="num">Vlr. unit.</th>
+                  <th class="num">Total</th>
+                </tr>
+              </thead>
+              <tbody id="copyBudgetItemsBody"></tbody>
+            </table>
+          </div>
+          <p class="copy-budget-summary" id="copyBudgetSummary"></p>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="button" class="btn btn-save btn-sm" id="btnCopyBudgetConfirm">Copiar</button>
+        </footer>
+      </section>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  return modal;
+}
+
 // Resolves with the checked budget_item_id list, or null when cancelled.
 function pickItemsToCopy(budgetId, items) {
-  const modal = $('#copyBudgetModal');
+  const modal = ensureCopyBudgetModal();
   const body = $('#copyBudgetItemsBody');
   const selectAll = $('#copyBudgetSelectAll');
   const summary = $('#copyBudgetSummary');
