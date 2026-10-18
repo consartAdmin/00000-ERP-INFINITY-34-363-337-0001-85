@@ -4,7 +4,7 @@
 // ║ • Lê a árvore de public."moduleSystem" (tela Criação de Módulos)   ║
 // ║ • Guarda descrição / funções / observações / status em             ║
 // ║   public."moduleDocsConsart" (criada no primeiro uso, 1 por módulo)║
-// ║ • Nome, caminho e posição no menu continuam na Criação de Módulos  ║
+// ║ • Nome, caminho e posição no menu: tela grava via /module-system   ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
@@ -111,6 +111,7 @@ async function loadTree() {
 
   const { rows } = await pool.query(`
     SELECT m.id, m.name, m.path, m.menu_type, m.parent_id, m.sort_order, m.is_active,
+           m.is_external, m.is_public,
            d.description, d.functions, d.notes, d.status AS doc_status, d.systems,
            d.updated_by AS doc_updated_by, d.updated_at AS doc_updated_at
       FROM ${MODULES_TB} m
@@ -150,6 +151,8 @@ async function loadTree() {
         parent_id: row.parent_id == null ? null : Number(row.parent_id),
         sort_order: row.sort_order,
         is_active: row.is_active !== false,
+        is_external: row.is_external === true,
+        is_public: row.is_public === true,
         level,
         module_id: Number(moduleRow.id),
         module_name: moduleRow.name,

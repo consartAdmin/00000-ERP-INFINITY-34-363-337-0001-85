@@ -149,7 +149,7 @@
           <span class="doc-status doc-status--PENDENTE" id="sumPendente">0 pendentes</span>
         </div>
         <div class="table-footer__pagination docs-hint">
-          Nome, caminho e posição no menu são alterados na tela Criação de Módulos.
+          Pelo botão Editar você altera nome, tipo, posição no menu e documentação.
         </div>
       </footer>
     </section>
@@ -170,11 +170,44 @@
 
         <div class="modal__body">
           <form id="doc-form" class="modal-section" novalidate>
-            <div class="doc-info">
-              <div><span>Caminho no menu</span><strong id="df-breadcrumb">—</strong></div>
-              <div><span>Tipo</span><strong id="df-type">—</strong></div>
-              <div><span>Endereço</span><strong id="df-path">—</strong></div>
+            <div class="doc-breadcrumb">Caminho no menu: <strong id="df-breadcrumb">—</strong></div>
+
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="df-name">Nome (texto no menu) *</label>
+                <input type="text" id="df-name" maxlength="100">
+              </div>
+              <div class="fields fields-w-full fields-h-6">
+                <label for="df-type">Tipo</label>
+                <select id="df-type">
+                  <option value="link">Tela</option>
+                  <option value="submenu">Submenu</option>
+                  <option value="dropdown">Módulo (topo)</option>
+                  <option value="">Fora do menu</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6">
+                <label for="df-order">Ordem</label>
+                <input type="number" id="df-order" step="1">
+              </div>
+
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="df-parent">Dentro de</label>
+                <select id="df-parent"></select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="df-path">Endereço da tela *</label>
+                <input type="text" id="df-path" maxlength="200" placeholder="../pasta/pagina.html">
+              </div>
             </div>
+
+            <div class="doc-flags">
+              <label class="doc-check"><input type="checkbox" id="df-active" /> Ativo</label>
+              <label class="doc-check"><input type="checkbox" id="df-external" /> Abrir em nova aba</label>
+              <label class="doc-check" title="Aparece para todos os usuários, sem depender de Módulos Por Usuários"><input type="checkbox" id="df-public" /> Visível para todos</label>
+            </div>
+
+            <hr class="doc-sep" />
 
             <div class="modal-form-grid modal-form-grid--4">
               <div class="fields fields-w-full fields-h-6">
