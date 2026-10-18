@@ -22,6 +22,7 @@ const state = {
   rows: [],      // ordem do menu (vinda da API)
   view: [],      // ordem exibida (após ordenação por coluna)
   editingId: null,
+  software: [],  // cadastro de softwares (Consart Infinity, Logistics...)
   sort: '',
   dir: 'asc',
 };
@@ -49,6 +50,13 @@ function systemsBadges(systems = []) {
   return systems.map((s) => `<span class="doc-system doc-system--${esc(s)}">${esc(SYSTEM_LABELS[s] || s)}</span>`).join('');
 }
 
+function softwareBadges(ids = []) {
+  const names = ids.map((id) => state.software.find((sw) => sw.id === id)).filter(Boolean);
+  if (!names.length) return '—';
+  // Na tabela sem o "Consart " para caber; nome completo no tooltip
+  return names.map((sw) => `<span class="doc-software" title="${esc(sw.name)}${sw.description ? ` · ${esc(sw.description)}` : ''}">${esc(sw.name.replace(/^consart\s+/i, ''))}</span>`).join('');
+}
+
 function dateTimeBR(value) {
   if (!value) return '';
   const d = new Date(value);
@@ -67,6 +75,7 @@ function filterParams() {
   if ($('#filterType').value) params.set('type', $('#filterType').value);
   if ($('#filterStatus').value) params.set('status', $('#filterStatus').value);
   if ($('#filterSystem').value) params.set('system', $('#filterSystem').value);
+  if ($('#filterSoftware').value) params.set('software', $('#filterSoftware').value);
   if ($('#filterActive').value) params.set('active', $('#filterActive').value);
   return params;
 }
@@ -81,6 +90,7 @@ function filtersDescription() {
   if (selectedText('#filterModule')) parts.push(`Módulo: ${selectedText('#filterModule')}`);
   if (selectedText('#filterType')) parts.push(`Tipo: ${selectedText('#filterType')}`);
   if (selectedText('#filterSystem')) parts.push(`Sistema: ${selectedText('#filterSystem')}`);
+  if (selectedText('#filterSoftware')) parts.push(`Software: ${selectedText('#filterSoftware')}`);
   if (selectedText('#filterStatus')) parts.push(`Documentação: ${selectedText('#filterStatus')}`);
   if ($('#filterActive').value) parts.push(selectedText('#filterActive'));
   if ($('#q').value.trim()) parts.push(`Busca: "${$('#q').value.trim()}"`);
@@ -156,6 +166,7 @@ function renderList(summary) {
       <td class="docs-col-left">${nameCell(r)}</td>
       <td>${esc(r.type_label)}</td>
       <td>${systemsBadges(r.systems)}</td>
+      <td>${softwareBadges(r.software_ids)}</td>
       <td class="docs-col-left" title="${esc(r.description)}">${r.description
         ? esc(r.description.replace(/\s+/g, ' '))
         : '<span class="docs-desc-empty">Sem descrição</span>'}</td>
@@ -216,7 +227,7 @@ async function deleteModule(id) {
 /** Limpa busca/filtros que escondem itens e mostra o módulo com tudo que está dentro */
 async function showModuleItems(row) {
   $('#q').value = '';
-  ['#filterType', '#filterSystem', '#filterStatus', '#filterActive'].forEach((sel) => { $(sel).value = ''; });
+  ['#filterType', '#filterSystem', '#filterSoftware', '#filterStatus', '#filterActive'].forEach((sel) => { $(sel).value = ''; });
   $('#filterModule').value = String(row.module_id);
   await loadList();
 }
@@ -241,6 +252,8 @@ function fillForm(r) {
   $('#df-status').value = r.doc_status || 'PENDENTE';
   const systems = r.systems || [];
   document.querySelectorAll('#df-systems input').forEach((input) => { input.checked = systems.includes(input.value); });
+  const software = r.software_ids || [];
+  document.querySelectorAll('#df-software input').forEach((input) => { input.checked = software.includes(Number(input.value)); });
   $('#df-description').value = r.description || '';
   $('#df-functions').value = r.functions || '';
   $('#df-notes').value = r.notes || '';
@@ -322,6 +335,7 @@ async function saveDoc({ goNext = false } = {}) {
     // Escreveu a descrição e deixou "Pendente": vira Documentado
     status: status === 'PENDENTE' && description ? 'DOCUMENTADO' : status,
     systems: [...document.querySelectorAll('#df-systems input:checked')].map((input) => input.value),
+    software_ids: [...document.querySelectorAll('#df-software input:checked')].map((input) => Number(input.value)),
   };
 
   const buttons = [$('#df-save'), $('#df-save-next')];
@@ -496,6 +510,121 @@ async function createModule() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Softwares (Consart Infinity, Logistics, ProdNex...) — cadastro simples
+// ─────────────────────────────────────────────────────────────────────
+
+let editingSoftwareId = null;
+
+/** Carrega o cadastro e atualiza filtro, editor e tabela do modal */
+async function loadSoftware() {
+  try {
+    const json = await apiFetch(`${API}/software`);
+    state.software = json.data || [];
+  } catch (error) {
+    console.warn('[moduleDocsConsart] softwares:', error);
+    return;
+  }
+
+  const filter = $('#filterSoftware');
+  const current = filter.value;
+  filter.innerHTML = '<option value="">Todos</option>' +
+    state.software.map((sw) => `<option value="${sw.id}">${esc(sw.name)}</option>`).join('') +
+    '<option value="NONE">Sem software</option>';
+  filter.value = [...filter.options].some((o) => o.value === current) ? current : '';
+
+  // Editor: mantém o que já estava marcado
+  const checked = new Set([...document.querySelectorAll('#df-software input:checked')].map((i) => Number(i.value)));
+  $('#df-software').innerHTML = state.software.length
+    ? state.software.map((sw) => `
+        <label class="doc-check" title="${esc(sw.description)}">
+          <input type="checkbox" value="${sw.id}" ${checked.has(sw.id) ? 'checked' : ''} />
+          <span>${esc(sw.name)}${sw.description ? ` <small>· ${esc(sw.description.replace(/^voltado para\s*/i, ''))}</small>` : ''}</span>
+        </label>`).join('')
+    : '<span class="doc-hint">Nenhum software cadastrado. Use o botão Softwares.</span>';
+
+  $('#swBody').innerHTML = state.software.map((sw) => `
+    <tr data-id="${sw.id}">
+      <td class="docs-col-left"><strong>${esc(sw.name)}</strong></td>
+      <td class="docs-col-left">${esc(sw.description) || '—'}</td>
+      <td>${sw.modules_count || '—'}</td>
+      <td>${actionIconsHtml([
+        { action: 'edit', title: 'Editar', attrs: { 'data-act': 'sw-edit', 'data-id': sw.id } },
+        { action: 'delete', title: 'Excluir', attrs: { 'data-act': 'sw-delete', 'data-id': sw.id } },
+      ])}</td>
+    </tr>`).join('') || '<tr><td colspan="4">Nenhum software cadastrado.</td></tr>';
+}
+
+function resetSoftwareForm() {
+  editingSoftwareId = null;
+  $('#software-form').reset();
+  $('#sw-save').textContent = 'Adicionar';
+  $('#sw-clear').hidden = true;
+}
+
+async function openSoftware() {
+  resetSoftwareForm();
+  await loadSoftware();
+  Modal.open('software-modal', { focusSelector: '#sw-name' });
+}
+
+async function saveSoftware() {
+  const name = $('#sw-name').value.trim();
+  if (!name) {
+    alert('Informe o nome do software.');
+    $('#sw-name').focus();
+    return;
+  }
+  const payload = {
+    name,
+    description: $('#sw-description').value.trim(),
+    sort_order: $('#sw-order').value.trim(),
+  };
+  const btn = $('#sw-save');
+  btn.disabled = true;
+  try {
+    const url = editingSoftwareId ? `${API}/software/${editingSoftwareId}` : `${API}/software`;
+    await apiFetch(url, { method: editingSoftwareId ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+    resetSoftwareForm();
+    await loadSoftware();
+    renderList(currentSummary());
+  } catch (error) {
+    alert(`Erro ao salvar o software: ${error.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function onSoftwareClick(event) {
+  const button = event.target.closest('[data-act]');
+  if (!button) return;
+  const sw = state.software.find((x) => x.id === Number(button.dataset.id));
+  if (!sw) return;
+
+  if (button.dataset.act === 'sw-edit') {
+    editingSoftwareId = sw.id;
+    $('#sw-name').value = sw.name;
+    $('#sw-description').value = sw.description || '';
+    $('#sw-order').value = sw.sort_order ?? '';
+    $('#sw-save').textContent = 'Salvar';
+    $('#sw-clear').hidden = false;
+    $('#sw-name').focus();
+    return;
+  }
+
+  const used = sw.modules_count ? `\n\nEle está marcado em ${plural(sw.modules_count, 'módulo', 'módulos')}; a marcação sai junto.` : '';
+  if (!confirm(`Excluir o software "${sw.name}"?${used}`)) return;
+  try {
+    await apiFetch(`${API}/software/${sw.id}`, { method: 'DELETE' });
+    if (editingSoftwareId === sw.id) resetSoftwareForm();
+    if ($('#filterSoftware').value === String(sw.id)) $('#filterSoftware').value = '';
+    await loadSoftware();
+    await loadList();
+  } catch (error) {
+    alert(`Não foi possível excluir: ${error.message}`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // PDF
 // ─────────────────────────────────────────────────────────────────────
 
@@ -559,6 +688,10 @@ function bindEvents() {
     await loadList();
   });
   $('#btnPdf').addEventListener('click', openPdf);
+  $('#btnSoftware').addEventListener('click', openSoftware);
+  $('#software-form').addEventListener('submit', (e) => { e.preventDefault(); saveSoftware(); });
+  $('#sw-clear').addEventListener('click', () => resetSoftwareForm());
+  $('#swBody').addEventListener('click', onSoftwareClick);
   $('#btnNew').addEventListener('click', openNew);
   $('#nf-type').addEventListener('change', () => fillNewParent($('#nf-parent').value));
   $('#df-type').addEventListener('change', () => {
@@ -574,7 +707,7 @@ function bindEvents() {
   $('#new-form').addEventListener('submit', (e) => { e.preventDefault(); createModule(); });
   $('#btnBack').addEventListener('click', () => history.back());
   $('#q').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadList(); });
-  ['#filterModule', '#filterType', '#filterSystem', '#filterStatus', '#filterActive']
+  ['#filterModule', '#filterType', '#filterSystem', '#filterSoftware', '#filterStatus', '#filterActive']
     .forEach((sel) => $(sel).addEventListener('change', loadList));
   $('#docsBody').addEventListener('click', onListClick);
 
@@ -610,4 +743,5 @@ function currentSummary() {
 Modal.setup();
 bindEvents();
 loadModules();
-loadList();
+// Softwares antes da lista: as etiquetas usam os nomes do cadastro
+loadSoftware().then(loadList);

@@ -26,6 +26,7 @@
 .docs-col-name    { width: 320px; }
 .docs-col-type    { width: 110px; }
 .docs-col-systems { width: 215px; }
+.docs-col-software { width: 190px; }
 .docs-col-count   { width: 80px; }
 .docs-col-status  { width: 120px; }
 .docs-col-actions { width: 90px; }
@@ -93,7 +94,8 @@
 
 /* ── Modais ────────────────────────────────────────────────────────── */
 /* Abaixo da barra fixa do menu (que fica por cima dos modais) */
-.doc-modal { --modal-max-height: calc(100vh - 80px); }
+/* Cabe entre o menu (56px) e a barra de status embaixo; o corpo rola */
+.doc-modal .modal__panel { max-height: calc(100vh - 56px - 56px); }
 .doc-modal .modal__dialog { padding-top: 56px; }
 .doc-modal textarea { resize: vertical; }
 .doc-modal .doc-area { margin-top: 10px; }
@@ -159,3 +161,24 @@
 }
 
 .docs-hidden:hover { background: #e2e8f0; }
+
+/* Software (Consart Infinity, Logistics, ProdNex...) */
+.doc-software {
+  display: inline-block;
+  margin: 1px 2px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.doc-check small { color: #64748b; white-space: nowrap; }
+#df-software { flex-wrap: wrap; row-gap: 0; }
+#df-software .doc-check { white-space: nowrap; }
+
+.software-form-actions { justify-content: flex-end; margin: 6px 0 10px; }
+.software-table { width: 100%; }
+.software-table td, .software-table th { padding: 6px 8px; }

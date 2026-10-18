@@ -70,11 +70,14 @@ export async function pdf(req, res) {
     const { rows, summary } = await repo.list(req.query);
     const modules = await repo.listModules();
     const moduleName = modules.find((m) => String(m.id) === String(req.query.module))?.name || '';
+    const softwareName = String(req.query.software ?? '').toUpperCase() === 'NONE'
+      ? 'Sem software'
+      : (await repo.listSoftware()).find((sw) => String(sw.id) === String(req.query.software))?.name || '';
 
     const buffer = await generateModuleDocsConsartPdf({
       rows,
       summary,
-      filters: { ...req.query, moduleName },
+      filters: { ...req.query, moduleName, softwareName },
       showEmpty: String(req.query.showEmpty ?? '1') !== '0',
       showPaths: String(req.query.showPaths ?? '1') !== '0',
       showNotes: String(req.query.showNotes ?? '1') !== '0',
@@ -88,5 +91,35 @@ export async function pdf(req, res) {
     return res.end(buffer);
   } catch (error) {
     return fail(res, 'pdf', error);
+  }
+}
+
+// ── Softwares (cadastro) ─────────────────────────────────────────
+
+export async function softwareList(req, res) {
+  try {
+    return res.json({ ok: true, data: await repo.listSoftware() });
+  } catch (error) {
+    return fail(res, 'softwareList', error);
+  }
+}
+
+export async function softwareSave(req, res) {
+  try {
+    const item = await repo.saveSoftware(req.params.id || null, req.body);
+    if (!item) return res.status(404).json({ ok: false, error: 'Software não encontrado.' });
+    return res.status(req.params.id ? 200 : 201).json({ ok: true, data: item });
+  } catch (error) {
+    return fail(res, 'softwareSave', error);
+  }
+}
+
+export async function softwareRemove(req, res) {
+  try {
+    const removed = await repo.removeSoftware(req.params.id);
+    if (!removed) return res.status(404).json({ ok: false, error: 'Software não encontrado.' });
+    return res.json({ ok: true, data: removed });
+  } catch (error) {
+    return fail(res, 'softwareRemove', error);
   }
 }

@@ -2,7 +2,7 @@
 // ║ moduleDocsConsart.repository.js — Documentação dos módulos         ║
 // ║ CONSART ERP                                                        ║
 // ║ • Lê a árvore de public."moduleSystem" (tela Criação de Módulos)   ║
-// ║ • Guarda descrição / funções / observações / status em             ║
+// ║ • Guarda descrição / funções / observações / status / softwares em ║
 // ║   public."moduleDocsConsart" (criada no primeiro uso, 1 por módulo)║
 // ║ • Nome, caminho e posição no menu: tela grava via /module-system   ║
 // ╚════════════════════════════════════════════════════════════════════╝
@@ -11,6 +11,14 @@ import pool from '../../config/db.js';
 import { TABLE as MODULES_TB } from '../moduleSystem/moduleSystem.constants.js';
 
 export const TB = 'public."moduleDocsConsart"';
+export const SOFTWARE_TB = 'public."moduleSoftwareConsart"';
+
+/** Softwares da Consart que já vêm cadastrados (dá para mudar pela tela) */
+const SOFTWARE_SEED = [
+  ['Consart Infinity', 'Voltado para Distribuidoras', 10],
+  ['Consart Logistics', 'Voltado para Transportadoras', 20],
+  ['Consart ProdNex', 'Voltado para Indústrias', 30],
+];
 
 /** Status da documentação (o que não tem linha na tabela conta como PENDENTE) */
 export const DOC_STATUS = Object.freeze({
@@ -57,7 +65,26 @@ export function ensureModuleDocsConsartTable() {
         updated_at   TIMESTAMP NOT NULL DEFAULT NOW()
       );
       ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS systems TEXT[] NOT NULL DEFAULT '{}';
-    `).catch((error) => {
+      ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS software_ids INTEGER[] NOT NULL DEFAULT '{}';
+      CREATE TABLE IF NOT EXISTS ${SOFTWARE_TB} (
+        id           SERIAL PRIMARY KEY,
+        name         VARCHAR(80) NOT NULL UNIQUE,
+        description  VARCHAR(200),
+        sort_order   INTEGER NOT NULL DEFAULT 0,
+        created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at   TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `).then(async () => {
+      // Só na primeira vez (tabela vazia)
+      const { rows: [{ total }] } = await pool.query(`SELECT COUNT(*)::int AS total FROM ${SOFTWARE_TB}`);
+      if (total) return;
+      for (const [name, description, order] of SOFTWARE_SEED) {
+        await pool.query(
+          `INSERT INTO ${SOFTWARE_TB} (name, description, sort_order) VALUES ($1, $2, $3) ON CONFLICT (name) DO NOTHING`,
+          [name, description, order]
+        );
+      }
+    }).catch((error) => {
       ready = null;
       throw error;
     });
@@ -112,12 +139,14 @@ async function loadTree() {
   const { rows } = await pool.query(`
     SELECT m.id, m.name, m.path, m.menu_type, m.parent_id, m.sort_order, m.is_active,
            m.is_external, m.is_public,
-           d.description, d.functions, d.notes, d.status AS doc_status, d.systems,
+           d.description, d.functions, d.notes, d.status AS doc_status, d.systems, d.software_ids,
            d.updated_by AS doc_updated_by, d.updated_at AS doc_updated_at
       FROM ${MODULES_TB} m
       LEFT JOIN ${TB} d ON d.module_id = m.id
      ORDER BY m.sort_order ASC NULLS LAST, m.id ASC
   `);
+
+  const software = await listSoftware();
 
   const byId = new Map(rows.map((r) => [String(r.id), r]));
   const byParent = new Map();
@@ -168,6 +197,9 @@ async function loadTree() {
         doc_updated_at: row.doc_updated_at || null,
         systems: normalizeSystems(row.systems || []),
         systems_label: normalizeSystems(row.systems || []).map((k) => SYSTEMS[k]).join(', '),
+        // Na ordem do cadastro de softwares; ids de software excluído somem
+        software_ids: software.filter((sw) => (row.software_ids || []).includes(sw.id)).map((sw) => sw.id),
+        software_label: software.filter((sw) => (row.software_ids || []).includes(sw.id)).map((sw) => sw.name).join(', '),
       });
 
       walk(key, level + 1, moduleRow, path);
@@ -193,8 +225,9 @@ async function loadTree() {
  *  status   PENDENTE | REVISAR | DOCUMENTADO
  *  active   true | false ('' = todos)
  *  system   CORE | EDGE | INFINITY | NONE (sem sistema marcado)
+ *  software id do software | NONE (sem software marcado)
  */
-export async function list({ q, module, type, status, active, system } = {}) {
+export async function list({ q, module, type, status, active, system, software } = {}) {
   const tree = await loadTree();
 
   const moduleId = positiveId(module);
@@ -202,6 +235,8 @@ export async function list({ q, module, type, status, active, system } = {}) {
   const statusFilter = DOC_STATUS[status] ? status : '';
   const sys = String(system ?? '').trim().toUpperCase();
   const systemFilter = SYSTEMS[sys] || sys === 'NONE' ? sys : '';
+  const swKey = String(software ?? '').trim().toUpperCase();
+  const softwareFilter = swKey === 'NONE' ? 'NONE' : positiveId(swKey);
   const act = String(active ?? '').trim().toLowerCase();
   const search = text(q)?.toLowerCase();
 
@@ -211,10 +246,12 @@ export async function list({ q, module, type, status, active, system } = {}) {
     if (statusFilter && r.doc_status !== statusFilter) return false;
     if (systemFilter === 'NONE' && r.systems.length) return false;
     if (systemFilter && systemFilter !== 'NONE' && !r.systems.includes(systemFilter)) return false;
+    if (softwareFilter === 'NONE' && r.software_ids.length) return false;
+    if (softwareFilter && softwareFilter !== 'NONE' && !r.software_ids.includes(softwareFilter)) return false;
     if (act === 'true' && !r.is_active) return false;
     if (act === 'false' && r.is_active) return false;
     if (search) {
-      const haystack = [r.name, r.path, r.breadcrumb, r.description, r.functions, r.notes]
+      const haystack = [r.name, r.path, r.breadcrumb, r.description, r.functions, r.notes, r.software_label]
         .join('\n').toLowerCase();
       if (!haystack.includes(search)) return false;
     }
@@ -270,20 +307,22 @@ export async function save(id, body = {}, user = null) {
   const description = text(body.description, 5000);
   const functions = text(body.functions, 10000);
   const notes = text(body.notes, 5000);
+  const softwareIds = await validSoftwareIds(body.software_ids);
 
   await pool.query(
-    `INSERT INTO ${TB} (module_id, description, functions, notes, status, updated_by, systems)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO ${TB} (module_id, description, functions, notes, status, updated_by, systems, software_ids)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (module_id) DO UPDATE SET
        description = EXCLUDED.description,
        functions   = EXCLUDED.functions,
        notes       = EXCLUDED.notes,
        status      = EXCLUDED.status,
        systems     = EXCLUDED.systems,
+       software_ids = EXCLUDED.software_ids,
        updated_by  = EXCLUDED.updated_by,
        updated_at  = NOW()`,
     [moduleId, description, functions, notes, status || (description ? 'DOCUMENTADO' : 'PENDENTE'), text(user, 150),
-      normalizeSystems(body.systems)]
+      normalizeSystems(body.systems), softwareIds]
   );
 
   return getById(moduleId);
@@ -319,4 +358,92 @@ export async function removeModule(id) {
     [moduleId]
   );
   return row || null;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Softwares (Consart Infinity, Logistics, ProdNex...) — cadastro simples
+// ─────────────────────────────────────────────────────────────────────
+
+export async function listSoftware() {
+  await ensureModuleDocsConsartTable();
+  const { rows } = await pool.query(
+    `SELECT s.id, s.name, s.description, s.sort_order,
+            (SELECT COUNT(*)::int FROM ${TB} d WHERE s.id = ANY (d.software_ids)) AS modules_count
+       FROM ${SOFTWARE_TB} s
+      ORDER BY s.sort_order ASC, s.name ASC`
+  );
+  return rows.map((r) => ({ ...r, id: Number(r.id), description: r.description || '' }));
+}
+
+/** [3, '1', 'x', 99] → só ids que existem, sem repetir */
+async function validSoftwareIds(value) {
+  const list = Array.isArray(value) ? value : String(value ?? '').split(',');
+  const wanted = new Set(list.map(positiveId).filter(Boolean));
+  if (!wanted.size) return [];
+  const existing = await listSoftware();
+  return existing.filter((sw) => wanted.has(sw.id)).map((sw) => sw.id);
+}
+
+export async function saveSoftware(id, body = {}) {
+  await ensureModuleDocsConsartTable();
+  const name = text(body.name, 80);
+  if (!name) throw validationError('Informe o nome do software.');
+  const description = text(body.description, 200);
+  const order = Number.isSafeInteger(Number(body.sort_order)) && String(body.sort_order ?? '').trim() !== ''
+    ? Number(body.sort_order)
+    : null;
+
+  const { rows: [dup] } = await pool.query(
+    `SELECT id FROM ${SOFTWARE_TB} WHERE lower(name) = lower($1) AND id <> COALESCE($2, 0)`,
+    [name, id ? positiveId(id) : null]
+  );
+  if (dup) throw validationError(`Já existe um software chamado "${name}".`, 409);
+
+  if (id) {
+    const softwareId = positiveId(id);
+    if (!softwareId) return null;
+    const { rows: [row] } = await pool.query(
+      `UPDATE ${SOFTWARE_TB}
+          SET name = $2, description = $3, sort_order = COALESCE($4, sort_order), updated_at = NOW()
+        WHERE id = $1
+        RETURNING id`,
+      [softwareId, name, description, order]
+    );
+    return row ? (await listSoftware()).find((sw) => sw.id === softwareId) : null;
+  }
+
+  const { rows: [row] } = await pool.query(
+    `INSERT INTO ${SOFTWARE_TB} (name, description, sort_order)
+     VALUES ($1, $2, COALESCE($3, (SELECT COALESCE(MAX(sort_order), 0) + 10 FROM ${SOFTWARE_TB})))
+     RETURNING id`,
+    [name, description, order]
+  );
+  return (await listSoftware()).find((sw) => sw.id === Number(row.id));
+}
+
+/** Exclui o software e tira a marcação dele dos módulos */
+export async function removeSoftware(id) {
+  await ensureModuleDocsConsartTable();
+  const softwareId = positiveId(id);
+  if (!softwareId) return null;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: [row] } = await client.query(
+      `DELETE FROM ${SOFTWARE_TB} WHERE id = $1 RETURNING id, name`, [softwareId]
+    );
+    if (row) {
+      await client.query(
+        `UPDATE ${TB} SET software_ids = array_remove(software_ids, $1) WHERE $1 = ANY (software_ids)`,
+        [softwareId]
+      );
+    }
+    await client.query('COMMIT');
+    return row || null;
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
 }
