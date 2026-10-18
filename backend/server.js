@@ -593,6 +593,12 @@ import tasksRoutes from './routes/tasksRoutes.js';
 app.use('/api/tasks', tasksRoutes);
 
 /* ╔══════════════════════════════════════════════════════════╗
+   ║          ROTA: proposalsConsart (Propostas Consart)      ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import proposalsConsartRoutes from './routes/proposalsConsartRoutes.js';
+app.use('/api/proposals-consart', proposalsConsartRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
    ║             ROTA: cashDocumentTypesRoutes                ║
    ╚══════════════════════════════════════════════════════════╝ */
 import cashDocumentTypesRoutes from './routes/cashDocumentTypesRoutes.js';
