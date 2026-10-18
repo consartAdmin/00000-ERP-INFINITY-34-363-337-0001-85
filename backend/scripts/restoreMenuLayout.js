@@ -84,8 +84,8 @@ async function main() {
       if (withActive) wanted.is_active = node.active;
 
       const diff = Object.keys(wanted).filter((k) => {
-        const a = current[k] == null ? null : String(current[k]);
-        const b = wanted[k] == null ? null : String(wanted[k]);
+        const a = current[k] == null ? null : String(current[k]).trim();
+        const b = wanted[k] == null ? null : String(wanted[k]).trim();
         return a !== b;
       });
       if (!diff.length) continue;
