@@ -221,6 +221,16 @@ export async function list({ q, module, type, status, active, system } = {}) {
     return true;
   });
 
+  // Itens inativos dentro de cada um, escondidos pelo Status = Ativos
+  // (sem isso o item parece vazio, mas não deixa excluir)
+  const hidden = new Map();
+  if (act === 'true') {
+    tree.forEach((r) => {
+      if (r.parent_id != null && !r.is_active) hidden.set(r.parent_id, (hidden.get(r.parent_id) || 0) + 1);
+    });
+  }
+  rows.forEach((r) => { r.hidden_children = hidden.get(r.id) || 0; });
+
   const summary = { total: rows.length, PENDENTE: 0, REVISAR: 0, DOCUMENTADO: 0 };
   rows.forEach((r) => { summary[r.doc_status] += 1; });
 
@@ -289,10 +299,17 @@ export async function removeModule(id) {
   const moduleId = positiveId(id);
   if (!moduleId) return null;
 
-  const { rows: children } = await pool.query(`SELECT id FROM ${MODULES_TB} WHERE parent_id = $1`, [moduleId]);
+  const { rows: children } = await pool.query(
+    `SELECT id, name, is_active FROM ${MODULES_TB} WHERE parent_id = $1 ORDER BY sort_order ASC NULLS LAST, id ASC`,
+    [moduleId]
+  );
   if (children.length) {
+    // Diz quais são: inativos não aparecem com o filtro Status = Ativos
+    const names = children.map((c) => `"${c.name}"${c.is_active === false ? ' (inativo)' : ''}`).join(', ');
+    const inactive = children.filter((c) => c.is_active === false).length;
     throw validationError(
-      `Este item tem ${children.length} item(ns) dentro dele no menu; exclua ou mova esses itens antes.`,
+      `Este item tem ${children.length} item(ns) dentro dele no menu: ${names}. Exclua ou mova esses itens antes.` +
+        (inactive ? ' Para ver os inativos, use Status = Todos.' : ''),
       409
     );
   }

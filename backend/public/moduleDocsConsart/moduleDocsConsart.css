@@ -144,3 +144,18 @@
 }
 
 .doc-hint { margin: 4px 0 0; font-size: 11px; color: #64748b; }
+
+/* "+2 inativos": itens inativos dentro, escondidos pelo Status = Ativos */
+.docs-hidden {
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px dashed #94a3b8;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  line-height: 16px;
+  cursor: pointer;
+}
+
+.docs-hidden:hover { background: #e2e8f0; }

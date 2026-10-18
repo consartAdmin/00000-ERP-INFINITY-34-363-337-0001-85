@@ -97,8 +97,11 @@ async function loadModules() {
     const modules = json.data || [];
     const select = $('#filterModule');
     const current = select.value;
+    // Nome repetido (ex.: dois "Clientes"): mostra o código para diferenciar
+    const count = {};
+    modules.forEach((m) => { count[m.name] = (count[m.name] || 0) + 1; });
     select.innerHTML = '<option value="">Todos</option>' +
-      modules.map((m) => `<option value="${m.id}">${esc(m.name)}${m.is_active ? '' : ' (inativo)'}</option>`).join('');
+      modules.map((m) => `<option value="${m.id}">${esc(m.name)}${count[m.name] > 1 ? ` (#${m.id})` : ''}${m.is_active ? '' : ' (inativo)'}</option>`).join('');
     select.value = modules.some((m) => String(m.id) === current) ? current : '';
   } catch (error) {
     console.warn('[moduleDocsConsart] módulos:', error);
@@ -141,7 +144,10 @@ function nameCell(r) {
   const indent = state.sort ? 0 : Math.min(r.level, 4) * 18;
   const branch = !state.sort && r.level > 0 ? '<span class="docs-name__branch">└</span>' : '';
   const title = state.sort ? r.breadcrumb : r.name;
-  return `<span class="docs-name" style="padding-left:${indent}px" title="${esc(r.breadcrumb)}">${branch}${esc(title)}</span>`;
+  const hidden = r.hidden_children
+    ? ` <button type="button" class="docs-hidden" data-act="show-hidden" title="Itens inativos dentro deste, escondidos pelo Status = Ativos. Clique para mostrar.">+${r.hidden_children} inativo${r.hidden_children > 1 ? 's' : ''}</button>`
+    : '';
+  return `<span class="docs-name" style="padding-left:${indent}px" title="${esc(r.breadcrumb)}">${branch}${esc(title)}</span>${hidden}`;
 }
 
 function renderList(summary) {
@@ -175,6 +181,11 @@ function onListClick(event) {
   const tr = event.target.closest('tr[data-id]');
   if (!tr) return;
   const id = Number(tr.dataset.id);
+  if (event.target.closest('[data-act="show-hidden"]')) {
+    const row = state.rows.find((r) => r.id === id);
+    if (row) showModuleItems(row);
+    return;
+  }
   if (event.target.closest('[data-act="delete"]')) {
     deleteModule(id);
     return;
@@ -191,8 +202,23 @@ async function deleteModule(id) {
     await loadModules();
     await loadList();
   } catch (error) {
+    if (row && /dentro dele/.test(error.message)) {
+      // Itens de dentro podem estar escondidos (inativos ou fora da busca): oferece mostrar
+      if (confirm(`Não foi possível excluir: ${error.message}\n\nMostrar agora o que está dentro de "${row.name}"?`)) {
+        await showModuleItems(row);
+      }
+      return;
+    }
     alert(`Não foi possível excluir: ${error.message}`);
   }
+}
+
+/** Limpa busca/filtros que escondem itens e mostra o módulo com tudo que está dentro */
+async function showModuleItems(row) {
+  $('#q').value = '';
+  ['#filterType', '#filterSystem', '#filterStatus', '#filterActive'].forEach((sel) => { $(sel).value = ''; });
+  $('#filterModule').value = String(row.module_id);
+  await loadList();
 }
 
 // ─────────────────────────────────────────────────────────────────────
