@@ -48,6 +48,17 @@
             </select>
           </div>
 
+          <div class="fields fields-h-5 fields-w-8 fields-font-3">
+            <span class="label">Sistema</span>
+            <select id="filterSystem">
+              <option value="">Todos</option>
+              <option value="CORE">Core</option>
+              <option value="EDGE">Edge</option>
+              <option value="INFINITY">Infinity</option>
+              <option value="NONE">Sem sistema</option>
+            </select>
+          </div>
+
           <div class="fields fields-h-5 fields-w-10 fields-font-3">
             <span class="label">Documentação</span>
             <select id="filterStatus">
@@ -92,6 +103,12 @@
               <th class="docs-col-type table-sortable" data-sort-column="type_label" aria-sort="none">
                 <button type="button" class="table-sort-button" data-sort-button>
                   Tipo
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="docs-col-systems table-sortable" data-sort-column="systems_label" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Sistemas
                   <span data-sort-icon aria-hidden="true">↕</span>
                 </button>
               </th>
@@ -167,7 +184,15 @@
                   <option value="DOCUMENTADO">Documentado</option>
                 </select>
               </div>
-              <div class="doc-updated modal-field--span-3" id="df-updated"></div>
+              <div class="fields fields-w-full modal-field--span-2">
+                <label>Funciona nos sistemas</label>
+                <div class="doc-systems" id="df-systems">
+                  <label class="doc-check"><input type="checkbox" value="CORE" /> Core</label>
+                  <label class="doc-check"><input type="checkbox" value="EDGE" /> Edge</label>
+                  <label class="doc-check"><input type="checkbox" value="INFINITY" /> Infinity</label>
+                </div>
+              </div>
+              <div class="doc-updated" id="df-updated"></div>
             </div>
 
             <div class="fields fields-w-full doc-area">
