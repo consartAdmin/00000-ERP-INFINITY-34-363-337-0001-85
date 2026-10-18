@@ -218,7 +218,7 @@ export async function getById(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Escrita (só a documentação; o módulo em si é da Criação de Módulos)
+// Escrita (documentação; exclusão do módulo segue a Criação de Módulos)
 // ─────────────────────────────────────────────────────────────────────
 
 export async function save(id, body = {}, user = null) {
@@ -250,4 +250,29 @@ export async function save(id, body = {}, user = null) {
   );
 
   return getById(moduleId);
+}
+
+/**
+ * Exclui o módulo do sistema (sai do menu; a documentação vai junto por
+ * ON DELETE CASCADE). Mesma regra da Criação de Módulos: item com filhos
+ * no menu não pode ser excluído.
+ */
+export async function removeModule(id) {
+  await ensureModuleDocsConsartTable();
+  const moduleId = positiveId(id);
+  if (!moduleId) return null;
+
+  const { rows: children } = await pool.query(`SELECT id FROM ${MODULES_TB} WHERE parent_id = $1`, [moduleId]);
+  if (children.length) {
+    throw validationError(
+      `Este item tem ${children.length} item(ns) dentro dele no menu; exclua ou mova esses itens antes.`,
+      409
+    );
+  }
+
+  const { rows: [row] } = await pool.query(
+    `DELETE FROM ${MODULES_TB} WHERE id = $1 RETURNING id, name, path`,
+    [moduleId]
+  );
+  return row || null;
 }

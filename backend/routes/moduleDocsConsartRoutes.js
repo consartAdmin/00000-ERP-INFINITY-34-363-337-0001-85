@@ -14,6 +14,7 @@ import {
   pdf,
   getById,
   save,
+  remove,
 } from '../controllers/moduleDocsConsartController.js';
 
 const router = Router();
@@ -26,5 +27,6 @@ router.get('/modules', modules);
 router.get('/pdf', pdf);
 router.get('/:id', getById);
 router.put('/:id', save);
+router.delete('/:id', remove);
 
 export default router;

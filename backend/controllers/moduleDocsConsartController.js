@@ -53,6 +53,17 @@ export async function save(req, res) {
   }
 }
 
+/** DELETE /:id — exclui o módulo do sistema (não só a documentação) */
+export async function remove(req, res) {
+  try {
+    const removed = await repo.removeModule(req.params.id);
+    if (!removed) return res.status(404).json({ ok: false, error: 'Módulo não encontrado.' });
+    return res.json({ ok: true, data: removed });
+  } catch (error) {
+    return fail(res, 'remove', error);
+  }
+}
+
 /** GET /pdf?mesmos filtros da lista&showEmpty=0|1&showPaths=0|1&showNotes=0|1 */
 export async function pdf(req, res) {
   try {
