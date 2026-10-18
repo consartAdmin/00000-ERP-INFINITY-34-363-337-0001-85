@@ -80,6 +80,7 @@
 
           <div class="btn-inline btn-gap-4">
             <button id="btnSearch" class="btn btn-search btn-sm" type="button">Buscar</button>
+            <button id="btnNew" class="btn btn-new btn-sm" type="button">➕ Novo Módulo</button>
             <button id="btnPdf" class="btn btn-pdf btn-sm" type="button">Gerar PDF</button>
             <button id="btnReload" class="btn btn-load btn-sm" type="button">Recarregar</button>
             <button id="btnBack" class="btn btn-back btn-sm" type="button">Voltar</button>
@@ -221,6 +222,70 @@
             <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
             <button id="df-save-next" class="btn btn-save btn-sm" type="button">Salvar e próximo</button>
             <button id="df-save" class="btn btn-save btn-sm" type="button">Salvar</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal Novo Módulo (grava em moduleSystem, como a Criação de Módulos) -->
+  <div id="new-modal" class="modal doc-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="newModalTitle">
+
+        <!-- div (não <header>): a barra de título da página se encaixa após o 1º <header> -->
+        <div class="modal__header modal-header-color-3">
+          <h2 id="newModalTitle" class="modal__title">Novo Módulo</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="new-form" class="modal-section" novalidate>
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="nf-name">Nome (texto no menu) *</label>
+                <input type="text" id="nf-name" maxlength="100" placeholder="Ex.: 📄 Propostas Consart">
+              </div>
+              <div class="fields fields-w-full fields-h-6">
+                <label for="nf-type">Tipo</label>
+                <select id="nf-type">
+                  <option value="link">Tela</option>
+                  <option value="submenu">Submenu</option>
+                  <option value="dropdown">Módulo (topo)</option>
+                  <option value="">Fora do menu</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6">
+                <label for="nf-order">Ordem</label>
+                <input type="number" id="nf-order" step="1" placeholder="Fim da lista">
+              </div>
+
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="nf-parent">Dentro de</label>
+                <select id="nf-parent"></select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="nf-path">Endereço da tela *</label>
+                <input type="text" id="nf-path" maxlength="200" placeholder="../pasta/pagina.html">
+              </div>
+            </div>
+
+            <div class="doc-flags">
+              <label class="doc-check"><input type="checkbox" id="nf-active" checked /> Ativo</label>
+              <label class="doc-check"><input type="checkbox" id="nf-external" /> Abrir em nova aba</label>
+              <label class="doc-check" title="Aparece para todos os usuários, sem depender de Módulos Por Usuários"><input type="checkbox" id="nf-public" /> Visível para todos</label>
+              <label class="doc-check"><input type="checkbox" id="nf-document" checked /> Documentar em seguida</label>
+            </div>
+            <p class="doc-hint">Sem "Visível para todos", o módulo só aparece para quem receber acesso em Módulos Por Usuários. Campos avançados (HTML id, classe, feature) ficam na Criação de Módulos.</p>
+          </form>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <div class="btn-inline btn-gap-3">
+            <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+            <button id="nf-save" class="btn btn-save btn-sm" type="button">Criar Módulo</button>
           </div>
         </footer>
       </section>
