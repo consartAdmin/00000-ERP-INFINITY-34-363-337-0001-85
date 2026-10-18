@@ -68,8 +68,6 @@ export async function getBySku(product_code) {
 
   if (!raw) return [];
 
-  const numeric = String(Number(raw) || '').trim();
-
   const padded6 =
     /^\d+$/.test(raw)
       ? raw.padStart(6, '0')
@@ -99,19 +97,26 @@ export async function getBySku(product_code) {
     INNER JOIN ${TB_GRADES} g
       ON g.grade_id = pg.grade_id
 
-    LEFT JOIN ${TB_PRODUCTS} p
+    INNER JOIN ${TB_PRODUCTS} p
       ON (
            TRIM(p.product_code) = TRIM(pg.product_id)
         OR TRIM(p.product_id::text) = TRIM(pg.product_id)
       )
 
+    /*
+     * O filtro é pelo SKU do PRODUTO (p.product_code), não por
+     * pg.product_id. Antes, o SKU "00001091" virava "1091" e casava com
+     * pg.product_id = '1091' — que é o product_id (interno) de OUTRO
+     * produto. Além disso, sem parênteses o is_active só valia para o
+     * último OR.
+     */
     WHERE
-         TRIM(pg.product_id) = TRIM($1)
-      OR TRIM(pg.product_id) = TRIM($2)
-      OR TRIM(pg.product_id) = TRIM($3)
-      OR TRIM(pg.product_id) = TRIM($4)
-
-    AND COALESCE(pg.is_active, TRUE) = TRUE
+      (
+           TRIM(p.product_code) = TRIM($1)
+        OR TRIM(p.product_code) = TRIM($2)
+        OR TRIM(p.product_code) = TRIM($3)
+      )
+      AND COALESCE(pg.is_active, TRUE) = TRUE
 
     ORDER BY
       g.grade ASC NULLS LAST,
@@ -122,7 +127,6 @@ export async function getBySku(product_code) {
     sql,
     [
       raw,
-      numeric,
       padded6,
       padded10,
     ]

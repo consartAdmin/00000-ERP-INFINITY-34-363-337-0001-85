@@ -68,6 +68,7 @@ function describeFilters(filters = {}) {
   if (TYPE_FILTER_LABELS[filters.type]) parts.push(`Tipo: ${TYPE_FILTER_LABELS[filters.type]}`);
   const system = clean(filters.system).toUpperCase();
   if (SYSTEM_FILTER_LABELS[system]) parts.push(`Sistema: ${SYSTEM_FILTER_LABELS[system]}`);
+  if (clean(filters.softwareName)) parts.push(`Software: ${clean(filters.softwareName)}`);
   if (STATUS_FILTER_LABELS[filters.status]) parts.push(`Documentação: ${STATUS_FILTER_LABELS[filters.status]}`);
   const act = clean(filters.active).toLowerCase();
   if (act === 'true') parts.push('Somente ativos');
@@ -158,7 +159,7 @@ export async function generateModuleDocsConsartPdf({
   }
 
   function measureItem(r, x, w) {
-    let h = 18;
+    let h = r.software_label ? 30 : 18;
     doc.font('Helvetica').fontSize(9);
     if (r.description) h += doc.heightOfString(r.description, { width: w, lineGap: 1.5 }) + 4;
     r.functions_list.forEach((f) => { h += doc.heightOfString(f, { width: w - 12, lineGap: 1 }) + 1; });
@@ -188,6 +189,12 @@ export async function generateModuleDocsConsartPdf({
 
     doc.x = x;
     doc.y = y + (isModule ? 21 : 15);
+
+    if (r.software_label) {
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(GREEN)
+        .text(`Software: ${r.software_label}`, x, doc.y, { width: w });
+      doc.moveDown(0.2);
+    }
 
     if (showPaths && r.type === 'link' && clean(r.path) && clean(r.path) !== '#') {
       doc.font('Helvetica').fontSize(7.5).fillColor('#64748b').text(clean(r.path), x, doc.y, { width: w });
@@ -238,6 +245,7 @@ export async function generateModuleDocsConsartPdf({
     ...r,
     name: pdfText(r.name),
     module_name: pdfText(r.module_name),
+    software_label: pdfText(r.software_label),
     description: pdfText(r.description),
     notes: pdfText(r.notes),
     functions_list: r.functions_list.map(pdfText).filter(Boolean),

@@ -15,6 +15,11 @@ import {
   getById,
   save,
   remove,
+  create,
+  importMenu,
+  softwareList,
+  softwareSave,
+  softwareRemove,
 } from '../controllers/moduleDocsConsartController.js';
 
 const router = Router();
@@ -25,6 +30,12 @@ router.use(requireAuth);
 router.get('/', list);
 router.get('/modules', modules);
 router.get('/pdf', pdf);
+router.get('/software', softwareList);
+router.post('/software', softwareSave);
+router.put('/software/:id', softwareSave);
+router.delete('/software/:id', softwareRemove);
+router.post('/', create);
+router.post('/import', importMenu);
 router.get('/:id', getById);
 router.put('/:id', save);
 router.delete('/:id', remove);

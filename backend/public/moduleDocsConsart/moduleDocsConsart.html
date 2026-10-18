@@ -1,7 +1,8 @@
 <!-- ╔══════════════════════════════════════════════════════════════════╗
      ║ moduleDocsConsart.html — Documentação dos módulos (CONSART ERP)  ║
-     ║ Lista os módulos/submenus/telas da "Criação de Módulos" e guarda ║
-     ║ descrição, funções e observações de cada um. Gera PDF filtrado.  ║
+     ║ Controle interno: árvore própria de módulos/submenus/telas       ║
+     ║ (copiada do menu; o menu do sistema não muda) com descrição,     ║
+     ║ funções e observações de cada um. Gera PDF filtrado.             ║
      ║ API: /api/module-docs-consart                                    ║
      ╚══════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
@@ -15,7 +16,7 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/moduleDocsConsart/moduleDocsConsart.css?v=1" />
+  <link rel="stylesheet" href="/public/moduleDocsConsart/moduleDocsConsart.css?v=3" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -60,6 +61,13 @@
           </div>
 
           <div class="fields fields-h-5 fields-w-10 fields-font-3">
+            <span class="label">Software</span>
+            <select id="filterSoftware">
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-5 fields-w-10 fields-font-3">
             <span class="label">Documentação</span>
             <select id="filterStatus">
               <option value="">Todas</option>
@@ -81,6 +89,8 @@
           <div class="btn-inline btn-gap-4">
             <button id="btnSearch" class="btn btn-search btn-sm" type="button">Buscar</button>
             <button id="btnNew" class="btn btn-new btn-sm" type="button">➕ Novo Módulo</button>
+            <button id="btnImport" class="btn btn-toolbar btn-sm" type="button" title="Traz do menu os itens que ainda não estão na documentação (o menu não muda)">Importar do menu</button>
+            <button id="btnSoftware" class="btn btn-toolbar btn-sm" type="button" title="Cadastro dos softwares (Consart Infinity, Logistics, ProdNex...)">Softwares</button>
             <button id="btnPdf" class="btn btn-pdf btn-sm" type="button">Gerar PDF</button>
             <button id="btnReload" class="btn btn-load btn-sm" type="button">Recarregar</button>
             <button id="btnBack" class="btn btn-back btn-sm" type="button">Voltar</button>
@@ -110,6 +120,12 @@
               <th class="docs-col-systems table-sortable" data-sort-column="systems_label" aria-sort="none">
                 <button type="button" class="table-sort-button" data-sort-button>
                   Sistemas
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="docs-col-software table-sortable" data-sort-column="software_label" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Software
                   <span data-sort-icon aria-hidden="true">↕</span>
                 </button>
               </th>
@@ -149,7 +165,7 @@
           <span class="doc-status doc-status--PENDENTE" id="sumPendente">0 pendentes</span>
         </div>
         <div class="table-footer__pagination docs-hint">
-          Pelo botão Editar você altera nome, tipo, posição no menu e documentação.
+          Controle interno: o que muda aqui não altera o menu do sistema.
         </div>
       </footer>
     </section>
@@ -170,7 +186,7 @@
 
         <div class="modal__body">
           <form id="doc-form" class="modal-section" novalidate>
-            <div class="doc-breadcrumb">Caminho no menu: <strong id="df-breadcrumb">—</strong></div>
+            <div class="doc-breadcrumb">Caminho: <strong id="df-breadcrumb">—</strong></div>
 
             <div class="modal-form-grid modal-form-grid--4">
               <div class="fields fields-w-full fields-h-6 modal-field--span-2">
@@ -203,8 +219,6 @@
 
             <div class="doc-flags">
               <label class="doc-check"><input type="checkbox" id="df-active" /> Ativo</label>
-              <label class="doc-check"><input type="checkbox" id="df-external" /> Abrir em nova aba</label>
-              <label class="doc-check" title="Aparece para todos os usuários, sem depender de Módulos Por Usuários"><input type="checkbox" id="df-public" /> Visível para todos</label>
             </div>
 
             <hr class="doc-sep" />
@@ -227,6 +241,11 @@
                 </div>
               </div>
               <div class="doc-updated" id="df-updated"></div>
+            </div>
+
+            <div class="fields fields-w-full">
+              <label>Software</label>
+              <div class="doc-systems" id="df-software"></div>
             </div>
 
             <div class="fields fields-w-full doc-area">
@@ -261,7 +280,7 @@
     </div>
   </div>
 
-  <!-- Modal Novo Módulo (grava em moduleSystem, como a Criação de Módulos) -->
+  <!-- Modal Novo Módulo (só na documentação; o menu do sistema não muda) -->
   <div id="new-modal" class="modal doc-modal" aria-hidden="true">
     <div class="modal__backdrop" data-modal-close></div>
 
@@ -307,11 +326,9 @@
 
             <div class="doc-flags">
               <label class="doc-check"><input type="checkbox" id="nf-active" checked /> Ativo</label>
-              <label class="doc-check"><input type="checkbox" id="nf-external" /> Abrir em nova aba</label>
-              <label class="doc-check" title="Aparece para todos os usuários, sem depender de Módulos Por Usuários"><input type="checkbox" id="nf-public" /> Visível para todos</label>
               <label class="doc-check"><input type="checkbox" id="nf-document" checked /> Documentar em seguida</label>
             </div>
-            <p class="doc-hint">Sem "Visível para todos", o módulo só aparece para quem receber acesso em Módulos Por Usuários. Campos avançados (HTML id, classe, feature) ficam na Criação de Módulos.</p>
+            <p class="doc-hint">Só para a documentação: o menu do sistema não muda. Para colocar no menu de verdade, use a Criação de Módulos.</p>
           </form>
         </div>
 
@@ -319,6 +336,58 @@
           <div class="btn-inline btn-gap-3">
             <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
             <button id="nf-save" class="btn btn-save btn-sm" type="button">Criar Módulo</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal Softwares (cadastro simples) -->
+  <div id="software-modal" class="modal doc-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="softwareModalTitle">
+
+        <!-- div (não <header>): a barra de título da página se encaixa após o 1º <header> -->
+        <div class="modal__header modal-header-color-3">
+          <h2 id="softwareModalTitle" class="modal__title">Softwares</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="software-form" class="modal-section" novalidate>
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6">
+                <label for="sw-name">Nome *</label>
+                <input type="text" id="sw-name" maxlength="80" placeholder="Ex.: Consart Infinity">
+              </div>
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="sw-description">Voltado para</label>
+                <input type="text" id="sw-description" maxlength="200" placeholder="Ex.: Voltado para Distribuidoras">
+              </div>
+              <div class="fields fields-w-full fields-h-6">
+                <label for="sw-order">Ordem</label>
+                <input type="number" id="sw-order" step="1" placeholder="Fim da lista">
+              </div>
+            </div>
+            <div class="btn-inline btn-gap-3 software-form-actions">
+              <button id="sw-clear" class="btn btn-cancel btn-sm" type="button" hidden>Cancelar edição</button>
+              <button id="sw-save" class="btn btn-save btn-sm" type="submit">Adicionar</button>
+            </div>
+          </form>
+
+          <table class="table table-zebra software-table">
+            <thead>
+              <tr><th class="docs-col-left">Software</th><th class="docs-col-left">Voltado para</th><th>Módulos</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="swBody"></tbody>
+          </table>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <div class="btn-inline btn-gap-3">
+            <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Fechar</button>
           </div>
         </footer>
       </section>
@@ -360,7 +429,7 @@
   <script>window.ERP_COMPANY = 'CONSART';</script>
   <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/moduleDocsConsart/moduleDocsConsart.js?v=1"></script>
+  <script type="module" src="/public/moduleDocsConsart/moduleDocsConsart.js?v=4"></script>
 </body>
 
 </html>

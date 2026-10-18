@@ -572,6 +572,15 @@ async function resolvePayloadFromRequest(body) {
 
     customer_id: body?.customer_id ?? body?.header?.customer_id ?? null,
 
+    // Tabela de preço do cliente. Sem isto o valor nunca chegava ao
+    // repositório e o UPDATE gravava price_id = NULL a cada salvamento.
+    price_id:
+      body?.price_id ??
+      body?.priceId ??
+      body?.header?.price_id ??
+      body?.header?.priceId ??
+      null,
+
     customer_name: body?.customer_name ?? body?.header?.customer_name ?? null,
     customer_tax_id: body?.customer_tax_id ?? body?.header?.customer_tax_id ?? null,
     customer_email: body?.customer_email ?? body?.header?.customer_email ?? null,

@@ -45,6 +45,8 @@ export async function update(budgetId, { header = {}, items } = {}, ctx = {}) {
       `
         SELECT
           b.operation_type_id,
+          b.seller_id,
+          b.price_id,
           COALESCE(
             b.budget_shipping_id,
             (
@@ -95,11 +97,32 @@ export async function update(budgetId, { header = {}, items } = {}, ctx = {}) {
         currentRes.rows[0]?.budget_shipping_id ?? null;
     }
 
+    // Mesma regra para a tabela de preço: payload sem price_id mantém a atual.
+    const incomingPriceId =
+      mergedHeader.price_id ??
+      mergedHeader.priceId ??
+      null;
+
+    if (
+      incomingPriceId === null ||
+      incomingPriceId === undefined ||
+      String(incomingPriceId).trim() === ''
+    ) {
+      mergedHeader.price_id = currentRes.rows[0]?.price_id ?? null;
+    }
+
     const h = normalizeHeaderIn(mergedHeader);
 
+    // O vendedor é de quem criou o orçamento: editar não troca o vendedor.
+    // Só preenche com o vendedor do usuário logado se ainda estiver vazio.
     const userId = ctx?.userId ?? null;
-    const autoSellerId = await resolveSellerIdByUserId(client, userId);
-    if (autoSellerId) h.seller_id = autoSellerId;
+    const currentSellerId = currentRes.rows[0]?.seller_id ?? null;
+    if (currentSellerId != null && String(currentSellerId).trim() !== '') {
+      h.seller_id = currentSellerId;
+    } else {
+      const autoSellerId = await resolveSellerIdByUserId(client, userId);
+      if (autoSellerId) h.seller_id = autoSellerId;
+    }
 
     if (h.operation_type_id) {
       const operation = await client.query(
