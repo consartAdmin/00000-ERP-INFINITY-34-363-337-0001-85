@@ -2,7 +2,7 @@
 // ║ proposalsConsart.js — Propostas comerciais (CONSART ERP)             ║
 // ║ • Lista com filtros e paginação                                      ║
 // ║ • Editor em modal (cliente/vendedor por duplo clique, itens livres   ║
-// ║   ou do cadastro de produtos, condições, escopo e observações)       ║
+// ║   ou do cadastro de serviços, condições, escopo e observações)       ║
 // ║ • PDF, duplicar e excluir                                            ║
 // ║ API: /api/proposals-consart                                          ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -14,7 +14,7 @@ import {
   openCrmCustomerSearchModal,
   openCrmSellerSearchModal,
 } from '/public/modalsSearch/crmConsartModalsSearch.js';
-import { openProductsModalSearch } from '/public/modalsSearch/productsModalSearch.js';
+import { openServicesConsartModalSearch } from '/public/modalsSearch/servicesConsartModalSearch.js';
 
 const API = '/api/proposals-consart';
 
@@ -445,17 +445,18 @@ function addItem(item = emptyItem()) {
   inputs[inputs.length - 1]?.focus();
 }
 
-function addProductItem() {
-  openProductsModalSearch({
-    onPick(product) {
-      const price = parseNumber(product.sale_price ?? product.preco_venda ?? product.price ?? product.preco ?? 0);
+// Serviço do cadastro de serviços (servicesConsart): o código vai em product_code
+// para sair "S0001 - Descrição" na tela e no PDF; product_id fica vazio.
+function addServiceItem() {
+  openServicesConsartModalSearch({
+    onPick(service) {
       addItem({
-        product_id: Number(product.product_id) || null,
-        product_code: String(product.product_code || ''),
-        description: String(product.description || ''),
-        unit: String(product.matched_unit || product.unit || product.unidade || 'UN').slice(0, 10),
+        product_id: null,
+        product_code: String(service.code || ''),
+        description: String(service.description || ''),
+        unit: String(service.unit || 'SV').slice(0, 10),
         quantity: 1,
-        unit_price: price,
+        unit_price: parseNumber(service.price),
         discount_percent: 0,
       });
     },
@@ -603,7 +604,7 @@ function bindEvents() {
   items.addEventListener('click', onItemsClick);
 
   $('#pf-add-item').addEventListener('click', () => addItem());
-  $('#pf-add-product').addEventListener('click', addProductItem);
+  $('#pf-add-service').addEventListener('click', addServiceItem);
   $('#pf-save').addEventListener('click', () => saveProposal());
   $('#pf-pdf').addEventListener('click', pdfFromEditor);
   $('#pf-duplicate').addEventListener('click', duplicateFromEditor);
