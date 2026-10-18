@@ -5,7 +5,8 @@
 // ║ (ex.: customersListConsart.html ou ?company=CONSART). Com empresa:   ║
 // ║ • todo fetch para /api/ do próprio servidor leva X-ERP-Company;      ║
 // ║ • window.erpCompanyUrl(url) acrescenta ?company= em links/relatórios;║
-// ║ • o título da página ganha "(Consart ERP)" e uma faixa no topo.      ║
+// ║ • o título ganha "(Consart ERP)" e uma faixa no topo (ou um rótulo   ║
+// ║   no elemento [data-erp-company-slot], se a tela tiver).             ║
 // ║ Sem empresa, não faz nada (telas originais continuam iguais).        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 (function () {
@@ -86,6 +87,17 @@
       var bar = document.createElement('div');
       bar.id = 'erpCompanyBanner';
       bar.textContent = 'Consart ERP';
+
+      // Tela com lugar reservado (data-erp-company-slot): rótulo compacto ali
+      var slot = document.querySelector('[data-erp-company-slot]');
+      if (slot) {
+        bar.style.cssText =
+          'display:inline-block;padding:5px 14px;border-radius:8px;white-space:nowrap;' +
+          'background:#0f766e;color:#fff;font-weight:700;letter-spacing:.04em;font-size:13px;';
+        slot.appendChild(bar);
+        return;
+      }
+
       bar.style.cssText =
         'margin:8px auto 0;max-width:1400px;padding:6px 14px;border-radius:8px;' +
         'background:#0f766e;color:#fff;font-weight:700;letter-spacing:.04em;text-align:center;';

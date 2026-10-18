@@ -15,7 +15,7 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/servicesConsart/servicesConsart.css?v=1" />
+  <link rel="stylesheet" href="/public/servicesConsart/servicesConsart.css?v=2" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -52,20 +52,58 @@
             <button id="btnReload" class="btn btn-load btn-sm" type="button">Recarregar</button>
             <button id="btnBack" class="btn btn-back btn-sm" type="button">Voltar</button>
           </div>
+
+          <!-- Rótulo "Consart ERP" (erpCompany.js coloca aqui em vez da faixa no topo) -->
+          <div class="services-company" data-erp-company-slot></div>
         </div>
       </div>
 
       <div class="table-scroll table-height-flex table-row-h-28">
-        <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head services-table">
+        <table id="servicesTable" class="table table-fixed table-zebra table-zebra-hover table-sticky-head services-table">
           <thead>
             <tr>
-              <th class="services-col-code">Código</th>
-              <th class="services-col-left">Descrição</th>
-              <th class="services-col-unit">Un.</th>
-              <th class="services-col-lc">Cód. serviço</th>
-              <th class="services-col-category">Categoria</th>
-              <th class="services-col-money">Preço (R$)</th>
-              <th class="services-col-status">Status</th>
+              <th class="services-col-code table-sortable" data-sort-column="code" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Código
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="services-col-left table-sortable" data-sort-column="description" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Descrição
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="services-col-unit table-sortable" data-sort-column="unit" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Un.
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="services-col-lc table-sortable" data-sort-column="service_code" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Cód. serviço
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="services-col-category table-sortable" data-sort-column="category" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Categoria
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="services-col-money table-sortable" data-sort-column="price" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Preço (R$)
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="services-col-status table-sortable" data-sort-column="active" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Status
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
               <th class="services-col-actions">Ações</th>
             </tr>
           </thead>
@@ -181,7 +219,7 @@
   <script>window.ERP_COMPANY = 'CONSART';</script>
   <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/servicesConsart/servicesConsart.js?v=1"></script>
+  <script type="module" src="/public/servicesConsart/servicesConsart.js?v=2"></script>
 </body>
 
 </html>

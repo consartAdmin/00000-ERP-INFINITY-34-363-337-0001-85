@@ -1,6 +1,6 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ servicesConsart.js — Cadastro de serviços (CONSART ERP)              ║
-// ║ • Lista com filtros (texto, status, categoria) e paginação           ║
+// ║ • Lista com filtros (texto, status, categoria), ordenação e paginação║
 // ║ • Editor em modal: código, descrição, unidade, preço, cód. LC 116,   ║
 // ║   categoria, detalhes, ativo                                         ║
 // ║ API: /api/services-consart                                           ║
@@ -9,6 +9,7 @@
 import { apiFetch } from '/public/includes/js/apiFetch.js';
 import { Modal } from '/public/includes/js/modal.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
 
 const API = '/api/services-consart';
 
@@ -19,6 +20,8 @@ const state = {
   pages: 1,
   rows: [],
   editingId: null,
+  sort: '',      // coluna ordenada ('' = padrão: ativos primeiro, por descrição)
+  dir: 'asc',
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -75,6 +78,10 @@ async function loadList() {
   if (q) params.set('q', q);
   if ($('#filterActive').value) params.set('active', $('#filterActive').value);
   if ($('#filterCategory').value) params.set('category', $('#filterCategory').value);
+  if (state.sort) {
+    params.set('sort', state.sort);
+    params.set('dir', state.dir);
+  }
 
   try {
     const json = await apiFetch(`${API}?${params}`);
@@ -221,6 +228,17 @@ function bindEvents() {
   $('#btnPrevious').addEventListener('click', () => { if (state.page > 1) { state.page -= 1; loadList(); } });
   $('#btnNext').addEventListener('click', () => { if (state.page < state.pages) { state.page += 1; loadList(); } });
   $('#servicesBody').addEventListener('click', onListClick);
+
+  // Ordenação feita no servidor (vale para todas as páginas da lista)
+  createSortableTable({
+    table: '#servicesTable',
+    async onSort({ column, direction }) {
+      state.sort = column;
+      state.dir = direction;
+      state.page = 1;
+      await loadList();
+    },
+  });
 
   $('#sf-price').addEventListener('blur', (e) => {
     const s = e.target.value.trim();
