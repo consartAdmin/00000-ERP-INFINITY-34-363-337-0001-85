@@ -2,7 +2,8 @@
 // ║ moduleDocsConsart.js — Documentação dos módulos (CONSART ERP)        ║
 // ║ • Lista em árvore (ordem do menu) com filtros: texto, módulo, tipo,  ║
 // ║   documentação e status                                              ║
-// ║ • Editor em modal: descrição, funções (uma por linha), observações,  ║
+// ║ • Editor em modal: nome, tipo, "Dentro de", endereço, ordem e flags  ║
+// ║   do menu (via /api/module-system) + descrição, funções, observações,║
 // ║   status; "Salvar e próximo" para documentar em sequência            ║
 // ║ • PDF com os filtros da tela                                         ║
 // ║ API: /api/module-docs-consart                                        ║
@@ -155,7 +156,7 @@ function renderList(summary) {
       <td>${r.functions_count || '—'}</td>
       <td>${statusBadge(r.doc_status, r.doc_status_label)}</td>
       <td>${actionIconsHtml([
-        { action: 'edit', title: 'Documentar', attrs: { 'data-act': 'edit', 'data-id': r.id } },
+        { action: 'edit', title: 'Editar', attrs: { 'data-act': 'edit', 'data-id': r.id } },
         { action: 'delete', title: 'Excluir módulo', attrs: { 'data-act': 'delete', 'data-id': r.id } },
       ])}</td>
     </tr>
@@ -200,12 +201,17 @@ async function deleteModule(id) {
 
 function fillForm(r) {
   state.editingId = r.id;
-  $('#docModalTitle').textContent = `Documentar: ${r.name}`;
+  $('#docModalTitle').textContent = `Editar: ${r.name}`;
   $('#df-breadcrumb').textContent = r.breadcrumb || r.name;
   $('#df-breadcrumb').title = r.breadcrumb || r.name;
-  $('#df-type').textContent = `${r.type_label}${r.is_active ? '' : ' (inativo)'}`;
-  $('#df-path').textContent = r.type === 'link' && r.path ? r.path : '—';
-  $('#df-path').title = r.path || '';
+  $('#df-name').value = r.name || '';
+  $('#df-type').value = r.menu_type || '';
+  $('#df-order').value = r.sort_order ?? '';
+  $('#df-path').value = r.path && r.path !== '#' ? r.path : '';
+  $('#df-active').checked = r.is_active;
+  $('#df-external').checked = r.is_external;
+  $('#df-public').checked = r.is_public;
+  fillParentSelect({ select: $('#df-parent'), type: r.menu_type || '', pathInput: $('#df-path'), preferredId: r.parent_id, excludeId: r.id });
   $('#df-status').value = r.doc_status || 'PENDENTE';
   const systems = r.systems || [];
   document.querySelectorAll('#df-systems input').forEach((input) => { input.checked = systems.includes(input.value); });
@@ -224,7 +230,7 @@ function fillForm(r) {
 
 async function openEditor(id) {
   try {
-    const json = await apiFetch(`${API}/${id}`);
+    const [json] = await Promise.all([apiFetch(`${API}/${id}`), loadAllModules()]);
     fillForm(json.data);
   } catch (error) {
     alert(`Erro ao abrir o módulo: ${error.message}`);
@@ -239,7 +245,48 @@ function move(step) {
   if (next) openEditor(next.id);
 }
 
+/** Campos do menu que mudaram (camelCase, como a Criação de Módulos espera) */
+function menuChanges(r) {
+  const type = $('#df-type').value;
+  const name = $('#df-name').value.trim();
+  const typedPath = $('#df-path').value.trim();
+  const parentId = $('#df-parent').disabled ? null : (Number($('#df-parent').value) || null);
+  const orderText = $('#df-order').value.trim();
+  const sortOrder = orderText === '' ? null : Number(orderText);
+
+  if (!name) throw new Error('Informe o nome.');
+  if (type === 'link' && !typedPath) throw new Error('Informe o endereço da tela (ex.: ../pasta/pagina.html).');
+  if (orderText !== '' && !Number.isInteger(sortOrder)) throw new Error('Ordem inválida.');
+  // Módulo e submenu não abrem página; "fora do menu" mantém o endereço que tinha
+  const path = typedPath || (type === '' && r.path ? r.path : '#');
+
+  const changes = {};
+  if (name !== r.name) changes.name = name;
+  if (type !== (r.menu_type || '')) changes.menuType = type;
+  if (parentId !== (r.parent_id ?? null)) changes.parentId = parentId;
+  if (sortOrder !== (r.sort_order ?? null)) changes.sortOrder = sortOrder;
+  if (path !== (r.path || '')) changes.path = path;
+  if ($('#df-active').checked !== r.is_active) changes.isActive = $('#df-active').checked;
+  if ($('#df-external').checked !== r.is_external) changes.isExternal = $('#df-external').checked;
+  if ($('#df-public').checked !== r.is_public) changes.isPublic = $('#df-public').checked;
+  // A regra da árvore olha tipo e pai juntos
+  if ('menuType' in changes || 'parentId' in changes) {
+    changes.menuType = type;
+    changes.parentId = parentId;
+  }
+  return changes;
+}
+
 async function saveDoc({ goNext = false } = {}) {
+  const current = state.rows.find((x) => x.id === state.editingId);
+  let changes = {};
+  try {
+    if (current) changes = menuChanges(current);
+  } catch (error) {
+    alert(error.message);
+    return;
+  }
+
   const description = $('#df-description').value.trim();
   const status = $('#df-status').value;
   const payload = {
@@ -254,6 +301,10 @@ async function saveDoc({ goNext = false } = {}) {
   const buttons = [$('#df-save'), $('#df-save-next')];
   buttons.forEach((b) => { b.disabled = true; });
   try {
+    // 1º o menu (mesmas regras da Criação de Módulos); se recusar, nada é gravado
+    if (Object.keys(changes).length) {
+      await apiFetch(`${MODULE_API}/${state.editingId}`, { method: 'PUT', body: JSON.stringify(changes) });
+    }
     const json = await apiFetch(`${API}/${state.editingId}`, { method: 'PUT', body: JSON.stringify(payload) });
     const saved = json.data;
     const index = state.rows.findIndex((x) => x.id === saved.id);
@@ -267,13 +318,20 @@ async function saveDoc({ goNext = false } = {}) {
       Modal.close('doc-modal');
     }
     // Atualiza contadores/status sem perder a posição do editor
+    if (Object.keys(changes).length) {
+      await Promise.all([loadModules(), loadAllModules()]);
+    }
     await loadList();
+    const latest = state.rows.find((x) => x.id === state.editingId);
+    if (latest && Modal.isOpen('doc-modal')) fillForm(latest);
   } catch (error) {
+    // Mantém o que foi digitado para corrigir e salvar de novo
     alert(`Erro ao salvar: ${error.message}`);
   } finally {
     buttons.forEach((b) => { b.disabled = false; });
-    const current = state.rows.find((x) => x.id === state.editingId);
-    if (current && Modal.isOpen('doc-modal')) fillForm(current);
+    if (Modal.isOpen('doc-modal')) {
+      $('#df-save-next').disabled = $('#df-next').disabled;
+    }
   }
 }
 
@@ -295,9 +353,7 @@ let allModules = [];
 
 async function openNew() {
   try {
-    // Árvore completa (ativos e inativos) para escolher o pai
-    const json = await apiFetch(`${API}?active=`);
-    allModules = json.data || [];
+    await loadAllModules();
   } catch (error) {
     alert(`Erro ao carregar os módulos: ${error.message}`);
     return;
@@ -308,19 +364,41 @@ async function openNew() {
   $('#nf-document').checked = true;
 
   // Já sugere o pai pelo filtro "Módulo" da tela
-  fillParentOptions($('#filterModule').value);
+  fillNewParent($('#filterModule').value);
   Modal.open('new-modal', { focusSelector: '#nf-name' });
 }
 
-function fillParentOptions(preferredId = '') {
-  const type = $('#nf-type').value;
+/** Árvore completa (ativos e inativos) para escolher o "Dentro de" */
+async function loadAllModules() {
+  const json = await apiFetch(`${API}?active=`);
+  allModules = json.data || [];
+}
+
+/** Ids do item e de tudo que está abaixo dele (não podem ser o pai dele) */
+function selfAndDescendants(id) {
+  const ids = new Set([Number(id)]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    allModules.forEach((m) => {
+      if (m.parent_id != null && ids.has(m.parent_id) && !ids.has(m.id)) {
+        ids.add(m.id);
+        grew = true;
+      }
+    });
+  }
+  return ids;
+}
+
+/** Monta o "Dentro de" conforme o tipo (igual à validação do moduleSystemController) */
+function fillParentSelect({ select, type, pathInput, preferredId = '', excludeId = null }) {
   const allowed = ALLOWED_PARENTS[type] || [];
-  const select = $('#nf-parent');
+  const excluded = excludeId != null ? selfAndDescendants(excludeId) : new Set();
 
   const options = [];
   if (allowed.includes('')) options.push('<option value="">(Topo do menu)</option>');
   allModules
-    .filter((m) => allowed.includes(m.menu_type))
+    .filter((m) => allowed.includes(m.menu_type) && !excluded.has(m.id))
     .forEach((m) => {
       options.push(`<option value="${m.id}">${esc(m.breadcrumb)}${m.is_active ? '' : ' (inativo)'}</option>`);
     });
@@ -329,13 +407,22 @@ function fillParentOptions(preferredId = '') {
   select.innerHTML = options.join('');
   select.disabled = !allowed.some(Boolean);
 
-  const preferred = String(preferredId || '');
+  const preferred = String(preferredId ?? '');
+  if (preferred && excludeId != null && allowed.some(Boolean) && ![...select.options].some((o) => o.value === preferred)) {
+    // Pai atual fora da regra (cadastro antigo): mostra para não mover sem querer
+    const current = allModules.find((m) => String(m.id) === preferred);
+    if (current) select.insertAdjacentHTML('afterbegin', `<option value="${current.id}">${esc(current.breadcrumb)} (atual)</option>`);
+  }
   if (preferred && [...select.options].some((o) => o.value === preferred)) select.value = preferred;
 
-  const isLink = type === 'link';
-  $('#nf-path').disabled = !isLink && type !== '';
-  $('#nf-path').placeholder = isLink || type === '' ? '../pasta/pagina.html' : '# (não abre página)';
-  if ($('#nf-path').disabled) $('#nf-path').value = '';
+  const opensPage = type === 'link' || type === '';
+  pathInput.disabled = !opensPage;
+  pathInput.placeholder = opensPage ? '../pasta/pagina.html' : '# (não abre página)';
+  if (pathInput.disabled) pathInput.value = '';
+}
+
+function fillNewParent(preferredId = '') {
+  fillParentSelect({ select: $('#nf-parent'), type: $('#nf-type').value, pathInput: $('#nf-path'), preferredId });
 }
 
 async function createModule() {
@@ -447,7 +534,16 @@ function bindEvents() {
   });
   $('#btnPdf').addEventListener('click', openPdf);
   $('#btnNew').addEventListener('click', openNew);
-  $('#nf-type').addEventListener('change', () => fillParentOptions($('#nf-parent').value));
+  $('#nf-type').addEventListener('change', () => fillNewParent($('#nf-parent').value));
+  $('#df-type').addEventListener('change', () => {
+    fillParentSelect({
+      select: $('#df-parent'),
+      type: $('#df-type').value,
+      pathInput: $('#df-path'),
+      preferredId: $('#df-parent').value,
+      excludeId: state.editingId,
+    });
+  });
   $('#nf-save').addEventListener('click', createModule);
   $('#new-form').addEventListener('submit', (e) => { e.preventDefault(); createModule(); });
   $('#btnBack').addEventListener('click', () => history.back());
