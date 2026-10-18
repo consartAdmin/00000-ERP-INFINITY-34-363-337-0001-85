@@ -1664,9 +1664,15 @@ export async function copyBudget(req, res) {
       return res.status(401).json({ ok: false, error: 'UNAUTHORIZED' });
     }
 
+    // item_ids (optional): products chosen in the copy modal
+    const itemIds = Array.isArray(req.body?.item_ids)
+      ? req.body.item_ids
+      : null;
+
     const out = await budgetsApi.copyFromBudget(
       id,
-      getBudgetApiContext(req, userId)
+      getBudgetApiContext(req, userId),
+      { itemIds }
     );
 
     if (!out?.ok) {

@@ -15,7 +15,7 @@
 // ║ ✅ FIX: trava anti reentrada no save                                 ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { $, ROUTES, state, budgetSettings } from './budgets.core.js';
+import { $, ROUTES, state, budgetSettings, fmtMoney } from './budgets.core.js';
 import { authHeaders, fetchSafe, handleAuthFail, toast } from './budgets.infra.js';
 import { SINGLE_PRICE_ID, isSinglePriceMode } from './budgets.priceMode.js';
 import {
@@ -1523,14 +1523,171 @@ export function bindGlobalDiscountActions() {
   }
 }
 
+/* ──────────────────────────────────────────────────────────────
+  Copiar orçamento — modal de seleção de produtos
+────────────────────────────────────────────────────────────── */
+function escapeCopyHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[ch]);
+}
+
+function fmtCopyQty(value) {
+  return Number(value || 0).toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  });
+}
+
+async function fetchBudgetItemsForCopy(budgetId) {
+  const out = await fetchSafe(ROUTES.budgetById(budgetId), {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+
+  if (!out.ok) {
+    if (handleAuthFail(out.status, out.text)) return null;
+    toast.error('Erro', 'Não foi possível carregar os produtos do orçamento.');
+    return null;
+  }
+
+  const items = Array.isArray(out.json?.items) ? out.json.items : [];
+  return items.filter((it) => Number(it?.budget_item_id) > 0);
+}
+
+// Resolves with the checked budget_item_id list, or null when cancelled.
+function pickItemsToCopy(budgetId, items) {
+  const modal = $('#copyBudgetModal');
+  const body = $('#copyBudgetItemsBody');
+  const selectAll = $('#copyBudgetSelectAll');
+  const summary = $('#copyBudgetSummary');
+  const confirmBtn = $('#btnCopyBudgetConfirm');
+  const title = $('#copyBudgetModalTitle');
+
+  if (!modal || !body || !selectAll || !confirmBtn) {
+    const ok = window.confirm(`Deseja copiar o orçamento #${budgetId}?`);
+    return Promise.resolve(ok ? items.map((it) => Number(it.budget_item_id)) : null);
+  }
+
+  if (title) title.textContent = `Copiar orçamento #${budgetId}`;
+
+  body.innerHTML = items.map((it) => {
+    const qty = Number(it.quantity || 0);
+    const unitPrice = Number(it.unit_price || 0);
+    const total = Math.max(0, qty * unitPrice - Number(it.discount_value || 0));
+
+    return `
+      <tr data-item-id="${Number(it.budget_item_id)}">
+        <td class="copy-budget-col-check">
+          <input type="checkbox" class="copy-budget-item-check" checked
+            aria-label="Copiar ${escapeCopyHtml(it.description)}" />
+        </td>
+        <td>${escapeCopyHtml(it.product_code ?? it.sku ?? '')}</td>
+        <td>${escapeCopyHtml(it.description)}</td>
+        <td class="num">${fmtCopyQty(qty)} ${escapeCopyHtml(it.unit_code ?? '')}</td>
+        <td class="num">${fmtMoney(unitPrice)}</td>
+        <td class="num">${fmtMoney(total)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const getChecks = () => [...body.querySelectorAll('.copy-budget-item-check')];
+
+  const refresh = () => {
+    const checks = getChecks();
+    const checkedCount = checks.filter((c) => c.checked).length;
+
+    checks.forEach((c) => {
+      c.closest('tr')?.classList.toggle('is-unchecked', !c.checked);
+    });
+
+    selectAll.checked = checkedCount === checks.length;
+    selectAll.indeterminate = checkedCount > 0 && checkedCount < checks.length;
+    confirmBtn.disabled = checkedCount === 0;
+
+    if (summary) {
+      summary.textContent = `${checkedCount} de ${checks.length} produto(s) selecionado(s).`;
+    }
+  };
+
+  return new Promise((resolve) => {
+    let result = null;
+
+    const onSelectAll = () => {
+      getChecks().forEach((c) => { c.checked = selectAll.checked; });
+      refresh();
+    };
+
+    const onBodyClick = (e) => {
+      const row = e.target.closest('tr[data-item-id]');
+      if (!row) return;
+
+      // Clicking anywhere on the row toggles its checkbox.
+      if (!e.target.classList.contains('copy-budget-item-check')) {
+        const check = row.querySelector('.copy-budget-item-check');
+        if (check) check.checked = !check.checked;
+      }
+
+      refresh();
+    };
+
+    const onConfirm = () => {
+      const ids = getChecks()
+        .filter((c) => c.checked)
+        .map((c) => Number(c.closest('tr')?.dataset.itemId))
+        .filter((v) => Number.isFinite(v) && v > 0);
+
+      if (!ids.length) {
+        toast.warn('Atenção', 'Selecione ao menos um produto para copiar.');
+        return;
+      }
+
+      result = ids;
+      Modal.close(modal);
+    };
+
+    const onClose = () => {
+      selectAll.removeEventListener('change', onSelectAll);
+      body.removeEventListener('click', onBodyClick);
+      confirmBtn.removeEventListener('click', onConfirm);
+      modal.removeEventListener('modal:close', onClose);
+      body.innerHTML = '';
+      resolve(result);
+    };
+
+    selectAll.addEventListener('change', onSelectAll);
+    body.addEventListener('click', onBodyClick);
+    confirmBtn.addEventListener('click', onConfirm);
+    modal.addEventListener('modal:close', onClose);
+
+    refresh();
+    Modal.setup();
+    Modal.open(modal, { focusSelector: '#btnCopyBudgetConfirm' });
+  });
+}
+
 export async function copyBudget(id) {
   const budgetId = Number(id);
   if (!Number.isFinite(budgetId) || budgetId <= 0) {
     return toast.error('Erro', 'ID do orçamento inválido.');
   }
 
-  const confirmed = window.confirm(`Deseja copiar o orçamento #${budgetId}?`);
-  if (!confirmed) return;
+  const items = await fetchBudgetItemsForCopy(budgetId);
+  if (!items) return;
+
+  let itemIds = null;
+
+  if (items.length) {
+    itemIds = await pickItemsToCopy(budgetId, items);
+    if (!itemIds) return;
+  } else {
+    const confirmed = window.confirm(`Deseja copiar o orçamento #${budgetId}?`);
+    if (!confirmed) return;
+  }
 
   const key = await resolveBudgetActionKey('copiar o orçamento');
   if (!key) {
@@ -1544,7 +1701,7 @@ export async function copyBudget(id) {
       'x-budget-key': key,
       'x-budget-copy-key': key,
     }),
-    body: JSON.stringify({ key }),
+    body: JSON.stringify(itemIds ? { key, item_ids: itemIds } : { key }),
   });
 
   if (!out.ok) {

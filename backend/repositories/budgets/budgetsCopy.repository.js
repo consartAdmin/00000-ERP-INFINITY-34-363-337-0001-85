@@ -8,7 +8,24 @@ import { create } from './budgetsCreate.repository.js';
 // ----------------------------------------------------------------------
 // Copy
 // ----------------------------------------------------------------------
-export async function copyFromBudget(sourceBudgetId, ctx = {}) {
+// options.itemIds: budget_item_id list chosen in the copy modal. When it is
+// provided only those items are copied and the header totals are recomputed.
+// ----------------------------------------------------------------------
+function roundMoney(value) {
+  return Math.round(Number(value || 0) * 100) / 100;
+}
+
+function normalizeItemIds(raw) {
+  if (!Array.isArray(raw)) return null;
+
+  return new Set(
+    raw
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v) && v > 0)
+  );
+}
+
+export async function copyFromBudget(sourceBudgetId, ctx = {}, options = {}) {
   const bid = Number(sourceBudgetId);
 
   if (!Number.isFinite(bid) || bid <= 0) {
@@ -29,9 +46,22 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}) {
     }
 
     const srcHeader = source.header;
-    const srcItems = Array.isArray(source.items)
+    const allSrcItems = Array.isArray(source.items)
       ? source.items
       : [];
+
+    const selectedIds = normalizeItemIds(options?.itemIds);
+    const srcItems = selectedIds
+      ? allSrcItems.filter((it) => selectedIds.has(Number(it.budget_item_id)))
+      : allSrcItems;
+
+    if (selectedIds && !srcItems.length) {
+      return {
+        ok: false,
+        error: 'BAD_REQUEST',
+        message: 'Selecione ao menos um produto para copiar.',
+      };
+    }
 
     // ================================================================
     // HEADER
@@ -155,6 +185,39 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}) {
       override_stock: false,
       override_token: null,
     }));
+
+    // ================================================================
+    // TOTALS — only part of the items was copied, so recompute from them
+    // (same rule as recalcTotals() in public/budgets/js/budgets.items.js;
+    // freight is not copied).
+    // ================================================================
+    if (selectedIds && srcItems.length !== allSrcItems.length) {
+      const subtotal = newItems.reduce(
+        (sum, it) => sum + Math.max(0, it.quantity) * Math.max(0, it.unit_price),
+        0
+      );
+      const itemsDiscount = newItems.reduce(
+        (sum, it) => sum + Math.max(0, it.discount_value),
+        0
+      );
+      const base = Math.max(0, subtotal - itemsDiscount);
+
+      const globalType =
+        String(newHeader.global_discount_type || 'value').trim().toLowerCase() === 'percent'
+          ? 'percent'
+          : 'value';
+      const globalValue = Math.max(0, newHeader.global_discount_value);
+      const globalAmount = globalType === 'percent'
+        ? Math.min(base, base * (globalValue / 100))
+        : Math.min(base, globalValue);
+
+      newHeader.global_discount_type = globalType;
+      newHeader.subtotal = roundMoney(subtotal);
+      newHeader.items_discount_total = roundMoney(itemsDiscount);
+      newHeader.global_discount_amount = roundMoney(globalAmount);
+      newHeader.total_discount = roundMoney(itemsDiscount + globalAmount);
+      newHeader.total_amount = roundMoney(Math.max(0, base - globalAmount));
+    }
 
     // ================================================================
     // VALIDATION
