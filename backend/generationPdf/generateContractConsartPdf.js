@@ -39,6 +39,12 @@ const BILLING_LABELS = {
   PARCELADO: 'de forma parcelada',
 };
 
+const CHARGE_RECURRING_LABELS = {
+  MENSAL: 'Mensal',
+  UNICO: 'Total',
+  PARCELADO: 'Parcelada',
+};
+
 const TOTAL_LABELS = {
   MENSAL: 'VALOR MENSAL',
   UNICO: 'VALOR TOTAL',
@@ -200,16 +206,31 @@ async function resolveLogo(logoUrl) {
 // Campos automáticos das cláusulas ({CAMPO})
 // ─────────────────────────────────────────────────────────────────────
 
+/** Recorrente (mensalidade) x única (implantação); contratos antigos sem as colunas = tudo recorrente. */
+function splitTotals(contract) {
+  const items = Array.isArray(contract.items) ? contract.items : [];
+  const oneTime = items.filter((it) => it.charge_type === 'UNICA').reduce((a, it) => a + Number(it.total || 0), 0);
+  const total = Number(contract.total || 0);
+  return { recurring: Math.round((total - oneTime) * 100) / 100, oneTime: Math.round(oneTime * 100) / 100 };
+}
+
 function placeholderValues(contract, enterprise) {
   const c = contract.customer || {};
   const months = Number(contract.term_months || 0);
+  const { recurring, oneTime } = splitTotals(contract);
   return {
     CONTRATANTE: clean(c.legal_name || c.trade_name || contract.customer_name),
     CONTRATANTE_DOC: formatDoc(c.tax_id || contract.customer_tax_id),
     CONTRATADA: clean(enterprise.corporate_name || enterprise.trade_name),
     CONTRATADA_DOC: formatDoc(enterprise.cnpj),
-    VALOR: `R$ ${money(contract.total)}`,
-    VALOR_EXTENSO: moneyWords(contract.total),
+    VALOR: `R$ ${money(recurring)}`,
+    VALOR_EXTENSO: moneyWords(recurring),
+    VALOR_IMPLANTACAO: `R$ ${money(oneTime)}`,
+    VALOR_IMPLANTACAO_EXTENSO: moneyWords(oneTime),
+    // Frase pronta: some (texto vazio) quando não há item de cobrança única
+    IMPLANTACAO: oneTime
+      ? ` Pela implantação, a CONTRATANTE pagará à CONTRATADA o valor único de R$ ${money(oneTime)} (${moneyWords(oneTime)}), que não integra a mensalidade.`
+      : '',
     COBRANCA: BILLING_LABELS[contract.billing_type] || '',
     FORMA_PAGAMENTO: clean(contract.payment_method),
     CONDICAO_PAGAMENTO: clean(contract.payment_terms),
@@ -227,6 +248,7 @@ function placeholderValues(contract, enterprise) {
 function fillPlaceholders(textValue, values) {
   return String(textValue ?? '').replace(/\{([A-Z_]+)\}/g, (match, key) => {
     if (!(key in values)) return match;
+    if (key === 'IMPLANTACAO') return values[key];
     return clean(values[key]) || BLANK;
   });
 }
@@ -405,6 +427,7 @@ export async function generateContractConsartPdf(contract) {
         `Cobrança: ${{ MENSAL: 'Mensal', UNICO: 'Valor único', PARCELADO: 'Parcelada' }[contract.billing_type] || contract.billing_type}`,
         contract.payment_method ? `Pagamento: ${join([contract.payment_method, contract.payment_terms], ' - ')}` : '',
         contract.due_day ? `Vencimento: dia ${contract.due_day}` : '',
+        splitTotals(contract).oneTime ? `Implantação: R$ ${money(splitTotals(contract).oneTime)} (única)` : '',
         contract.readjustment_index ? `Reajuste: ${contract.readjustment_index}` : '',
       ]),
     },
@@ -422,11 +445,12 @@ export async function generateContractConsartPdf(contract) {
   const cols = [
     { key: 'n', label: '#', w: 22, align: 'center' },
     { key: 'desc', label: 'Serviço contratado', w: 0, align: 'left' },
-    { key: 'unit', label: 'Un.', w: 34, align: 'center' },
-    { key: 'qty', label: 'Qtd', w: 48, align: 'right' },
-    { key: 'price', label: 'Valor unit.', w: 70, align: 'right' },
-    { key: 'disc', label: 'Desc.', w: 42, align: 'right' },
-    { key: 'total', label: 'Total', w: 74, align: 'right' },
+    { key: 'charge', label: 'Cobrança', w: 62, align: 'center' },
+    { key: 'unit', label: 'Un.', w: 30, align: 'center' },
+    { key: 'qty', label: 'Qtd', w: 40, align: 'right' },
+    { key: 'price', label: 'Valor unit.', w: 66, align: 'right' },
+    { key: 'disc', label: 'Desc.', w: 40, align: 'right' },
+    { key: 'total', label: 'Total', w: 70, align: 'right' },
   ];
   cols[1].w = width - cols.reduce((a, col) => a + col.w, 0);
 
@@ -471,6 +495,7 @@ export async function generateContractConsartPdf(contract) {
       drawRow({
         n: i + 1,
         desc: join([it.service_code, it.description], ' - '),
+        charge: it.charge_type === 'UNICA' ? 'Única' : CHARGE_RECURRING_LABELS[contract.billing_type] || 'Recorrente',
         unit: clean(it.unit),
         qty: qty(it.quantity),
         price: money(it.unit_price),
@@ -480,25 +505,36 @@ export async function generateContractConsartPdf(contract) {
     });
 
     // ── Totais ────────────────────────────────────────────────────
-    ensureSpace(80);
-    const totW = 250;
+    ensureSpace(120);
+    const totW = 260;
     const totX = right - totW;
     let ty = doc.y + 8;
     const totalLine = (label, value, big = false) => {
       doc.font(big ? 'Helvetica-Bold' : 'Helvetica').fontSize(big ? 12 : 9).fillColor(big ? GREEN : '#111');
-      doc.text(label, totX, ty, { width: totW / 2 });
-      doc.text(value, totX + totW / 2, ty, { width: totW / 2, align: 'right' });
+      doc.text(label, totX, ty, { width: totW * 0.6, lineBreak: false });
+      doc.text(value, totX + totW * 0.6, ty, { width: totW * 0.4, align: 'right', lineBreak: false });
       ty += big ? 18 : 15;
     };
     totalLine('Subtotal', `R$ ${money(contract.subtotal)}`);
     if (Number(contract.discount_total)) totalLine('Descontos', `- R$ ${money(contract.discount_total)}`);
     doc.moveTo(totX, ty).lineTo(right, ty).lineWidth(1.5).strokeColor(GREEN).stroke();
     ty += 6;
-    totalLine(TOTAL_LABELS[contract.billing_type] || 'VALOR TOTAL', `R$ ${money(contract.total)}`, true);
-    doc.font('Helvetica-Oblique').fontSize(8).fillColor(MUTED)
-      .text(`(${values.VALOR_EXTENSO})`, left, ty, { width, align: 'right' });
+    const { recurring, oneTime } = splitTotals(contract);
+    const extenso = (value) => {
+      doc.font('Helvetica-Oblique').fontSize(8).fillColor(MUTED)
+        .text(`(${moneyWords(value)})`, left, ty, { width, align: 'right' });
+      ty = doc.y + 6;
+    };
+    if (recurring || !oneTime) {
+      totalLine(TOTAL_LABELS[contract.billing_type] || 'VALOR TOTAL', `R$ ${money(recurring)}`, true);
+      extenso(recurring);
+    }
+    if (oneTime) {
+      totalLine('IMPLANTAÇÃO (ÚNICA)', `R$ ${money(oneTime)}`, true);
+      extenso(oneTime);
+    }
     doc.x = left;
-    doc.y = doc.y + 14;
+    doc.y = ty + 8;
   }
 
   // ── Cláusulas ───────────────────────────────────────────────────

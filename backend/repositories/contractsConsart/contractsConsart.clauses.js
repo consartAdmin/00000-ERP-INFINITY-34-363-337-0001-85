@@ -11,8 +11,11 @@ export const PLACEHOLDERS = Object.freeze([
   { key: 'CONTRATANTE_DOC', label: 'CNPJ/CPF do cliente' },
   { key: 'CONTRATADA', label: 'Razão social da Consart' },
   { key: 'CONTRATADA_DOC', label: 'CNPJ da Consart' },
-  { key: 'VALOR', label: 'Valor total (R$)' },
-  { key: 'VALOR_EXTENSO', label: 'Valor total por extenso' },
+  { key: 'VALOR', label: 'Valor recorrente / mensalidade (R$), sem a implantação' },
+  { key: 'VALOR_EXTENSO', label: 'Valor recorrente por extenso' },
+  { key: 'VALOR_IMPLANTACAO', label: 'Valor único de implantação (R$)' },
+  { key: 'VALOR_IMPLANTACAO_EXTENSO', label: 'Valor de implantação por extenso' },
+  { key: 'IMPLANTACAO', label: 'Frase da implantação (some quando não há item de cobrança única)' },
   { key: 'COBRANCA', label: 'Tipo de cobrança (mensal, valor único...)' },
   { key: 'FORMA_PAGAMENTO', label: 'Forma de pagamento' },
   { key: 'CONDICAO_PAGAMENTO', label: 'Condição de pagamento' },
@@ -41,7 +44,7 @@ export const DEFAULT_CLAUSES = Object.freeze([
     title: 'DO VALOR E DA FORMA DE PAGAMENTO',
     body: 'Pelos serviços contratados, a CONTRATANTE pagará à CONTRATADA o valor de {VALOR} ({VALOR_EXTENSO}), '
       + '{COBRANCA}, por meio de {FORMA_PAGAMENTO}, com vencimento todo dia {DIA_VENCIMENTO}. '
-      + 'Condição: {CONDICAO_PAGAMENTO}.\n'
+      + 'Condição: {CONDICAO_PAGAMENTO}.{IMPLANTACAO}\n'
       + 'Parágrafo único. O atraso no pagamento sujeita a CONTRATANTE a multa de 2% (dois por cento) e juros '
       + 'de mora de 1% (um por cento) ao mês, calculados pro rata die sobre o valor em atraso.',
   },
