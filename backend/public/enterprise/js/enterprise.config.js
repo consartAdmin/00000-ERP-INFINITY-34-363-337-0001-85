@@ -17,6 +17,7 @@ export const SELECTORS = Object.freeze({
   searchInput: '#searchInput',
   filterActive: '#filterActive',
   btnSearch: '#btnSearch',
+  btnNewEnterprise: '#btnNewEnterprise',
   tableBody: '#enterpriseTableBody',
   resultInfo: '#enterpriseResultInfo',
 

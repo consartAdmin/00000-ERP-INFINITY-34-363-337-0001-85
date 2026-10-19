@@ -124,6 +124,14 @@ export function fillEnterpriseForm(data = {}) {
   f.is_active.value = String(data.is_active !== false);
 }
 
+export function setEnterpriseLogoAvailability(enabled) {
+  const selectButton = $(SELECTORS.btnSelectEnterpriseLogo);
+  const status = $(SELECTORS.enterpriseLogoStatus);
+
+  if (selectButton) selectButton.disabled = !enabled;
+  if (!enabled && status) status.textContent = 'Cadastre a empresa para enviar a logo.';
+}
+
 export function setEnterpriseLogoView(url = '', options = {}) {
   const normalizedUrl = String(url || '').trim();
   const input = $(SELECTORS.logo_url);

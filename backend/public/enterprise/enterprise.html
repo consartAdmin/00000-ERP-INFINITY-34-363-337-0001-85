@@ -52,6 +52,11 @@
             <label aria-hidden="true">&nbsp;</label>
             <button id="btnSearch" class="btn btn-toolbar btn-sm" type="button">Filtrar</button>
           </div>
+
+          <div class="enterprise-field button-field">
+            <label aria-hidden="true">&nbsp;</label>
+            <button id="btnNewEnterprise" class="btn btn-new btn-sm" type="button">+ Nova empresa</button>
+          </div>
         </div>
       </div>
 
@@ -119,14 +124,14 @@
 
     <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="enterpriseModalTitle">
       <div class="modal__panel modal-width-10 modal-height-9">
-        <header class="modal__header">
+        <div class="modal__header">
           <div>
             <h2 id="enterpriseModalTitle" class="modal__title">Editar empresa</h2>
             <p id="enterpriseModalSubtitle" class="modal__subtitle">Atualize os dados cadastrais da empresa.</p>
           </div>
           <button id="btnCloseModal" class="modal__close" type="button" aria-label="Fechar modal" title="Fechar"
             data-modal-close>×</button>
-        </header>
+        </div>
 
         <form id="enterpriseForm" class="enterprise-modal-form" novalidate>
           <div class="modal__body enterprise-modal__body">

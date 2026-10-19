@@ -4,6 +4,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import {
+  createEnterprise,
   deleteEnterpriseLogo,
   getEnterpriseById,
   listEnterprises,
@@ -16,6 +17,7 @@ import {
   getEnterpriseFormData,
   getEnterpriseIdFromForm,
   resetEnterpriseLogoFileInput,
+  setEnterpriseLogoAvailability,
   setEnterpriseLogoUploadState,
   setEnterpriseLogoView,
   showEnterpriseLogoLocalPreview,
@@ -201,6 +203,7 @@ export async function editEnterpriseById(id) {
 
     setSelectedEnterprise(enterprise);
     fillEnterpriseForm(enterprise);
+    setEnterpriseLogoAvailability(true);
     openEnterpriseModal(enterprise);
   } catch (error) {
     console.error('[enterprise] Erro ao carregar empresa:', error);
@@ -213,10 +216,18 @@ export async function editEnterpriseById(id) {
   }
 }
 
+export function newEnterprise() {
+  setSelectedEnterprise(null);
+  fillEnterpriseForm({});
+  setEnterpriseLogoAvailability(false);
+  openEnterpriseModal({}, { mode: 'create' });
+}
+
 export async function saveEnterpriseEdition() {
   if (enterpriseState.saving) return;
 
   const id = getEnterpriseIdFromForm();
+  const isCreate = !id;
   const payload = getEnterpriseFormData();
 
   validateEnterprisePayload(payload);
@@ -232,20 +243,28 @@ export async function saveEnterpriseEdition() {
   }
 
   try {
-    await updateEnterprise(id, payload);
+    if (isCreate) {
+      await createEnterprise(payload);
+    } else {
+      await updateEnterprise(id, payload);
+    }
+
     closeEnterpriseModal();
-    showMessage('Empresa atualizada com sucesso.', 'success');
+    showMessage(isCreate ? 'Empresa cadastrada com sucesso.' : 'Empresa atualizada com sucesso.', 'success');
     await loadEnterprises();
   } catch (error) {
-    console.error('[enterprise] Erro ao atualizar empresa:', error);
-    showMessage(error.message || 'Erro ao atualizar a empresa.', 'error');
+    console.error('[enterprise] Erro ao salvar empresa:', error);
+    const message = /already .*CNPJ/i.test(error.message || '')
+      ? 'Já existe uma empresa cadastrada com este CNPJ.'
+      : error.message;
+    showMessage(message || 'Erro ao salvar a empresa.', 'error');
     throw error;
   } finally {
     setEnterpriseSaving(false);
 
     if (btnSave) {
       btnSave.disabled = false;
-      btnSave.textContent = originalText || 'Salvar alterações';
+      btnSave.textContent = originalText || (isCreate ? 'Cadastrar empresa' : 'Salvar alterações');
     }
   }
 }

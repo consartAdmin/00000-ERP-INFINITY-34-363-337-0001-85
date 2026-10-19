@@ -7,6 +7,7 @@
 import {
   editEnterpriseById,
   loadEnterprises,
+  newEnterprise,
   removeCurrentEnterpriseLogo,
   saveEnterpriseEdition,
   uploadSelectedEnterpriseLogo,
@@ -18,6 +19,7 @@ import { $ } from './enterprise.utils.js';
 
 function bindListEvents() {
   $(SELECTORS.btnSearch)?.addEventListener('click', loadEnterprises);
+  $(SELECTORS.btnNewEnterprise)?.addEventListener('click', newEnterprise);
 
   $(SELECTORS.searchInput)?.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;

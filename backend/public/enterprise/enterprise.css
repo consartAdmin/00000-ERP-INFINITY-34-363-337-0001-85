@@ -364,3 +364,9 @@
     white-space: normal;
   }
 }
+
+/* Input de arquivo da logo: o atributo hidden precisa vencer o display dos .fields */
+.enterprise-logo-field input[type="file"][hidden],
+.enterprise-logo-field [hidden] {
+  display: none !important;
+}
