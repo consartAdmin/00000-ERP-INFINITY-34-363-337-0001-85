@@ -142,12 +142,6 @@ export async function generateProposalConsartPdf(proposal) {
     }
   }
 
-  const companyAddress = join([
-    join([enterprise.address, enterprise.address_number], ', '),
-    enterprise.district,
-    join([enterprise.city, enterprise.state], '/'),
-    enterprise.zip_code ? `CEP ${formatCep(enterprise.zip_code)}` : '',
-  ]);
   const companyContact = join([enterprise.phone || enterprise.whatsapp, enterprise.email, enterprise.website]);
 
   doc.font('Helvetica-Bold').fontSize(12).fillColor('#111')
@@ -157,7 +151,6 @@ export async function generateProposalConsartPdf(proposal) {
     doc.text(clean(enterprise.corporate_name), { width: 230 });
   }
   doc.text(`CNPJ ${formatDoc(enterprise.cnpj)}`, { width: 230 });
-  if (companyAddress) doc.text(companyAddress, { width: 230 });
   if (companyContact) doc.text(companyContact, { width: 230 });
   const companyBottom = doc.y;
 
