@@ -130,6 +130,25 @@ export async function createRepresentative(req, res) {
   }
 }
 
+/** Quem assina pela Consart (contratada): mesmo cadastro, dono CONSART_OWNER. */
+export async function listConsartRepresentatives(req, res) {
+  try {
+    const rows = await reps.list(reps.CONSART_OWNER, { all: req.query.all === 'true' });
+    return res.json({ ok: true, data: rows });
+  } catch (error) {
+    return fail(res, 'listConsartRepresentatives', error);
+  }
+}
+
+export async function createConsartRepresentative(req, res) {
+  try {
+    const rep = await reps.create(reps.CONSART_OWNER, req.body);
+    return res.status(201).json({ ok: true, data: rep });
+  } catch (error) {
+    return fail(res, 'createConsartRepresentative', error);
+  }
+}
+
 export async function updateRepresentative(req, res) {
   try {
     const rep = await reps.update(req.params.id, req.body);

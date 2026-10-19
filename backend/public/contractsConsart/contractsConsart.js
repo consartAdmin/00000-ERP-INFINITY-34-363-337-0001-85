@@ -45,7 +45,8 @@ const state = {
   customer: null, // { id, name }
   seller: null,   // { id, name }
   reps: [],       // representantes/sócios do cliente
-  repSnapshot: null, // representante gravado no contrato (pode ter saído do cadastro)
+  // Quem assina por cada lado; snapshot = o gravado no contrato (pode ter saído do cadastro)
+  parties: { customer: { reps: [], snapshot: null }, consart: { reps: [], snapshot: null } },
   items: [],
   clauses: [],
   template: { clauses: [], placeholders: [], roles: [] },
@@ -465,16 +466,14 @@ function fillForm(c = {}) {
 
   setCustomer(c.customer_id ? { id: c.customer_id, name: c.customer_name, tax_id: c.customer_tax_id } : null);
   setSeller(c.seller_id ? { id: c.seller_id, name: c.seller_name } : null);
-  state.repSnapshot = c.representative_id || c.representative_name
-    ? {
-      id: c.representative_id || null,
-      name: c.representative_name,
-      role: c.representative_role,
-      cpf: c.representative_cpf,
-      address: c.representative_address,
-    }
-    : null;
-  loadRepresentatives(c.customer_id, c.representative_id, c.representative_role);
+  state.parties.customer.snapshot = snapshotFrom(c, 'representative');
+  state.parties.consart.snapshot = snapshotFrom(c, 'contracted_rep');
+  loadRepresentatives('customer', c.representative_id, c.representative_role);
+  loadRepresentatives('consart', c.contracted_rep_id, c.contracted_rep_role).then(() => {
+    // Contrato novo: se só uma pessoa assina pela Consart, já vem escolhida
+    const own = state.parties.consart.reps;
+    if (!c.id && !c.contracted_rep_id && own.length === 1) renderRepSelects('consart', own[0].id, own[0].role);
+  });
 
   $('#cf-contact').value = c.contact_name || '';
   $('#cf-status').value = c.status || 'RASCUNHO';
@@ -791,6 +790,7 @@ function buildPayload() {
     contact_name: $('#cf-contact').value,
     seller_id: state.seller?.id || null,
     representative_id: Number($('#cf-rep').value) || null,
+    contracted_rep_id: Number($('#cf-own').value) || null,
     proposal_id: state.proposal?.id || null,
     proposal_number: state.proposal?.number || null,
     status: $('#cf-status').value,
@@ -867,46 +867,79 @@ async function duplicateFromEditor() {
   await duplicateContract(state.editingId);
 }
 
-// ── Representante / sócio do cliente (quem assina) ────────────────
+// ── Quem assina: representante do cliente e da Consart ────────────
+// Os dois lados usam o mesmo cadastro (Consart = customer_id 0 no backend).
+
+const PARTIES = {
+  customer: {
+    role: '#cf-rep-role', rep: '#cf-rep', info: '#cf-rep-info',
+    url: () => (state.customer ? `${API}/customers/${state.customer.id}/representatives` : null),
+    title: () => `Representantes / Sócios — ${state.customer?.name || ''}`,
+    noOwner: 'Selecione o cliente primeiro',
+    empty: 'Nenhum representante cadastrado (use "👤 Representantes do cliente")',
+    emptyTable: 'Nenhum representante cadastrado para este cliente.',
+  },
+  consart: {
+    role: '#cf-own-role', rep: '#cf-own', info: '#cf-own-info',
+    url: () => `${API}/consart/representatives`,
+    title: () => 'Quem assina pela Consart',
+    noOwner: '',
+    empty: 'Ninguém cadastrado (use "👤 Representantes da Consart")',
+    emptyTable: 'Ninguém cadastrado para assinar pela Consart.',
+  },
+};
+
+const party = (key) => state.parties[key];
+
+function snapshotFrom(c, field) {
+  return c[`${field}_id`] || c[`${field}_name`]
+    ? { id: c[`${field}_id`] || null, name: c[`${field}_name`], role: c[`${field}_role`] }
+    : null;
+}
 
 const repAddress = (r) => [r.address, [r.city, r.state].filter(Boolean).join('/'), r.postal_code ? `CEP ${r.postal_code}` : '']
   .filter(Boolean).join(' · ');
 
-async function loadRepresentatives(customerId, selectedId = null, selectedRole = '') {
-  state.reps = [];
-  if (customerId) {
+async function loadRepresentatives(key, selectedId = null, selectedRole = '') {
+  const p = party(key);
+  p.reps = [];
+  const url = PARTIES[key].url();
+  if (url) {
     try {
-      const json = await apiFetch(`${API}/customers/${customerId}/representatives`);
-      state.reps = json.data || [];
+      const json = await apiFetch(url);
+      p.reps = json.data || [];
     } catch (error) {
-      console.warn('[contractsConsart] representantes:', error);
+      console.warn(`[contractsConsart] representantes (${key}):`, error);
     }
   }
-  renderRepSelects(selectedId, selectedRole);
+  renderRepSelects(key, selectedId, selectedRole);
 }
 
-function renderRepSelects(selectedId = null, selectedRole = null) {
-  const roleSel = $('#cf-rep-role');
-  const repSel = $('#cf-rep');
+function renderRepSelects(key, selectedId = null, selectedRole = null) {
+  const cfg = PARTIES[key];
+  const p = party(key);
+  const roleSel = $(cfg.role);
+  const repSel = $(cfg.rep);
   const role = selectedRole ?? roleSel.value;
-  const roles = [...new Set(state.reps.map((r) => r.role))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const roles = [...new Set(p.reps.map((r) => r.role))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
   roleSel.innerHTML = '<option value="">Todos os cargos</option>'
     + roles.map((r) => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
   roleSel.value = roles.includes(role) ? role : '';
 
-  const list = state.reps.filter((r) => !roleSel.value || r.role === roleSel.value);
-  const snapshotMissing = state.repSnapshot?.id && !state.reps.some((r) => Number(r.id) === Number(state.repSnapshot.id));
+  const list = p.reps.filter((r) => !roleSel.value || r.role === roleSel.value);
+  const snap = p.snapshot;
+  const snapshotMissing = snap?.id && !p.reps.some((r) => Number(r.id) === Number(snap.id));
 
-  if (!state.customer) {
-    repSel.innerHTML = '<option value="">Selecione o cliente primeiro</option>';
-  } else if (!state.reps.length && !snapshotMissing) {
-    repSel.innerHTML = '<option value="">Nenhum representante cadastrado (use "👤 Representantes do cliente")</option>';
+  if (!cfg.url()) {
+    repSel.innerHTML = `<option value="">${esc(cfg.noOwner)}</option>`;
+  } else if (!p.reps.length && !snapshotMissing) {
+    repSel.innerHTML = `<option value="">${esc(cfg.empty)}</option>`;
   } else {
     repSel.innerHTML = '<option value="">Selecione quem assina...</option>'
       + list.map((r) => `<option value="${r.id}">${esc(r.name)} — ${esc(r.role)}</option>`).join('')
       + (snapshotMissing
-        ? `<option value="" data-snapshot>${esc(state.repSnapshot.name)} — ${esc(state.repSnapshot.role)} (fora do cadastro)</option>`
+        ? `<option value="" data-snapshot>${esc(snap.name)} — ${esc(snap.role)} (fora do cadastro)</option>`
         : '');
   }
 
@@ -915,12 +948,13 @@ function renderRepSelects(selectedId = null, selectedRole = null) {
   else if (!wanted && list.length === 1 && roleSel.value) repSel.value = String(list[0].id);
   else repSel.value = '';
   repSel.dataset.current = repSel.value;
-  renderRepInfo();
+  renderRepInfo(key);
 }
 
-function renderRepInfo() {
-  const info = $('#cf-rep-info');
-  const rep = state.reps.find((r) => String(r.id) === $('#cf-rep').value);
+function renderRepInfo(key) {
+  const cfg = PARTIES[key];
+  const info = $(cfg.info);
+  const rep = party(key).reps.find((r) => String(r.id) === $(cfg.rep).value);
   if (rep) {
     info.className = 'contract-rep-info';
     info.innerHTML = [
@@ -934,27 +968,30 @@ function renderRepInfo() {
   }
 }
 
-function onRepRoleChange() {
-  $('#cf-rep').dataset.current = '';
-  renderRepSelects(null);
+function onRepRoleChange(key) {
+  $(PARTIES[key].rep).dataset.current = '';
+  renderRepSelects(key, null);
   state.dirty = true;
 }
 
-function onRepChange() {
-  const repSel = $('#cf-rep');
+function onRepChange(key) {
+  const cfg = PARTIES[key];
+  const repSel = $(cfg.rep);
   repSel.dataset.current = repSel.value;
-  const rep = state.reps.find((r) => String(r.id) === repSel.value);
-  if (rep && $('#cf-rep-role').value !== rep.role) renderRepSelects(rep.id, rep.role);
-  else renderRepInfo();
+  const rep = party(key).reps.find((r) => String(r.id) === repSel.value);
+  if (rep && $(cfg.role).value !== rep.role) renderRepSelects(key, rep.id, rep.role);
+  else renderRepInfo(key);
   state.dirty = true;
 }
 
-function openRepresentativesModal() {
-  if (!state.customer) {
+function openRepresentativesModal(key) {
+  const cfg = PARTIES[key];
+  const p = party(key);
+  const listUrl = cfg.url();
+  if (!listUrl) {
     alert('Selecione o cliente primeiro (duplo clique no campo Cliente).');
     return;
   }
-  const customerId = state.customer.id;
   const overlay = document.createElement('div');
   overlay.className = 'modal rep-modal';
   overlay.setAttribute('aria-hidden', 'true');
@@ -963,7 +1000,7 @@ function openRepresentativesModal() {
     <div class="modal__dialog">
       <section class="modal__panel modal-width-8" role="dialog" aria-modal="true" aria-labelledby="repTitle">
         <div class="modal__header modal-header-color-3">
-          <h2 class="modal__title" id="repTitle">Representantes / Sócios — ${esc(state.customer.name)}</h2>
+          <h2 class="modal__title" id="repTitle">${esc(cfg.title())}</h2>
           <button type="button" class="modal__close" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
         </div>
         <div class="modal__body">
@@ -1030,11 +1067,11 @@ function openRepresentativesModal() {
 
   function renderTable() {
     const body = q('[data-body]');
-    if (!state.reps.length) {
-      body.innerHTML = '<tr><td colspan="5" class="rep-table__msg">Nenhum representante cadastrado para este cliente.</td></tr>';
+    if (!p.reps.length) {
+      body.innerHTML = `<tr><td colspan="5" class="rep-table__msg">${esc(cfg.emptyTable)}</td></tr>`;
       return;
     }
-    body.innerHTML = state.reps.map((r, i) => `
+    body.innerHTML = p.reps.map((r, i) => `
       <tr data-index="${i}">
         <td><strong>${esc(r.name)}</strong></td>
         <td>${esc(r.role)}</td>
@@ -1049,8 +1086,8 @@ function openRepresentativesModal() {
   }
 
   async function reload() {
-    const json = await apiFetch(`${API}/customers/${customerId}/representatives`);
-    state.reps = json.data || [];
+    const json = await apiFetch(listUrl);
+    p.reps = json.data || [];
     renderTable();
   }
 
@@ -1065,7 +1102,7 @@ function openRepresentativesModal() {
     try {
       const json = editingId
         ? await apiFetch(`${API}/representatives/${editingId}`, { method: 'PUT', body: JSON.stringify(payload) })
-        : await apiFetch(`${API}/customers/${customerId}/representatives`, { method: 'POST', body: JSON.stringify(payload) });
+        : await apiFetch(listUrl, { method: 'POST', body: JSON.stringify(payload) });
       lastSavedId = json.data.id;
       await reload();
       clearForm();
@@ -1080,14 +1117,14 @@ function openRepresentativesModal() {
     const edit = e.target.closest('[data-edit]');
     const del = e.target.closest('[data-del]');
     if (edit) {
-      const r = state.reps[Number(edit.dataset.edit)];
+      const r = p.reps[Number(edit.dataset.edit)];
       editingId = r.id;
       Object.entries(fields).forEach(([k, sel]) => { q(sel).value = r[k] || ''; });
       q('[data-save]').textContent = 'Salvar alterações';
       q('#repName').focus();
     }
     if (del) {
-      const r = state.reps[Number(del.dataset.del)];
+      const r = p.reps[Number(del.dataset.del)];
       if (!confirm(`Excluir o representante ${r.name}? Contratos já salvos mantêm os dados dele.`)) return;
       try {
         await apiFetch(`${API}/representatives/${r.id}`, { method: 'DELETE' });
@@ -1103,10 +1140,10 @@ function openRepresentativesModal() {
   overlay.addEventListener('modal:close', () => {
     overlay.remove();
     // Atualiza os selects do contrato; o recém-salvo já fica escolhido se nada estava escolhido
-    const current = Number($('#cf-rep').value) || null;
+    const current = Number($(cfg.rep).value) || null;
     const pick = current || lastSavedId;
-    const rep = state.reps.find((r) => Number(r.id) === Number(pick));
-    renderRepSelects(pick, rep?.role || '');
+    const rep = p.reps.find((r) => Number(r.id) === Number(pick));
+    renderRepSelects(key, pick, rep?.role || '');
     if (pick && pick !== current) state.dirty = true;
   });
 
@@ -1127,8 +1164,8 @@ function pickCustomer() {
         tax_id: customer.tax_id || customer.cnpj_cpf || '',
       });
       if (!$('#cf-contact').value && customer.contact_name) $('#cf-contact').value = customer.contact_name;
-      state.repSnapshot = null;
-      loadRepresentatives(state.customer.id);
+      state.parties.customer.snapshot = null;
+      loadRepresentatives('customer');
       state.dirty = true;
     },
   });
@@ -1183,9 +1220,12 @@ function bindEvents() {
     if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); setSeller(null); state.dirty = true; }
   });
 
-  $('#cf-rep-role').addEventListener('change', onRepRoleChange);
-  $('#cf-rep').addEventListener('change', onRepChange);
-  $('#cf-rep-manage').addEventListener('click', openRepresentativesModal);
+  $('#cf-rep-role').addEventListener('change', () => onRepRoleChange('customer'));
+  $('#cf-rep').addEventListener('change', () => onRepChange('customer'));
+  $('#cf-rep-manage').addEventListener('click', () => openRepresentativesModal('customer'));
+  $('#cf-own-role').addEventListener('change', () => onRepRoleChange('consart'));
+  $('#cf-own').addEventListener('change', () => onRepChange('consart'));
+  $('#cf-own-manage').addEventListener('click', () => openRepresentativesModal('consart'));
 
   $('#cf-start').addEventListener('change', updateEndDate);
   $('#cf-term').addEventListener('input', updateEndDate);

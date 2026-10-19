@@ -228,6 +228,10 @@ function placeholderValues(contract, enterprise) {
     REPRESENTANTE_ENDERECO: clean(contract.representative_address),
     CONTRATADA: clean(enterprise.corporate_name || enterprise.trade_name),
     CONTRATADA_DOC: formatDoc(enterprise.cnpj),
+    CONTRATADA_REPRESENTANTE: clean(contract.contracted_rep_name),
+    CONTRATADA_REPRESENTANTE_CARGO: clean(contract.contracted_rep_role),
+    CONTRATADA_REPRESENTANTE_CPF: clean(contract.contracted_rep_cpf),
+    CONTRATADA_REPRESENTANTE_ENDERECO: clean(contract.contracted_rep_address),
     VALOR: `R$ ${money(recurring)}`,
     VALOR_EXTENSO: moneyWords(recurring),
     VALOR_IMPLANTACAO: `R$ ${money(oneTime)}`,
@@ -387,6 +391,14 @@ export async function generateContractConsartPdf(contract) {
       { text: `CNPJ ${values.CONTRATADA_DOC}` },
       { text: companyContact },
       { text: contract.seller_name ? `Responsável comercial: ${contract.seller_name}` : '' },
+      {
+        text: contract.contracted_rep_name
+          ? `Representante: ${join([contract.contracted_rep_name, contract.contracted_rep_role], ' - ')}`
+          : '',
+        bold: true,
+      },
+      { text: contract.contracted_rep_cpf ? `CPF ${contract.contracted_rep_cpf}` : '' },
+      { text: clean(contract.contracted_rep_address) },
     ],
     'Contratante',
     [
@@ -416,14 +428,18 @@ export async function generateContractConsartPdf(contract) {
     ]
   );
 
-  const representedBy = contract.representative_name
-    ? `, a CONTRATANTE neste ato representada por ${join([
-      contract.representative_name,
-      contract.representative_role,
-      contract.representative_cpf ? `inscrito(a) no CPF sob o nº ${contract.representative_cpf}` : '',
-      contract.representative_address ? `residente em ${contract.representative_address}` : '',
+  const representation = (party, name, role, cpf, address) => (name
+    ? `, a ${party} neste ato representada por ${join([
+      name,
+      role,
+      cpf ? `inscrito(a) no CPF sob o nº ${cpf}` : '',
+      address ? `residente em ${address}` : '',
     ], ', ')}`
-    : '';
+    : '');
+  const representedBy = representation('CONTRATADA', contract.contracted_rep_name, contract.contracted_rep_role,
+    contract.contracted_rep_cpf, contract.contracted_rep_address)
+    + representation('CONTRATANTE', contract.representative_name, contract.representative_role,
+      contract.representative_cpf, contract.representative_address);
   doc.font('Helvetica').fontSize(9.5).fillColor('#111').text(
     `As partes acima qualificadas, doravante denominadas CONTRATADA e CONTRATANTE${representedBy}, têm entre si justo e `
     + 'contratado o presente Contrato de Prestação de Serviços, que se regerá pelas cláusulas e condições a seguir.',
@@ -592,7 +608,16 @@ export async function generateContractConsartPdf(contract) {
   const sigW = 220;
   const signatureRows = [
     [
-      [values.CONTRATADA, `CONTRATADA · CNPJ ${values.CONTRATADA_DOC}`],
+      [
+        values.CONTRATADA,
+        join([
+          `CONTRATADA · CNPJ ${values.CONTRATADA_DOC}`,
+          contract.contracted_rep_name
+            ? join([contract.contracted_rep_name, contract.contracted_rep_role,
+              contract.contracted_rep_cpf ? `CPF ${contract.contracted_rep_cpf}` : ''], ' · ')
+            : '',
+        ], '\n'),
+      ],
       [
         values.CONTRATANTE,
         join([

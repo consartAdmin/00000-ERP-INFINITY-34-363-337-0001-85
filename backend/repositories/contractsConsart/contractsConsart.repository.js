@@ -12,7 +12,7 @@
 
 import pool from '../../config/db.js';
 import { TB, TB_ITEMS, TB_CLAUSES, TB_REPRESENTATIVES, ensureContractsConsartTables } from './contractsConsart.schema.js';
-import { addressLine } from './customersConsartRepresentatives.repository.js';
+import { addressLine, CONSART_OWNER } from './customersConsartRepresentatives.repository.js';
 import { DEFAULT_CLAUSES } from './contractsConsart.clauses.js';
 import * as proposalsRepo from '../proposalsServicesConsart/proposalsServicesConsart.repository.js';
 
@@ -163,6 +163,7 @@ function prepareHeader(body = {}) {
     contact_name: text(body.contact_name, 200),
     seller_id: positiveId(body.seller_id),
     representative_id: positiveId(body.representative_id),
+    contracted_rep_id: positiveId(body.contracted_rep_id),
     start_date: isoDate(body.start_date),
     term_months: Math.max(0, Math.min(600, Math.trunc(num(body.term_months, 12)))),
     auto_renew: body.auto_renew === true || body.auto_renew === 'true',
@@ -201,25 +202,37 @@ async function lookupNames(client, header) {
   return { customer_name: customer.name, customer_tax_id: customer.tax_id, seller_name: sellerName };
 }
 
-/** Cópia do representante escolhido (precisa ser do mesmo cliente). */
-async function lookupRepresentative(client, header) {
-  if (!header.representative_id) {
-    return { id: null, name: null, role: null, cpf: null, address: null };
-  }
+const EMPTY_REP = Object.freeze({ id: null, name: null, role: null, cpf: null, address: null });
+
+async function snapshotRep(client, repId, ownerId, message) {
+  if (!repId) return EMPTY_REP;
   const { rows: [rep] } = await client.query(
     `SELECT * FROM ${TB_REPRESENTATIVES} WHERE id = $1 AND customer_id = $2`,
-    [header.representative_id, header.customer_id]
+    [repId, ownerId]
   );
-  if (!rep) throw validationError('Representante não encontrado para este cliente.');
+  if (!rep) throw validationError(message);
   return { id: rep.id, name: rep.name, role: rep.role, cpf: rep.cpf, address: addressLine(rep) || null };
 }
 
-async function saveRepresentative(client, contractId, rep) {
+/** Cópia de quem assina: pelo cliente (precisa ser do mesmo cliente) e pela Consart. */
+async function lookupRepresentatives(client, header) {
+  return {
+    customer: await snapshotRep(client, header.representative_id, header.customer_id,
+      'Representante não encontrado para este cliente.'),
+    consart: await snapshotRep(client, header.contracted_rep_id, CONSART_OWNER,
+      'Representante da Consart não encontrado.'),
+  };
+}
+
+async function saveRepresentatives(client, contractId, { customer: rep, consart: own }) {
   await client.query(
     `UPDATE ${TB} SET representative_id = $2, representative_name = $3, representative_role = $4,
-            representative_cpf = $5, representative_address = $6
+            representative_cpf = $5, representative_address = $6,
+            contracted_rep_id = $7, contracted_rep_name = $8, contracted_rep_role = $9,
+            contracted_rep_cpf = $10, contracted_rep_address = $11
       WHERE id = $1`,
-    [contractId, rep.id, rep.name, rep.role, rep.cpf, rep.address]
+    [contractId, rep.id, rep.name, rep.role, rep.cpf, rep.address,
+      own.id, own.name, own.role, own.cpf, own.address]
   );
 }
 
@@ -428,7 +441,15 @@ export async function create(body = {}, user = {}) {
 
     await insertItems(client, row.id, totals.items);
     await insertClauses(client, row.id, clauses);
-    await saveRepresentative(client, row.id, await lookupRepresentative(client, header));
+    // Contrato novo sem assinante da Consart: usa o único cadastrado, se houver só um
+    if (!header.contracted_rep_id) {
+      const { rows: own } = await client.query(
+        `SELECT id FROM ${TB_REPRESENTATIVES} WHERE customer_id = $1 AND active LIMIT 2`,
+        [CONSART_OWNER]
+      );
+      if (own.length === 1) header.contracted_rep_id = own[0].id;
+    }
+    await saveRepresentatives(client, row.id, await lookupRepresentatives(client, header));
     return row.id;
   });
 
@@ -494,7 +515,7 @@ export async function update(id, body = {}) {
 
     await client.query(`DELETE FROM ${TB_ITEMS} WHERE contract_id = $1`, [contractId]);
     await insertItems(client, contractId, totals.items);
-    await saveRepresentative(client, contractId, await lookupRepresentative(client, header));
+    await saveRepresentatives(client, contractId, await lookupRepresentatives(client, header));
 
     if (clauses) {
       await client.query(`DELETE FROM ${TB_CLAUSES} WHERE contract_id = $1`, [contractId]);

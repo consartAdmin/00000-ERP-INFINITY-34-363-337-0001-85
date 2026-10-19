@@ -133,6 +133,13 @@ async function createTables() {
     ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS representative_cpf VARCHAR(14);
     ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS representative_address VARCHAR(500);
 
+    -- Quem assina pela Consart (contratada); cadastro com customer_id = 0
+    ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS contracted_rep_id BIGINT;
+    ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS contracted_rep_name VARCHAR(200);
+    ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS contracted_rep_role VARCHAR(80);
+    ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS contracted_rep_cpf VARCHAR(14);
+    ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS contracted_rep_address VARCHAR(500);
+
     CREATE INDEX IF NOT EXISTS "contractsConsart_customer_idx" ON ${TB} (customer_id);
     CREATE INDEX IF NOT EXISTS "contractsConsart_proposal_idx" ON ${TB} (proposal_id);
     CREATE INDEX IF NOT EXISTS "contractsConsart_issue_date_idx" ON ${TB} (issue_date);
