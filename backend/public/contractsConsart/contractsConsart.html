@@ -17,7 +17,7 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/contractsConsart/contractsConsart.css?v=1" />
+  <link rel="stylesheet" href="/public/contractsConsart/contractsConsart.css?v=2" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -256,6 +256,7 @@
                   <tr>
                     <th class="ci-col-n">#</th>
                     <th class="ci-col-desc">Serviço</th>
+                    <th class="ci-col-charge" title="Recorrente = entra na mensalidade · Única = implantação/setup, cobrada uma vez">Cobrança</th>
                     <th class="ci-col-unit">Un.</th>
                     <th class="ci-col-qty">Qtd</th>
                     <th class="ci-col-price">Valor unit.</th>
@@ -277,6 +278,7 @@
                 <span>Subtotal: <strong id="cf-subtotal">0,00</strong></span>
                 <span>Descontos: <strong id="cf-discount">0,00</strong></span>
                 <span class="contract-totals__total"><span id="cf-total-label">Valor mensal</span>: <strong id="cf-total">R$ 0,00</strong></span>
+                <span class="contract-totals__total" id="cf-one-time-box" hidden>Implantação (única): <strong id="cf-one-time">R$ 0,00</strong></span>
               </div>
             </div>
 
@@ -320,7 +322,7 @@
   <script>window.ERP_COMPANY = 'CONSART';</script>
   <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/contractsConsart/contractsConsart.js?v=1"></script>
+  <script type="module" src="/public/contractsConsart/contractsConsart.js?v=2"></script>
 </body>
 
 </html>

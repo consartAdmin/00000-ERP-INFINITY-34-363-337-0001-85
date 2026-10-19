@@ -7,6 +7,8 @@
 // ║ • Número = ano/sequência do ano (ex.: 2026/0003), próprio.         ║
 // ║ • Pode nascer de uma Proposta de Serviços aprovada (proposal_id).  ║
 // ║ • Cliente vem de customersConsart; vendedor de sellersConsart.     ║
+// ║ • Itens RECORRENTE (mensalidade) ou UNICA (implantação): totais    ║
+// ║   separados em recurring_total / one_time_total.                   ║
 // ║ • Roda uma vez por boot (primeira chamada do repositório).         ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
@@ -92,6 +94,12 @@ async function createTables() {
       title        VARCHAR(200) NOT NULL,
       body         TEXT NOT NULL DEFAULT ''
     );
+
+    -- Cobrança por item: RECORRENTE (segue a cobrança do contrato) ou UNICA (implantação/setup)
+    ALTER TABLE ${TB_ITEMS} ADD COLUMN IF NOT EXISTS charge_type VARCHAR(12) NOT NULL DEFAULT 'RECORRENTE';
+    ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS recurring_total NUMERIC(14,2);
+    ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS one_time_total NUMERIC(14,2) NOT NULL DEFAULT 0;
+    UPDATE ${TB} SET recurring_total = total WHERE recurring_total IS NULL;
 
     CREATE INDEX IF NOT EXISTS "contractsConsart_customer_idx" ON ${TB} (customer_id);
     CREATE INDEX IF NOT EXISTS "contractsConsart_proposal_idx" ON ${TB} (proposal_id);

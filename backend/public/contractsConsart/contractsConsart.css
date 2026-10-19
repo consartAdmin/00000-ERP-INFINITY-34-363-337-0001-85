@@ -128,6 +128,7 @@
 }
 
 .ci-col-n     { width: 32px; }
+.ci-col-charge { width: 120px; }
 .ci-col-unit  { width: 64px; }
 .ci-col-qty   { width: 80px; }
 .ci-col-price { width: 115px; }
@@ -324,3 +325,21 @@
 .contract-pick__table tbody tr:hover,
 .contract-pick__table tbody tr:focus { background: #dbeafe; outline: none; }
 .contract-pick__msg { padding: 24px; text-align: center; color: #64748b; }
+
+.contract-items__table td select {
+  width: 100%;
+  height: 28px;
+  padding: 2px 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font: inherit;
+  background: #fff;
+}
+
+.contract-items__table tr.is-one-time td select { background: #fef3c7; }
+
+.contracts-one-time {
+  display: block;
+  font-size: 10px;
+  color: #b45309;
+}

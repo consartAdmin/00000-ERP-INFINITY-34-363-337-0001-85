@@ -2,7 +2,8 @@
 // ║ contractsConsart.js — Contratos de Serviços (CONSART ERP)            ║
 // ║ • Lista com filtros e paginação                                      ║
 // ║ • Editor em modal: cliente/vendedor por duplo clique, vigência e     ║
-// ║   pagamento, serviços (cadastro ou avulsos), objeto e cláusulas      ║
+// ║   pagamento, serviços (mensais ou de cobrança única, ex. implantação)║
+// ║   do cadastro ou avulsos, objeto e cláusulas                         ║
 // ║   editáveis com campos automáticos ({CAMPO})                         ║
 // ║ • "Da proposta aprovada": gera o contrato a partir de uma Proposta   ║
 // ║   de Serviços APROVADA                                               ║
@@ -31,6 +32,7 @@ const STATUS_LABELS = {
 };
 
 const TOTAL_LABELS = { MENSAL: 'Valor mensal', UNICO: 'Valor total', PARCELADO: 'Valor total' };
+const RECURRING_LABELS = { MENSAL: 'Mensal', UNICO: 'Total do contrato', PARCELADO: 'Parcelada' };
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -218,7 +220,7 @@ function renderList(json) {
       <td class="contracts-col-left" title="${esc(c.title)}">${esc(c.title)}</td>
       <td>${esc(c.proposal_number || '—')}</td>
       <td>${esc(termText(c))}</td>
-      <td class="contracts-col-money">${money(c.total)}</td>
+      <td class="contracts-col-money">${money(c.recurring_total ?? c.total)}${Number(c.one_time_total) ? `<span class="contracts-one-time">+ ${money(c.one_time_total)} impl.</span>` : ''}</td>
       <td>${statusBadge(c.status_effective)}</td>
       <td>${actionIconsHtml([
         { action: 'edit', title: 'Editar', attrs: { 'data-act': 'edit', 'data-id': c.id } },
@@ -483,6 +485,7 @@ function fillForm(c = {}) {
   $('#cf-notes').value = c.notes || '';
 
   state.items = (c.items || []).map((it) => ({
+    charge_type: it.charge_type === 'UNICA' ? 'UNICA' : 'RECORRENTE',
     service_id: it.service_id || null,
     service_code: it.service_code || '',
     description: it.description || '',
@@ -527,7 +530,7 @@ async function openEditor(id = null) {
 // ── Itens ─────────────────────────────────────────────────────────
 
 function emptyItem() {
-  return { service_id: null, service_code: '', description: '', unit: 'SV', quantity: 1, unit_price: 0, discount_percent: 0 };
+  return { charge_type: 'RECORRENTE', service_id: null, service_code: '', description: '', unit: 'SV', quantity: 1, unit_price: 0, discount_percent: 0 };
 }
 
 function itemTotal(it) {
@@ -538,12 +541,18 @@ function itemTotal(it) {
 function renderItems() {
   const body = $('#cf-items');
   if (!state.items.length) {
-    body.innerHTML = '<tr class="contract-items__empty"><td colspan="8">Nenhum serviço. Use os botões abaixo para adicionar.</td></tr>';
+    body.innerHTML = '<tr class="contract-items__empty"><td colspan="9">Nenhum serviço. Use os botões abaixo para adicionar.</td></tr>';
   } else {
     body.innerHTML = state.items.map((it, i) => `
-      <tr data-index="${i}">
+      <tr data-index="${i}" class="${it.charge_type === 'UNICA' ? 'is-one-time' : ''}">
         <td>${i + 1}</td>
         <td><input data-field="description" value="${esc(it.service_code ? `${it.service_code} - ${it.description}` : it.description)}" placeholder="Descrição do serviço"></td>
+        <td>
+          <select data-field="charge_type">
+            <option value="RECORRENTE" ${it.charge_type === 'UNICA' ? '' : 'selected'}>${esc(RECURRING_LABELS[$('#cf-billing').value] || 'Recorrente')}</option>
+            <option value="UNICA" ${it.charge_type === 'UNICA' ? 'selected' : ''}>Única</option>
+          </select>
+        </td>
         <td><input data-field="unit" value="${esc(it.unit)}" maxlength="10"></td>
         <td><input data-field="quantity" value="${qty(it.quantity)}" inputmode="decimal"></td>
         <td><input data-field="unit_price" value="${money(it.unit_price)}" inputmode="decimal"></td>
@@ -559,9 +568,22 @@ function renderItems() {
 function renderTotals() {
   const subtotal = round2(state.items.reduce((a, it) => a + round2(it.quantity * it.unit_price), 0));
   const total = round2(state.items.reduce((a, it) => a + itemTotal(it), 0));
+  const oneTime = round2(state.items.filter((it) => it.charge_type === 'UNICA').reduce((a, it) => a + itemTotal(it), 0));
   $('#cf-subtotal').textContent = money(subtotal);
   $('#cf-discount').textContent = money(subtotal - total);
-  $('#cf-total').textContent = `R$ ${money(total)}`;
+  $('#cf-total').textContent = `R$ ${money(total - oneTime)}`;
+  $('#cf-one-time').textContent = `R$ ${money(oneTime)}`;
+  $('#cf-one-time-box').hidden = !oneTime;
+}
+
+function onItemChange(event) {
+  const select = event.target.closest('select[data-field="charge_type"]');
+  if (!select) return;
+  const tr = select.closest('tr[data-index]');
+  state.items[Number(tr.dataset.index)].charge_type = select.value;
+  tr.classList.toggle('is-one-time', select.value === 'UNICA');
+  renderTotals();
+  state.dirty = true;
 }
 
 function onItemInput(event) {
@@ -619,6 +641,7 @@ function addServiceItem() {
   openServicesConsartModalSearch({
     onPick(service) {
       addItem({
+        charge_type: /implant|instala|setup|configura/i.test(service.description || '') ? 'UNICA' : 'RECORRENTE',
         service_id: Number(service.id) || null,
         service_code: String(service.code || ''),
         description: String(service.description || ''),
@@ -864,11 +887,12 @@ function bindEvents() {
 
   $('#cf-start').addEventListener('change', updateEndDate);
   $('#cf-term').addEventListener('input', updateEndDate);
-  $('#cf-billing').addEventListener('change', updateTotalLabel);
+  $('#cf-billing').addEventListener('change', () => { updateTotalLabel(); renderItems(); });
   $('#contract-form').addEventListener('input', () => { state.dirty = true; });
 
   const items = $('#cf-items');
   items.addEventListener('input', onItemInput);
+  items.addEventListener('change', onItemChange);
   items.addEventListener('focusout', onItemBlur);
   items.addEventListener('click', onItemsClick);
 

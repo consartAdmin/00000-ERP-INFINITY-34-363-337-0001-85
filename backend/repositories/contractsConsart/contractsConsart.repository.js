@@ -4,7 +4,8 @@
 // ║ • list / getById / create / update / remove / duplicate / forPdf  ║
 // ║ • fromProposal: contrato novo a partir de Proposta de Serviços     ║
 // ║   APROVADA (cliente, vendedor, serviços, condições e escopo).      ║
-// ║ • Totais calculados aqui (não confia no front).                    ║
+// ║ • Totais calculados aqui (não confia no front); itens UNICA        ║
+// ║   (implantação) somam em one_time_total, fora da mensalidade.      ║
 // ║ • "VENCIDO" não é gravado: ativo sem renovação automática com      ║
 // ║   término passado aparece como VENCIDO (status_effective).         ║
 // ╚════════════════════════════════════════════════════════════════════╝
@@ -19,6 +20,7 @@ const TB_SELLERS = 'public."sellersConsart"';
 
 export const STATUSES = Object.freeze(['RASCUNHO', 'ATIVO', 'ENCERRADO', 'CANCELADO']);
 export const BILLING_TYPES = Object.freeze(['MENSAL', 'UNICO', 'PARCELADO']);
+export const CHARGE_TYPES = Object.freeze(['RECORRENTE', 'UNICA']);
 
 const STATUS_EFFECTIVE_SQL = `
   CASE
@@ -93,7 +95,9 @@ function prepareItems(rawItems) {
       const discountPercent = Math.min(Math.max(num(it.discount_percent, 0), 0), 100);
       const gross = round2(quantity * unitPrice);
       const total = round2(gross * (1 - discountPercent / 100));
+      const chargeType = String(it.charge_type || 'RECORRENTE').trim().toUpperCase();
       return {
+        charge_type: CHARGE_TYPES.includes(chargeType) ? chargeType : 'RECORRENTE',
         service_id: positiveId(it.service_id),
         service_code: text(it.service_code, 60),
         description: text(it.description),
@@ -109,8 +113,16 @@ function prepareItems(rawItems) {
 
   const subtotal = round2(items.reduce((acc, it) => acc + it.gross, 0));
   const total = round2(items.reduce((acc, it) => acc + it.total, 0));
+  const oneTime = round2(items.filter((it) => it.charge_type === 'UNICA').reduce((acc, it) => acc + it.total, 0));
 
-  return { items, subtotal, discount_total: round2(subtotal - total), total };
+  return {
+    items,
+    subtotal,
+    discount_total: round2(subtotal - total),
+    total,
+    recurring_total: round2(total - oneTime),
+    one_time_total: oneTime,
+  };
 }
 
 /** Cláusulas: undefined = não mexe (update) / modelo padrão (create). */
@@ -192,10 +204,10 @@ async function insertItems(client, contractId, items) {
     await client.query(
       `INSERT INTO ${TB_ITEMS}
          (contract_id, position, service_id, service_code, description, unit,
-          quantity, unit_price, discount_percent, total)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          quantity, unit_price, discount_percent, total, charge_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [contractId, index + 1, it.service_id, it.service_code, it.description, it.unit,
-        it.quantity, it.unit_price, it.discount_percent, it.total]
+        it.quantity, it.unit_price, it.discount_percent, it.total, it.charge_type]
     );
   }
 }
@@ -368,13 +380,15 @@ export async function create(body = {}, user = {}) {
           start_date, term_months, end_date, auto_renew, billing_type,
           payment_method, payment_terms, due_day, readjustment_index,
           execution_place, delivery_time, forum_city, signing_city, signing_date,
-          object, notes, subtotal, discount_total, total, created_by, created_by_name)
+          object, notes, subtotal, discount_total, total, created_by, created_by_name,
+          recurring_total, one_time_total)
        VALUES ($1, $2, $3::date, $4, $5, $6, $7,
                $8, $9, $10, $11, $12, $13,
                $14::date, $15::int, ${END_DATE_SQL('$14::date', '$15::int')}, $16, $17,
                $18, $19, $20, $21,
                $22, $23, $24, $25, $26::date,
-               $27, $28, $29, $30, $31, $32, $33)
+               $27, $28, $29, $30, $31, $32, $33,
+               $34, $35)
        RETURNING id`,
       [year, next, issueDate, header.status, header.title, header.proposal_id, header.proposal_number,
         header.customer_id, names.customer_name, names.customer_tax_id, header.contact_name,
@@ -384,7 +398,8 @@ export async function create(body = {}, user = {}) {
         header.execution_place, header.delivery_time, header.forum_city, header.signing_city,
         header.signing_date,
         header.object, header.notes, totals.subtotal, totals.discount_total, totals.total,
-        positiveId(user.user_id), text(user.name, 150)]
+        positiveId(user.user_id), text(user.name, 150),
+        totals.recurring_total, totals.one_time_total]
     );
 
     await insertItems(client, row.id, totals.items);
@@ -436,6 +451,8 @@ export async function update(id, body = {}) {
           subtotal           = $26,
           discount_total     = $27,
           total              = $28,
+          recurring_total    = $29,
+          one_time_total     = $30,
           updated_at         = NOW()
         WHERE id = $1`,
       [contractId, header.issue_date, header.status, header.title,
@@ -445,7 +462,8 @@ export async function update(id, body = {}) {
         header.payment_method, header.payment_terms, header.due_day, header.readjustment_index,
         header.execution_place, header.delivery_time, header.forum_city, header.signing_city,
         header.signing_date, header.object, header.notes,
-        totals.subtotal, totals.discount_total, totals.total]
+        totals.subtotal, totals.discount_total, totals.total,
+        totals.recurring_total, totals.one_time_total]
     );
     if (!rowCount) return false;
 
@@ -521,7 +539,11 @@ export async function fromProposal(proposalId, user = {}) {
     execution_place: proposal.execution_place,
     object: proposal.scope,
     notes: proposal.notes,
-    items: proposal.items,
+    // Implantação/instalação/setup entram como cobrança única
+    items: proposal.items.map((it) => ({
+      ...it,
+      charge_type: /implant|instala|setup|configura/i.test(it.description || '') ? 'UNICA' : 'RECORRENTE',
+    })),
   }, user);
 
   return { contract, existed: false };
