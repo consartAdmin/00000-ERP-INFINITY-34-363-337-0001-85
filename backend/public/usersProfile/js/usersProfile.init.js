@@ -66,6 +66,7 @@ function bindModalEvents() {
   });
 
   $(SELECTORS.moduleSearch)?.addEventListener('input', applyModuleFilter);
+  $(SELECTORS.moduleCompany)?.addEventListener('change', applyModuleFilter);
   $(SELECTORS.btnApplyBulk)?.addEventListener('click', applyBulkProfile);
 
   $(SELECTORS.form)?.addEventListener('submit', (event) => {

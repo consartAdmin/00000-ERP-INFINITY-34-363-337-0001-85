@@ -88,6 +88,8 @@ export async function openProfilesForUser(userId) {
 
     const search = $(SELECTORS.moduleSearch);
     if (search) search.value = '';
+    const company = $(SELECTORS.moduleCompany);
+    if (company) company.value = '';
 
     renderModulesTable();
     renderModalInfo();

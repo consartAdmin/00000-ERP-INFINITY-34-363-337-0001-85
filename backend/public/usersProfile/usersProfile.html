@@ -111,6 +111,18 @@
                 <input id="upModuleSearch" type="search" autocomplete="off" placeholder="Nome ou caminho do módulo..." />
               </div>
 
+              <div class="fields fields-w-16 fields-h-6">
+                <label for="upModuleCompany">Empresa</label>
+                <select id="upModuleCompany">
+                  <option value="">Todas</option>
+                  <option value="BH3">Aparece na BH3</option>
+                  <option value="CONSART">Aparece na CONSART</option>
+                  <option value="only:BH3">Só BH3</option>
+                  <option value="only:CONSART">Só CONSART</option>
+                  <option value="both">BH3 e CONSART</option>
+                </select>
+              </div>
+
               <div class="fields fields-w-20 fields-h-6">
                 <label for="upBulkProfile">Aplicar perfil aos módulos listados</label>
                 <select id="upBulkProfile"></select>
@@ -131,6 +143,7 @@
                     <th>ID</th>
                     <th>Módulo</th>
                     <th>Caminho</th>
+                    <th>Empresa</th>
                     <th>Perfil</th>
                     <th class="up-col-flag" title="Visualizar">Ver</th>
                     <th class="up-col-flag" title="Incluir">Incluir</th>

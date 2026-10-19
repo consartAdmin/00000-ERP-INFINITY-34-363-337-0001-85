@@ -34,6 +34,7 @@ export function mapModuleRow(r = {}) {
     module_name: r.module_name,
     module_path: r.module_path,
     module_is_active: r.module_is_active,
+    module_company: r.module_company ?? null, // 'BH3' | 'CONSART' | null (as duas)
     profile_id: r.profile_id ?? null,
     profile: hasProfile ? r.profile : DEFAULT_PROFILE,
     can_view: hasProfile ? r.can_view : false,
