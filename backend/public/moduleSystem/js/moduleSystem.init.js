@@ -1,4 +1,4 @@
-import { loadModules, registrarPaginacao } from './moduleSystem.actions.js';
+import { loadModules, registrarLote, registrarPaginacao } from './moduleSystem.actions.js';
 import { elements } from './moduleSystem.config.js';
 import { registrarFormulario, resetForm } from './moduleSystem.form.js';
 import { validarElementos } from './moduleSystem.validation.js';
@@ -9,6 +9,7 @@ function iniciar() {
   validarElementos(elements);
   registrarFormulario(loadModules);
   registrarPaginacao();
+  registrarLote();
   resetForm();
   loadModules();
 }

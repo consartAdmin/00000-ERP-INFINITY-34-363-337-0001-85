@@ -3,6 +3,8 @@ export const state = {
   editingId: null,
   page: 1,
   pageSize: 50,
+  selected: new Set(), // ids marcados para alteração em lote
+  filtered: [],        // módulos que passam nos filtros (todas as páginas)
 };
 
 export function setPage(page) {

@@ -20,6 +20,9 @@ router.get('/:id', (req, res) => ctrl.getById(req, res));
 // POST /api/module-system
 router.post('/', (req, res) => ctrl.create(req, res));
 
+// PUT /api/module-system/batch — alteração em lote (antes de '/:id')
+router.put('/batch', (req, res) => ctrl.updateBatch(req, res));
+
 // PUT /api/module-system/:id
 router.put('/:id', (req, res) => ctrl.update(req, res));
 

@@ -12,6 +12,7 @@ import {
   getMenuTree,
   create,
   update,
+  updateMany,
   remove,
 } from '../repositories/moduleSystem/moduleSystem.index.js';
 import { MENU_TYPES, COMPANIES } from '../repositories/moduleSystem/moduleSystem.constants.js';
@@ -231,6 +232,35 @@ export const moduleSystemController = {
       res.json({ ok: true, data: row });
     } catch (err) {
       sendError(res, err, 'update', 'Erro ao atualizar módulo.');
+    }
+  },
+
+  /**
+   * PUT /api/module-system/batch — alteração em lote
+   * body: { ids: [1, 2, ...], company?: 'BH3'|'CONSART'|null, isActive?: boolean }
+   */
+  async updateBatch(req, res) {
+    try {
+      await tableReady;
+      const body = req.body || {};
+      const ids = [...new Set((Array.isArray(body.ids) ? body.ids : []).map(Number))]
+        .filter((id) => Number.isInteger(id) && id > 0);
+      if (!ids.length) {
+        return res.status(400).json({ ok: false, error: 'Selecione ao menos um módulo.' });
+      }
+
+      const full = readPayload({ company: body.company, isActive: body.isActive });
+      const payload = {};
+      if (full.company !== undefined) payload.company = full.company;
+      if (full.is_active !== undefined) payload.is_active = full.is_active;
+      if (!Object.keys(payload).length) {
+        return res.status(400).json({ ok: false, error: 'Nada para alterar.' });
+      }
+
+      const rows = await updateMany(ids, payload);
+      res.json({ ok: true, data: rows, updated: rows.length });
+    } catch (err) {
+      sendError(res, err, 'updateBatch', 'Erro ao alterar módulos em lote.');
     }
   },
 

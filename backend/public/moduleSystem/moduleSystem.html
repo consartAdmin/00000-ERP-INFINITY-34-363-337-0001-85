@@ -193,10 +193,31 @@
         </div>
       </div>
 
+      <!-- Alteração em lote: aparece quando há módulos marcados -->
+      <div class="ms-batch" id="batchBar" hidden>
+        <strong id="batchCount">0 selecionados</strong>
+        <span class="ms-batch__sep"></span>
+        <label for="batchCompany">Empresa</label>
+        <select id="batchCompany">
+          <option value="">🔁 BH3 e CONSART</option>
+          <option value="BH3">🔵 Só BH3</option>
+          <option value="CONSART">🟢 Só CONSART</option>
+        </select>
+        <button type="button" id="btnBatchCompany" class="btn btn-new btn-sm">Aplicar empresa</button>
+        <span class="ms-batch__sep"></span>
+        <button type="button" id="btnBatchActivate" class="btn btn-new btn-sm">▶ Ativar</button>
+        <button type="button" id="btnBatchDeactivate" class="btn btn-new btn-sm">⏸ Desativar</button>
+        <span class="ms-batch__sep"></span>
+        <button type="button" id="btnBatchClear" class="btn btn-clean btn-sm">✕ Limpar seleção</button>
+      </div>
+
       <div class="table-scroll table-height-500 table-row-h-20" data-table-settings="modulesystem.modulestablebody">
         <table class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
+              <th class="ms-select-cell">
+                <input type="checkbox" id="selectAll" title="Marcar / desmarcar todos os módulos filtrados" />
+              </th>
               <th>ID</th>
               <th>Nome</th>
               <th>Caminho</th>
