@@ -22,12 +22,13 @@ export async function create({
   feature = null,
   is_external = false,
   is_public = false,
+  company = null,
 }) {
   const { rows } = await q(
     `
     INSERT INTO ${TABLE} (
       name, path, is_active, menu_type, parent_id, sort_order,
-      html_id, css_class, feature, is_external, is_public
+      html_id, css_class, feature, is_external, is_public, company
     )
     VALUES (
       $1, $2, $3, $4, $5::bigint,
@@ -36,13 +37,13 @@ export async function create({
         FROM ${TABLE}
         WHERE parent_id IS NOT DISTINCT FROM $5::bigint
       )),
-      $7, $8, $9, $10, $11
+      $7, $8, $9, $10, $11, $12
     )
     RETURNING ${COLUMNS};
   `,
     [
       name, path, !!is_active, menu_type, parent_id, sort_order,
-      html_id, css_class, feature, !!is_external, !!is_public,
+      html_id, css_class, feature, !!is_external, !!is_public, company,
     ]
   );
   return rows[0];

@@ -62,6 +62,58 @@
     return `${h}:${m}:${s}`;
   }
 
+  // Empresa ativa (BH3 x CONSART): o menu (menuConsart.js) mostra só os
+  // módulos da empresa escolhida. Fica salva no navegador.
+  const COMPANY_KEY = 'consart:active-company';
+  const EMPRESAS = [
+    { code: 'BH3', label: 'BH3 DISTRIBUIDORA' },
+    { code: 'CONSART', label: 'CONSART' },
+  ];
+
+  function getEmpresaAtiva() {
+    try {
+      const value = String(localStorage.getItem(COMPANY_KEY) || '').toUpperCase();
+      return EMPRESAS.some(e => e.code === value) ? value : 'BH3';
+    } catch {
+      return 'BH3';
+    }
+  }
+
+  function montarSeletorEmpresa(el) {
+    if (!el) return;
+    const marcar = () => {
+      const ativa = getEmpresaAtiva();
+      el.querySelectorAll('button').forEach(btn => {
+        const on = btn.dataset.company === ativa;
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-pressed', String(on));
+      });
+    };
+
+    EMPRESAS.forEach(({ code, label }) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.company = code;
+      btn.textContent = label;
+      btn.title = `Mostrar os módulos da ${label}`;
+      btn.addEventListener('click', () => {
+        if (code === getEmpresaAtiva()) return;
+        try { localStorage.setItem(COMPANY_KEY, code); } catch { }
+        marcar();
+        window.dispatchEvent(new CustomEvent('consart:company-change', { detail: { company: code } }));
+      });
+      el.appendChild(btn);
+    });
+    marcar();
+
+    // Outra aba trocou a empresa: acompanha
+    window.addEventListener('storage', (event) => {
+      if (event.key !== COMPANY_KEY) return;
+      marcar();
+      window.dispatchEvent(new CustomEvent('consart:company-change', { detail: { company: getEmpresaAtiva() } }));
+    });
+  }
+
   function criarOuAtualizarBarra(usuario, barEl) {
     // Substitui qualquer HTML antigo pela nossa estrutura
     barEl.innerHTML = `
@@ -71,6 +123,8 @@
       <span class="sep"></span>
       <span class="muted" id="su-host"></span>
       <div class="right">
+        <div class="su-empresa" id="su-empresa" role="group" aria-label="Empresa ativa"></div>
+        <span class="sep"></span>
         <span id="su-contador" class="muted"></span>
         <span id="su-hora" class="muted"></span>
         <button type="button" id="su-logout">Sair</button>
@@ -82,6 +136,8 @@
     document.getElementById('su-id').textContent = usuario.id ? `(ID ${usuario.id})` : '';
     document.getElementById('su-perfil').textContent = usuario.perfil ? `Perfil: ${usuario.perfil}` : '';
     document.getElementById('su-host').textContent = `Ambiente: ${host}`;
+
+    montarSeletorEmpresa(document.getElementById('su-empresa'));
 
     // Relógio
     function tickHora() {

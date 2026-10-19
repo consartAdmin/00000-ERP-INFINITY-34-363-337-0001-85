@@ -39,8 +39,9 @@ function ancestrais(modulo, byId) {
  *  type: '' | 'dropdown' | 'submenu' | 'link' | 'none'
  *  parentId: '' | 'root' | id  (id inclui tudo que está dentro dele, em qualquer nível)
  *  visibility: '' | 'public' | 'restricted'
+ *  company: '' | 'BH3' | 'CONSART' (aparece nessa empresa) | 'both' (sem empresa)
  */
-export function aplicarFiltros(modules, { status, type, parentId, visibility } = {}) {
+export function aplicarFiltros(modules, { status, type, parentId, visibility, company } = {}) {
   const byId = new Map(modules.map((m) => [String(m.id), m]));
   return modules.filter((m) => {
     if (status === 'active' && !moduloEstaAtivo(m)) return false;
@@ -51,6 +52,8 @@ export function aplicarFiltros(modules, { status, type, parentId, visibility } =
     if (parentId && parentId !== 'root' && !ancestrais(m, byId).includes(String(parentId))) return false;
     if (visibility === 'public' && !m.is_public) return false;
     if (visibility === 'restricted' && m.is_public) return false;
+    if (company === 'both' && m.company) return false;
+    if (company && company !== 'both' && m.company && m.company !== company) return false;
     return true;
   });
 }

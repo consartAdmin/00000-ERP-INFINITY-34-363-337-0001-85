@@ -72,6 +72,15 @@
               </select>
             </div>
 
+            <div class="fields fields-h-6 fields-w-10 fields-font-3">
+              <label for="company" title="Empresa ativa no botão do rodapé">Empresa</label>
+              <select id="company">
+                <option value="">🔁 BH3 e CONSART</option>
+                <option value="BH3">🔵 Só BH3</option>
+                <option value="CONSART">🟢 Só CONSART</option>
+              </select>
+            </div>
+
             <div class="fields fields-h-6 fields-w-5 fields-font-3">
               <label for="sortOrder">Ordem</label>
               <input type="number" id="sortOrder" step="1" placeholder="auto" />
@@ -160,6 +169,16 @@
           </div>
 
           <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <label for="filterCompany">Empresa</label>
+            <select id="filterCompany">
+              <option value="">Todas</option>
+              <option value="BH3">Aparece na BH3</option>
+              <option value="CONSART">Aparece na CONSART</option>
+              <option value="both">BH3 e CONSART</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
             <label for="filterVisibility">Visibilidade</label>
             <select id="filterVisibility">
               <option value="">Todas</option>
@@ -183,6 +202,7 @@
               <th>Caminho</th>
               <th>Tipo</th>
               <th>Menu pai</th>
+              <th>Empresa</th>
               <th>Ordem</th>
               <th>Ativo</th>
               <th>Ações</th>
