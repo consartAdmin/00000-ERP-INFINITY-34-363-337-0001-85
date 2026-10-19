@@ -11,3 +11,29 @@
   text-align: center;
   white-space: nowrap;
 }
+
+/* Alteração em lote */
+.ms-select-cell {
+  width: 32px;
+  text-align: center;
+}
+.ms-select-cell input { cursor: pointer; }
+.ms-row--selected td { background: #e0f2fe !important; }
+
+.ms-batch {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 12px;
+  border-top: 1px solid #93c5fd;
+  background: #eff6ff;
+  font-size: 13px;
+}
+.ms-batch[hidden] { display: none; }
+.ms-batch select { height: 28px; }
+.ms-batch__sep {
+  width: 1px;
+  height: 20px;
+  background: #bfdbfe;
+}

@@ -1,7 +1,7 @@
-import { alterarStatusModulo, buscarModulos, excluirModulo } from './moduleSystem.api.js';
+import { alterarEmLote, alterarStatusModulo, buscarModulos, excluirModulo } from './moduleSystem.api.js';
 import { elements } from './moduleSystem.config.js';
 import { atualizarOpcoesPai, fillForm, resetForm } from './moduleSystem.form.js';
-import { confirmarExclusao, showToast } from './moduleSystem.modal.js';
+import { confirmarAlteracaoEmLote, confirmarExclusao, showToast } from './moduleSystem.modal.js';
 import { renderModulesTable } from './moduleSystem.render.js';
 import { state, setModules, setPage, setPageSize } from './moduleSystem.state.js';
 import { aplicarFiltros, caminhoNoMenu, filtrarModulos, moduloEstaAtivo } from './moduleSystem.utils.js';
@@ -10,7 +10,64 @@ const handlers = {
   editar: fillForm,
   alternar: toggleActive,
   excluir: removeModule,
+  selecionado: (modulo) => state.selected.has(String(modulo.id)),
+  marcar: (modulo, marcado) => {
+    if (marcado) state.selected.add(String(modulo.id));
+    else state.selected.delete(String(modulo.id));
+    renderCurrentPage();
+  },
 };
+
+/** Barra de alteração em lote + checkbox "marcar todos" do cabeçalho */
+function atualizarSelecao() {
+  // Remove da seleção o que foi excluído
+  const existentes = new Set(state.modules.map((m) => String(m.id)));
+  [...state.selected].forEach((id) => { if (!existentes.has(id)) state.selected.delete(id); });
+
+  const total = state.selected.size;
+  elements.batchBar.hidden = total === 0;
+  elements.batchCount.textContent = `${total} selecionado${total === 1 ? '' : 's'}`;
+
+  const marcadosNoFiltro = state.filtered.filter((m) => state.selected.has(String(m.id))).length;
+  elements.selectAll.checked = state.filtered.length > 0 && marcadosNoFiltro === state.filtered.length;
+  elements.selectAll.indeterminate = marcadosNoFiltro > 0 && marcadosNoFiltro < state.filtered.length;
+}
+
+async function aplicarEmLote(alteracoes, descricao) {
+  const ids = [...state.selected];
+  if (!ids.length) return;
+  if (!(await confirmarAlteracaoEmLote(ids.length, descricao))) return;
+  try {
+    const { updated } = await alterarEmLote(ids, alteracoes);
+    showToast(`${updated} módulo${updated === 1 ? '' : 's'} alterado${updated === 1 ? '' : 's'}.`, 'success');
+    state.selected.clear();
+    await loadModules();
+  } catch (error) {
+    console.error('[moduleSystem] erro na alteração em lote:', error);
+    showToast(error.message || 'Erro ao alterar os módulos.', 'error');
+  }
+}
+
+export function registrarLote() {
+  elements.selectAll.addEventListener('change', () => {
+    state.filtered.forEach((m) => {
+      if (elements.selectAll.checked) state.selected.add(String(m.id));
+      else state.selected.delete(String(m.id));
+    });
+    renderCurrentPage();
+  });
+  elements.btnBatchCompany.addEventListener('click', () => {
+    const company = elements.batchCompany.value;
+    const texto = elements.batchCompany.selectedOptions[0]?.textContent.replace(/^\S+\s/, '') || '';
+    aplicarEmLote({ company: company || null }, `mudar a empresa para "${texto}"`);
+  });
+  elements.btnBatchActivate.addEventListener('click', () => aplicarEmLote({ isActive: true }, 'ativar'));
+  elements.btnBatchDeactivate.addEventListener('click', () => aplicarEmLote({ isActive: false }, 'desativar'));
+  elements.btnBatchClear.addEventListener('click', () => {
+    state.selected.clear();
+    renderCurrentPage();
+  });
+}
 
 /** Preenche o filtro "Menu pai" com os dropdowns e submenus */
 function atualizarFiltroPai() {
@@ -43,6 +100,7 @@ export function renderCurrentPage() {
       company: elements.filterCompany.value,
     }
   );
+  state.filtered = filtrados;
   const totalPages = Math.max(1, Math.ceil(filtrados.length / state.pageSize));
   if (state.page > totalPages) setPage(totalPages);
   const inicio = (state.page - 1) * state.pageSize;
@@ -53,6 +111,7 @@ export function renderCurrentPage() {
   elements.pageInfo.textContent = `Página ${state.page} de ${totalPages}`;
   elements.btnPreviousPage.disabled = state.page <= 1;
   elements.btnNextPage.disabled = state.page >= totalPages;
+  atualizarSelecao();
 }
 
 export function registrarPaginacao() {

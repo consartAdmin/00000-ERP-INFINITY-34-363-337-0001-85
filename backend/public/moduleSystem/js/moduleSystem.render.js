@@ -2,7 +2,7 @@ import { elements, MENU_TYPE_LABELS, COMPANY_LABELS } from './moduleSystem.confi
 import { caminhoNoMenu, moduloEstaAtivo } from './moduleSystem.utils.js';
 import { createActionIcons } from '/public/includes/js/actionIcons.js';
 
-const TOTAL_COLUNAS = 9;
+const TOTAL_COLUNAS = 10;
 
 function criarCelula(texto = '') {
   const td = document.createElement('td');
@@ -28,6 +28,18 @@ export function renderModulesTable(modules, handlers, allModules = modules) {
   modules.forEach((modulo) => {
     const ativo = moduloEstaAtivo(modulo);
     const tr = document.createElement('tr');
+    const marcado = handlers.selecionado(modulo);
+    if (marcado) tr.classList.add('ms-row--selected');
+
+    const tdSelect = document.createElement('td');
+    tdSelect.className = 'ms-select-cell';
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = marcado;
+    check.title = 'Marcar para alteração em lote';
+    check.addEventListener('change', () => handlers.marcar(modulo, check.checked));
+    tdSelect.appendChild(check);
+
     const tdActive = document.createElement('td');
     const badge = document.createElement('span');
     badge.textContent = ativo ? 'Ativo' : 'Inativo';
@@ -52,6 +64,7 @@ export function renderModulesTable(modules, handlers, allModules = modules) {
     const tipo = MENU_TYPE_LABELS[modulo.menu_type] || '🚫 Fora do menu';
 
     tr.append(
+      tdSelect,
       criarCelula(modulo.id),
       criarCelula(modulo.name || ''),
       criarCelula(modulo.path || ''),

@@ -18,6 +18,18 @@ export function showToast(message, type = 'info') {
   });
 }
 
+export async function confirmarAlteracaoEmLote(quantidade, descricao) {
+  const ok = await showCenterModal({
+    variant: 'warning',
+    title: 'Alteração em lote',
+    message: `Confirma ${descricao} em ${quantidade} módulo${quantidade === 1 ? '' : 's'}?`,
+    okText: 'Sim, alterar',
+    closeText: 'Cancelar',
+  });
+
+  return ok === true;
+}
+
 export async function confirmarExclusao(nome) {
   const ok = await showCenterModal({
     variant: 'warning',
