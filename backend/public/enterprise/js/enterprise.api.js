@@ -68,6 +68,13 @@ export async function deleteEnterpriseLogo(id) {
   });
 }
 
+export async function createEnterprise(payload) {
+  return fetchJson(ROUTES.enterprises, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function updateEnterprise(id, payload) {
   if (!id) throw new Error('ID da empresa não informado.');
 
