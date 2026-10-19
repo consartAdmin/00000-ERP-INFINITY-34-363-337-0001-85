@@ -6,7 +6,8 @@
 // ║ • todo fetch para /api/ do próprio servidor leva X-ERP-Company;      ║
 // ║ • window.erpCompanyUrl(url) acrescenta ?company= em links/relatórios;║
 // ║ • o título ganha "(Consart ERP)" e uma faixa no topo (ou um rótulo   ║
-// ║   no elemento [data-erp-company-slot], se a tela tiver).             ║
+// ║   no elemento [data-erp-company-slot] ou no canto direito da barra   ║
+// ║   de filtros, se a tela tiver).                                      ║
 // ║ Sem empresa, não faz nada (telas originais continuam iguais).        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 (function () {
@@ -88,13 +89,25 @@
       bar.id = 'erpCompanyBanner';
       bar.textContent = 'Consart ERP';
 
+      var badgeCss =
+        'display:inline-block;padding:5px 14px;border-radius:8px;white-space:nowrap;' +
+        'background:#0f766e;color:#fff;font-weight:700;letter-spacing:.04em;font-size:13px;';
+
       // Tela com lugar reservado (data-erp-company-slot): rótulo compacto ali
       var slot = document.querySelector('[data-erp-company-slot]');
       if (slot) {
-        bar.style.cssText =
-          'display:inline-block;padding:5px 14px;border-radius:8px;white-space:nowrap;' +
-          'background:#0f766e;color:#fff;font-weight:700;letter-spacing:.04em;font-size:13px;';
+        bar.style.cssText = badgeCss;
         slot.appendChild(bar);
+        return;
+      }
+
+      // Tela com barra de filtros: rótulo no canto direito da barra
+      // (dentro do grupo da direita, se houver, ex.: Exportar PDF/Excel)
+      var filters = document.querySelector('.table-layout-integrated__filter .fields-inline');
+      if (filters) {
+        var right = filters.querySelector(':scope > .btn-position-right');
+        bar.style.cssText = badgeCss + 'align-self:center;flex-shrink:0;' + (right ? '' : 'margin-left:auto;');
+        (right || filters).appendChild(bar);
         return;
       }
 
