@@ -19,7 +19,7 @@
 .proposals-col-seller  { width: 110px; }
 .proposals-col-money   { width: 115px; }
 .proposals-col-status  { width: 105px; }
-.proposals-col-actions { width: 130px; }
+.proposals-col-actions { width: 160px; }
 
 .proposals-table td {
   overflow: hidden;

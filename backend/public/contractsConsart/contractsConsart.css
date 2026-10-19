@@ -1,0 +1,326 @@
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║ contractsConsart.css — Contratos de Serviços (CONSART)          ║
+   ║ Base: style.css (tabela integrada + modals.css)                  ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+/* ── Lista ─────────────────────────────────────────────────────────── */
+.contracts-table th,
+.contracts-table td { text-align: center; }
+
+.contracts-table .contracts-col-left,
+.contracts-table td.contracts-col-left { text-align: left; }
+
+.contracts-table .contracts-col-money,
+.contracts-table td.contracts-col-money { text-align: right; }
+
+.contracts-col-number  { width: 90px; }
+.contracts-col-date    { width: 95px; }
+.contracts-col-doc     { width: 150px; }
+.contracts-col-seller  { width: 110px; }
+.contracts-col-money   { width: 115px; }
+.contracts-col-status  { width: 105px; }
+.contracts-col-actions { width: 130px; }
+
+.contracts-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contracts-table tbody tr { cursor: pointer; }
+
+.contracts-empty {
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+}
+
+.contract-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.contract-status--rascunho { background: #e2e8f0; color: #334155; }
+.contract-status--enviada  { background: #dbeafe; color: #1d4ed8; }
+.contract-status--aprovada { background: #dcfce7; color: #15803d; }
+.contract-status--recusada { background: #fee2e2; color: #b91c1c; }
+.contract-status--vencida  { background: #fef3c7; color: #b45309; }
+
+/* ── Modal ─────────────────────────────────────────────────────────── */
+/* Abaixo da barra fixa do menu (que fica por cima dos modais) */
+.contract-modal {
+  --modal-max-height: calc(100vh - 80px);
+}
+
+.contract-modal .modal__dialog { padding-top: 56px; }
+
+/* Editor é longo (cláusulas): limita o painel à tela e rola só o corpo */
+.contract-modal .modal__panel { max-height: calc(100vh - 80px); }
+
+.contract-hint {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Cliente e vendedor: só pelo seletor (duplo clique) */
+#cf-customer,
+#cf-seller { cursor: pointer; }
+
+.contract-section-title {
+  margin: 16px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: #0f6b5c;
+}
+
+.contract-items {
+  max-height: 230px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.contract-items__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.contract-items__table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 7px 6px;
+  background: #f8fafc;
+  border-bottom: 1px solid #0f172a;
+  font-weight: 700;
+  text-align: center;
+}
+
+.contract-items__table th.ci-col-desc { text-align: left; }
+.contract-items__table th.ci-col-total { text-align: right; }
+
+.contract-items__table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.contract-items__table td input {
+  width: 100%;
+  height: 28px;
+  padding: 3px 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font: inherit;
+}
+
+.contract-items__table td.ci-col-total {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ci-col-n     { width: 32px; }
+.ci-col-unit  { width: 64px; }
+.ci-col-qty   { width: 80px; }
+.ci-col-price { width: 115px; }
+.ci-col-disc  { width: 80px; }
+.ci-col-total { width: 110px; }
+.ci-col-del   { width: 40px; }
+
+.contract-items__empty td {
+  padding: 16px;
+  color: #94a3b8;
+}
+
+.contract-items__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.contract-totals {
+  display: flex;
+  gap: 22px;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.contract-totals strong { font-weight: 600; }
+
+.contract-totals__total strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f6b5c;
+}
+
+.contract-modal .modal-form-grid + .modal-form-grid { margin-top: 10px; }
+
+.contract-modal textarea { resize: vertical; }
+
+.contract-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* ── Status próprios do contrato ───────────────────────────────────── */
+.contract-status--ativo     { background: #dcfce7; color: #15803d; }
+.contract-status--encerrado { background: #e0e7ff; color: #4338ca; }
+.contract-status--cancelado { background: #fee2e2; color: #b91c1c; }
+.contract-status--vencido   { background: #fef3c7; color: #b45309; }
+
+.contracts-col-proposal { width: 90px; }
+.contracts-col-term     { width: 170px; }
+
+#cf-proposal { color: #0f6b5c; font-weight: 600; }
+
+/* ── Cláusulas ─────────────────────────────────────────────────────── */
+.contract-clauses {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contract-clause {
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.contract-clause__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.contract-clause__n {
+  flex: 0 0 auto;
+  min-width: 92px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f6b5c;
+}
+
+.contract-clause__title {
+  flex: 1 1 auto;
+  height: 28px;
+  padding: 3px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.contract-clause__body {
+  width: 100%;
+  min-height: 62px;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.contract-clause__btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.contract-clause__btn:hover { background: #e2e8f0; }
+.contract-clause__btn:disabled { opacity: .35; cursor: default; }
+
+.contract-clauses__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.contract-placeholders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.contract-placeholders button {
+  padding: 1px 7px;
+  border: 1px solid #99f6e4;
+  border-radius: 999px;
+  background: #f0fdfa;
+  color: #0f6b5c;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.contract-placeholders button:hover { background: #ccfbf1; }
+
+/* ── Modal "Proposta aprovada" ─────────────────────────────────────── */
+.contract-pick-modal { --modal-max-height: calc(100vh - 80px); }
+.contract-pick-modal .modal__dialog { padding-top: 56px; }
+.contract-pick-modal .modal__panel { max-height: calc(100vh - 80px); }
+
+.contract-pick__wrap {
+  margin-top: 12px;
+  height: 380px;
+  overflow: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.contract-pick__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.contract-pick__table th {
+  position: sticky;
+  top: 0;
+  padding: 8px 6px;
+  background: #f8fafc;
+  border-bottom: 1px solid #0f172a;
+  font-weight: 700;
+}
+
+.contract-pick__table td {
+  padding: 7px 6px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.contract-pick__table td.cp-left { text-align: left; }
+.contract-pick__table td.cp-money { text-align: right; white-space: nowrap; }
+.contract-pick__table tbody tr { cursor: pointer; }
+.contract-pick__table tbody tr:hover,
+.contract-pick__table tbody tr:focus { background: #dbeafe; outline: none; }
+.contract-pick__msg { padding: 24px; text-align: center; color: #64748b; }
