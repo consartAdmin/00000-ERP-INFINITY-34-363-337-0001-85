@@ -44,9 +44,11 @@ const state = {
   proposal: null, // { id, number }
   customer: null, // { id, name }
   seller: null,   // { id, name }
+  reps: [],       // representantes/sócios do cliente
+  repSnapshot: null, // representante gravado no contrato (pode ter saído do cadastro)
   items: [],
   clauses: [],
-  template: { clauses: [], placeholders: [] },
+  template: { clauses: [], placeholders: [], roles: [] },
   lastClauseField: null,
   dirty: false,
 };
@@ -463,6 +465,16 @@ function fillForm(c = {}) {
 
   setCustomer(c.customer_id ? { id: c.customer_id, name: c.customer_name, tax_id: c.customer_tax_id } : null);
   setSeller(c.seller_id ? { id: c.seller_id, name: c.seller_name } : null);
+  state.repSnapshot = c.representative_id || c.representative_name
+    ? {
+      id: c.representative_id || null,
+      name: c.representative_name,
+      role: c.representative_role,
+      cpf: c.representative_cpf,
+      address: c.representative_address,
+    }
+    : null;
+  loadRepresentatives(c.customer_id, c.representative_id, c.representative_role);
 
   $('#cf-contact').value = c.contact_name || '';
   $('#cf-status').value = c.status || 'RASCUNHO';
@@ -749,6 +761,7 @@ function buildPayload() {
     customer_id: state.customer?.id || null,
     contact_name: $('#cf-contact').value,
     seller_id: state.seller?.id || null,
+    representative_id: Number($('#cf-rep').value) || null,
     proposal_id: state.proposal?.id || null,
     proposal_number: state.proposal?.number || null,
     status: $('#cf-status').value,
@@ -825,6 +838,255 @@ async function duplicateFromEditor() {
   await duplicateContract(state.editingId);
 }
 
+// ── Representante / sócio do cliente (quem assina) ────────────────
+
+const repAddress = (r) => [r.address, [r.city, r.state].filter(Boolean).join('/'), r.postal_code ? `CEP ${r.postal_code}` : '']
+  .filter(Boolean).join(' · ');
+
+async function loadRepresentatives(customerId, selectedId = null, selectedRole = '') {
+  state.reps = [];
+  if (customerId) {
+    try {
+      const json = await apiFetch(`${API}/customers/${customerId}/representatives`);
+      state.reps = json.data || [];
+    } catch (error) {
+      console.warn('[contractsConsart] representantes:', error);
+    }
+  }
+  renderRepSelects(selectedId, selectedRole);
+}
+
+function renderRepSelects(selectedId = null, selectedRole = null) {
+  const roleSel = $('#cf-rep-role');
+  const repSel = $('#cf-rep');
+  const role = selectedRole ?? roleSel.value;
+  const roles = [...new Set(state.reps.map((r) => r.role))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  roleSel.innerHTML = '<option value="">Todos os cargos</option>'
+    + roles.map((r) => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+  roleSel.value = roles.includes(role) ? role : '';
+
+  const list = state.reps.filter((r) => !roleSel.value || r.role === roleSel.value);
+  const snapshotMissing = state.repSnapshot?.id && !state.reps.some((r) => Number(r.id) === Number(state.repSnapshot.id));
+
+  if (!state.customer) {
+    repSel.innerHTML = '<option value="">Selecione o cliente primeiro</option>';
+  } else if (!state.reps.length && !snapshotMissing) {
+    repSel.innerHTML = '<option value="">Nenhum representante cadastrado (use "👤 Representantes do cliente")</option>';
+  } else {
+    repSel.innerHTML = '<option value="">Selecione quem assina...</option>'
+      + list.map((r) => `<option value="${r.id}">${esc(r.name)} — ${esc(r.role)}</option>`).join('')
+      + (snapshotMissing
+        ? `<option value="" data-snapshot>${esc(state.repSnapshot.name)} — ${esc(state.repSnapshot.role)} (fora do cadastro)</option>`
+        : '');
+  }
+
+  const wanted = selectedId ?? (Number(repSel.dataset.current) || null);
+  if (wanted && list.some((r) => Number(r.id) === Number(wanted))) repSel.value = String(wanted);
+  else if (!wanted && list.length === 1 && roleSel.value) repSel.value = String(list[0].id);
+  else repSel.value = '';
+  repSel.dataset.current = repSel.value;
+  renderRepInfo();
+}
+
+function renderRepInfo() {
+  const info = $('#cf-rep-info');
+  const rep = state.reps.find((r) => String(r.id) === $('#cf-rep').value);
+  if (rep) {
+    info.className = 'contract-rep-info';
+    info.innerHTML = [
+      `<strong>${esc(rep.name)}</strong> — ${esc(rep.role)}`,
+      rep.cpf ? `CPF ${esc(rep.cpf)}` : '<em>sem CPF</em>',
+      esc(repAddress(rep)) || '<em>sem endereço</em>',
+    ].join(' · ');
+    info.hidden = false;
+  } else {
+    info.hidden = true;
+  }
+}
+
+function onRepRoleChange() {
+  $('#cf-rep').dataset.current = '';
+  renderRepSelects(null);
+  state.dirty = true;
+}
+
+function onRepChange() {
+  const repSel = $('#cf-rep');
+  repSel.dataset.current = repSel.value;
+  const rep = state.reps.find((r) => String(r.id) === repSel.value);
+  if (rep && $('#cf-rep-role').value !== rep.role) renderRepSelects(rep.id, rep.role);
+  else renderRepInfo();
+  state.dirty = true;
+}
+
+function openRepresentativesModal() {
+  if (!state.customer) {
+    alert('Selecione o cliente primeiro (duplo clique no campo Cliente).');
+    return;
+  }
+  const customerId = state.customer.id;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal rep-modal';
+  overlay.setAttribute('aria-hidden', 'true');
+  overlay.innerHTML = `
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-8" role="dialog" aria-modal="true" aria-labelledby="repTitle">
+        <div class="modal__header modal-header-color-3">
+          <h2 class="modal__title" id="repTitle">Representantes / Sócios — ${esc(state.customer.name)}</h2>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <form class="rep-form" data-form novalidate>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="repName">Nome completo *</label>
+              <input id="repName" maxlength="200">
+            </div>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="repRole">Cargo *</label>
+              <input id="repRole" maxlength="80" list="repRoleList" placeholder="Ex.: Sócio-Administrador">
+              <datalist id="repRoleList">${state.template.roles.map((r) => `<option value="${esc(r)}"></option>`).join('')}</datalist>
+            </div>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="repCpf">CPF</label>
+              <input id="repCpf" maxlength="14" inputmode="numeric" placeholder="000.000.000-00">
+            </div>
+            <div class="fields fields-w-full fields-h-6 rep-span-3">
+              <label for="repAddress">Endereço (rua, número, complemento, bairro)</label>
+              <input id="repAddress" maxlength="255">
+            </div>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="repCity">Cidade</label>
+              <input id="repCity" maxlength="120">
+            </div>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="repState">UF</label>
+              <input id="repState" maxlength="2">
+            </div>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="repCep">CEP</label>
+              <input id="repCep" maxlength="9" inputmode="numeric">
+            </div>
+            <div class="rep-form__bar rep-span-3">
+              <button type="button" class="btn btn-cancel btn-sm" data-clear>Limpar</button>
+              <button type="button" class="btn btn-save btn-sm" data-save>Salvar representante</button>
+            </div>
+          </form>
+          <div class="rep-table-wrap">
+            <table class="rep-table">
+              <thead><tr><th>Nome</th><th>Cargo</th><th>CPF</th><th>Endereço</th><th style="width:80px"></th></tr></thead>
+              <tbody data-body></tbody>
+            </table>
+          </div>
+        </div>
+        <footer class="modal__footer modal-footer-color-3">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Fechar</button>
+        </footer>
+      </section>
+    </div>
+  `;
+
+  const q = (sel) => overlay.querySelector(sel);
+  const fields = { name: '#repName', role: '#repRole', cpf: '#repCpf', address: '#repAddress', city: '#repCity', state: '#repState', postal_code: '#repCep' };
+  let editingId = null;
+  let lastSavedId = null;
+
+  function clearForm() {
+    editingId = null;
+    Object.values(fields).forEach((sel) => { q(sel).value = ''; });
+    q('[data-save]').textContent = 'Salvar representante';
+    q('#repName').focus();
+  }
+
+  function renderTable() {
+    const body = q('[data-body]');
+    if (!state.reps.length) {
+      body.innerHTML = '<tr><td colspan="5" class="rep-table__msg">Nenhum representante cadastrado para este cliente.</td></tr>';
+      return;
+    }
+    body.innerHTML = state.reps.map((r, i) => `
+      <tr data-index="${i}">
+        <td><strong>${esc(r.name)}</strong></td>
+        <td>${esc(r.role)}</td>
+        <td>${esc(r.cpf || '—')}</td>
+        <td>${esc(repAddress(r) || '—')}</td>
+        <td>${actionIconsHtml([
+          { action: 'edit', title: 'Editar', attrs: { 'data-edit': i } },
+          { action: 'delete', title: 'Excluir', attrs: { 'data-del': i } },
+        ])}</td>
+      </tr>
+    `).join('');
+  }
+
+  async function reload() {
+    const json = await apiFetch(`${API}/customers/${customerId}/representatives`);
+    state.reps = json.data || [];
+    renderTable();
+  }
+
+  async function save() {
+    const payload = Object.fromEntries(Object.entries(fields).map(([k, sel]) => [k, q(sel).value]));
+    if (!payload.name.trim() || !payload.role.trim()) {
+      alert('Informe o nome e o cargo do representante.');
+      return;
+    }
+    const btn = q('[data-save]');
+    btn.disabled = true;
+    try {
+      const json = editingId
+        ? await apiFetch(`${API}/representatives/${editingId}`, { method: 'PUT', body: JSON.stringify(payload) })
+        : await apiFetch(`${API}/customers/${customerId}/representatives`, { method: 'POST', body: JSON.stringify(payload) });
+      lastSavedId = json.data.id;
+      await reload();
+      clearForm();
+    } catch (error) {
+      alert(`Erro ao salvar o representante: ${error.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  q('[data-body]').addEventListener('click', async (e) => {
+    const edit = e.target.closest('[data-edit]');
+    const del = e.target.closest('[data-del]');
+    if (edit) {
+      const r = state.reps[Number(edit.dataset.edit)];
+      editingId = r.id;
+      Object.entries(fields).forEach(([k, sel]) => { q(sel).value = r[k] || ''; });
+      q('[data-save]').textContent = 'Salvar alterações';
+      q('#repName').focus();
+    }
+    if (del) {
+      const r = state.reps[Number(del.dataset.del)];
+      if (!confirm(`Excluir o representante ${r.name}? Contratos já salvos mantêm os dados dele.`)) return;
+      try {
+        await apiFetch(`${API}/representatives/${r.id}`, { method: 'DELETE' });
+        await reload();
+      } catch (error) {
+        alert(`Erro ao excluir: ${error.message}`);
+      }
+    }
+  });
+  q('[data-save]').addEventListener('click', save);
+  q('[data-clear]').addEventListener('click', clearForm);
+
+  overlay.addEventListener('modal:close', () => {
+    overlay.remove();
+    // Atualiza os selects do contrato; o recém-salvo já fica escolhido se nada estava escolhido
+    const current = Number($('#cf-rep').value) || null;
+    const pick = current || lastSavedId;
+    const rep = state.reps.find((r) => Number(r.id) === Number(pick));
+    renderRepSelects(pick, rep?.role || '');
+    if (pick && pick !== current) state.dirty = true;
+  });
+
+  document.body.appendChild(overlay);
+  Modal.open(overlay);
+  renderTable();
+  q('#repName').focus();
+}
+
 // ── Seletores (cliente / vendedor) ────────────────────────────────
 
 function pickCustomer() {
@@ -836,6 +1098,8 @@ function pickCustomer() {
         tax_id: customer.tax_id || customer.cnpj_cpf || '',
       });
       if (!$('#cf-contact').value && customer.contact_name) $('#cf-contact').value = customer.contact_name;
+      state.repSnapshot = null;
+      loadRepresentatives(state.customer.id);
       state.dirty = true;
     },
   });
@@ -884,6 +1148,10 @@ function bindEvents() {
     if (e.key === 'Enter') { e.preventDefault(); pickSeller(); }
     if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); setSeller(null); state.dirty = true; }
   });
+
+  $('#cf-rep-role').addEventListener('change', onRepRoleChange);
+  $('#cf-rep').addEventListener('change', onRepChange);
+  $('#cf-rep-manage').addEventListener('click', openRepresentativesModal);
 
   $('#cf-start').addEventListener('change', updateEndDate);
   $('#cf-term').addEventListener('input', updateEndDate);

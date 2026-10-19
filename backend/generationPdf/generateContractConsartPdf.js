@@ -3,7 +3,8 @@
 // ║ (A4) — CONSART ERP — PDFKit                                          ║
 // ║ • Cabeçalho com a empresa Consart (cadastro de Empresas pelo CNPJ;  ║
 // ║   sem cadastro, usa os dados fixos abaixo), sem linha de endereço   ║
-// ║ • Partes, resumo, objeto, serviços, valor, cláusulas ({CAMPO}       ║
+// ║ • Partes (com o representante do cliente), resumo, objeto,          ║
+// ║   serviços, valor, cláusulas ({CAMPO}                               ║
 // ║   trocado pelos dados do contrato), local/data, assinaturas e       ║
 // ║   testemunhas                                                       ║
 // ║ Retorna um Buffer com o PDF.                                        ║
@@ -221,6 +222,10 @@ function placeholderValues(contract, enterprise) {
   return {
     CONTRATANTE: clean(c.legal_name || c.trade_name || contract.customer_name),
     CONTRATANTE_DOC: formatDoc(c.tax_id || contract.customer_tax_id),
+    REPRESENTANTE: clean(contract.representative_name),
+    REPRESENTANTE_CARGO: clean(contract.representative_role),
+    REPRESENTANTE_CPF: clean(contract.representative_cpf),
+    REPRESENTANTE_ENDERECO: clean(contract.representative_address),
     CONTRATADA: clean(enterprise.corporate_name || enterprise.trade_name),
     CONTRATADA_DOC: formatDoc(enterprise.cnpj),
     VALOR: `R$ ${money(recurring)}`,
@@ -400,11 +405,27 @@ export async function generateContractConsartPdf(contract) {
           c.phone_number || c.mobile_number,
         ]),
       },
+      {
+        text: contract.representative_name
+          ? `Representante: ${join([contract.representative_name, contract.representative_role], ' - ')}`
+          : '',
+        bold: true,
+      },
+      { text: contract.representative_cpf ? `CPF ${contract.representative_cpf}` : '' },
+      { text: clean(contract.representative_address) },
     ]
   );
 
+  const representedBy = contract.representative_name
+    ? `, a CONTRATANTE neste ato representada por ${join([
+      contract.representative_name,
+      contract.representative_role,
+      contract.representative_cpf ? `inscrito(a) no CPF sob o nº ${contract.representative_cpf}` : '',
+      contract.representative_address ? `residente em ${contract.representative_address}` : '',
+    ], ', ')}`
+    : '';
   doc.font('Helvetica').fontSize(9.5).fillColor('#111').text(
-    'As partes acima qualificadas, doravante denominadas CONTRATADA e CONTRATANTE, têm entre si justo e '
+    `As partes acima qualificadas, doravante denominadas CONTRATADA e CONTRATANTE${representedBy}, têm entre si justo e `
     + 'contratado o presente Contrato de Prestação de Serviços, que se regerá pelas cláusulas e condições a seguir.',
     left, doc.y, { width, align: 'justify', lineGap: 2 }
   );
@@ -572,7 +593,16 @@ export async function generateContractConsartPdf(contract) {
   const signatureRows = [
     [
       [values.CONTRATADA, `CONTRATADA · CNPJ ${values.CONTRATADA_DOC}`],
-      [values.CONTRATANTE, `CONTRATANTE${values.CONTRATANTE_DOC ? ` · CNPJ/CPF ${values.CONTRATANTE_DOC}` : ''}`],
+      [
+        values.CONTRATANTE,
+        join([
+          `CONTRATANTE${values.CONTRATANTE_DOC ? ` · CNPJ/CPF ${values.CONTRATANTE_DOC}` : ''}`,
+          contract.representative_name
+            ? join([contract.representative_name, contract.representative_role,
+              contract.representative_cpf ? `CPF ${contract.representative_cpf}` : ''], ' · ')
+            : '',
+        ], '\n'),
+      ],
     ],
     [
       ['TESTEMUNHA 1', 'Nome:                                CPF:'],

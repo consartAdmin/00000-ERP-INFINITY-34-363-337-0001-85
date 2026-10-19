@@ -17,7 +17,7 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/contractsConsart/contractsConsart.css?v=2" />
+  <link rel="stylesheet" href="/public/contractsConsart/contractsConsart.css?v=3" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -173,6 +173,26 @@
               </div>
             </div>
 
+            <h3 class="contract-section-title">Quem assina pelo cliente</h3>
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6">
+                <label for="cf-rep-role">Cargo</label>
+                <select id="cf-rep-role">
+                  <option value="">Todos os cargos</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="cf-rep">Representante / Sócio</label>
+                <select id="cf-rep">
+                  <option value="">Selecione o cliente primeiro</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 contract-rep-actions">
+                <button type="button" id="cf-rep-manage" class="btn btn-toolbar btn-sm" title="Cadastrar ou editar os representantes/sócios deste cliente">👤 Representantes do cliente</button>
+              </div>
+            </div>
+            <div id="cf-rep-info" class="contract-rep-info" hidden></div>
+
             <h3 class="contract-section-title">Vigência e pagamento</h3>
             <div class="modal-form-grid modal-form-grid--5">
               <div class="fields fields-w-full fields-h-6">
@@ -322,7 +342,7 @@
   <script>window.ERP_COMPANY = 'CONSART';</script>
   <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/contractsConsart/contractsConsart.js?v=2"></script>
+  <script type="module" src="/public/contractsConsart/contractsConsart.js?v=3"></script>
 </body>
 
 </html>

@@ -18,6 +18,10 @@ import {
   remove,
   duplicate,
   pdf,
+  listRepresentatives,
+  createRepresentative,
+  updateRepresentative,
+  removeRepresentative,
 } from '../controllers/contractsConsartController.js';
 
 const router = Router();
@@ -27,6 +31,13 @@ router.use(requireAuth);
 
 router.get('/', list);
 router.get('/template', template);
+
+// Representantes / sócios do cliente
+router.get('/customers/:customerId/representatives', listRepresentatives);
+router.post('/customers/:customerId/representatives', createRepresentative);
+router.put('/representatives/:id', updateRepresentative);
+router.delete('/representatives/:id', removeRepresentative);
+
 router.get('/:id/pdf', pdf);
 router.get('/:id', getById);
 router.post('/', create);
