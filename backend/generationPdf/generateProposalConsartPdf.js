@@ -15,10 +15,13 @@ import pool from '../config/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const CONSART_CNPJ = '34363337000185';
+// CONSART CONSULTORIA EMPRESARIAL LTDA (cadastro de Empresas)
+const CONSART_CNPJ = '57134713000165';
 const CONSART_FALLBACK = {
-  trade_name: 'CONSART',
-  corporate_name: 'CONSART',
+  trade_name: 'CONSART CONSULTORIA EMPRESARIAL',
+  corporate_name: 'CONSART CONSULTORIA EMPRESARIAL LTDA',
+  city: 'Belo Horizonte',
+  state: 'MG',
   cnpj: CONSART_CNPJ,
 };
 
