@@ -417,3 +417,68 @@
 
 .rep-table tr.is-inactive td { color: #94a3b8; }
 .rep-table__msg { padding: 18px; text-align: center; color: #64748b; }
+
+/* Navegação entre seções do editor: fica fixa acima do corpo que rola */
+.contract-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 8px var(--modal-body-padding, 16px);
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.contract-nav__btn {
+  padding: 4px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.contract-nav__btn:hover { border-color: #0f6b5c; color: #0f6b5c; }
+
+.contract-nav__btn.is-active {
+  border-color: #0f6b5c;
+  background: #0f6b5c;
+  color: #fff;
+}
+
+.contract-anchor { display: block; height: 0; }
+
+/* Barra de rolagem visível nos modais do contrato */
+.contract-modal .modal__body,
+.contract-pick-modal .modal__body,
+.rep-modal .modal__body,
+.rep-table-wrap {
+  scrollbar-width: auto;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+.contract-modal .modal__body::-webkit-scrollbar,
+.contract-pick-modal .modal__body::-webkit-scrollbar,
+.rep-modal .modal__body::-webkit-scrollbar,
+.rep-table-wrap::-webkit-scrollbar { width: 12px; }
+
+.contract-modal .modal__body::-webkit-scrollbar-track,
+.contract-pick-modal .modal__body::-webkit-scrollbar-track,
+.rep-modal .modal__body::-webkit-scrollbar-track,
+.rep-table-wrap::-webkit-scrollbar-track { background: #f1f5f9; }
+
+.contract-modal .modal__body::-webkit-scrollbar-thumb,
+.contract-pick-modal .modal__body::-webkit-scrollbar-thumb,
+.rep-modal .modal__body::-webkit-scrollbar-thumb,
+.rep-table-wrap::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border: 3px solid #f1f5f9;
+  border-radius: 999px;
+}
+
+.contract-modal .modal__body::-webkit-scrollbar-thumb:hover,
+.contract-pick-modal .modal__body::-webkit-scrollbar-thumb:hover,
+.rep-modal .modal__body::-webkit-scrollbar-thumb:hover,
+.rep-table-wrap::-webkit-scrollbar-thumb:hover { background: #0f6b5c; }

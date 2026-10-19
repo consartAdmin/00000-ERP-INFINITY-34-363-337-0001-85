@@ -537,6 +537,35 @@ async function openEditor(id = null) {
     fillForm();
   }
   Modal.open('contract-modal', { focusSelector: id ? '#cf-title' : '#cf-customer' });
+  const body = $('#contract-modal .modal__body');
+  body.scrollTop = 0;
+  updateNav();
+}
+
+// ── Navegação entre seções (rolagem interna do modal) ─────────────
+
+function navBody() { return $('#contract-modal .modal__body'); }
+
+function updateNav() {
+  const body = navBody();
+  const btns = [...document.querySelectorAll('#cf-nav .contract-nav__btn')];
+  const top = body.getBoundingClientRect().top;
+  const atEnd = body.scrollTop + body.clientHeight >= body.scrollHeight - 4;
+  let active = btns[0];
+  btns.forEach((b) => {
+    const el = document.getElementById(b.dataset.target);
+    if (el && el.getBoundingClientRect().top - top <= 40) active = b;
+  });
+  if (atEnd) active = btns[btns.length - 1];
+  btns.forEach((b) => b.classList.toggle('is-active', b === active));
+}
+
+function goToSection(id) {
+  const body = navBody();
+  const el = document.getElementById(id);
+  if (!el) return;
+  const offset = el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 8;
+  body.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
 }
 
 // ── Itens ─────────────────────────────────────────────────────────
@@ -1121,6 +1150,11 @@ function pickSeller() {
 function bindEvents() {
   const search = () => { state.page = 1; loadList(); };
 
+  $('#cf-nav').addEventListener('click', (e) => {
+    const btn = e.target.closest('.contract-nav__btn');
+    if (btn) goToSection(btn.dataset.target);
+  });
+  navBody().addEventListener('scroll', updateNav, { passive: true });
   $('#btnSearch').addEventListener('click', search);
   $('#btnReload').addEventListener('click', () => loadList());
   $('#btnNew').addEventListener('click', () => openEditor());
