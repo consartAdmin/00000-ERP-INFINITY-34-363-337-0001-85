@@ -560,22 +560,46 @@ export async function generateContractConsartPdf(contract) {
 
   fullBox('Observações', [{ text: fillPlaceholders(contract.notes, values) }]);
 
-  // ── Encerramento, local e data ──────────────────────────────────
-  ensureSpace(60);
-  doc.font('Helvetica').fontSize(9.5).fillColor('#111').text(
-    'E, por estarem assim justas e contratadas, as partes assinam o presente instrumento em 2 (duas) vias '
-    + 'de igual teor e forma, na presença das testemunhas abaixo.',
-    left, doc.y, { width, align: 'justify', lineGap: 2 }
-  );
-  doc.moveDown(1);
+  // ── Encerramento, local/data, assinaturas e testemunhas ───────────
+  // Bloco indivisível: se não couber inteiro, vai todo para a página seguinte
+  const closingText = 'E, por estarem assim justas e contratadas, as partes assinam o presente instrumento em 2 (duas) vias '
+    + 'de igual teor e forma, na presença das testemunhas abaixo.';
   const city = clean(contract.signing_city) || join([enterprise.city, enterprise.state], '/') || BLANK;
   const signingDate = dateLong(contract.signing_date) || `____ de ______________ de ${new Date().getFullYear()}`;
-  doc.text(`${city}, ${signingDate}.`, left, doc.y, { width, align: 'right' });
+  const dateLine = `${city}, ${signingDate}.`;
 
-  // ── Assinaturas e testemunhas ───────────────────────────────────
   const sigW = 220;
+  const signatureRows = [
+    [
+      [values.CONTRATADA, `CONTRATADA · CNPJ ${values.CONTRATADA_DOC}`],
+      [values.CONTRATANTE, `CONTRATANTE${values.CONTRATANTE_DOC ? ` · CNPJ/CPF ${values.CONTRATANTE_DOC}` : ''}`],
+    ],
+    [
+      ['TESTEMUNHA 1', 'Nome:                                CPF:'],
+      ['TESTEMUNHA 2', 'Nome:                                CPF:'],
+    ],
+  ];
+
+  const signatureRowHeight = (rows) => 40 + 4 + 6 + Math.max(...rows.map(([name, sub]) => {
+    doc.font('Helvetica-Bold').fontSize(8);
+    const nameH = doc.heightOfString(name, { width: sigW });
+    doc.font('Helvetica').fontSize(8);
+    return nameH + (sub ? doc.heightOfString(sub, { width: sigW }) : 0);
+  }));
+
+  doc.font('Helvetica').fontSize(9.5);
+  const closingHeight = doc.heightOfString(closingText, { width, lineGap: 2 })
+    + doc.currentLineHeight(true) // moveDown(1)
+    + doc.heightOfString(dateLine, { width })
+    + signatureRows.reduce((h, rows) => h + signatureRowHeight(rows), 0);
+  ensureSpace(closingHeight);
+
+  doc.font('Helvetica').fontSize(9.5).fillColor('#111')
+    .text(closingText, left, doc.y, { width, align: 'justify', lineGap: 2 });
+  doc.moveDown(1);
+  doc.text(dateLine, left, doc.y, { width, align: 'right' });
+
   const drawSignatures = (rows) => {
-    ensureSpace(70);
     const sigY = doc.y + 40;
     let maxY = sigY;
     rows.forEach(([name, sub], i) => {
@@ -591,14 +615,7 @@ export async function generateContractConsartPdf(contract) {
     doc.y = maxY + 6;
   };
 
-  drawSignatures([
-    [values.CONTRATADA, `CONTRATADA · CNPJ ${values.CONTRATADA_DOC}`],
-    [values.CONTRATANTE, `CONTRATANTE${values.CONTRATANTE_DOC ? ` · CNPJ/CPF ${values.CONTRATANTE_DOC}` : ''}`],
-  ]);
-  drawSignatures([
-    ['TESTEMUNHA 1', 'Nome:                                CPF:'],
-    ['TESTEMUNHA 2', 'Nome:                                CPF:'],
-  ]);
+  signatureRows.forEach(drawSignatures);
 
   // ── Rodapé em todas as páginas ──────────────────────────────────
   const range = doc.bufferedPageRange();
