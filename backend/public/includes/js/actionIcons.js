@@ -26,6 +26,7 @@ const PATHS = Object.freeze({
   confirm: '<path d="M20 6 9 17l-5-5"/>',
   cancel: '<path d="M18 6 6 18M6 6l12 12"/>',
   payment: '<path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  contract: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7"/><path d="M14 2v6h6v4"/><path d="M8 9h2M8 13h6"/><path d="m17.5 15.5 3 3L16 23h-3v-3Z"/>',
 });
 
 export const ACTION_ICONS = Object.freeze(Object.keys(PATHS));

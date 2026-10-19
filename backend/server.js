@@ -605,6 +605,12 @@ import proposalsServicesConsartRoutes from './routes/proposalsServicesConsartRou
 app.use('/api/proposals-services-consart', proposalsServicesConsartRoutes);
 
 /* ╔══════════════════════════════════════════════════════════╗
+   ║   ROTA: contractsConsart (Contratos de Serviços)         ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import contractsConsartRoutes from './routes/contractsConsartRoutes.js';
+app.use('/api/contracts-consart', contractsConsartRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
    ║      ROTA: servicesConsart (Cadastro de serviços)        ║
    ╚══════════════════════════════════════════════════════════╝ */
 import servicesConsartRoutes from './routes/servicesConsartRoutes.js';

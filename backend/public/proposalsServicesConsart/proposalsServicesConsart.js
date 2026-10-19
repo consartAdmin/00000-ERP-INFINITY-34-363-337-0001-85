@@ -3,7 +3,7 @@
 // ║ • Lista com filtros e paginação                                      ║
 // ║ • Editor em modal (cliente/vendedor por duplo clique, serviços do    ║
 // ║   cadastro ou avulsos, condições, escopo e observações)              ║
-// ║ • PDF, duplicar e excluir                                            ║
+// ║ • PDF, duplicar, excluir e gerar contrato (propostas aprovadas)      ║
 // ║ API: /api/proposals-services-consart                                 ║
 // ║ Serviços: /api/services-consart (modal Buscar Serviço)               ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -192,6 +192,9 @@ function renderList(json) {
         { action: 'edit', title: 'Editar', attrs: { 'data-act': 'edit', 'data-id': p.id } },
         { action: 'document', title: 'Gerar PDF', attrs: { 'data-act': 'pdf', 'data-id': p.id } },
         { action: 'copy', title: 'Duplicar', attrs: { 'data-act': 'duplicate', 'data-id': p.id } },
+        ...(p.status_effective === 'APROVADA'
+          ? [{ action: 'contract', title: 'Gerar contrato', attrs: { 'data-act': 'contract', 'data-id': p.id } }]
+          : []),
         { action: 'delete', title: 'Excluir', attrs: { 'data-act': 'delete', 'data-id': p.id } },
       ])}</td>
     </tr>
@@ -217,6 +220,7 @@ async function onListClick(event) {
     case 'edit': return openEditor(id);
     case 'pdf': return downloadPdf(id);
     case 'duplicate': return duplicateProposal(id);
+    case 'contract': return generateContract(id);
     case 'delete': return deleteProposal(id);
     default: return undefined;
   }
@@ -240,6 +244,17 @@ async function duplicateProposal(id) {
     await openEditor(json.data.id);
   } catch (error) {
     alert(`Erro ao duplicar: ${error.message}`);
+  }
+}
+
+/** Proposta aprovada → contrato (ou o já existente) e abre na tela de Contratos. */
+async function generateContract(id) {
+  try {
+    const json = await apiFetch(`/api/contracts-consart/from-proposal/${id}`, { method: 'POST' });
+    if (json.existed) alert(`Essa proposta já tem o contrato ${json.data.number}. Abrindo o contrato existente.`);
+    window.open(`/public/contractsConsart/contractsConsart.html?open=${json.data.id}`, '_blank');
+  } catch (error) {
+    alert(`Erro ao gerar o contrato: ${error.message}`);
   }
 }
 
