@@ -48,6 +48,7 @@ export function resetForm() {
   elements.path.value = '';
   elements.menuType.value = 'link';
   elements.sortOrder.value = '';
+  elements.company.value = '';
   elements.htmlId.value = '';
   elements.cssClass.value = '';
   elements.feature.value = '';
@@ -66,6 +67,7 @@ export function fillForm(modulo) {
   elements.path.value = modulo.path || '';
   elements.menuType.value = modulo.menu_type || '';
   elements.sortOrder.value = modulo.sort_order ?? '';
+  elements.company.value = modulo.company || '';
   elements.htmlId.value = modulo.html_id || '';
   elements.cssClass.value = modulo.css_class || '';
   elements.feature.value = modulo.feature || '';
@@ -87,6 +89,7 @@ function obterDadosFormulario() {
     menuType: elements.menuType.value,
     parentId: elements.menuType.value === 'dropdown' ? '' : elements.parentId.value,
     sortOrder: elements.sortOrder.value.trim(),
+    company: elements.company.value,
     htmlId: elements.htmlId.value.trim(),
     cssClass: elements.cssClass.value.trim(),
     feature: elements.feature.value.trim(),

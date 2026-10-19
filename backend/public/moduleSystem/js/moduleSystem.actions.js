@@ -40,6 +40,7 @@ export function renderCurrentPage() {
       type: elements.filterType.value,
       parentId: elements.filterParent.value,
       visibility: elements.filterVisibility.value,
+      company: elements.filterCompany.value,
     }
   );
   const totalPages = Math.max(1, Math.ceil(filtrados.length / state.pageSize));
@@ -72,13 +73,14 @@ export function registrarPaginacao() {
     renderCurrentPage();
   };
   elements.searchInput.addEventListener('input', aoFiltrar);
-  [elements.filterStatus, elements.filterType, elements.filterParent, elements.filterVisibility]
+  [elements.filterStatus, elements.filterType, elements.filterParent, elements.filterCompany, elements.filterVisibility]
     .forEach((select) => select.addEventListener('change', aoFiltrar));
   elements.btnClearFilters.addEventListener('click', () => {
     elements.searchInput.value = '';
     elements.filterStatus.value = '';
     elements.filterType.value = '';
     elements.filterParent.value = '';
+    elements.filterCompany.value = '';
     elements.filterVisibility.value = '';
     aoFiltrar();
   });

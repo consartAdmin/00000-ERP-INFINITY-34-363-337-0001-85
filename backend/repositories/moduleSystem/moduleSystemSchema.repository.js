@@ -56,6 +56,23 @@ export async function ensureTable(run = q) {
       ADD COLUMN IF NOT EXISTS is_public   BOOLEAN     NOT NULL DEFAULT false;
   `);
 
+  // Empresa do item no menu (botão do rodapé troca a empresa ativa)
+  //  company  'BH3' | 'CONSART' | NULL (aparece nas duas)
+  // Na primeira vez que a coluna é criada, as telas que só existem na
+  // Consart ERP já ficam marcadas como CONSART.
+  const { rows: companyCol } = await run(`
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'moduleSystem' AND column_name = 'company';
+  `);
+  if (!companyCol?.length) {
+    await run(`ALTER TABLE ${TABLE} ADD COLUMN IF NOT EXISTS company VARCHAR(20);`);
+    await run(`
+      UPDATE ${TABLE}
+      SET company = 'CONSART'
+      WHERE path ~* '(crmConsartErp|customersListConsart|customersRegistrationConsart|customersEditConsart|customerStatusTypesConsart|customerSegmentsConsart|sellersConsart|proposalsConsart|proposalsServicesConsart|servicesConsart|moduleDocsConsart|contractsConsart)/';
+    `);
+  }
+
   await run(`
     CREATE INDEX IF NOT EXISTS idx_moduleSystem_name
       ON ${TABLE}(name);

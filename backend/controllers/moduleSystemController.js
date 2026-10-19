@@ -14,7 +14,7 @@ import {
   update,
   remove,
 } from '../repositories/moduleSystem/moduleSystem.index.js';
-import { MENU_TYPES } from '../repositories/moduleSystem/moduleSystem.constants.js';
+import { MENU_TYPES, COMPANIES } from '../repositories/moduleSystem/moduleSystem.constants.js';
 
 /* Garante as colunas do menu ao subir o módulo (best effort) */
 const tableReady = ensureTable()
@@ -79,6 +79,14 @@ function readPayload(body = {}) {
   if (body.feature !== undefined) payload.feature = toText(body.feature, 60);
   if (body.isExternal !== undefined) payload.is_external = toBool(body.isExternal);
   if (body.isPublic !== undefined) payload.is_public = toBool(body.isPublic);
+
+  if (body.company !== undefined) {
+    const company = toText(body.company, 20)?.toUpperCase() ?? null;
+    if (company !== null && !COMPANIES.includes(company)) {
+      throw new ValidationError(`Empresa inválida: ${company}.`);
+    }
+    payload.company = company;
+  }
   return payload;
 }
 

@@ -10,7 +10,7 @@ import { findById } from './moduleSystemQuery.repository.js';
 // Campos que podem ser atualizados (os booleanos são convertidos com !!)
 const UPDATABLE = Object.freeze([
   'name', 'path', 'is_active', 'menu_type', 'parent_id', 'sort_order',
-  'html_id', 'css_class', 'feature', 'is_external', 'is_public',
+  'html_id', 'css_class', 'feature', 'is_external', 'is_public', 'company',
 ]);
 const BOOLEANS = new Set(['is_active', 'is_external', 'is_public']);
 
