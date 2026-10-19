@@ -22,6 +22,8 @@ import {
   createRepresentative,
   updateRepresentative,
   removeRepresentative,
+  listConsartRepresentatives,
+  createConsartRepresentative,
 } from '../controllers/contractsConsartController.js';
 
 const router = Router();
@@ -35,6 +37,8 @@ router.get('/template', template);
 // Representantes / sócios do cliente
 router.get('/customers/:customerId/representatives', listRepresentatives);
 router.post('/customers/:customerId/representatives', createRepresentative);
+router.get('/consart/representatives', listConsartRepresentatives);
+router.post('/consart/representatives', createConsartRepresentative);
 router.put('/representatives/:id', updateRepresentative);
 router.delete('/representatives/:id', removeRepresentative);
 

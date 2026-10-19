@@ -3,12 +3,16 @@
 // ║ sócios dos clientes Consart (quem assina o contrato pelo cliente)  ║
 // ║ • list (por cliente) / getById / create / update / remove          ║
 // ║ • ROLES: cargos sugeridos no select (aceita outro texto)           ║
+// ║ • customer_id = 0 (CONSART_OWNER): quem assina pela Consart         ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
 import { TB_REPRESENTATIVES as TB, ensureContractsConsartTables } from './contractsConsart.schema.js';
 
 const TB_CUSTOMERS = 'public."customersConsart"';
+
+/** Dono "Consart": representantes da contratada ficam na mesma tabela com customer_id = 0. */
+export const CONSART_OWNER = 0;
 
 export const ROLES = Object.freeze([
   'Sócio-Administrador',
@@ -30,6 +34,11 @@ function text(value, max) {
 function positiveId(value) {
   const n = Number(value);
   return Number.isSafeInteger(n) && n > 0 ? n : null;
+}
+
+function ownerId(value) {
+  if (Number(value) === CONSART_OWNER && String(value ?? '').trim() !== '') return CONSART_OWNER;
+  return positiveId(value);
 }
 
 function validationError(message) {
@@ -88,8 +97,8 @@ export function addressLine(rep = {}) {
 
 export async function list(customerId, { all = false } = {}) {
   await ensureContractsConsartTables();
-  const id = positiveId(customerId);
-  if (!id) return [];
+  const id = ownerId(customerId);
+  if (id === null) return [];
   const { rows } = await pool.query(
     `SELECT * FROM ${TB}
       WHERE customer_id = $1 ${all ? '' : 'AND active'}
@@ -109,10 +118,12 @@ export async function getById(id) {
 
 export async function create(customerId, body) {
   await ensureContractsConsartTables();
-  const id = positiveId(customerId);
-  if (!id) throw validationError('Cliente inválido.');
-  const { rowCount } = await pool.query(`SELECT 1 FROM ${TB_CUSTOMERS} WHERE customer_id = $1`, [id]);
-  if (!rowCount) throw validationError('Cliente não encontrado no cadastro da Consart.');
+  const id = ownerId(customerId);
+  if (id === null) throw validationError('Cliente inválido.');
+  if (id !== CONSART_OWNER) {
+    const { rowCount } = await pool.query(`SELECT 1 FROM ${TB_CUSTOMERS} WHERE customer_id = $1`, [id]);
+    if (!rowCount) throw validationError('Cliente não encontrado no cadastro da Consart.');
+  }
 
   const data = prepare(body);
   const { rows: [row] } = await pool.query(

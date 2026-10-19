@@ -17,7 +17,7 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/contractsConsart/contractsConsart.css?v=4" />
+  <link rel="stylesheet" href="/public/contractsConsart/contractsConsart.css?v=5" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -133,7 +133,8 @@
 
         <nav class="contract-nav" id="cf-nav" aria-label="Seções do contrato">
           <button type="button" class="contract-nav__btn is-active" data-target="cf-sec-dados">Dados</button>
-          <button type="button" class="contract-nav__btn" data-target="cf-sec-rep">Quem assina</button>
+          <button type="button" class="contract-nav__btn" data-target="cf-sec-rep">Quem assina (cliente)</button>
+          <button type="button" class="contract-nav__btn" data-target="cf-sec-own">Quem assina (Consart)</button>
           <button type="button" class="contract-nav__btn" data-target="cf-sec-vigencia">Vigência e pagamento</button>
           <button type="button" class="contract-nav__btn" data-target="cf-sec-servicos">Serviços</button>
           <button type="button" class="contract-nav__btn" data-target="cf-sec-clausulas">Cláusulas</button>
@@ -201,6 +202,26 @@
               </div>
             </div>
             <div id="cf-rep-info" class="contract-rep-info" hidden></div>
+
+            <h3 class="contract-section-title" id="cf-sec-own">Quem assina pela Consart</h3>
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6">
+                <label for="cf-own-role">Cargo</label>
+                <select id="cf-own-role">
+                  <option value="">Todos os cargos</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                <label for="cf-own">Representante / Sócio</label>
+                <select id="cf-own">
+                  <option value="">Carregando...</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 contract-rep-actions">
+                <button type="button" id="cf-own-manage" class="btn btn-toolbar btn-sm" title="Cadastrar ou editar quem assina pela Consart">👤 Representantes da Consart</button>
+              </div>
+            </div>
+            <div id="cf-own-info" class="contract-rep-info" hidden></div>
 
             <h3 class="contract-section-title" id="cf-sec-vigencia">Vigência e pagamento</h3>
             <div class="modal-form-grid modal-form-grid--5">
@@ -351,7 +372,7 @@
   <script>window.ERP_COMPANY = 'CONSART';</script>
   <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/contractsConsart/contractsConsart.js?v=4"></script>
+  <script type="module" src="/public/contractsConsart/contractsConsart.js?v=5"></script>
 </body>
 
 </html>
