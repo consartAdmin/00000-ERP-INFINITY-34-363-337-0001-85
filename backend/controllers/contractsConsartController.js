@@ -8,6 +8,7 @@
 
 import * as repo from '../repositories/contractsConsart/contractsConsart.repository.js';
 import { DEFAULT_CLAUSES, PLACEHOLDERS } from '../repositories/contractsConsart/contractsConsart.clauses.js';
+import * as reps from '../repositories/contractsConsart/customersConsartRepresentatives.repository.js';
 import { generateContractConsartPdf } from '../generationPdf/generateContractConsartPdf.js';
 
 function fail(res, tag, error) {
@@ -27,7 +28,7 @@ export async function list(req, res) {
 
 /** Modelo de cláusulas e campos automáticos ({CAMPO}) para o editor. */
 export function template(req, res) {
-  return res.json({ ok: true, data: { clauses: DEFAULT_CLAUSES, placeholders: PLACEHOLDERS } });
+  return res.json({ ok: true, data: { clauses: DEFAULT_CLAUSES, placeholders: PLACEHOLDERS, roles: reps.ROLES } });
 }
 
 export async function getById(req, res) {
@@ -104,5 +105,47 @@ export async function pdf(req, res) {
     return res.end(buffer);
   } catch (error) {
     return fail(res, 'pdf', error);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Representantes / sócios do cliente (quem assina pelo contratante)
+// ─────────────────────────────────────────────────────────────────────
+
+export async function listRepresentatives(req, res) {
+  try {
+    const rows = await reps.list(req.params.customerId, { all: req.query.all === 'true' });
+    return res.json({ ok: true, data: rows });
+  } catch (error) {
+    return fail(res, 'listRepresentatives', error);
+  }
+}
+
+export async function createRepresentative(req, res) {
+  try {
+    const rep = await reps.create(req.params.customerId, req.body);
+    return res.status(201).json({ ok: true, data: rep });
+  } catch (error) {
+    return fail(res, 'createRepresentative', error);
+  }
+}
+
+export async function updateRepresentative(req, res) {
+  try {
+    const rep = await reps.update(req.params.id, req.body);
+    if (!rep) return res.status(404).json({ ok: false, error: 'Representante não encontrado.' });
+    return res.json({ ok: true, data: rep });
+  } catch (error) {
+    return fail(res, 'updateRepresentative', error);
+  }
+}
+
+export async function removeRepresentative(req, res) {
+  try {
+    const removed = await reps.remove(req.params.id);
+    if (!removed) return res.status(404).json({ ok: false, error: 'Representante não encontrado.' });
+    return res.json({ ok: true });
+  } catch (error) {
+    return fail(res, 'removeRepresentative', error);
   }
 }

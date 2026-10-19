@@ -11,7 +11,8 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, TB_ITEMS, TB_CLAUSES, ensureContractsConsartTables } from './contractsConsart.schema.js';
+import { TB, TB_ITEMS, TB_CLAUSES, TB_REPRESENTATIVES, ensureContractsConsartTables } from './contractsConsart.schema.js';
+import { addressLine } from './customersConsartRepresentatives.repository.js';
 import { DEFAULT_CLAUSES } from './contractsConsart.clauses.js';
 import * as proposalsRepo from '../proposalsServicesConsart/proposalsServicesConsart.repository.js';
 
@@ -161,6 +162,7 @@ function prepareHeader(body = {}) {
     customer_id: customerId,
     contact_name: text(body.contact_name, 200),
     seller_id: positiveId(body.seller_id),
+    representative_id: positiveId(body.representative_id),
     start_date: isoDate(body.start_date),
     term_months: Math.max(0, Math.min(600, Math.trunc(num(body.term_months, 12)))),
     auto_renew: body.auto_renew === true || body.auto_renew === 'true',
@@ -197,6 +199,28 @@ async function lookupNames(client, header) {
   }
 
   return { customer_name: customer.name, customer_tax_id: customer.tax_id, seller_name: sellerName };
+}
+
+/** Cópia do representante escolhido (precisa ser do mesmo cliente). */
+async function lookupRepresentative(client, header) {
+  if (!header.representative_id) {
+    return { id: null, name: null, role: null, cpf: null, address: null };
+  }
+  const { rows: [rep] } = await client.query(
+    `SELECT * FROM ${TB_REPRESENTATIVES} WHERE id = $1 AND customer_id = $2`,
+    [header.representative_id, header.customer_id]
+  );
+  if (!rep) throw validationError('Representante não encontrado para este cliente.');
+  return { id: rep.id, name: rep.name, role: rep.role, cpf: rep.cpf, address: addressLine(rep) || null };
+}
+
+async function saveRepresentative(client, contractId, rep) {
+  await client.query(
+    `UPDATE ${TB} SET representative_id = $2, representative_name = $3, representative_role = $4,
+            representative_cpf = $5, representative_address = $6
+      WHERE id = $1`,
+    [contractId, rep.id, rep.name, rep.role, rep.cpf, rep.address]
+  );
 }
 
 async function insertItems(client, contractId, items) {
@@ -404,6 +428,7 @@ export async function create(body = {}, user = {}) {
 
     await insertItems(client, row.id, totals.items);
     await insertClauses(client, row.id, clauses);
+    await saveRepresentative(client, row.id, await lookupRepresentative(client, header));
     return row.id;
   });
 
@@ -469,6 +494,7 @@ export async function update(id, body = {}) {
 
     await client.query(`DELETE FROM ${TB_ITEMS} WHERE contract_id = $1`, [contractId]);
     await insertItems(client, contractId, totals.items);
+    await saveRepresentative(client, contractId, await lookupRepresentative(client, header));
 
     if (clauses) {
       await client.query(`DELETE FROM ${TB_CLAUSES} WHERE contract_id = $1`, [contractId]);

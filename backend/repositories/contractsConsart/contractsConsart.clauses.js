@@ -9,6 +9,10 @@
 export const PLACEHOLDERS = Object.freeze([
   { key: 'CONTRATANTE', label: 'Razão social do cliente' },
   { key: 'CONTRATANTE_DOC', label: 'CNPJ/CPF do cliente' },
+  { key: 'REPRESENTANTE', label: 'Nome do representante do cliente (quem assina)' },
+  { key: 'REPRESENTANTE_CARGO', label: 'Cargo do representante' },
+  { key: 'REPRESENTANTE_CPF', label: 'CPF do representante' },
+  { key: 'REPRESENTANTE_ENDERECO', label: 'Endereço do representante' },
   { key: 'CONTRATADA', label: 'Razão social da Consart' },
   { key: 'CONTRATADA_DOC', label: 'CNPJ da Consart' },
   { key: 'VALOR', label: 'Valor recorrente / mensalidade (R$), sem a implantação' },
