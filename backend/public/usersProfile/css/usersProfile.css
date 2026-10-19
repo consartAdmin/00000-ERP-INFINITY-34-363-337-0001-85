@@ -115,3 +115,8 @@
   font-size: 12px;
   color: #475569;
 }
+
+.up-module-company {
+  white-space: nowrap;
+  text-align: center;
+}

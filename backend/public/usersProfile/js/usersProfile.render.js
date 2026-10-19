@@ -3,7 +3,7 @@
 // ║ Renderização da lista de usuários e da matriz de módulos do modal   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { PERMISSION_KEYS, SELECTORS } from './usersProfile.config.js';
+import { COMPANY_LABELS, PERMISSION_KEYS, SELECTORS } from './usersProfile.config.js';
 import { isChanged, isCustomProfile, usersProfileState } from './usersProfile.state.js';
 import { $, escapeHtml, formatDateTime, normalizeText } from './usersProfile.utils.js';
 
@@ -138,17 +138,18 @@ export function renderModulesTable(modules = usersProfileState.modules) {
   if (!modules.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="up-empty">Nenhum módulo ativo cadastrado em "Criação de Módulos".</td>
+        <td colspan="10" class="up-empty">Nenhum módulo ativo cadastrado em "Criação de Módulos".</td>
       </tr>
     `;
     return;
   }
 
   tbody.innerHTML = modules.map((m) => `
-    <tr data-modulo-id-row="${escapeHtml(m.modulo_id)}" class="${isChanged(m) ? 'is-changed' : ''}">
+    <tr data-modulo-id-row="${escapeHtml(m.modulo_id)}" data-company="${escapeHtml(m.module_company || '')}" class="${isChanged(m) ? 'is-changed' : ''}">
       <td>${escapeHtml(m.modulo_id)}</td>
       <td>${escapeHtml(m.module_name || '-')}</td>
       <td class="up-module-path">${escapeHtml(m.module_path || '-')}</td>
+      <td class="up-module-company">${escapeHtml(COMPANY_LABELS[m.module_company || ''] || m.module_company)}</td>
       <td>
         <select data-up-profile data-modulo-row="${escapeHtml(m.modulo_id)}">
           ${profileOptions(m.profile)}
@@ -180,13 +181,27 @@ export function renderModuleRow(module) {
   });
 }
 
+/**
+ * Filtro por texto + Empresa. Empresa: '' todas | 'BH3' / 'CONSART' (aparece
+ * nessa empresa: dela e das duas) | 'only:BH3' / 'only:CONSART' (só os
+ * marcados com essa empresa) | 'both' (só as das duas empresas).
+ */
+function matchesCompany(rowCompany, company) {
+  if (!company) return true;
+  if (company === 'both') return !rowCompany;
+  if (company.startsWith('only:')) return rowCompany === company.slice(5);
+  return !rowCompany || rowCompany === company;
+}
+
 export function applyModuleFilter() {
   const term = normalizeText($(SELECTORS.moduleSearch)?.value.trim());
+  const company = $(SELECTORS.moduleCompany)?.value || '';
   const tbody = $(SELECTORS.modulesTableBody);
   if (!tbody) return;
 
   tbody.querySelectorAll('tr[data-modulo-id-row]').forEach((row) => {
-    const visible = !term || normalizeText(row.textContent).includes(term);
+    const visible = (!term || normalizeText(row.textContent).includes(term)) &&
+      matchesCompany(row.dataset.company || '', company);
     row.classList.toggle('is-hidden', !visible);
   });
 }

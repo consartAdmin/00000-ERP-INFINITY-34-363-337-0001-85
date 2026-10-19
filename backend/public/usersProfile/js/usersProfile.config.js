@@ -27,6 +27,7 @@ export const SELECTORS = Object.freeze({
   modalInfo: '#upModalInfo',
   form: '#upProfilesForm',
   moduleSearch: '#upModuleSearch',
+  moduleCompany: '#upModuleCompany',
   bulkProfile: '#upBulkProfile',
   btnApplyBulk: '#upBtnApplyBulk',
   legend: '#upProfileLegend',
@@ -35,6 +36,13 @@ export const SELECTORS = Object.freeze({
 });
 
 export const USERS_LIMIT = 200;
+
+/** Empresa do módulo (Criação de Módulos). Sem empresa = as duas. */
+export const COMPANY_LABELS = Object.freeze({
+  BH3: '🔵 BH3',
+  CONSART: '🟢 CONSART',
+  '': '🔁 BH3 e CONSART',
+});
 
 export const PERMISSION_KEYS = Object.freeze([
   'can_view',
