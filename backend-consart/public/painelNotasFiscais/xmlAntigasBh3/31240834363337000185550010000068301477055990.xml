@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe xmlns="http://www.portalfiscal.inf.br/nfe"><infNFe Id="NFe31240834363337000185550010000068301477055990" versao="4.00"><ide><cUF>31</cUF><cNF>47705599</cNF><natOp>5102 NF REVENDA</natOp><mod>55</mod><serie>1</serie><nNF>6830</nNF><dhEmi>2024-08-20T00:00:00-03:00</dhEmi><dhSaiEnt>2024-08-20T09:41:00-03:00</dhSaiEnt><tpNF>1</tpNF><idDest>1</idDest><cMunFG>3106200</cMunFG><tpImp>1</tpImp><tpEmis>1</tpEmis><cDV>0</cDV><tpAmb>1</tpAmb><finNFe>1</finNFe><indFinal>1</indFinal><indPres>0</indPres><procEmi>0</procEmi><verProc>12.08bf</verProc></ide><emit><CNPJ>34363337000185</CNPJ><xNome>BH3 BIAS FORTES</xNome><xFant>BH3 BIAS FORTES</xFant><enderEmit><xLgr>AVENIDA BIAS FORTES</xLgr><nro>784</nro><xBairro>LOURDES</xBairro><cMun>3106200</cMun><xMun>BELO HORIZONTE</xMun><UF>MG</UF><CEP>30170012</CEP><cPais>1058</cPais><xPais>BRASIL</xPais><fone>3135668888</fone></enderEmit><IE>0037087150057</IE><CRT>3</CRT></emit><dest><CNPJ>14766429000107</CNPJ><xNome>MASTERMAQ SOFTWARES BRASIL LTDA</xNome><enderDest><xLgr>RUA RIO DE JANEIRO</xLgr><nro>1462</nro><xBairro>LOURDES</xBairro><cMun>3106200</cMun><xMun>BELO HORIZONTE</xMun><UF>MG</UF><CEP>30160042</CEP><cPais>1058</cPais><xPais>BRASIL</xPais><fone>3135197391</fone></enderDest><indIEDest>9</indIEDest><IE>0026601500020</IE><email>compras@keevo.com.br</email></dest><det nItem="1"><prod><cProd>00008175</cProd><cEAN>7897534852228</cEAN><xProd>INDY DESENGRIPANTE ANTICORROSIVO SPRAY 300ML</xProd><NCM>38249941</NCM><CFOP>5102</CFOP><uCom>UN</uCom><qCom>1.0000</qCom><vUnCom>19.9000</vUnCom><vProd>19.90</vProd><cEANTrib>7897534852228</cEANTrib><uTrib>UN</uTrib><qTrib>1.0000</qTrib><vUnTrib>19.9000</vUnTrib><vDesc>1.99</vDesc><indTot>1</indTot></prod><imposto><ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>0</modBC><vBC>17.91</vBC><pICMS>18.00</pICMS><vICMS>3.22</vICMS></ICMS00></ICMS><PIS><PISAliq><CST>01</CST><vBC>17.91</vBC><pPIS>0.65</pPIS><vPIS>0.12</vPIS></PISAliq></PIS><COFINS><COFINSAliq><CST>01</CST><vBC>17.91</vBC><pCOFINS>3.00</pCOFINS><vCOFINS>0.54</vCOFINS></COFINSAliq></COFINS></imposto></det><total><ICMSTot><vBC>17.91</vBC><vICMS>3.22</vICMS><vICMSDeson>0.00</vICMSDeson><vFCP>0.00</vFCP><vBCST>0.00</vBCST><vST>0.00</vST><vFCPST>0.00</vFCPST><vFCPSTRet>0.00</vFCPSTRet><vProd>19.90</vProd><vFrete>0.00</vFrete><vSeg>0.00</vSeg><vDesc>1.99</vDesc><vII>0.00</vII><vIPI>0.00</vIPI><vIPIDevol>0.00</vIPIDevol><vPIS>0.12</vPIS><vCOFINS>0.54</vCOFINS><vOutro>0.00</vOutro><vNF>17.91</vNF></ICMSTot></total><transp><modFrete>9</modFrete></transp><pag><detPag><indPag>0</indPag><tPag>01</tPag><vPag>17.91</vPag></detPag></pag><infAdic><infCpl>Dinheiro: 17,91; ; Trib aprox R$ 2,41 Federal e R$ 3,22 Estadual Fonte IBPT B047CD; Email do Destinatário:compras@keevo.com.br</infCpl><obsCont xCampo="MD5"><xTexto>MD-5: 0000</xTexto></obsCont></infAdic><infRespTec><CNPJ>01339695000101</CNPJ><xContato>Geovanne Gualberto Teles</xContato><email>geovanne@atsinformatica.com.br</email><fone>21123700</fone><idCSRT>01</idCSRT><hashCSRT>kADa+gxK5peUNxP4uv45/qPuSZc=</hashCSRT></infRespTec></infNFe><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#NFe31240834363337000185550010000068301477055990"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>qD1ASqK6zccXjmgqN0gTZYTl9jw=</DigestValue></Reference></SignedInfo><SignatureValue>NtBKz4+ydArdkjORJBaJ+2o6w36TUJ614DRNdZqKmQXoaOeo4MOm+P6sR9eoE45EwdfnDcJr4Hxi
+2wy06KaqS5PRkV/mJ9XY0rHA7jRioCRMWbiZL/Mwr2N9l3e29i4T3UsQJiVwTLlMtLE4DboVksIm
+FcHTAcaf2dBjVXvidk8dsco/1DHQnlI3mhgI3DPY2ZO0E/8v99mXvat3hW0OVDro5ZhvRLr2grdL
+/LYE7r6XOgn3yvnGzveif9duDYMQGZoSRcKzDmSNTX427J9Fzr3mlsfWLMPAF2+RKr3l6eaTWYKp
+DpaW7vxxxL/athOWpDrUTkzmj/yXCyllEDUIoA==</SignatureValue><KeyInfo><X509Data><X509Certificate>MIIHnjCCBYagAwIBAgIIXXUib4pN86kwDQYJKoZIhvcNAQELBQAwczELMAkGA1UEBhMCQlIxEzAR
+BgNVBAoTCklDUC1CcmFzaWwxNjA0BgNVBAsTLVNlY3JldGFyaWEgZGEgUmVjZWl0YSBGZWRlcmFs
+IGRvIEJyYXNpbCAtIFJGQjEXMBUGA1UEAxMOQUMgQ05ETCBSRkIgdjMwHhcNMjQwNDA1MTcwNTI0
+WhcNMjUwNDA1MTcwNTI0WjCCARMxCzAJBgNVBAYTAkJSMRMwEQYDVQQKEwpJQ1AtQnJhc2lsMQsw
+CQYDVQQIEwJNRzEXMBUGA1UEBxMOQkVMTyBIT1JJWk9OVEUxFzAVBgNVBAsTDjI5NDIwMDg2MDAw
+MTkzMTYwNAYDVQQLEy1TZWNyZXRhcmlhIGRhIFJlY2VpdGEgRmVkZXJhbCBkbyBCcmFzaWwgLSBS
+RkIxFjAUBgNVBAsTDVJGQiBlLUNOUEogQTExGTAXBgNVBAsTEHZpZGVvY29uZmVyZW5jaWExRTBD
+BgNVBAMTPEJIMyBESVNUUklCVUlET1JBIERFIFBST0RVVE9TIERFIExJTVBFWkEgTFREQTozNDM2
+MzMzNzAwMDE4NTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKMXD2kUk65sqler07zG
+MzhVvhjDCXjBvJYS3BeUVY8qhctKnW4yQNSDh92nMiVUti8ZeZGQpttU3V6uJ+1yVOJm8M3xXAVF
+bOXuAt/64OP9VXCknNWcew8kV5t9jvRtMLl7HhenXxEdBfu7ruT4ZHdRoMSfFoOiM0umj6FOeO97
+YdjPC0Mq0j4HtkjkYS2hmJ0JmOwdq80mDRVvp2zQ7gMyjKcd40LkUwKgLFnZgnwC0DZhbQbXiBXj
+TGL26axcj5RKSro2nVXghoCtKleFvgT2tmWVc3zYMQlP7P7Notv0c3BtCStWQwI99WFHUSf0zNEX
+OBP1rzu17LqF94MFQlECAwEAAaOCApIwggKOMB8GA1UdIwQYMBaAFGsfNBVBGuqbHsoi0s7d77vp
+MsqJMA4GA1UdDwEB/wQEAwIF4DBnBgNVHSAEYDBeMFwGBmBMAQIBNDBSMFAGCCsGAQUFBwIBFkRo
+dHRwOi8vcmVwb3NpdG9yaW8uYWNzcGNicmFzaWwub3JnLmJyL2FjLWNuZGxyZmIvYWMtY25kbC1y
+ZmItZHBjLnBkZjCBpgYDVR0fBIGeMIGbMEugSaBHhkVodHRwOi8vcmVwb3NpdG9yaW8uYWNzcGNi
+cmFzaWwub3JnLmJyL2FjLWNuZGxyZmIvbGNyLWFjLWNuZGxyZmJ2NS5jcmwwTKBKoEiGRmh0dHA6
+Ly9yZXBvc2l0b3JpbzIuYWNzcGNicmFzaWwub3JnLmJyL2FjLWNuZGxyZmIvbGNyLWFjLWNuZGxy
+ZmJ2NS5jcmwwXQYIKwYBBQUHAQEEUTBPME0GCCsGAQUFBzAChkFodHRwOi8vcmVwb3NpdG9yaW8u
+YWNzcGNicmFzaWwub3JnLmJyL2FjLWNuZGxyZmIvYWMtY25kbHJmYnY1LnA3YjCBvwYDVR0RBIG3
+MIG0gR9DT05UQVRPQEJIM0RJU1RSSUJVSURPUkEuQ09NLkJSoCMGBWBMAQMCoBoTGEpPU0UgTU9S
+RUlSQSBTT0FSRVMgTkVUT6AZBgVgTAEDA6AQEw4zNDM2MzMzNzAwMDE4NaA4BgVgTAEDBKAvEy0x
+NzA3MTk5MTA4MDQ2MTk0Njg5MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDCgFwYFYEwBAwegDhMM
+MDAwMDAwMDAwMDAwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAJBgNVHRMEAjAAMA0G
+CSqGSIb3DQEBCwUAA4ICAQBYcB02cVAGdLHrt2GQLeN3jb1J5YmONHlU+0tRJJM8A/SlPmYDJBxs
+kWl875uK+1tcRoqOcFMfMuPt0yaAmi/OJbEb20mJhXi30+axFDXmQnk4/pTmx6QZwp8NRyT7LOQS
+CTrvGT57JLxyR10k1f7DSbOe4ZaBOBmUVz4Tso1DT7RdSHDGPZzXWk7B86h8Nbc2TUohLZBi48xg
+hEwT2r1dUf5gZvLPpjxdvje6lZ/tBIK3ehbX2iaYsboae0Mt9RLT4H8oKHwNLUrMQfrlXH+yqPsP
+tyaDbTNS56OW8QZ2IRS9+BFQqrcmBVLJLNb5e76/3rCyYDTCjCf3NNvQ8hF5bMxxs+BNYCqLwxuJ
+pVtVbhNpPmokvapnqKpaqtaSXt6MuTcD0BN3yA2L2MUSt97GQU4rLkfecQEv1KI6Ldgare1jvjge
+tETL2ETZi7AfQepJNlPVzGZZZATy7uDsZ0Yxcc5NEKckEw5xUGa+B/JceJl8brs6on/FLHbXHiy+
+z9KQVpwN10i413Th+wrcYjg6WIiB6fRcqNm6uCF/6HQlbo2CP+AqbbPZuI+edFczmNfywKxooYzV
+3hCZ6siwk12nv4Ghwdlr7x72WymLnHw5fPqcsyMDn5I4U2d/6CBa6T1Pw2WhJrmbVqlRJDMR1FTC
+lNCRl25RQTh6LRo4Nt7XXw==</X509Certificate></X509Data></KeyInfo></Signature></NFe><protNFe versao="4.00"><infProt><tpAmb>1</tpAmb><verAplic>J-3.2.45</verAplic><chNFe>31240834363337000185550010000068301477055990</chNFe><dhRecbto>2024-08-20T09:42:21-03:00</dhRecbto><nProt>131246134194916</nProt><digVal>qD1ASqK6zccXjmgqN0gTZYTl9jw=</digVal><cStat>100</cStat><xMotivo>Autorizado o uso da NF-e</xMotivo></infProt></protNFe></nfeProc>
