@@ -39,5 +39,5 @@ COPY . .
 # Porta padrão Cloud Run (ajuste se necessário)
 EXPOSE 8080
 
-# Start
-CMD ["node", "server.js"]
+# Start: Infinity + projetos em apps/ (ver start.js)
+CMD ["node", "start.js"]

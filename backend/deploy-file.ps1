@@ -12,6 +12,11 @@
     "public\accountsReceivable\js\accountsReceivable.render.js"
   )
 
+.EXAMPLE
+  # Arquivo de outro projeto que roda no mesmo serviço (ver start.js):
+  # dentro de backend-consart, com o .env do Infinity
+  ..\backend\deploy-file.ps1 -Path "public\home" -Destino "apps/consart"
+
 .NOTES
   Execute dentro de backend. O script adiciona ou substitui arquivos, mas não
   remove da imagem arquivos apagados localmente. Para exclusões, dependências,
@@ -27,6 +32,9 @@ param(
     [string]$Project = "",
     [string]$Region = "",
     [string]$Service = "",
+    # Pasta dentro da imagem (/app/<Destino>); vazio = raiz do backend
+    [ValidateSet("", "apps/logistics", "apps/prodnex", "apps/consart")]
+    [string]$Destino = "",
     [switch]$DryRun
 )
 
@@ -136,7 +144,7 @@ Write-Step "CONSART ERP - DEPLOY RÁPIDO DE ARQUIVOS"
 
 $backend = [System.IO.Path]::GetFullPath((Get-Location).Path)
 if (-not (Test-Path -LiteralPath (Join-Path $backend "package.json") -PathType Leaf)) {
-    throw "Execute este script dentro da pasta backend."
+    throw "Execute este script dentro da pasta do projeto (backend ou backend-*)."
 }
 
 $separator = [System.IO.Path]::DirectorySeparatorChar
@@ -161,6 +169,7 @@ Write-Host "Backend : $backend"
 Write-Host "Projeto : $Project"
 Write-Host "Região  : $Region"
 Write-Host "Serviço : $Service"
+if ($Destino) { Write-Host "Destino : /app/$Destino" }
 
 $items = New-Object System.Collections.Generic.List[object]
 $unique = @{}
@@ -245,8 +254,8 @@ try {
 
     Write-Step "Preparando a camada incremental"
     foreach ($item in $items) {
-        $destination = Join-Path $patchRoot $item.Relative
-        Write-Host "Incluindo: $($item.Relative)"
+        $destination = Join-Path (Join-Path $patchRoot $Destino) $item.Relative
+        Write-Host "Incluindo: $(if ($Destino) { "$Destino/" })$($item.Relative)"
         if ($DryRun) { continue }
 
         if ($item.IsDirectory) {

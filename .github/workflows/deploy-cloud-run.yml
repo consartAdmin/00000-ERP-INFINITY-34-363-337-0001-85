@@ -7,31 +7,32 @@
 #   Secret   GCP_SA_KEY        alternativa ao Workload Identity: JSON da chave
 #   Secret   ENV_FILE          conteúdo completo do backend/.env
 #   Secret   ENV_FILE_LOGISTICS / ENV_FILE_PRODNEX / ENV_FILE_CONSART  .env de backend-logistics/, backend-prodnex/ e backend-consart/
-# Outro cliente: crie outro secret (ex.: ENV_FILE_00001) e informe o nome ao rodar.
+#
+# Os 4 projetos rodam no mesmo serviço (erp-infinity-00000): a imagem leva
+# backend/ e uma cópia de backend-logistics/, backend-prodnex/ e backend-consart/
+# em apps/, e o start.js sobe cada um com o próprio banco. No modo completo as
+# variáveis de cada projeto vêm do secret dele (gravadas com prefixo, ex.: CONSART__DB_NAME).
+# Outro cliente: crie outro secret (ex.: ENV_FILE_00001) e informe o nome ao rodar
+# (nesse caso só o Infinity vai na imagem).
 
 name: Deploy Cloud Run
 
 on:
   workflow_dispatch:
     inputs:
-      pasta:
-        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex, backend-consart = CONSART ERP (banco próprio). Use o secret do .env do mesmo projeto"
-        type: choice
-        options:
-          - backend
-          - backend-logistics
-          - backend-prodnex
-          - backend-consart
-        default: backend
       modo:
-        description: "so-codigo = mantém envs e segredos do serviço (-ImageOnly); completo = aplica o .env do secret"
+        description: "so-codigo = mantém envs e segredos do serviço (-ImageOnly); completo = aplica os .env dos secrets (Infinity + projetos)"
         type: choice
         options:
           - so-codigo
           - completo
         default: so-codigo
       env_secret:
-        description: "Nome do secret com o .env (modo completo, ou para ler DEPLOY_* no so-codigo) (vazio = ENV_FILE, ENV_FILE_LOGISTICS, ENV_FILE_PRODNEX ou ENV_FILE_CONSART conforme a pasta)"
+        description: "Nome do secret com o .env (vazio = ENV_FILE). Outro cliente: informe o secret dele"
+        type: string
+        default: ""
+      projetos:
+        description: "Projetos no mesmo serviço (vazio = logistics,prodnex,consart com o ENV_FILE; nenhum com outro secret)"
         type: string
         default: ""
       service:
@@ -49,7 +50,7 @@ on:
 
 # Um deploy por vez para o mesmo serviço
 concurrency:
-  group: deploy-${{ inputs.pasta }}-${{ inputs.service || inputs.env_secret }}
+  group: deploy-${{ inputs.service || inputs.env_secret || 'ENV_FILE' }}
   cancel-in-progress: false
 
 permissions:
@@ -61,10 +62,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      ENV_SECRET: ${{ inputs.env_secret || (inputs.pasta == 'backend-logistics' && 'ENV_FILE_LOGISTICS') || (inputs.pasta == 'backend-prodnex' && 'ENV_FILE_PRODNEX') || (inputs.pasta == 'backend-consart' && 'ENV_FILE_CONSART') || 'ENV_FILE' }}
+      ENV_SECRET: ${{ inputs.env_secret || 'ENV_FILE' }}
+      PROJETOS: ${{ inputs.projetos || ((inputs.env_secret == '' || inputs.env_secret == 'ENV_FILE') && 'logistics,prodnex,consart') || 'nenhum' }}
     defaults:
       run:
-        working-directory: ${{ inputs.pasta }}
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
@@ -93,16 +95,35 @@ jobs:
               echo "::error::Secret '${{ env.ENV_SECRET }}' vazio ou inexistente. O modo completo precisa do .env."
               exit 1
             fi
-            if [ "${{ inputs.pasta }}" != "backend" ] && [ -z "${{ inputs.service }}" ]; then
-              echo "::error::Secret '${{ env.ENV_SECRET }}' não existe. Para ${{ inputs.pasta }} crie o secret ou informe o serviço, senão o deploy cairia no serviço do Infinity."
-              exit 1
-            fi
             echo "Sem .env: usando apenas service/project/region informados."
             exit 0
           fi
           # DEPLOY_ACCOUNT é a conta do PC; aqui a conta é a service account do GCP_SA_KEY
           printf '%s\n' "$ENV_CONTENT" | tr -d '\r' | grep -v '^[[:space:]]*DEPLOY_ACCOUNT[[:space:]]*=' > .env
           echo ".env montado ($(grep -c '' .env) linhas)."
+
+      - name: Montar .env dos projetos (modo completo)
+        if: ${{ inputs.modo == 'completo' }}
+        env:
+          ENV_LOGISTICS: ${{ secrets.ENV_FILE_LOGISTICS }}
+          ENV_PRODNEX: ${{ secrets.ENV_FILE_PRODNEX }}
+          ENV_CONSART: ${{ secrets.ENV_FILE_CONSART }}
+        run: |
+          for nome in $(printf '%s' "$PROJETOS" | tr ',' ' '); do
+            case "$nome" in
+              logistics) conteudo="$ENV_LOGISTICS"; secret=ENV_FILE_LOGISTICS ;;
+              prodnex)   conteudo="$ENV_PRODNEX";   secret=ENV_FILE_PRODNEX ;;
+              consart)   conteudo="$ENV_CONSART";   secret=ENV_FILE_CONSART ;;
+              nenhum)    continue ;;
+              *) echo "::error::Projeto desconhecido: $nome"; exit 1 ;;
+            esac
+            if [ -z "$conteudo" ]; then
+              echo "::error::Secret $secret vazio ou inexistente (projeto $nome)."
+              exit 1
+            fi
+            printf '%s\n' "$conteudo" | tr -d '\r' > "../backend-$nome/.env"
+            echo "backend-$nome/.env montado a partir do $secret."
+          done
 
       - name: Deploy
         shell: pwsh
@@ -118,8 +139,9 @@ jobs:
           if ($env:IN_SERVICE) { $params.Service = $env:IN_SERVICE }
           if ($env:IN_PROJECT) { $params.Project = $env:IN_PROJECT }
           if ($env:IN_REGION)  { $params.Region  = $env:IN_REGION }
+          $params.Projetos = $env:PROJETOS
           ./deploy.ps1 @params
 
       - name: Apagar .env do runner
         if: always()
-        run: rm -f .env
+        run: rm -f .env ../backend-logistics/.env ../backend-prodnex/.env ../backend-consart/.env
