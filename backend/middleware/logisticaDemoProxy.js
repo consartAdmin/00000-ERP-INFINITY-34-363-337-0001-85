@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 //
 // LOGISTICA_DEMO_URL=https://consart-logistics-demo-....run.app
+// PRODNEX_URL=https://prodnex-....run.app  → /prodnex (mesmo esquema)
 // Vazio → desligado (o ERP segue igual).
 //
 // Encaminha para o app de logística:
@@ -16,40 +17,38 @@
 import http from "node:http";
 import https from "node:https";
 
-const PREFIX = "/logistica-demo";
-
 // Cabeçalhos hop-by-hop não passam adiante
 const HOP_BY_HOP = new Set([
   "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
   "te", "trailer", "transfer-encoding", "upgrade", "host",
 ]);
 
-function hasPrefix(p) {
+function hasPrefix(p, PREFIX) {
   return p === PREFIX || p.startsWith(`${PREFIX}/`) || p.startsWith(`${PREFIX}?`);
 }
 
-function refererHasPrefix(req) {
+function refererHasPrefix(req, PREFIX) {
   const ref = req.get("referer");
   if (!ref) return false;
   try {
     const u = new URL(ref);
-    return u.host === req.get("host") && hasPrefix(u.pathname);
+    return u.host === req.get("host") && hasPrefix(u.pathname, PREFIX);
   } catch {
     return false;
   }
 }
 
-export function logisticaDemoProxy(target = process.env.LOGISTICA_DEMO_URL) {
+export function logisticaDemoProxy(target = process.env.LOGISTICA_DEMO_URL, PREFIX = "/logistica-demo") {
   const base = String(target || "").trim().replace(/\/+$/, "");
   if (!base) return (_req, _res, next) => next();
 
   const targetUrl = new URL(base);
   const client = targetUrl.protocol === "https:" ? https : http;
-  console.log(`[logistica-demo] ${PREFIX} → ${targetUrl.origin}`);
+  console.log(`[${PREFIX.slice(1)}] ${PREFIX} → ${targetUrl.origin}`);
 
   return (req, res, next) => {
     const url = req.originalUrl || req.url || "/";
-    if (!hasPrefix(url) && !refererHasPrefix(req)) return next();
+    if (!hasPrefix(url, PREFIX) && !refererHasPrefix(req, PREFIX)) return next();
 
     const headers = {};
     for (const [k, v] of Object.entries(req.headers)) {
@@ -84,8 +83,8 @@ export function logisticaDemoProxy(target = process.env.LOGISTICA_DEMO_URL) {
 
     upstream.setTimeout(300000, () => upstream.destroy(new Error("timeout")));
     upstream.on("error", (err) => {
-      console.error("[logistica-demo] erro no encaminhamento:", err.message);
-      if (!res.headersSent) res.status(502).send("Logistica demo indisponível.");
+      console.error(`[${PREFIX.slice(1)}] erro no encaminhamento:`, err.message);
+      if (!res.headersSent) res.status(502).send(`${PREFIX.slice(1)} indisponível.`);
       else res.destroy();
     });
 

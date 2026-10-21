@@ -71,7 +71,7 @@
   const URL_PROJETO = {
     INFINITY: 'https://erp.consart.com.br/public/home/home.html',
     LOGISTICS: 'https://erp.consart.com.br/logistica-demo/public/home/home.html',
-    PRODNEX: '', // preencher quando o ProdNex tiver endereço publicado
+    PRODNEX: 'https://erp.consart.com.br/prodnex/public/home/home.html',
   };
   const COMPANY_KEY = 'consart:active-company';
   const EMPRESAS = [
