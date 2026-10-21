@@ -39,20 +39,24 @@ body { padding-bottom: var(--statusbar-h); }
   background: rgba(0,0,0,.06);
 }
 
-/* Botão de empresa ativa (BH3 x CONSART) */
+/* Empresa ativa (BH3 x CONSART) e links para LOGISTICS / PRODNEX */
 #status-usuario-bar .su-empresa {
   display: inline-flex; padding: 2px; gap: 2px;
   border: 1px solid var(--statusbar-border); border-radius: 8px;
   background: #fff;
 }
-#status-usuario-bar .su-empresa button {
+#status-usuario-bar .su-empresa button,
+#status-usuario-bar .su-empresa a {
   padding: 3px 10px; border-radius: 6px;
   font-size: 12px; font-weight: 600; line-height: 1.2; letter-spacing: .03em;
   color: var(--statusbar-muted);
 }
-#status-usuario-bar .su-empresa button.is-active { color: #fff; cursor: default; }
-#status-usuario-bar .su-empresa button.is-active[data-company="BH3"] { background: #1d4ed8; }
-#status-usuario-bar .su-empresa button.is-active[data-company="CONSART"] { background: #0f766e; }
+#status-usuario-bar .su-empresa button:disabled { opacity: .5; cursor: not-allowed; }
+#status-usuario-bar .su-empresa .is-active { color: #fff; cursor: default; }
+#status-usuario-bar .su-empresa .is-active[data-company="BH3"] { background: #1d4ed8; }
+#status-usuario-bar .su-empresa .is-active[data-company="CONSART"] { background: #0f766e; }
+#status-usuario-bar .su-empresa .is-active[data-company="LOGISTICS"] { background: #c2410c; }
+#status-usuario-bar .su-empresa .is-active[data-company="PRODNEX"] { background: #6d28d9; }
 .dark-mode #status-usuario-bar .su-empresa { background: transparent; }
 
 /* Dark mode (quando body tiver .dark-mode) */

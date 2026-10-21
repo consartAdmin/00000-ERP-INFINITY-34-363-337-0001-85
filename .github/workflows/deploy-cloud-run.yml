@@ -6,6 +6,7 @@
 #   Variable GCP_SA_EMAIL      service account do deploy (opcional; padrão abaixo)
 #   Secret   GCP_SA_KEY        alternativa ao Workload Identity: JSON da chave
 #   Secret   ENV_FILE          conteúdo completo do backend/.env
+#   Secret   ENV_FILE_LOGISTICS / ENV_FILE_PRODNEX  .env de backend-logistics/ e backend-prodnex/
 # Outro cliente: crie outro secret (ex.: ENV_FILE_00001) e informe o nome ao rodar.
 
 name: Deploy Cloud Run
@@ -13,6 +14,14 @@ name: Deploy Cloud Run
 on:
   workflow_dispatch:
     inputs:
+      pasta:
+        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex. Use o secret do .env do mesmo projeto"
+        type: choice
+        options:
+          - backend
+          - backend-logistics
+          - backend-prodnex
+        default: backend
       modo:
         description: "so-codigo = mantém envs e segredos do serviço (-ImageOnly); completo = aplica o .env do secret"
         type: choice
@@ -21,9 +30,9 @@ on:
           - completo
         default: so-codigo
       env_secret:
-        description: "Nome do secret com o .env (modo completo, ou para ler DEPLOY_* no so-codigo)"
+        description: "Nome do secret com o .env (modo completo, ou para ler DEPLOY_* no so-codigo) (vazio = ENV_FILE, ENV_FILE_LOGISTICS ou ENV_FILE_PRODNEX conforme a pasta)"
         type: string
-        default: ENV_FILE
+        default: ""
       service:
         description: "Serviço Cloud Run (vazio = DEPLOY_SERVICE do .env)"
         type: string
@@ -39,7 +48,7 @@ on:
 
 # Um deploy por vez para o mesmo serviço
 concurrency:
-  group: deploy-${{ inputs.service || inputs.env_secret }}
+  group: deploy-${{ inputs.pasta }}-${{ inputs.service || inputs.env_secret }}
   cancel-in-progress: false
 
 permissions:
@@ -50,9 +59,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      ENV_SECRET: ${{ inputs.env_secret || (inputs.pasta == 'backend-logistics' && 'ENV_FILE_LOGISTICS') || (inputs.pasta == 'backend-prodnex' && 'ENV_FILE_PRODNEX') || 'ENV_FILE' }}
     defaults:
       run:
-        working-directory: backend
+        working-directory: ${{ inputs.pasta }}
     steps:
       - uses: actions/checkout@v4
 
@@ -73,12 +84,16 @@ jobs:
 
       - name: Montar .env a partir do secret
         env:
-          ENV_CONTENT: ${{ secrets[inputs.env_secret] }}
+          ENV_CONTENT: ${{ secrets[env.ENV_SECRET] }}
           MODO: ${{ inputs.modo }}
         run: |
           if [ -z "$ENV_CONTENT" ]; then
             if [ "$MODO" = "completo" ]; then
-              echo "::error::Secret '${{ inputs.env_secret }}' vazio ou inexistente. O modo completo precisa do .env."
+              echo "::error::Secret '${{ env.ENV_SECRET }}' vazio ou inexistente. O modo completo precisa do .env."
+              exit 1
+            fi
+            if [ "${{ inputs.pasta }}" != "backend" ] && [ -z "${{ inputs.service }}" ]; then
+              echo "::error::Secret '${{ env.ENV_SECRET }}' não existe. Para ${{ inputs.pasta }} crie o secret ou informe o serviço, senão o deploy cairia no serviço do Infinity."
               exit 1
             fi
             echo "Sem .env: usando apenas service/project/region informados."

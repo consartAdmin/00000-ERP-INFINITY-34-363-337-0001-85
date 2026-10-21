@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe xmlns="http://www.portalfiscal.inf.br/nfe"><infNFe Id="NFe31250734363337000185550010000080081887802615" versao="4.00"><ide><cUF>31</cUF><cNF>88780261</cNF><natOp>5405 NF REVENDA</natOp><mod>55</mod><serie>1</serie><nNF>8008</nNF><dhEmi>2025-07-23T00:00:00-03:00</dhEmi><dhSaiEnt>2025-07-23T15:25:00-03:00</dhSaiEnt><tpNF>1</tpNF><idDest>1</idDest><cMunFG>3106200</cMunFG><tpImp>1</tpImp><tpEmis>1</tpEmis><cDV>5</cDV><tpAmb>1</tpAmb><finNFe>1</finNFe><indFinal>1</indFinal><indPres>0</indPres><procEmi>0</procEmi><verProc>13.07db</verProc></ide><emit><CNPJ>34363337000185</CNPJ><xNome>BH3 DISTRIBUIDORA</xNome><xFant>BH3 DISTRIBUIDORA</xFant><enderEmit><xLgr>AVENIDA BIAS FORTES</xLgr><nro>784</nro><xBairro>LOURDES</xBairro><cMun>3106200</cMun><xMun>BELO HORIZONTE</xMun><UF>MG</UF><CEP>30170012</CEP><cPais>1058</cPais><xPais>BRASIL</xPais><fone>3135660070</fone></enderEmit><IE>0037087150057</IE><CRT>3</CRT></emit><dest><CNPJ>37419440000198</CNPJ><xNome>LEONOR EMILIA PAIVA FERNANDES 58263330653</xNome><enderDest><xLgr>RUA SAO PAULO</xLgr><nro>1627</nro><xBairro>LOURDES</xBairro><cMun>3106200</cMun><xMun>BELO HORIZONTE</xMun><UF>MG</UF><CEP>30170132</CEP><cPais>1058</cPais><xPais>BRASIL</xPais><fone>3175671590</fone></enderDest><indIEDest>9</indIEDest><IE>0037545810040</IE><email>biancaferreiracontabilidade@gmail.com</email></dest><det nItem="1"><prod><cProd>00007509</cProd><cEAN>SEM GTIN</cEAN><xProd>GUARDANAPO TV 1.200 CELULOSE LIMPMAX 7120</xProd><NCM>48183000</NCM><CEST>2004600</CEST><CFOP>5405</CFOP><uCom>UN</uCom><qCom>10.0000</qCom><vUnCom>9.9000</vUnCom><vProd>99.00</vProd><cEANTrib>SEM GTIN</cEANTrib><uTrib>UN</uTrib><qTrib>10.0000</qTrib><vUnTrib>9.9000</vUnTrib><indTot>1</indTot></prod><imposto><ICMS><ICMS60><orig>0</orig><CST>60</CST><vBCSTRet>0.00</vBCSTRet><pST>0.00</pST><vICMSSubstituto>0.00</vICMSSubstituto><vICMSSTRet>0.00</vICMSSTRet></ICMS60></ICMS><PIS><PISAliq><CST>01</CST><vBC>99.00</vBC><pPIS>1.65</pPIS><vPIS>1.63</vPIS></PISAliq></PIS><COFINS><COFINSAliq><CST>01</CST><vBC>99.00</vBC><pCOFINS>7.60</pCOFINS><vCOFINS>7.52</vCOFINS></COFINSAliq></COFINS></imposto></det><total><ICMSTot><vBC>0.00</vBC><vICMS>0.00</vICMS><vICMSDeson>0.00</vICMSDeson><vFCP>0.00</vFCP><vBCST>0.00</vBCST><vST>0.00</vST><vFCPST>0.00</vFCPST><vFCPSTRet>0.00</vFCPSTRet><vProd>99.00</vProd><vFrete>0.00</vFrete><vSeg>0.00</vSeg><vDesc>0.00</vDesc><vII>0.00</vII><vIPI>0.00</vIPI><vIPIDevol>0.00</vIPIDevol><vPIS>1.63</vPIS><vCOFINS>7.52</vCOFINS><vOutro>0.00</vOutro><vNF>99.00</vNF></ICMSTot></total><transp><modFrete>9</modFrete></transp><pag><detPag><indPag>1</indPag><tPag>04</tPag><vPag>99.00</vPag><card><tpIntegra>2</tpIntegra><CNPJ>37880206000163</CNPJ><tBand>99</tBand><cAut>NENHUM</cAut></card></detPag></pag><infAdic><infCpl>Cartão: 99,00; ; Trib aprox R$ 14,87 Federal e R$ 18,81 Estadual Fonte IBPT CAF7DD; Email do Destinatário:biancaferreiracontabilidade@gmail.com</infCpl><obsCont xCampo="MD5"><xTexto>MD-5: 0000</xTexto></obsCont></infAdic><infRespTec><CNPJ>01339695000101</CNPJ><xContato>Geovanne Gualberto Teles</xContato><email>geovanne@atsinformatica.com.br</email><fone>21123700</fone><idCSRT>01</idCSRT><hashCSRT>xDVGR8RlV/vM1YytOb2TEKKDHeE=</hashCSRT></infRespTec></infNFe><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#NFe31250734363337000185550010000080081887802615"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>5R9UwXW0AJ1LdnLvXLLaVsgXn60=</DigestValue></Reference></SignedInfo><SignatureValue>nGT+0yoPsS59bk5I2M3HnHe0XgEWmU1IBR8lFhk/gqkjHrcjqH5vV+5GYgxN6pJXL2szjK+NQS7R
+0jT72CugsarMQCDCJ2w7daXC28okXFjaNQ9RnbRnZTfxGQbXJjB0xOnw7A57Bujk3Tv47BIobenP
+Dj3U0h2vFjmNG3nn1KZfg7YMQ+4Se2c2TBtg8u9DMfOCKXS/rNuiY+NLEj3gSe4yTsY3FAEZme57
+YyxEft1gs/eZo3yGAdGxyvRWXPvrda9yWF8pxc6+X5GG1VmSpJXPIwO4Ov5LHm5ZWy3EYaMfBMLa
+Hs3JwTkoWGH/HfLMDM0WpxTzW2DXHY5uuC2VHw==</SignatureValue><KeyInfo><X509Data><X509Certificate>MIIH+TCCBeGgAwIBAgILAL01FmZ/PL9WWiIwDQYJKoZIhvcNAQELBQAwWzELMAkGA1UEBhMCQlIx
+FjAUBgNVBAsMDUFDIFN5bmd1bGFySUQxEzARBgNVBAoMCklDUC1CcmFzaWwxHzAdBgNVBAMMFkFD
+IFN5bmd1bGFySUQgTXVsdGlwbGEwHhcNMjUwNDA3MTI1NTIwWhcNMjYwNDA3MTI1NTIwWjCB4jEL
+MAkGA1UEBhMCQlIxEzARBgNVBAoMCklDUC1CcmFzaWwxIjAgBgNVBAsMGUNlcnRpZmljYWRvIERp
+Z2l0YWwgUEogQTExGTAXBgNVBAsMEFZpZGVvY29uZmVyZW5jaWExFzAVBgNVBAsMDjEzNTA1NzIx
+MDAwMTAzMR8wHQYDVQQLDBZBQyBTeW5ndWxhcklEIE11bHRpcGxhMUUwQwYDVQQDDDxCSDMgRElT
+VFJJQlVJRE9SQSBERSBQUk9EVVRPUyBERSBMSU1QRVpBIExUREE6MzQzNjMzMzcwMDAxODUwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDgBAQOr3aw48anyBx3XX/GeFaGxGKlGYWZWfyQ
+B4bY2E3eKqByVrQKFaX4mDPEBnmQvTOIXU65B7PmXxV9QvJ5CTtzY4X1PhR+HcUhRMkG4MOY3q8J
+rZz01cCIcT7jVxOUskQIzM+c0N9/mPYUVcT3ZhibpFpbN3T7FPQvS4U4NmCmGwg8iHlnBRs1ggfB
+7KSmpEFH4LzvOvehH75ncgh4ZdTytoGVsVJFy/Ka2N8+akyi8NQjT6mVo+iK+fg7evyEngkMq/ZL
+UlCmJfDiVob379Q3NF3kpp1120VnmiMo4T0Vci8dS45LTkk/GPWhU93k5mnY6+8AGIDMHSucJxSv
+AgMBAAGjggM0MIIDMDAOBgNVHQ8BAf8EBAMCBeAwHQYDVR0lBBYwFAYIKwYBBQUHAwQGCCsGAQUF
+BwMCMAkGA1UdEwQCMAAwHwYDVR0jBBgwFoAUk+H/fh3l9eRN4TliiyFpleavchYwHQYDVR0OBBYE
+FKR6+38DgUEWEbdLJhcMoWaAhBZ/MH8GCCsGAQUFBwEBBHMwcTBvBggrBgEFBQcwAoZjaHR0cDov
+L3N5bmd1bGFyaWQuY29tLmJyL3JlcG9zaXRvcmlvL2FjLXN5bmd1bGFyaWQtbXVsdGlwbGEvY2Vy
+dGlmaWNhZG9zL2FjLXN5bmd1bGFyaWQtbXVsdGlwbGEucDdiMIGCBgNVHSAEezB5MHcGB2BMAQIB
+gQUwbDBqBggrBgEFBQcCARZeaHR0cDovL3N5bmd1bGFyaWQuY29tLmJyL3JlcG9zaXRvcmlvL2Fj
+LXN5bmd1bGFyaWQtbXVsdGlwbGEvZHBjL2RwYy1hYy1zeW5ndWxhcklELW11bHRpcGxhLnBkZjCB
+yAYDVR0RBIHAMIG9oCIGBWBMAQMCoBkEF1JFTkFUTyBNT05URUlSTyBNT1JFSVJBoBkGBWBMAQMD
+oBAEDjM0MzYzMzM3MDAwMTg1oEIGBWBMAQMEoDkENzA5MDcxOTkzMTIzMzEwMjI2NTgwMDAwMDAw
+MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDCgFwYFYEwBAwegDgQMMDAwMDAwMDAwMDAwgR9j
+b250YXRvQGJoM2Rpc3RyaWJ1aWRvcmEuY29tLmJyMIHiBgNVHR8Egdowgdcwb6BtoGuGaWh0dHA6
+Ly9pY3AtYnJhc2lsLnN5bmd1bGFyaWQuY29tLmJyL3JlcG9zaXRvcmlvL2FjLXN5bmd1bGFyaWQt
+bXVsdGlwbGEvbGNyL2xjci1hYy1zeW5ndWxhcmlkLW11bHRpcGxhLmNybDBkoGKgYIZeaHR0cDov
+L3N5bmd1bGFyaWQuY29tLmJyL3JlcG9zaXRvcmlvL2FjLXN5bmd1bGFyaWQtbXVsdGlwbGEvbGNy
+L2xjci1hYy1zeW5ndWxhcmlkLW11bHRpcGxhLmNybDANBgkqhkiG9w0BAQsFAAOCAgEAnADeXncI
+uO+yoO2PR6+6xXQn/ov2LGKREEizM9w11nPBnaW52+ZOJglytKXayfhxEBrwvYWTewAdtGemGnvX
+jZh9TBtz4jwxEXnf+BvOZpumxMdFKE9Q1Y6NLfL/Bns/rezhaLeXBULaUW9j9OjgJGfATlMsPgd3
+7pIN7WP5bsoOU7xtSKIWnqUiJ6iEWYWuziebFqitfb1sR0l2nevTo/RMKdgkGmkT2HDQH9zaKOpe
+WS9nxBcqQ5/nP71GGTwNqoTpmgJEYnWD6Z2b8aN9Rb6sJyQWSaO7CrBf1RBxdNxcPl6LsR6ZMl4R
+vu51cfeG0cR3/5H3zC6NnB1awVe4M8F79dLS/a8bsEfI/z+pU46OCm0aTLBqYbcZM74l8ydLDbh6
+wuaCnKfcZy/pSi4SfhqvHtlMnQaIYeYxtOw1+T804e90JmarY3UWYN7Q6EtpF//mpjYmMsVJeiHu
+Wk9W0JBKed5ycQM+me8t6t2/ATU2RUzYNyJ2WByi6u8cRODYODG66mXSabXTENsE6UCoAvdih3qB
+3A+ZW0ptQu0Bu2DrTJPlG5ouT1rdfJpBdCbWuXlv2LHDEwnOyhqXzSl0RWZhyjv8z4giiRz8jp8p
+/bBeP2iyoL3G79cPrS7DrfvbkihWbLfk9WdyWy081jn6FqI48dwObwmhUc5F8m6J+Wo=</X509Certificate></X509Data></KeyInfo></Signature></NFe><protNFe versao="4.00"><infProt><tpAmb>1</tpAmb><verAplic>J-3.2.99</verAplic><chNFe>31250734363337000185550010000080081887802615</chNFe><dhRecbto>2025-07-23T15:25:37-03:00</dhRecbto><nProt>131256806385767</nProt><digVal>5R9UwXW0AJ1LdnLvXLLaVsgXn60=</digVal><cStat>100</cStat><xMotivo>Autorizado o uso da NF-e</xMotivo></infProt></protNFe></nfeProc>

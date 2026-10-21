@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 🟦 Favicons CONSART -->
+  <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <title>LOGIN | CONSART ERP</title>
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/login/login.css">
+</head>
+<body class="consart-theme">
+
+  <!-- Fundo (pode continuar usando o que já tinha) -->
+  <div class="bg-layer">
+    <div class="bg-aurora"></div>
+    <div class="bg-grid"></div>
+    <div class="bg-vignette"></div>
+  </div>
+
+  <!-- CARD CENTRAL EM 2 COLUNAS (ESTILO RESULT-H) -->
+  <div class="login-container">
+    <div class="login-panel">
+
+      <!-- Lado esquerdo: logo + nome sistema -->
+      <div class="login-left">
+        <img src="/public/includes/imagens/consartInfinity.png" alt="CONSART" class="login-logo" />
+        <div class="login-brand">
+         <!-- <span class="brand-main">CONSART</span>-->
+          <span class="brand-sub">GESTÃO EMPRESARIAL</span>
+        </div>
+      </div>
+
+      <!-- Lado direito: formulário -->
+      <div class="login-right">
+        <h2>BEM VINDO À REVOLUÇÃO EMPRESARIAL</h2>
+        <p class="login-subtitle">Acesse o ERP com seu usuário e senha.</p>
+
+        <form id="formLogin" novalidate autocomplete="on">
+          <!-- Usuário -->
+          <div class="form-row">
+            <label for="usuario">Usuário</label>
+            <div class="input-wrap has-icon">
+              <input
+                id="usuario"
+                name="nome"
+                type="text"
+                class="input"
+                placeholder="Digite seu usuário"
+                autocomplete="username"
+                required
+                autofocus
+              />
+            </div>
+          </div>
+
+          <!-- Senha -->
+          <div class="form-row">
+            <label for="senha">Senha</label>
+            <div class="input-wrap has-icon has-action">
+              <input
+                id="senha"
+                name="senha"
+                type="password"
+                class="input"
+                placeholder="Sua senha"
+                autocomplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                class="input-action"
+                id="toggleSenha"
+                aria-label="Mostrar senha"
+              >
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <!-- Botão Entrar -->
+          <button type="submit" class="btn btn-primary block">Entrar</button>
+
+          <!-- Mensagem de erro -->
+          <p id="mensagemErro" class="erro" role="alert" aria-live="polite"></p>
+        </form>
+
+        <!-- Texto de rodapé tipo “informativo de versão” -->
+        <p class="login-note">
+          Versão 1.0 • CONSART ERP em desenvolvimento.<br>
+          Acesso autorizado apenas a usuários cadastrados.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="/public/login/login.js"></script>
+</body>
+</html>

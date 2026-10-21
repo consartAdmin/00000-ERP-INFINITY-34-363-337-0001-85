@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe xmlns="http://www.portalfiscal.inf.br/nfe"><infNFe Id="NFe31240734363337000185550010000067141844806710" versao="4.00"><ide><cUF>31</cUF><cNF>84480671</cNF><natOp>5403 NF REVENDA</natOp><mod>55</mod><serie>1</serie><nNF>6714</nNF><dhEmi>2024-07-10T00:00:00-03:00</dhEmi><dhSaiEnt>2024-07-10T07:51:00-03:00</dhSaiEnt><tpNF>1</tpNF><idDest>1</idDest><cMunFG>3106200</cMunFG><tpImp>1</tpImp><tpEmis>1</tpEmis><cDV>0</cDV><tpAmb>1</tpAmb><finNFe>1</finNFe><indFinal>1</indFinal><indPres>0</indPres><procEmi>0</procEmi><verProc>12.07bc</verProc></ide><emit><CNPJ>34363337000185</CNPJ><xNome>BH3 BIAS FORTES</xNome><xFant>BH3 BIAS FORTES</xFant><enderEmit><xLgr>AVENIDA BIAS FORTES</xLgr><nro>784</nro><xBairro>LOURDES</xBairro><cMun>3106200</cMun><xMun>BELO HORIZONTE</xMun><UF>MG</UF><CEP>30170012</CEP><cPais>1058</cPais><xPais>BRASIL</xPais><fone>3135668888</fone></enderEmit><IE>0037087150057</IE><CRT>3</CRT></emit><dest><CNPJ>05253447000196</CNPJ><xNome>CONDOMINIO BELVEDERE PARK</xNome><enderDest><xLgr>RUA JOAO ANTONIO AZEREDO</xLgr><nro>680</nro><xBairro>BELVEDERE</xBairro><cMun>3106200</cMun><xMun>BELO HORIZONTE</xMun><UF>MG</UF><CEP>30320610</CEP><cPais>1058</cPais><xPais>BRASIL</xPais><fone>3132612860</fone></enderDest><indIEDest>9</indIEDest><email>gerencia7@prosind.com.br</email></dest><det nItem="1"><prod><cProd>00001091</cProd><cEAN>7898929864659</cEAN><xProd>DESINFETANTE FEROZ LAVANDA 5LTS</xProd><NCM>38089419</NCM><CEST>1100100</CEST><CFOP>5403</CFOP><uCom>UN</uCom><qCom>3.0000</qCom><vUnCom>16.9000</vUnCom><vProd>50.70</vProd><cEANTrib>7898929864659</cEANTrib><uTrib>UN</uTrib><qTrib>3.0000</qTrib><vUnTrib>16.9000</vUnTrib><indTot>1</indTot></prod><imposto><ICMS><ICMS60><orig>0</orig><CST>60</CST><vBCSTRet>0.00</vBCSTRet><pST>0.00</pST><vICMSSubstituto>0.00</vICMSSubstituto><vICMSSTRet>0.00</vICMSSTRet></ICMS60></ICMS><PIS><PISAliq><CST>01</CST><vBC>50.70</vBC><pPIS>0.65</pPIS><vPIS>0.33</vPIS></PISAliq></PIS><COFINS><COFINSAliq><CST>01</CST><vBC>50.70</vBC><pCOFINS>3.00</pCOFINS><vCOFINS>1.52</vCOFINS></COFINSAliq></COFINS></imposto></det><total><ICMSTot><vBC>0.00</vBC><vICMS>0.00</vICMS><vICMSDeson>0.00</vICMSDeson><vFCP>0.00</vFCP><vBCST>0.00</vBCST><vST>0.00</vST><vFCPST>0.00</vFCPST><vFCPSTRet>0.00</vFCPSTRet><vProd>50.70</vProd><vFrete>0.00</vFrete><vSeg>0.00</vSeg><vDesc>0.00</vDesc><vII>0.00</vII><vIPI>0.00</vIPI><vIPIDevol>0.00</vIPIDevol><vPIS>0.33</vPIS><vCOFINS>1.52</vCOFINS><vOutro>0.00</vOutro><vNF>50.70</vNF></ICMSTot></total><transp><modFrete>9</modFrete></transp><pag><detPag><indPag>1</indPag><tPag>21</tPag><vPag>50.70</vPag></detPag></pag><infAdic><infCpl>Crédito/Vale-Presente: 50,70; ; Trib aprox R$ 8,46 Federal e R$ 9,13 Estadual Fonte IBPT 3501D1; Email do Destinatário:gerencia7@prosind.com.br</infCpl><obsCont xCampo="MD5"><xTexto>MD-5: 0000</xTexto></obsCont></infAdic><infRespTec><CNPJ>01339695000101</CNPJ><xContato>Geovanne Gualberto Teles</xContato><email>geovanne@atsinformatica.com.br</email><fone>21123700</fone><idCSRT>01</idCSRT><hashCSRT>DYhWGKMzkzqAQtynXZ8Qo4pDhrk=</hashCSRT></infRespTec></infNFe><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#NFe31240734363337000185550010000067141844806710"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>dZzWIMLamstZQBEqrCj6B/prEAo=</DigestValue></Reference></SignedInfo><SignatureValue>mI4fsNdaeSa6bkRzH12g8jW2f5hBahyo3hKEpgldEI17vaQ0uHjIcW82MnoiSBmLs1nsuJlZUsuo
+58eaRPHwTIK9QT4lNPLRs8ul+USzcxJm26rG5auq9GRZvD7FerYu8qOO+d3BCVxkApeoR+vj4NsU
+yacYTMYgdKAtIqW4iv6Pf4ri7KqlwULgVuuViUyARZi9u7v/5ZxPUx10/zSM3nOv/qAXWDfpgAPW
+NQAhGYvm6CzYEuPt9NsocaBjP5qkONnU1A945Cf5GH2bxuoFAJcgBlhe0LMxyYMpkv9+aLr7lHB1
+7h50wHMVJhBAdg4xc3dd3OFKewZhb3w1ti8nbg==</SignatureValue><KeyInfo><X509Data><X509Certificate>MIIHnjCCBYagAwIBAgIIXXUib4pN86kwDQYJKoZIhvcNAQELBQAwczELMAkGA1UEBhMCQlIxEzAR
+BgNVBAoTCklDUC1CcmFzaWwxNjA0BgNVBAsTLVNlY3JldGFyaWEgZGEgUmVjZWl0YSBGZWRlcmFs
+IGRvIEJyYXNpbCAtIFJGQjEXMBUGA1UEAxMOQUMgQ05ETCBSRkIgdjMwHhcNMjQwNDA1MTcwNTI0
+WhcNMjUwNDA1MTcwNTI0WjCCARMxCzAJBgNVBAYTAkJSMRMwEQYDVQQKEwpJQ1AtQnJhc2lsMQsw
+CQYDVQQIEwJNRzEXMBUGA1UEBxMOQkVMTyBIT1JJWk9OVEUxFzAVBgNVBAsTDjI5NDIwMDg2MDAw
+MTkzMTYwNAYDVQQLEy1TZWNyZXRhcmlhIGRhIFJlY2VpdGEgRmVkZXJhbCBkbyBCcmFzaWwgLSBS
+RkIxFjAUBgNVBAsTDVJGQiBlLUNOUEogQTExGTAXBgNVBAsTEHZpZGVvY29uZmVyZW5jaWExRTBD
+BgNVBAMTPEJIMyBESVNUUklCVUlET1JBIERFIFBST0RVVE9TIERFIExJTVBFWkEgTFREQTozNDM2
+MzMzNzAwMDE4NTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKMXD2kUk65sqler07zG
+MzhVvhjDCXjBvJYS3BeUVY8qhctKnW4yQNSDh92nMiVUti8ZeZGQpttU3V6uJ+1yVOJm8M3xXAVF
+bOXuAt/64OP9VXCknNWcew8kV5t9jvRtMLl7HhenXxEdBfu7ruT4ZHdRoMSfFoOiM0umj6FOeO97
+YdjPC0Mq0j4HtkjkYS2hmJ0JmOwdq80mDRVvp2zQ7gMyjKcd40LkUwKgLFnZgnwC0DZhbQbXiBXj
+TGL26axcj5RKSro2nVXghoCtKleFvgT2tmWVc3zYMQlP7P7Notv0c3BtCStWQwI99WFHUSf0zNEX
+OBP1rzu17LqF94MFQlECAwEAAaOCApIwggKOMB8GA1UdIwQYMBaAFGsfNBVBGuqbHsoi0s7d77vp
+MsqJMA4GA1UdDwEB/wQEAwIF4DBnBgNVHSAEYDBeMFwGBmBMAQIBNDBSMFAGCCsGAQUFBwIBFkRo
+dHRwOi8vcmVwb3NpdG9yaW8uYWNzcGNicmFzaWwub3JnLmJyL2FjLWNuZGxyZmIvYWMtY25kbC1y
+ZmItZHBjLnBkZjCBpgYDVR0fBIGeMIGbMEugSaBHhkVodHRwOi8vcmVwb3NpdG9yaW8uYWNzcGNi
+cmFzaWwub3JnLmJyL2FjLWNuZGxyZmIvbGNyLWFjLWNuZGxyZmJ2NS5jcmwwTKBKoEiGRmh0dHA6
+Ly9yZXBvc2l0b3JpbzIuYWNzcGNicmFzaWwub3JnLmJyL2FjLWNuZGxyZmIvbGNyLWFjLWNuZGxy
+ZmJ2NS5jcmwwXQYIKwYBBQUHAQEEUTBPME0GCCsGAQUFBzAChkFodHRwOi8vcmVwb3NpdG9yaW8u
+YWNzcGNicmFzaWwub3JnLmJyL2FjLWNuZGxyZmIvYWMtY25kbHJmYnY1LnA3YjCBvwYDVR0RBIG3
+MIG0gR9DT05UQVRPQEJIM0RJU1RSSUJVSURPUkEuQ09NLkJSoCMGBWBMAQMCoBoTGEpPU0UgTU9S
+RUlSQSBTT0FSRVMgTkVUT6AZBgVgTAEDA6AQEw4zNDM2MzMzNzAwMDE4NaA4BgVgTAEDBKAvEy0x
+NzA3MTk5MTA4MDQ2MTk0Njg5MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDCgFwYFYEwBAwegDhMM
+MDAwMDAwMDAwMDAwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAJBgNVHRMEAjAAMA0G
+CSqGSIb3DQEBCwUAA4ICAQBYcB02cVAGdLHrt2GQLeN3jb1J5YmONHlU+0tRJJM8A/SlPmYDJBxs
+kWl875uK+1tcRoqOcFMfMuPt0yaAmi/OJbEb20mJhXi30+axFDXmQnk4/pTmx6QZwp8NRyT7LOQS
+CTrvGT57JLxyR10k1f7DSbOe4ZaBOBmUVz4Tso1DT7RdSHDGPZzXWk7B86h8Nbc2TUohLZBi48xg
+hEwT2r1dUf5gZvLPpjxdvje6lZ/tBIK3ehbX2iaYsboae0Mt9RLT4H8oKHwNLUrMQfrlXH+yqPsP
+tyaDbTNS56OW8QZ2IRS9+BFQqrcmBVLJLNb5e76/3rCyYDTCjCf3NNvQ8hF5bMxxs+BNYCqLwxuJ
+pVtVbhNpPmokvapnqKpaqtaSXt6MuTcD0BN3yA2L2MUSt97GQU4rLkfecQEv1KI6Ldgare1jvjge
+tETL2ETZi7AfQepJNlPVzGZZZATy7uDsZ0Yxcc5NEKckEw5xUGa+B/JceJl8brs6on/FLHbXHiy+
+z9KQVpwN10i413Th+wrcYjg6WIiB6fRcqNm6uCF/6HQlbo2CP+AqbbPZuI+edFczmNfywKxooYzV
+3hCZ6siwk12nv4Ghwdlr7x72WymLnHw5fPqcsyMDn5I4U2d/6CBa6T1Pw2WhJrmbVqlRJDMR1FTC
+lNCRl25RQTh6LRo4Nt7XXw==</X509Certificate></X509Data></KeyInfo></Signature></NFe><protNFe versao="4.00"><infProt><tpAmb>1</tpAmb><verAplic>J-3.2.40</verAplic><chNFe>31240734363337000185550010000067141844806710</chNFe><dhRecbto>2024-07-10T07:51:46-03:00</dhRecbto><nProt>131246059910845</nProt><digVal>dZzWIMLamstZQBEqrCj6B/prEAo=</digVal><cStat>100</cStat><xMotivo>Autorizado o uso da NF-e</xMotivo></infProt></protNFe></nfeProc>

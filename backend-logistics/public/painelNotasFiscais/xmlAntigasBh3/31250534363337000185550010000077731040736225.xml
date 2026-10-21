@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe xmlns="http://www.portalfiscal.inf.br/nfe"><infNFe Id="NFe31250534363337000185550010000077731040736225" versao="4.00"><ide><cUF>31</cUF><cNF>04073622</cNF><natOp>5405 NF REVENDA</natOp><mod>55</mod><serie>1</serie><nNF>7773</nNF><dhEmi>2025-05-12T00:00:00-03:00</dhEmi><dhSaiEnt>2025-05-12T10:32:00-03:00</dhSaiEnt><tpNF>1</tpNF><idDest>1</idDest><cMunFG>3106200</cMunFG><tpImp>1</tpImp><tpEmis>1</tpEmis><cDV>5</cDV><tpAmb>1</tpAmb><finNFe>1</finNFe><indFinal>1</indFinal><indPres>0</indPres><procEmi>0</procEmi><verProc>13.05bc</verProc></ide><emit><CNPJ>34363337000185</CNPJ><xNome>BH3 DISTRIBUIDORA</xNome><xFant>BH3 DISTRIBUIDORA</xFant><enderEmit><xLgr>AVENIDA BIAS FORTES</xLgr><nro>784</nro><xBairro>LOURDES</xBairro><cMun>3106200</cMun><xMun>BELO HORIZONTE</xMun><UF>MG</UF><CEP>30170012</CEP><cPais>1058</cPais><xPais>BRASIL</xPais><fone>3135660070</fone></enderEmit><IE>0037087150057</IE><CRT>3</CRT></emit><dest><CNPJ>35212692000116</CNPJ><xNome>JULIANE BENTO ALVES</xNome><enderDest><xLgr>AVENIDA BIAS FORTES</xLgr><nro>472</nro><xBairro>LOURDES</xBairro><cMun>3106200</cMun><xMun>BELO HORIZONTE</xMun><UF>MG</UF><CEP>30170011</CEP><cPais>1058</cPais><xPais>BRASIL</xPais></enderDest><indIEDest>9</indIEDest><IE>0035724550016</IE><email>restbentobessacafe@gmail.com</email></dest><det nItem="1"><prod><cProd>00008167</cProd><cEAN>SEM GTIN</cEAN><xProd>ESPONJA ALUMIL ACO INOX 10G</xProd><NCM>73231000</NCM><CEST>1101100</CEST><CFOP>5405</CFOP><uCom>UN</uCom><qCom>1.0000</qCom><vUnCom>4.9000</vUnCom><vProd>4.90</vProd><cEANTrib>SEM GTIN</cEANTrib><uTrib>UN</uTrib><qTrib>1.0000</qTrib><vUnTrib>4.9000</vUnTrib><vDesc>0.25</vDesc><indTot>1</indTot></prod><imposto><ICMS><ICMS60><orig>0</orig><CST>60</CST><vBCSTRet>0.00</vBCSTRet><pST>0.00</pST><vICMSSubstituto>0.00</vICMSSubstituto><vICMSSTRet>0.00</vICMSSTRet></ICMS60></ICMS><PIS><PISAliq><CST>01</CST><vBC>4.90</vBC><pPIS>1.65</pPIS><vPIS>0.08</vPIS></PISAliq></PIS><COFINS><COFINSAliq><CST>01</CST><vBC>4.90</vBC><pCOFINS>7.60</pCOFINS><vCOFINS>0.37</vCOFINS></COFINSAliq></COFINS></imposto></det><det nItem="2"><prod><cProd>00005507</cProd><cEAN>SEM GTIN</cEAN><xProd>FIBRA USO GERAL 100 X 260MM UNIDADE - BRALIMPIA</xProd><NCM>68053090</NCM><CEST>1100900</CEST><CFOP>5405</CFOP><uCom>PT</uCom><qCom>10.0000</qCom><vUnCom>4.9900</vUnCom><vProd>49.90</vProd><cEANTrib>SEM GTIN</cEANTrib><uTrib>PT</uTrib><qTrib>10.0000</qTrib><vUnTrib>4.9900</vUnTrib><vDesc>2.49</vDesc><indTot>1</indTot></prod><imposto><ICMS><ICMS60><orig>0</orig><CST>60</CST><vBCSTRet>0.00</vBCSTRet><pST>0.00</pST><vICMSSubstituto>0.00</vICMSSubstituto><vICMSSTRet>0.00</vICMSSTRet></ICMS60></ICMS><PIS><PISAliq><CST>01</CST><vBC>49.90</vBC><pPIS>1.65</pPIS><vPIS>0.82</vPIS></PISAliq></PIS><COFINS><COFINSAliq><CST>01</CST><vBC>49.90</vBC><pCOFINS>7.60</pCOFINS><vCOFINS>3.79</vCOFINS></COFINSAliq></COFINS></imposto></det><total><ICMSTot><vBC>0.00</vBC><vICMS>0.00</vICMS><vICMSDeson>0.00</vICMSDeson><vFCP>0.00</vFCP><vBCST>0.00</vBCST><vST>0.00</vST><vFCPST>0.00</vFCPST><vFCPSTRet>0.00</vFCPSTRet><vProd>54.80</vProd><vFrete>0.00</vFrete><vSeg>0.00</vSeg><vDesc>2.74</vDesc><vII>0.00</vII><vIPI>0.00</vIPI><vIPIDevol>0.00</vIPIDevol><vPIS>0.90</vPIS><vCOFINS>4.16</vCOFINS><vOutro>0.00</vOutro><vNF>52.06</vNF></ICMSTot></total><transp><modFrete>9</modFrete></transp><pag><detPag><indPag>1</indPag><tPag>04</tPag><vPag>52.06</vPag><card><tpIntegra>1</tpIntegra><CNPJ>01425787000104</CNPJ><tBand>01</tBand><cAut>NENHUM</cAut></card></detPag></pag><infAdic><infCpl>Cartão: 52,06; ; Trib aprox R$ 7,20 Federal e R$ 9,37 Estadual Fonte IBPT 8AFAC7; Email do Destinatário:restbentobessacafe@gmail.com</infCpl><obsCont xCampo="MD5"><xTexto>MD-5: 0000</xTexto></obsCont></infAdic><infRespTec><CNPJ>01339695000101</CNPJ><xContato>Geovanne Gualberto Teles</xContato><email>geovanne@atsinformatica.com.br</email><fone>21123700</fone><idCSRT>01</idCSRT><hashCSRT>nExtzgvqXXk1NDtQYLHWpwffAHo=</hashCSRT></infRespTec></infNFe><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#NFe31250534363337000185550010000077731040736225"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>ojRbwrhYrmrclNioMzwpBtpU9Uw=</DigestValue></Reference></SignedInfo><SignatureValue>rcyCgALvge16UaQTm30qf+9i818ONOyjCtpMLz6bHBajECHt4jCybruwMQ/pIm39BaNpPMkmaDc+
+ZP6rA6p0YZWLKyUpc+i9YZAnvADjK9KwQfIFbsMAnBmE6Zj0ng0Gd6Qhv+QfhrAV9cZH4slt/tvs
+w3Vn8H6ozX4NEWf9iT7LmBmmB0OmvnBGR5pPonBQXU6iNz2/u6uD/XwtnY9LA1WdBhx8+5x2IklP
+9C4RjuKC662BTdjjcdOqXaaJ3ZQPE23KnG1woc9wb/9xo7lAdau7cBJrMhCv04qJiTOVwgjNh7gt
++zma/QlL+lPj0gGQaY5Xe5w7iy08lQsDvlwFiQ==</SignatureValue><KeyInfo><X509Data><X509Certificate>MIIH+TCCBeGgAwIBAgILAL01FmZ/PL9WWiIwDQYJKoZIhvcNAQELBQAwWzELMAkGA1UEBhMCQlIx
+FjAUBgNVBAsMDUFDIFN5bmd1bGFySUQxEzARBgNVBAoMCklDUC1CcmFzaWwxHzAdBgNVBAMMFkFD
+IFN5bmd1bGFySUQgTXVsdGlwbGEwHhcNMjUwNDA3MTI1NTIwWhcNMjYwNDA3MTI1NTIwWjCB4jEL
+MAkGA1UEBhMCQlIxEzARBgNVBAoMCklDUC1CcmFzaWwxIjAgBgNVBAsMGUNlcnRpZmljYWRvIERp
+Z2l0YWwgUEogQTExGTAXBgNVBAsMEFZpZGVvY29uZmVyZW5jaWExFzAVBgNVBAsMDjEzNTA1NzIx
+MDAwMTAzMR8wHQYDVQQLDBZBQyBTeW5ndWxhcklEIE11bHRpcGxhMUUwQwYDVQQDDDxCSDMgRElT
+VFJJQlVJRE9SQSBERSBQUk9EVVRPUyBERSBMSU1QRVpBIExUREE6MzQzNjMzMzcwMDAxODUwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDgBAQOr3aw48anyBx3XX/GeFaGxGKlGYWZWfyQ
+B4bY2E3eKqByVrQKFaX4mDPEBnmQvTOIXU65B7PmXxV9QvJ5CTtzY4X1PhR+HcUhRMkG4MOY3q8J
+rZz01cCIcT7jVxOUskQIzM+c0N9/mPYUVcT3ZhibpFpbN3T7FPQvS4U4NmCmGwg8iHlnBRs1ggfB
+7KSmpEFH4LzvOvehH75ncgh4ZdTytoGVsVJFy/Ka2N8+akyi8NQjT6mVo+iK+fg7evyEngkMq/ZL
+UlCmJfDiVob379Q3NF3kpp1120VnmiMo4T0Vci8dS45LTkk/GPWhU93k5mnY6+8AGIDMHSucJxSv
+AgMBAAGjggM0MIIDMDAOBgNVHQ8BAf8EBAMCBeAwHQYDVR0lBBYwFAYIKwYBBQUHAwQGCCsGAQUF
+BwMCMAkGA1UdEwQCMAAwHwYDVR0jBBgwFoAUk+H/fh3l9eRN4TliiyFpleavchYwHQYDVR0OBBYE
+FKR6+38DgUEWEbdLJhcMoWaAhBZ/MH8GCCsGAQUFBwEBBHMwcTBvBggrBgEFBQcwAoZjaHR0cDov
+L3N5bmd1bGFyaWQuY29tLmJyL3JlcG9zaXRvcmlvL2FjLXN5bmd1bGFyaWQtbXVsdGlwbGEvY2Vy
+dGlmaWNhZG9zL2FjLXN5bmd1bGFyaWQtbXVsdGlwbGEucDdiMIGCBgNVHSAEezB5MHcGB2BMAQIB
+gQUwbDBqBggrBgEFBQcCARZeaHR0cDovL3N5bmd1bGFyaWQuY29tLmJyL3JlcG9zaXRvcmlvL2Fj
+LXN5bmd1bGFyaWQtbXVsdGlwbGEvZHBjL2RwYy1hYy1zeW5ndWxhcklELW11bHRpcGxhLnBkZjCB
+yAYDVR0RBIHAMIG9oCIGBWBMAQMCoBkEF1JFTkFUTyBNT05URUlSTyBNT1JFSVJBoBkGBWBMAQMD
+oBAEDjM0MzYzMzM3MDAwMTg1oEIGBWBMAQMEoDkENzA5MDcxOTkzMTIzMzEwMjI2NTgwMDAwMDAw
+MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDCgFwYFYEwBAwegDgQMMDAwMDAwMDAwMDAwgR9j
+b250YXRvQGJoM2Rpc3RyaWJ1aWRvcmEuY29tLmJyMIHiBgNVHR8Egdowgdcwb6BtoGuGaWh0dHA6
+Ly9pY3AtYnJhc2lsLnN5bmd1bGFyaWQuY29tLmJyL3JlcG9zaXRvcmlvL2FjLXN5bmd1bGFyaWQt
+bXVsdGlwbGEvbGNyL2xjci1hYy1zeW5ndWxhcmlkLW11bHRpcGxhLmNybDBkoGKgYIZeaHR0cDov
+L3N5bmd1bGFyaWQuY29tLmJyL3JlcG9zaXRvcmlvL2FjLXN5bmd1bGFyaWQtbXVsdGlwbGEvbGNy
+L2xjci1hYy1zeW5ndWxhcmlkLW11bHRpcGxhLmNybDANBgkqhkiG9w0BAQsFAAOCAgEAnADeXncI
+uO+yoO2PR6+6xXQn/ov2LGKREEizM9w11nPBnaW52+ZOJglytKXayfhxEBrwvYWTewAdtGemGnvX
+jZh9TBtz4jwxEXnf+BvOZpumxMdFKE9Q1Y6NLfL/Bns/rezhaLeXBULaUW9j9OjgJGfATlMsPgd3
+7pIN7WP5bsoOU7xtSKIWnqUiJ6iEWYWuziebFqitfb1sR0l2nevTo/RMKdgkGmkT2HDQH9zaKOpe
+WS9nxBcqQ5/nP71GGTwNqoTpmgJEYnWD6Z2b8aN9Rb6sJyQWSaO7CrBf1RBxdNxcPl6LsR6ZMl4R
+vu51cfeG0cR3/5H3zC6NnB1awVe4M8F79dLS/a8bsEfI/z+pU46OCm0aTLBqYbcZM74l8ydLDbh6
+wuaCnKfcZy/pSi4SfhqvHtlMnQaIYeYxtOw1+T804e90JmarY3UWYN7Q6EtpF//mpjYmMsVJeiHu
+Wk9W0JBKed5ycQM+me8t6t2/ATU2RUzYNyJ2WByi6u8cRODYODG66mXSabXTENsE6UCoAvdih3qB
+3A+ZW0ptQu0Bu2DrTJPlG5ouT1rdfJpBdCbWuXlv2LHDEwnOyhqXzSl0RWZhyjv8z4giiRz8jp8p
+/bBeP2iyoL3G79cPrS7DrfvbkihWbLfk9WdyWy081jn6FqI48dwObwmhUc5F8m6J+Wo=</X509Certificate></X509Data></KeyInfo></Signature></NFe><protNFe versao="4.00"><infProt><tpAmb>1</tpAmb><verAplic>J-3.2.87</verAplic><chNFe>31250534363337000185550010000077731040736225</chNFe><dhRecbto>2025-05-12T10:32:27-03:00</dhRecbto><nProt>131256646068745</nProt><digVal>ojRbwrhYrmrclNioMzwpBtpU9Uw=</digVal><cStat>100</cStat><xMotivo>Autorizado o uso da NF-e</xMotivo></infProt></protNFe></nfeProc>

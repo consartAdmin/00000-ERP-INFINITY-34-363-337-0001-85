@@ -1,0 +1,154 @@
+[
+  {
+    "id": "2",
+    "description": "NF-e 6 - Parcela 001",
+    "chart_account_id": 2,
+    "updated_at": "2026-09-09T17:20:04.947Z",
+    "code": "2",
+    "coa_description": "Passivo"
+  },
+  {
+    "id": "16",
+    "description": "NF-e 13 - Parcela 001",
+    "chart_account_id": 16,
+    "updated_at": "2026-09-11T13:33:54.811Z",
+    "code": "1.1.1.003",
+    "coa_description": "Conta Poupança"
+  },
+  {
+    "id": "17",
+    "description": "NF-e 13 - Parcela 002",
+    "chart_account_id": 17,
+    "updated_at": "2026-09-11T13:35:26.160Z",
+    "code": "1.1.1.004",
+    "coa_description": "Aplicações Financeiras"
+  },
+  {
+    "id": "41",
+    "description": "NF-e 25 - Parcela 001",
+    "chart_account_id": 41,
+    "updated_at": "2026-09-11T13:33:45.322Z",
+    "code": "1.1.5.004",
+    "coa_description": "Aluguel Antecipado"
+  },
+  {
+    "id": "42",
+    "description": "NF-e 25 - Parcela 002",
+    "chart_account_id": 42,
+    "updated_at": "2026-09-11T13:35:14.010Z",
+    "code": "1.1.5.005",
+    "coa_description": "Outras Despesas Antecipadas"
+  },
+  {
+    "id": "43",
+    "description": "NF-e 25 - Parcela 003",
+    "chart_account_id": 43,
+    "updated_at": "2026-09-11T13:37:14.620Z",
+    "code": "1.2",
+    "coa_description": "Ativo Não Circulante"
+  },
+  {
+    "id": "68",
+    "description": "NF-e 36 - Parcela 001",
+    "chart_account_id": 68,
+    "updated_at": "2026-09-11T13:34:04.029Z",
+    "code": "2.1.1.002",
+    "coa_description": "Prestadores de Serviços a Pagar"
+  },
+  {
+    "id": "69",
+    "description": "NF-e 36 - Parcela 002",
+    "chart_account_id": 69,
+    "updated_at": "2026-09-11T13:35:48.619Z",
+    "code": "2.1.1.003",
+    "coa_description": "Fretes a Pagar"
+  },
+  {
+    "id": "70",
+    "description": "NF-e 36 - Parcela 003",
+    "chart_account_id": 70,
+    "updated_at": "2026-09-11T13:44:53.500Z",
+    "code": "2.1.2",
+    "coa_description": "Impostos a Recolher"
+  },
+  {
+    "id": "116",
+    "description": "NF-e 54 - Parcela 001",
+    "chart_account_id": 116,
+    "updated_at": "2026-09-11T13:35:04.383Z",
+    "code": "4.1",
+    "coa_description": "Receitas Operacionais"
+  },
+  {
+    "id": "119",
+    "description": "NF-e 54 - Parcela 003",
+    "chart_account_id": 119,
+    "updated_at": "2026-09-11T13:39:22.895Z",
+    "code": "4.1.1.002",
+    "coa_description": "Receita de Venda Atacado"
+  },
+  {
+    "id": "120",
+    "description": "NF-e 54 - Parcela 002",
+    "chart_account_id": 120,
+    "updated_at": "2026-09-11T13:37:02.731Z",
+    "code": "4.1.1.003",
+    "coa_description": "Receita de Venda Varejo"
+  },
+  {
+    "id": "129",
+    "description": "NF-e 70 - Parcela 001",
+    "chart_account_id": 129,
+    "updated_at": "2026-09-11T13:34:51.247Z",
+    "code": "4.2.1.003",
+    "coa_description": "Receita de Multas"
+  },
+  {
+    "id": "139",
+    "description": " NF 1/003 ",
+    "chart_account_id": 139,
+    "updated_at": "2026-09-11T13:36:36.346Z",
+    "code": "5.1.1.004",
+    "coa_description": "Perdas / Quebras de Estoque"
+  },
+  {
+    "id": "140",
+    "description": " NF 1/002 ",
+    "chart_account_id": 140,
+    "updated_at": "2026-09-11T13:34:24.324Z",
+    "code": "5.1.1.005",
+    "coa_description": "Ajuste de Estoque"
+  },
+  {
+    "id": "141",
+    "description": " NF 1/001 ",
+    "chart_account_id": 141,
+    "updated_at": "2026-09-11T13:33:18.868Z",
+    "code": "5.2",
+    "coa_description": "Despesas Operacionais"
+  },
+  {
+    "id": "169",
+    "description": "NF-e 84 - Parcela 001",
+    "chart_account_id": 169,
+    "updated_at": "2026-09-11T13:36:00.551Z",
+    "code": "5.2.4",
+    "coa_description": "Despesas com Pessoal"
+  },
+  {
+    "id": "170",
+    "description": "NF-e 84 - Parcela 002",
+    "chart_account_id": 170,
+    "updated_at": "2026-09-11T13:38:40.002Z",
+    "code": "5.2.4.001",
+    "coa_description": "Despesa com Salários"
+  },
+  {
+    "id": "171",
+    "description": "NF-e 84 - Parcela 003",
+    "chart_account_id": 171,
+    "updated_at": "2026-09-11T13:39:40.024Z",
+    "code": "5.2.4.002",
+    "coa_description": "Despesa com Encargos sobre Folha"
+  }
+]
