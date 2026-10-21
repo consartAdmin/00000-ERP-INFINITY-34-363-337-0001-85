@@ -10,6 +10,10 @@
 # ║   .\deploy.ps1 -EnvFile .env.00001      (outro cliente)    ║
 # ║   .\deploy.ps1 -ImageOnly               (só código)        ║
 # ║     -> mantém envs, segredos e recursos do serviço         ║
+# ║   .\deploy.ps1 -Projetos logistics,prodnex,consart         ║
+# ║     -> leva junto backend-logistics/, backend-prodnex/ e   ║
+# ║        backend-consart/ (cada um com o próprio .env/banco) ║
+# ║        no mesmo serviço; ver start.js                      ║
 # ║ Senhas que o serviço lê do Secret Manager continuam lá     ║
 # ║ (o valor do .env para essas chaves é ignorado).            ║
 # ╚════════════════════════════════════════════════════════════╝
@@ -20,7 +24,9 @@ param(
   [switch]$ImageOnly,
   [string]$Project = "",
   [string]$Service = "",
-  [string]$Region = ""
+  [string]$Region = "",
+  # Projetos que vão na mesma imagem (vazio = DEPLOY_PROJETOS do .env; "nenhum" = só o Infinity)
+  [string[]]$Projetos = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -137,6 +143,113 @@ function Write-EnvYaml($envMap, $outFile) {
   Set-Content -Path $outFile -Value ($lines -join "`n") -Encoding UTF8
 }
 
+# ╔════════════════════════════════════════════════════════════╗
+# ║ Outros projetos no mesmo serviço (start.js sobe cada um)   ║
+# ╚════════════════════════════════════════════════════════════╝
+
+$PROJETOS_CONHECIDOS = [ordered]@{
+  logistics = @{ Pasta = "backend-logistics"; Prefixo = "LOGISTICS" }
+  prodnex   = @{ Pasta = "backend-prodnex";   Prefixo = "PRODNEX" }
+  consart   = @{ Pasta = "backend-consart";   Prefixo = "CONSART" }
+}
+
+# Chaves que nunca passam para o projeto (o start.js define ou o Infinity controla)
+$PROJETO_ENV_IGNORADAS = @(
+  "PORT", "K_SERVICE", "K_REVISION", "K_CONFIGURATION",
+  "GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_PROJECT", "CLOUD_RUN_REGION",
+  "APP_BASE_PATH", "LOGISTICA_DEMO_URL", "PRODNEX_URL", "CONSART_URL",
+  "ENABLE_EMAIL_INBOUND", "ENABLE_DFE_SCHEDULER"
+)
+
+$REPO_ROOT = Split-Path -Parent $PSScriptRoot
+$APPS_DIR = Join-Path $PSScriptRoot "apps"
+
+function Resolve-Projetos([string[]]$lista, $deployMap) {
+  $nomes = @($lista | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ })
+  if ($nomes.Count -eq 0 -and $deployMap.Contains("DEPLOY_PROJETOS")) {
+    $nomes = @(([string]$deployMap["DEPLOY_PROJETOS"]) -split "," | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ })
+  }
+  if ($nomes -contains "nenhum") { return @() }
+  foreach ($n in $nomes) {
+    if (-not $PROJETOS_CONHECIDOS.Contains($n)) {
+      throw "❌ Projeto desconhecido: $n (use $($PROJETOS_CONHECIDOS.Keys -join ', ') ou nenhum)."
+    }
+  }
+  return $nomes
+}
+
+function Copy-Projetos([string[]]$nomes) {
+  # Só arquivos versionados no git: .env, chaves e dados locais nunca entram na imagem
+  if (Test-Path $APPS_DIR) { Remove-Item $APPS_DIR -Recurse -Force }
+  foreach ($n in $nomes) {
+    $pasta = $PROJETOS_CONHECIDOS[$n].Pasta
+    try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
+    $files = @(& git -C $REPO_ROOT -c core.quotepath=off ls-files -- $pasta)
+    if ($LASTEXITCODE -ne 0) { throw "❌ git ls-files falhou para $pasta (o git está instalado?)." }
+    if (-not ($files -contains "$pasta/server.js")) { throw "❌ $pasta/server.js não encontrado no repositório." }
+
+    Write-Host "[PROJETOS] apps/$n <- $pasta ($($files.Count) arquivos)"
+    foreach ($f in $files) {
+      $src = Join-Path $REPO_ROOT $f
+      if (-not (Test-Path -LiteralPath $src -PathType Leaf)) { continue } # apagado e não commitado
+      $dst = Join-Path (Join-Path $APPS_DIR $n) $f.Substring($pasta.Length + 1)
+      $dir = Split-Path -Parent $dst
+      if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+      Copy-Item -LiteralPath $src -Destination $dst -Force
+    }
+  }
+}
+
+function Invoke-Build([string]$image, [string]$project, [string[]]$nomes) {
+  try {
+    if ($nomes.Count -gt 0) { Copy-Projetos $nomes }
+    gcloud builds submit --tag $image --project $project
+    if ($LASTEXITCODE -ne 0) { throw "❌ BUILD FAILURE" }
+  } finally {
+    if (Test-Path $APPS_DIR) { Remove-Item $APPS_DIR -Recurse -Force -ErrorAction SilentlyContinue }
+  }
+}
+
+function ConvertTo-Mi([string]$mem) {
+  if ($mem -match '^(\d+)Gi$') { return [int]$Matches[1] * 1024 }
+  if ($mem -match '^(\d+)Mi$') { return [int]$Matches[1] }
+  if ($mem -match '^(\d+)G$')  { return [int]$Matches[1] * 1000 }
+  if ($mem -match '^(\d+)M$')  { return [int]$Matches[1] }
+  return 0
+}
+
+# Variáveis de cada projeto: só o que difere do Infinity, com prefixo (CONSART__DB_NAME=...)
+function Add-EnvProjetos($appEnv, [string[]]$nomes) {
+  foreach ($n in $nomes) {
+    $p = $PROJETOS_CONHECIDOS[$n]
+    $envPath = Join-Path (Join-Path $REPO_ROOT $p.Pasta) ".env"
+    if (-not (Test-Path -LiteralPath $envPath)) {
+      throw "❌ $($p.Pasta)/.env não encontrado. No GitHub ele vem do secret ENV_FILE_$($p.Prefixo)."
+    }
+    $sub = Import-DotEnv $envPath
+    $db = [string]$sub["DB_NAME"]
+    if (-not $db) { throw "❌ $($p.Pasta)/.env sem DB_NAME." }
+    if ($db -eq [string]$appEnv["DB_NAME"]) { throw "❌ $($p.Pasta)/.env usa o mesmo banco do Infinity ($db)." }
+
+    $pre = "$($p.Prefixo)__"
+    foreach ($k in @($appEnv.Keys)) { if ($k.StartsWith($pre)) { $appEnv.Remove($k) } }
+
+    $diff = 0
+    foreach ($k in $sub.Keys) {
+      if ($k.StartsWith("DEPLOY_") -or $PROJETO_ENV_IGNORADAS -contains $k) { continue }
+      if (-not $appEnv.Contains($k) -or [string]$appEnv[$k] -ne [string]$sub[$k]) {
+        $appEnv["$pre$k"] = $sub[$k]
+        $diff++
+      }
+    }
+    $unset = @($appEnv.Keys | Where-Object {
+      -not $_.Contains("__") -and -not $sub.Contains($_) -and -not ($PROJETO_ENV_IGNORADAS -contains $_)
+    })
+    if ($unset.Count -gt 0) { $appEnv["${pre}UNSET"] = $unset -join "," }
+    Write-Host "[PROJETOS] $n`: DB_NAME=$db, $diff variáveis próprias, $($unset.Count) do Infinity removidas"
+  }
+}
+
 $DotEnvPath = Resolve-DotEnvPath
 if ($DotEnvPath) {
   Write-Host "[INFO] Usando .env em: $DotEnvPath"
@@ -216,6 +329,11 @@ if (-not $PROJECT -or -not $REGION -or -not $SERVICE) {
   throw "❌ Informe DEPLOY_PROJECT, DEPLOY_REGION e DEPLOY_SERVICE no .env."
 }
 
+$PROJETOS_SEL = @(Resolve-Projetos $Projetos $DEPLOY)
+if ($PROJETOS_SEL.Count -gt 0) {
+  Write-Host "[INFO] PROJETOS = $($PROJETOS_SEL -join ', ') (mesmo serviço, ver start.js)"
+}
+
 # Projeto do gcloud só para este processo (não altera o `gcloud config` global)
 $env:CLOUDSDK_CORE_PROJECT = $PROJECT
 
@@ -248,14 +366,29 @@ if ($ImageOnly) {
   Write-Host "[INFO] SERVICE = $SERVICE"
   Write-Host "[INFO] IMAGE   = $IMAGE"
 
+  $extra = @()
+  if ($PROJETOS_SEL.Count -gt 0) {
+    $liveEnvNames = @($live.spec.template.spec.containers[0].env | ForEach-Object { $_.name })
+    foreach ($n in $PROJETOS_SEL) {
+      $pre = $PROJETOS_CONHECIDOS[$n].Prefixo
+      if (-not ($liveEnvNames -contains "${pre}__DB_NAME")) {
+        Write-Host "[PROJETOS] $n ainda sem ${pre}__DB_NAME no serviço: só sobe depois de um deploy completo." -ForegroundColor Yellow
+      }
+    }
+    $liveMem = [string]$live.spec.template.spec.containers[0].resources.limits.memory
+    if ((ConvertTo-Mi $liveMem) -lt 2048) {
+      Write-Host "[PROJETOS] Memória $liveMem -> 2Gi (4 projetos no mesmo contêiner)" -ForegroundColor Yellow
+      $extra = @("--memory", "2Gi")
+    }
+  }
+
   Write-Host ""
   Write-Host "[BUILD] Enviando build para o Cloud Build..."
-  gcloud builds submit --tag $IMAGE --project $PROJECT
-  if ($LASTEXITCODE -ne 0) { throw "❌ BUILD FAILURE" }
+  Invoke-Build $IMAGE $PROJECT $PROJETOS_SEL
 
   Write-Host ""
   Write-Host "[DEPLOY] Publicando nova imagem..."
-  gcloud run deploy $SERVICE --image $IMAGE --project $PROJECT --region $REGION --quiet
+  gcloud run deploy $SERVICE --image $IMAGE --project $PROJECT --region $REGION --quiet @extra
   if ($LASTEXITCODE -ne 0) { throw "❌ DEPLOY FAILURE" }
 
   Write-Host ""
@@ -300,6 +433,13 @@ if (-not $MIN_INST)            { $MIN_INST = "0" }
 if (-not $MAX_INST)            { $MAX_INST = "1" }
 if (-not $CPU)                 { $CPU = "1" }
 if (-not $MEMORY)              { $MEMORY = "1Gi" }
+if ($PROJETOS_SEL.Count -gt 0 -and (ConvertTo-Mi $MEMORY) -lt 2048) {
+  Write-Host "[PROJETOS] DEPLOY_MEMORY=$MEMORY -> 2Gi (4 projetos no mesmo contêiner)" -ForegroundColor Yellow
+  $MEMORY = "2Gi"
+}
+
+# Antes do build: falta de .env de um projeto aborta sem gastar o Cloud Build
+if ($PROJETOS_SEL.Count -gt 0) { Add-EnvProjetos $APPENV $PROJETOS_SEL }
 if (-not $TIMEOUT)             { $TIMEOUT = "300" }
 if (-not $PORT)                { $PORT = "8080" }
 if (-not $CONCURRENCY)         { $CONCURRENCY = "80" }
@@ -421,11 +561,7 @@ if ($ROUTER_NAME -and $NAT_NAME -and $VPC_NETWORK) {
 Write-Host ""
 Write-Host "[BUILD] Enviando build para o Cloud Build..."
 
-gcloud builds submit --tag $IMAGE --project $PROJECT
-
-if ($LASTEXITCODE -ne 0) {
-  throw "❌ BUILD FAILURE"
-}
+Invoke-Build $IMAGE $PROJECT $PROJETOS_SEL
 
 $APPENV["GOOGLE_CLOUD_PROJECT"] = $PROJECT
 $APPENV["CLOUD_RUN_REGION"] = $REGION

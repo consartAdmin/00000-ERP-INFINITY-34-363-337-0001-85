@@ -3,6 +3,9 @@
 # apenas os arquivos informados. Não remove arquivos apagados; para isso, para
 # dependências (package*.json) ou Dockerfile, use o "Deploy Cloud Run".
 # Usa a mesma configuração do deploy-cloud-run.yml (GCP_WIF_PROVIDER e ENV_FILE).
+# Os 4 projetos estão no mesmo serviço (erp-infinity-00000): arquivos de
+# backend-logistics/, backend-prodnex/ e backend-consart/ vão para apps/<projeto>
+# dentro da imagem do Infinity (ver backend/start.js).
 
 name: Deploy arquivos
 
@@ -10,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       pasta:
-        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex, backend-consart = CONSART ERP (banco próprio). Use o secret do .env do mesmo projeto"
+        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex, backend-consart = CONSART ERP (banco próprio). Todos vão para o serviço do Infinity"
         type: choice
         options:
           - backend
@@ -23,7 +26,7 @@ on:
         type: string
         default: ""
       env_secret:
-        description: "Nome do secret com o .env (para ler DEPLOY_PROJECT e DEPLOY_SERVICE) (vazio = ENV_FILE, ENV_FILE_LOGISTICS, ENV_FILE_PRODNEX ou ENV_FILE_CONSART conforme a pasta)"
+        description: "Nome do secret com o .env (para ler DEPLOY_PROJECT e DEPLOY_SERVICE) (vazio = ENV_FILE)"
         type: string
         default: ""
       service:
@@ -40,7 +43,7 @@ on:
         default: ""
 
 concurrency:
-  group: deploy-${{ inputs.pasta }}-${{ inputs.service || inputs.env_secret }}
+  group: deploy-${{ inputs.service || inputs.env_secret || 'ENV_FILE' }}
   cancel-in-progress: false
 
 permissions:
@@ -52,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      ENV_SECRET: ${{ inputs.env_secret || (inputs.pasta == 'backend-logistics' && 'ENV_FILE_LOGISTICS') || (inputs.pasta == 'backend-prodnex' && 'ENV_FILE_PRODNEX') || (inputs.pasta == 'backend-consart' && 'ENV_FILE_CONSART') || 'ENV_FILE' }}
+      ENV_SECRET: ${{ inputs.env_secret || 'ENV_FILE' }}
     defaults:
       run:
         working-directory: ${{ inputs.pasta }}
@@ -107,10 +110,6 @@ jobs:
           ENV_CONTENT: ${{ secrets[env.ENV_SECRET] }}
         run: |
           if [ -z "$ENV_CONTENT" ]; then
-            if [ "${{ inputs.pasta }}" != "backend" ] && [ -z "${{ inputs.service }}" ]; then
-              echo "::error::Secret '${{ env.ENV_SECRET }}' não existe. Para ${{ inputs.pasta }} crie o secret ou informe o serviço, senão o deploy cairia no serviço do Infinity."
-              exit 1
-            fi
             echo "Sem .env: usando apenas service/project/region informados."
             exit 0
           fi
@@ -123,13 +122,16 @@ jobs:
           IN_SERVICE: ${{ inputs.service }}
           IN_PROJECT: ${{ inputs.project }}
           IN_REGION: ${{ inputs.region }}
+          PASTA: ${{ inputs.pasta }}
         run: |
           $paths = @(Get-Content (Join-Path $env:RUNNER_TEMP "arquivos.txt") | Where-Object { $_ })
           $params = @{ Path = $paths }
+          # backend-consart -> apps/consart dentro da imagem do Infinity
+          if ($env:PASTA -ne "backend") { $params.Destino = "apps/" + $env:PASTA.Substring("backend-".Length) }
           if ($env:IN_SERVICE) { $params.Service = $env:IN_SERVICE }
           if ($env:IN_PROJECT) { $params.Project = $env:IN_PROJECT }
           if ($env:IN_REGION)  { $params.Region  = $env:IN_REGION }
-          ./deploy-file.ps1 @params
+          ../backend/deploy-file.ps1 @params
 
       - name: Apagar .env do runner
         if: always()

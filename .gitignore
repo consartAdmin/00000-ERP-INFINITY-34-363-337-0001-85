@@ -196,3 +196,6 @@ backend-*/uploads/
 backend-*/services/json/*.json
 backend-*/services/apis/reports/*.json
 backend-*/*.b64
+
+# Cópia temporária dos projetos feita pelo deploy.ps1 (vai só na imagem)
+backend/apps/
