@@ -6,6 +6,7 @@
 //
 // LOGISTICA_DEMO_URL=https://consart-logistics-demo-....run.app
 // PRODNEX_URL=https://prodnex-....run.app  → /prodnex (mesmo esquema)
+// CONSART_URL=https://<serviço consart>....run.app  → /consart
 // Vazio → desligado (o ERP segue igual).
 //
 // Encaminha para o app de logística:

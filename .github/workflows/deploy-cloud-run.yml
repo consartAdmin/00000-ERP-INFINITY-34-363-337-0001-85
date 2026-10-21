@@ -6,7 +6,7 @@
 #   Variable GCP_SA_EMAIL      service account do deploy (opcional; padrão abaixo)
 #   Secret   GCP_SA_KEY        alternativa ao Workload Identity: JSON da chave
 #   Secret   ENV_FILE          conteúdo completo do backend/.env
-#   Secret   ENV_FILE_LOGISTICS / ENV_FILE_PRODNEX  .env de backend-logistics/ e backend-prodnex/
+#   Secret   ENV_FILE_LOGISTICS / ENV_FILE_PRODNEX / ENV_FILE_CONSART  .env de backend-logistics/, backend-prodnex/ e backend-consart/
 # Outro cliente: crie outro secret (ex.: ENV_FILE_00001) e informe o nome ao rodar.
 
 name: Deploy Cloud Run
@@ -15,12 +15,13 @@ on:
   workflow_dispatch:
     inputs:
       pasta:
-        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex. Use o secret do .env do mesmo projeto"
+        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex, backend-consart = CONSART ERP (banco próprio). Use o secret do .env do mesmo projeto"
         type: choice
         options:
           - backend
           - backend-logistics
           - backend-prodnex
+          - backend-consart
         default: backend
       modo:
         description: "so-codigo = mantém envs e segredos do serviço (-ImageOnly); completo = aplica o .env do secret"
@@ -30,7 +31,7 @@ on:
           - completo
         default: so-codigo
       env_secret:
-        description: "Nome do secret com o .env (modo completo, ou para ler DEPLOY_* no so-codigo) (vazio = ENV_FILE, ENV_FILE_LOGISTICS ou ENV_FILE_PRODNEX conforme a pasta)"
+        description: "Nome do secret com o .env (modo completo, ou para ler DEPLOY_* no so-codigo) (vazio = ENV_FILE, ENV_FILE_LOGISTICS, ENV_FILE_PRODNEX ou ENV_FILE_CONSART conforme a pasta)"
         type: string
         default: ""
       service:
@@ -60,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      ENV_SECRET: ${{ inputs.env_secret || (inputs.pasta == 'backend-logistics' && 'ENV_FILE_LOGISTICS') || (inputs.pasta == 'backend-prodnex' && 'ENV_FILE_PRODNEX') || 'ENV_FILE' }}
+      ENV_SECRET: ${{ inputs.env_secret || (inputs.pasta == 'backend-logistics' && 'ENV_FILE_LOGISTICS') || (inputs.pasta == 'backend-prodnex' && 'ENV_FILE_PRODNEX') || (inputs.pasta == 'backend-consart' && 'ENV_FILE_CONSART') || 'ENV_FILE' }}
     defaults:
       run:
         working-directory: ${{ inputs.pasta }}

@@ -10,19 +10,20 @@ on:
   workflow_dispatch:
     inputs:
       pasta:
-        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex. Use o secret do .env do mesmo projeto"
+        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex, backend-consart = CONSART ERP (banco próprio). Use o secret do .env do mesmo projeto"
         type: choice
         options:
           - backend
           - backend-logistics
           - backend-prodnex
+          - backend-consart
         default: backend
       arquivos:
         description: "Arquivos ou pastas dentro da pasta do projeto, separados por vírgula (ex.: public/accountsReceivable). Vazio = arquivos alterados no último commit dentro dessa pasta"
         type: string
         default: ""
       env_secret:
-        description: "Nome do secret com o .env (para ler DEPLOY_PROJECT e DEPLOY_SERVICE) (vazio = ENV_FILE, ENV_FILE_LOGISTICS ou ENV_FILE_PRODNEX conforme a pasta)"
+        description: "Nome do secret com o .env (para ler DEPLOY_PROJECT e DEPLOY_SERVICE) (vazio = ENV_FILE, ENV_FILE_LOGISTICS, ENV_FILE_PRODNEX ou ENV_FILE_CONSART conforme a pasta)"
         type: string
         default: ""
       service:
@@ -51,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      ENV_SECRET: ${{ inputs.env_secret || (inputs.pasta == 'backend-logistics' && 'ENV_FILE_LOGISTICS') || (inputs.pasta == 'backend-prodnex' && 'ENV_FILE_PRODNEX') || 'ENV_FILE' }}
+      ENV_SECRET: ${{ inputs.env_secret || (inputs.pasta == 'backend-logistics' && 'ENV_FILE_LOGISTICS') || (inputs.pasta == 'backend-prodnex' && 'ENV_FILE_PRODNEX') || (inputs.pasta == 'backend-consart' && 'ENV_FILE_CONSART') || 'ENV_FILE' }}
     defaults:
       run:
         working-directory: ${{ inputs.pasta }}

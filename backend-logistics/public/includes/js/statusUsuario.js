@@ -64,11 +64,14 @@
 
   // Empresa ativa (BH3 x CONSART): o menu (menuConsart.js) mostra só os
   // módulos da empresa escolhida. Fica salva no navegador.
-  // LOGISTICS e PRODNEX são outros projetos (backend-logistics/ e
-  // backend-prodnex/ no repositório), cada um com seu backend e .env: o botão
-  // abre o outro sistema. Este arquivo é igual nos três; só PROJETO muda.
-  const PROJETO = 'LOGISTICS'; // 'INFINITY' | 'LOGISTICS' | 'PRODNEX'
+  // LOGISTICS, PRODNEX e CONSART são outros projetos (backend-logistics/,
+  // backend-prodnex/ e backend-consart/ no repositório), cada um com seu
+  // backend e .env: o botão abre o outro sistema. Este arquivo é igual nos
+  // quatro; só PROJETO muda. Com URL_PROJETO.CONSART vazio, a CONSART volta a
+  // ser só o filtro de menu dentro do Infinity (como antes do backend-consart).
+  const PROJETO = 'LOGISTICS'; // 'INFINITY' | 'CONSART' | 'LOGISTICS' | 'PRODNEX'
   const URL_PROJETO = {
+    CONSART: 'https://erp.consart.com.br/consart/public/home/home.html',
     INFINITY: 'https://erp.consart.com.br/public/home/home.html',
     LOGISTICS: 'https://erp.consart.com.br/logistica-demo/public/home/home.html',
     PRODNEX: 'https://erp.consart.com.br/prodnex/public/home/home.html',
@@ -76,7 +79,7 @@
   const COMPANY_KEY = 'consart:active-company';
   const EMPRESAS = [
     { code: 'BH3', label: 'BH3 DISTRIBUIDORA', projeto: 'INFINITY' },
-    { code: 'CONSART', label: 'CONSART', projeto: 'INFINITY' },
+    { code: 'CONSART', label: 'CONSART', projeto: URL_PROJETO.CONSART ? 'CONSART' : 'INFINITY' },
     { code: 'LOGISTICS', label: 'LOGISTICS', projeto: 'LOGISTICS' },
     { code: 'PRODNEX', label: 'PRODNEX', projeto: 'PRODNEX' },
   ];
@@ -124,6 +127,17 @@
 
   function montarSeletorEmpresa(el) {
     if (!el) return;
+    // Escolha salva que virou outro projeto (ex.: CONSART com backend próprio):
+    // o menu do Infinity volta para a BH3
+    if (PROJETO === 'INFINITY') {
+      try {
+        const salva = String(localStorage.getItem(COMPANY_KEY) || '').toUpperCase();
+        if (salva && !EMPRESAS_LOCAIS.some(e => e.code === salva)) {
+          localStorage.setItem(COMPANY_KEY, 'BH3');
+          window.dispatchEvent(new CustomEvent('consart:company-change', { detail: { company: 'BH3' } }));
+        }
+      } catch { }
+    }
     const marcar = () => {
       const ativa = getEmpresaAtiva();
       el.querySelectorAll('[data-company]').forEach(btn => {

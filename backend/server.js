@@ -298,6 +298,8 @@ app.set("trust proxy", true);
 import logisticaDemoProxy from "./middleware/logisticaDemoProxy.js";
 app.use(logisticaDemoProxy());
 app.use(logisticaDemoProxy(process.env.PRODNEX_URL, "/prodnex"));
+// /consart → CONSART ERP (backend-consart/, banco próprio; CONSART_URL vazio = desligado)
+app.use(logisticaDemoProxy(process.env.CONSART_URL, "/consart"));
 
 /* ╔══════════════════════════════════════════════════════════╗
    ║ Middlewares globais                                      ║
