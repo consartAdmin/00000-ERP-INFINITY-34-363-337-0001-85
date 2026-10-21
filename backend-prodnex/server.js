@@ -293,9 +293,9 @@ const __dirname = path.dirname(__filename);
 
 app.set("trust proxy", true);
 
-// /logistica-demo → app de logística (LOGISTICA_DEMO_URL; vazio = desligado)
-import logisticaDemoProxy from "./middleware/logisticaDemoProxy.js";
-app.use(logisticaDemoProxy());
+// Caminho base (APP_BASE_PATH=/prodnex): tira o prefixo e reescreve links
+import basePath from "./middleware/basePath.js";
+app.use(basePath());
 
 /* ╔══════════════════════════════════════════════════════════╗
    ║ Middlewares globais                                      ║
