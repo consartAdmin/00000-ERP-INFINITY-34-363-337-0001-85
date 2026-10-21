@@ -24,6 +24,9 @@ const HOP_BY_HOP = new Set([
   "te", "trailer", "transfer-encoding", "upgrade", "host",
 ]);
 
+// Prefixos de todos os projetos ligados (/logistica-demo, /prodnex, /consart)
+const PREFIXES = new Set();
+
 function hasPrefix(p, PREFIX) {
   return p === PREFIX || p.startsWith(`${PREFIX}/`) || p.startsWith(`${PREFIX}?`);
 }
@@ -41,6 +44,7 @@ function refererHasPrefix(req, PREFIX) {
 
 export function logisticaDemoProxy(target = process.env.LOGISTICA_DEMO_URL, PREFIX = "/logistica-demo") {
   const base = String(target || "").trim().replace(/\/+$/, "");
+  PREFIXES.add(PREFIX); // mesmo desligado: /prodnex nunca cai no Logistics
   if (!base) return (_req, _res, next) => next();
 
   const targetUrl = new URL(base);
@@ -49,7 +53,10 @@ export function logisticaDemoProxy(target = process.env.LOGISTICA_DEMO_URL, PREF
 
   return (req, res, next) => {
     const url = req.originalUrl || req.url || "/";
-    if (!hasPrefix(url, PREFIX) && !refererHasPrefix(req, PREFIX)) return next();
+    // Link de uma página /logistica-demo para /prodnex (ou /consart) vai para
+    // o projeto do link: o Referer só vale para caminhos sem prefixo de projeto
+    const outroProjeto = [...PREFIXES].some(p => p !== PREFIX && hasPrefix(url, p));
+    if (!hasPrefix(url, PREFIX) && (outroProjeto || !refererHasPrefix(req, PREFIX))) return next();
 
     const headers = {};
     for (const [k, v] of Object.entries(req.headers)) {
