@@ -1,0 +1,8 @@
+const pool=(await import(process.cwd()+'/config/db.js')).default;
+const r=await pool.query(`SELECT id,name,path,menu_type,parent_id,sort_order,html_id,css_class,feature,is_active,is_public FROM public."moduleSystem" WHERE path ILIKE '%fiscal%' OR path ILIKE '%enterprise%' OR name ILIKE '%fiscal%' OR name ILIKE '%tribut%' OR path ILIKE '%regime%' ORDER BY id`);
+console.table(r.rows);
+const p=await pool.query(`SELECT id,name,menu_type,parent_id,sort_order FROM public."moduleSystem" WHERE id IN (SELECT parent_id FROM public."moduleSystem" WHERE path ILIKE '%fiscalProfile%' OR path ILIKE '%fiscal%')`);
+console.table(p.rows);
+const c=await pool.query(`SELECT table_name,column_name FROM information_schema.columns WHERE column_name ILIKE '%module%' AND table_schema='public' ORDER BY 1`);
+console.table(c.rows);
+process.exit(0);

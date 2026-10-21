@@ -1,0 +1,262 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ tms.css — Telas do Transporte (TMS)                                  ║
+   ║ CONSART LOGISTICS                                                    ║
+   ║ Layout (header, tabs, tabelas, modais) vem do Design System global   ║
+   ║ (/public/includes/css/style.css). Aqui ficam só os itens do módulo:  ║
+   ║ ✅ badges de status · ✅ grades filhas nos modais · ✅ relatórios     ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.tab-panel[hidden],
+.table-layout-integrated[hidden] {
+  display: none !important;
+}
+
+.tab-panel {
+  padding-top: 10px;
+}
+
+.tms-intro {
+  margin: 0 0 8px;
+  color: #475569;
+  font-size: .88rem;
+}
+
+.tms-notice {
+  margin: 8px 0 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #78350f;
+  font-size: .86rem;
+}
+
+.tms-section-title {
+  margin: 0 0 6px;
+  font-size: .95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tms-num {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.tms-empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 18px !important;
+}
+
+.tms-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tms-sub {
+  display: block;
+  color: #64748b;
+  font-size: .78rem;
+  margin-top: 2px;
+}
+
+.tms-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem;
+}
+
+.tms-warn {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.tms-ok {
+  color: #166534;
+  font-weight: 600;
+}
+
+.tms-summary-inline {
+  margin-left: 12px;
+  font-size: .86rem;
+  color: #334155;
+}
+
+.tms-summary-inline strong {
+  color: #0f172a;
+}
+
+.table tr.is-muted td {
+  color: #94a3b8;
+}
+
+/* Grades filhas dentro do modal */
+.tms-child-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.tms-child-table {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.tms-picker-table {
+  max-height: 60vh;
+}
+
+.tms-child-table td input,
+.tms-child-table td select {
+  width: 100%;
+  min-width: 60px;
+  height: 28px;
+  padding: 2px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: .85rem;
+  background: #fff;
+}
+
+.tms-child-footer {
+  margin-top: 6px;
+  text-align: right;
+  font-size: .88rem;
+  color: #334155;
+}
+
+.modal__body textarea {
+  width: 100%;
+}
+
+/* Cartões de resumo (relatórios) */
+.tms-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+
+.tms-card {
+  min-width: 150px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.tms-card__label {
+  display: block;
+  font-size: .75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.tms-card__value {
+  display: block;
+  margin-top: 2px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tms-card--good .tms-card__value {
+  color: #166534;
+}
+
+.tms-card--bad .tms-card__value {
+  color: #b91c1c;
+}
+
+.tms-segment {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.tms-segment button {
+  border: 0;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: .88rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.tms-segment button.is-active {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .15);
+}
+
+.tms-panel {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  margin-bottom: 12px;
+}
+
+/* Badges */
+.tms-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* azul: em andamento / aberto */
+.tms-badge--DIGITADO, .tms-badge--ABERTA, .tms-badge--ABERTO, .tms-badge--SOLICITADA,
+.tms-badge--PLANEJADO, .tms-badge--PENDENTE, .tms-badge--RECEBIDA, .tms-badge--ESTOQUE,
+.tms-badge--EXPORTACAO, .tms-badge--GERADO {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* âmbar: aguardando / em curso */
+.tms-badge--EMITIDO, .tms-badge--EMITIDA, .tms-badge--AGENDADA, .tms-badge--EM_COLETA, .tms-badge--CARREGANDO,
+.tms-badge--EM_TRANSITO, .tms-badge--EM_EXECUCAO, .tms-badge--CIOT_GERADO, .tms-badge--CONDUTOR_INDICADO,
+.tms-badge--RECURSO, .tms-badge--RECAPAGEM, .tms-badge--PROXIMO, .tms-badge--VENCE_30_DIAS,
+.tms-badge--SAIU_PARA_ENTREGA, .tms-badge--COLETADO, .tms-badge--APROVADA, .tms-badge--IMPORTACAO {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* verde: concluído */
+.tms-badge--AUTORIZADO, .tms-badge--ENCERRADO, .tms-badge--PAGA, .tms-badge--QUITADO, .tms-badge--COLETADA,
+.tms-badge--LIBERADO, .tms-badge--ENTREGUE, .tms-badge--CONCLUIDA, .tms-badge--AVERBADO, .tms-badge--EM_USO,
+.tms-badge--EM_DIA, .tms-badge--CONVERTIDA, .tms-badge--IMPORTADO {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* vermelho: problema */
+.tms-badge--OCORRENCIA, .tms-badge--DEVOLVIDO, .tms-badge--RECUSADO, .tms-badge--VENCIDO, .tms-badge--ERRO,
+.tms-badge--AVARIA, .tms-badge--EXTRAVIO, .tms-badge--ENDERECO_NAO_ENCONTRADO, .tms-badge--DESTINATARIO_AUSENTE,
+.tms-badge--RECUSADA, .tms-badge--VENCIDA {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* cinza: cancelado / inativo */
+.tms-badge--CANCELADO, .tms-badge--CANCELADA, .tms-badge--SUCATA, .tms-badge--NAO_SE_APLICA,
+.tms-badge--SEM_VENCIMENTO {
+  background: #f1f5f9;
+  color: #64748b;
+}

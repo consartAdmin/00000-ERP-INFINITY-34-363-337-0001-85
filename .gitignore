@@ -180,3 +180,19 @@ backend/public/boletos/
 *.sql
 
 *.sql
+
+# ============================================================
+# PROJETOS backend-logistics/ e backend-prodnex/ (mesmas regras do backend/)
+# ============================================================
+*credenciais*.json
+backend-*/keys/
+backend-*/doc.contabil/
+backend-*/employees/
+backend-*/public/boletos/
+backend-*/public/xml/*.xml
+backend-*/public/spedFiscal/files/*
+backend-*/public/email_attachments/
+backend-*/uploads/
+backend-*/services/json/*.json
+backend-*/services/apis/reports/*.json
+backend-*/*.b64

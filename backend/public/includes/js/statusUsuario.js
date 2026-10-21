@@ -64,40 +64,88 @@
 
   // Empresa ativa (BH3 x CONSART): o menu (menuConsart.js) mostra só os
   // módulos da empresa escolhida. Fica salva no navegador.
+  // LOGISTICS e PRODNEX são outros projetos (backend-logistics/ e
+  // backend-prodnex/ no repositório), cada um com seu backend e .env: o botão
+  // abre o outro sistema. Este arquivo é igual nos três; só PROJETO muda.
+  const PROJETO = 'INFINITY'; // 'INFINITY' | 'LOGISTICS' | 'PRODNEX'
+  const URL_PROJETO = {
+    INFINITY: 'https://erp.consart.com.br/public/home/home.html',
+    LOGISTICS: 'https://erp.consart.com.br/logistica-demo/public/home/home.html',
+    PRODNEX: '', // preencher quando o ProdNex tiver endereço publicado
+  };
   const COMPANY_KEY = 'consart:active-company';
   const EMPRESAS = [
-    { code: 'BH3', label: 'BH3 DISTRIBUIDORA' },
-    { code: 'CONSART', label: 'CONSART' },
+    { code: 'BH3', label: 'BH3 DISTRIBUIDORA', projeto: 'INFINITY' },
+    { code: 'CONSART', label: 'CONSART', projeto: 'INFINITY' },
+    { code: 'LOGISTICS', label: 'LOGISTICS', projeto: 'LOGISTICS' },
+    { code: 'PRODNEX', label: 'PRODNEX', projeto: 'PRODNEX' },
   ];
+  const EMPRESAS_LOCAIS = EMPRESAS.filter(e => e.projeto === PROJETO);
+
+  // Link de outro projeto com ?empresa=BH3 já abre com essa empresa
+  try {
+    const pedida = String(new URLSearchParams(location.search).get('empresa') || '').toUpperCase();
+    if (PROJETO === 'INFINITY' && EMPRESAS_LOCAIS.some(e => e.code === pedida)) {
+      localStorage.setItem(COMPANY_KEY, pedida);
+    }
+  } catch { }
 
   function getEmpresaAtiva() {
+    if (PROJETO !== 'INFINITY') return PROJETO;
     try {
       const value = String(localStorage.getItem(COMPANY_KEY) || '').toUpperCase();
-      return EMPRESAS.some(e => e.code === value) ? value : 'BH3';
+      return EMPRESAS_LOCAIS.some(e => e.code === value) ? value : 'BH3';
     } catch {
       return 'BH3';
     }
+  }
+
+  // Botão que leva para outro projeto. rel=noreferrer: sem Referer, o proxy
+  // /logistica-demo do Infinity não devolve a página para o Logistics.
+  function linkOutroProjeto({ code, label, projeto }) {
+    const url = URL_PROJETO[projeto];
+    if (!url) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.company = code;
+      btn.textContent = label;
+      btn.disabled = true;
+      btn.title = `${label}: endereço ainda não configurado`;
+      return btn;
+    }
+    const a = document.createElement('a');
+    a.dataset.company = code;
+    a.textContent = label;
+    a.rel = 'noreferrer';
+    a.href = projeto === 'INFINITY' ? `${url}?empresa=${code}` : url;
+    a.title = `Abrir o sistema ${label}`;
+    return a;
   }
 
   function montarSeletorEmpresa(el) {
     if (!el) return;
     const marcar = () => {
       const ativa = getEmpresaAtiva();
-      el.querySelectorAll('button').forEach(btn => {
+      el.querySelectorAll('[data-company]').forEach(btn => {
         const on = btn.dataset.company === ativa;
         btn.classList.toggle('is-active', on);
         btn.setAttribute('aria-pressed', String(on));
       });
     };
 
-    EMPRESAS.forEach(({ code, label }) => {
+    EMPRESAS.forEach((empresa) => {
+      const { code, label, projeto } = empresa;
+      if (projeto !== PROJETO) {
+        el.appendChild(linkOutroProjeto(empresa));
+        return;
+      }
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.dataset.company = code;
       btn.textContent = label;
       btn.title = `Mostrar os módulos da ${label}`;
       btn.addEventListener('click', () => {
-        if (code === getEmpresaAtiva()) return;
+        if (code === getEmpresaAtiva() || PROJETO !== 'INFINITY') return;
         try { localStorage.setItem(COMPANY_KEY, code); } catch { }
         marcar();
         window.dispatchEvent(new CustomEvent('consart:company-change', { detail: { company: code } }));
@@ -107,6 +155,7 @@
     marcar();
 
     // Outra aba trocou a empresa: acompanha
+    if (PROJETO !== 'INFINITY') return;
     window.addEventListener('storage', (event) => {
       if (event.key !== COMPANY_KEY) return;
       marcar();

@@ -9,14 +9,22 @@ name: Deploy arquivos
 on:
   workflow_dispatch:
     inputs:
+      pasta:
+        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex. Use o secret do .env do mesmo projeto"
+        type: choice
+        options:
+          - backend
+          - backend-logistics
+          - backend-prodnex
+        default: backend
       arquivos:
-        description: "Arquivos ou pastas dentro de backend, separados por vírgula (ex.: public/accountsReceivable). Vazio = arquivos alterados no último commit do branch"
+        description: "Arquivos ou pastas dentro da pasta do projeto, separados por vírgula (ex.: public/accountsReceivable). Vazio = arquivos alterados no último commit dentro dessa pasta"
         type: string
         default: ""
       env_secret:
-        description: "Nome do secret com o .env (para ler DEPLOY_PROJECT e DEPLOY_SERVICE)"
+        description: "Nome do secret com o .env (para ler DEPLOY_PROJECT e DEPLOY_SERVICE) (vazio = ENV_FILE, ENV_FILE_LOGISTICS ou ENV_FILE_PRODNEX conforme a pasta)"
         type: string
-        default: ENV_FILE
+        default: ""
       service:
         description: "Serviço Cloud Run (vazio = DEPLOY_SERVICE do .env)"
         type: string
@@ -31,7 +39,7 @@ on:
         default: ""
 
 concurrency:
-  group: deploy-${{ inputs.service || inputs.env_secret }}
+  group: deploy-${{ inputs.pasta }}-${{ inputs.service || inputs.env_secret }}
   cancel-in-progress: false
 
 permissions:
@@ -42,9 +50,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      ENV_SECRET: ${{ inputs.env_secret || (inputs.pasta == 'backend-logistics' && 'ENV_FILE_LOGISTICS') || (inputs.pasta == 'backend-prodnex' && 'ENV_FILE_PRODNEX') || 'ENV_FILE' }}
     defaults:
       run:
-        working-directory: backend
+        working-directory: ${{ inputs.pasta }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,19 +64,20 @@ jobs:
         id: arquivos
         env:
           ARQUIVOS: ${{ inputs.arquivos }}
+          PASTA: ${{ inputs.pasta }}
         run: |
           if [ -n "$ARQUIVOS" ]; then
             # vírgula ou quebra de linha separam; aceita \ do Windows e prefixo backend/
             printf '%s' "$ARQUIVOS" | tr ',' '\n' | tr '\\' '/' \
-              | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's#^\./##' -e 's#^backend/##' \
+              | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's#^\./##' -e "s#^${PASTA}/##" -e 's#^backend/##' \
               | grep -v '^$' > "$RUNNER_TEMP/arquivos.txt" || true
           else
-            # Alterados no último commit, só dentro de backend/ e que ainda existem
+            # Alterados no último commit, só dentro da pasta do projeto e que ainda existem
             git diff --name-only --diff-filter=ACMR HEAD~1 HEAD -- . \
-              | sed 's#^backend/##' > "$RUNNER_TEMP/arquivos.txt" || true
+              | sed "s#^${PASTA}/##" > "$RUNNER_TEMP/arquivos.txt" || true
           fi
           if [ ! -s "$RUNNER_TEMP/arquivos.txt" ]; then
-            echo "::error::Nenhum arquivo para enviar. Informe os arquivos ou faça um commit em backend/."
+            echo "::error::Nenhum arquivo para enviar. Informe os arquivos ou faça um commit na pasta do projeto."
             exit 1
           fi
           if grep -Eq '(^|/)(package(-lock)?\.json|Dockerfile|\.dockerignore)$' "$RUNNER_TEMP/arquivos.txt"; then
@@ -92,9 +103,13 @@ jobs:
 
       - name: Montar .env a partir do secret
         env:
-          ENV_CONTENT: ${{ secrets[inputs.env_secret] }}
+          ENV_CONTENT: ${{ secrets[env.ENV_SECRET] }}
         run: |
           if [ -z "$ENV_CONTENT" ]; then
+            if [ "${{ inputs.pasta }}" != "backend" ] && [ -z "${{ inputs.service }}" ]; then
+              echo "::error::Secret '${{ env.ENV_SECRET }}' não existe. Para ${{ inputs.pasta }} crie o secret ou informe o serviço, senão o deploy cairia no serviço do Infinity."
+              exit 1
+            fi
             echo "Sem .env: usando apenas service/project/region informados."
             exit 0
           fi
