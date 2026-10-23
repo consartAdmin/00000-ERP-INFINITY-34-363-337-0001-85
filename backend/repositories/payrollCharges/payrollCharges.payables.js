@@ -88,8 +88,9 @@ function competenceLabel(competence) {
 /** Categorias e subcategorias do Caixa (as mesmas do Contas a Pagar). */
 export async function listCashCategories() {
   const [{ rows: categories }, { rows: subcategories }] = await Promise.all([
-    pool.query(`SELECT id, nome FROM public."cashCategories" WHERE is_active IS NOT FALSE ORDER BY nome`),
-    pool.query(`SELECT id, categoria_id, nome FROM public."cashSubcategories" WHERE is_active IS NOT FALSE ORDER BY nome`),
+    // Colunas reais: name / category_id (aliases nome / categoria_id usados pela tela)
+    pool.query(`SELECT id, name AS nome FROM public."cashCategories" WHERE is_active IS NOT FALSE ORDER BY name`),
+    pool.query(`SELECT id, category_id AS categoria_id, name AS nome FROM public."cashSubcategories" WHERE is_active IS NOT FALSE ORDER BY name`),
   ]);
   return { categories, subcategories };
 }
