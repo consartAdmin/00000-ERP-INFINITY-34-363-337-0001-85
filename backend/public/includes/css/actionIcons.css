@@ -83,6 +83,7 @@
 .action-icon--document:hover,
 .action-icon--copy:hover { color: var(--action-icon-view); }
 .action-icon--pause:hover { color: var(--action-icon-warning); }
+.action-icon--add:hover,
 .action-icon--confirm:hover,
 .action-icon--payment:hover { color: var(--action-icon-success); }
 .action-icon--delete:hover,

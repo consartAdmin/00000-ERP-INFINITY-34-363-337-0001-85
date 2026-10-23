@@ -31,6 +31,7 @@ import {
   updateItemCtrl,
   deleteItemCtrl,
 } from '../controllers/inboundInvoicesController.js';
+import { createQuickProductCtrl } from '../controllers/inboundQuickProductController.js';
 
 const router = Router();
 
@@ -90,6 +91,9 @@ router.post(
 
 // Importação automática por accessKey, xmlContent ou XML salvo em disco.
 router.post('/auto-from-dfe', autoImportFromDfeCtrl);
+
+// Cadastro rápido de produto a partir de um item da NF-e.
+router.post('/quick-product', createQuickProductCtrl);
 
 // NF-e de entrada.
 router.get('/', listInvoicesCtrl);

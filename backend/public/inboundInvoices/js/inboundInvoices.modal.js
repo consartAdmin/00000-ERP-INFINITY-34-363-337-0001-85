@@ -74,6 +74,84 @@ async function resolveProduct(ROUTES, product, productCode) {
 export function initLinkProduct({ core, ROUTES, state, refs }) {
   const selectionTokens = new WeakMap();
   // Lot changes are handled once, by inboundInvoices.form.js (including grades).
+
+  // Vincula um produto do cadastro ao item (lupa ou cadastro rápido).
+  async function linkProductToItem(index, item, product) {
+    if (state.inboundInvoiceReadOnly || state.currentItems?.[index] !== item) return;
+    const code = normalizeProductCode(
+      product?.product_code ?? product?.sku ?? product?.code ?? product?.codigo
+    );
+    if (!code) {
+      core.toast.warn('Produto inv\u00e1lido', 'O produto selecionado n\u00e3o possui product_code (SKU).');
+      return;
+    }
+
+    const token = Symbol('product-selection');
+    selectionTokens.set(item, token);
+    const isCurrent = () => !state.inboundInvoiceReadOnly &&
+      state.currentItems?.[index] === item && selectionTokens.get(item) === token;
+    state.pendingProductLinks = Number(state.pendingProductLinks || 0) + 1;
+
+    try {
+      const resolvedProduct = await resolveProduct(ROUTES, product, code);
+      if (!isCurrent()) return;
+      if (typeof state.actions?.renderItemsTable !== 'function') {
+        throw new Error('O formul\u00e1rio de itens ainda n\u00e3o foi inicializado.');
+      }
+      const productChanged = normalizeProductCode(item.product_code) !== code;
+      if (productChanged || isSimpleStockMode(state)) clearItemLotState(item);
+
+      // Never substitute nf_product_code for the canonical ERP SKU.
+      // Preserve XML description, quantities, prices and invoice identifiers.
+      item.product_code = code;
+      item.product_code_cad = code;
+      item.product_id = toIntOrNull(resolvedProduct.product_id ?? resolvedProduct.id);
+      item.product_stock_id = toIntOrNull(resolvedProduct.product_stock_id);
+      item.product_description = String(
+        resolvedProduct.description ?? resolvedProduct.descricao ??
+        resolvedProduct.name ?? resolvedProduct.nome ?? ''
+      ).trim() || null;
+      item.product_name = item.product_description;
+      if (resolvedProduct.ncm) item.ncm = resolvedProduct.ncm;
+      if (resolvedProduct.cfop_compra) item.cfop = resolvedProduct.cfop_compra;
+      const unitCode = core.normalizeUnitCode(
+        getBarcodeUnit(resolvedProduct) || resolvedProduct.unit_compra ||
+        resolvedProduct.unit || resolvedProduct.unidade || ''
+      );
+      if (unitCode) item.unit = unitCode;
+
+      // A new selection is an explicit refresh, including previously empty lists.
+      clearLotsCaches(state);
+      // The renderer may clear _lots in STOCK_SIMPLE or load it in lot mode.
+      // Checking _lots before/without awaiting the renderer caused the false alert.
+      await state.actions.renderItemsTable(state.currentItems);
+      if (!isCurrent() || isSimpleStockMode(state)) return;
+
+      if (item._lotsLoadError) {
+        core.toast.error('Erro ao consultar lotes', item._lotsLoadError);
+        return;
+      }
+      const lots = Array.isArray(item._lots) ? item._lots : [];
+      if (!lots.length) {
+        core.toast.warn(
+          'Sem lotes',
+          `Nenhum lote foi retornado para o SKU ${code}. Verifique o v\u00ednculo e os filtros de lotes.`
+        );
+      } else if (!item.lot_id) {
+        core.toast.warn('Lote obrigat\u00f3rio', 'Selecione um lote para este item antes de salvar/postar.');
+      }
+    } catch (error) {
+      if (!isCurrent()) return;
+      console.error('[INBOUND][LINK_PRODUCT][ERROR]', { index, productCode: code, error });
+      core.toast.error('Erro ao vincular produto', error?.message || 'N\u00e3o foi poss\u00edvel vincular o produto.');
+    } finally {
+      state.pendingProductLinks = Math.max(0, Number(state.pendingProductLinks || 0) - 1);
+    }
+  }
+
+  state.actions = state.actions || {};
+  state.actions.linkProductToItem = linkProductToItem;
+
   refs.itemsTbody?.addEventListener('click', (event) => {
     if (state.inboundInvoiceReadOnly) return;
     const button = event.target.closest('button[data-act="link-product"]');
@@ -84,78 +162,7 @@ export function initLinkProduct({ core, ROUTES, state, refs }) {
 
     openProductsModalSearch({
       apiBase: window.API_BASE || window.location.origin,
-      async onPick(product) {
-        if (state.inboundInvoiceReadOnly || state.currentItems?.[index] !== item) return;
-        const code = normalizeProductCode(
-          product?.product_code ?? product?.sku ?? product?.code ?? product?.codigo
-        );
-        if (!code) {
-          core.toast.warn('Produto inv\u00e1lido', 'O produto selecionado n\u00e3o possui product_code (SKU).');
-          return;
-        }
-
-        const token = Symbol('product-selection');
-        selectionTokens.set(item, token);
-        const isCurrent = () => !state.inboundInvoiceReadOnly &&
-          state.currentItems?.[index] === item && selectionTokens.get(item) === token;
-        state.pendingProductLinks = Number(state.pendingProductLinks || 0) + 1;
-
-        try {
-          const resolvedProduct = await resolveProduct(ROUTES, product, code);
-          if (!isCurrent()) return;
-          if (typeof state.actions?.renderItemsTable !== 'function') {
-            throw new Error('O formul\u00e1rio de itens ainda n\u00e3o foi inicializado.');
-          }
-          const productChanged = normalizeProductCode(item.product_code) !== code;
-          if (productChanged || isSimpleStockMode(state)) clearItemLotState(item);
-
-          // Never substitute nf_product_code for the canonical ERP SKU.
-          // Preserve XML description, quantities, prices and invoice identifiers.
-          item.product_code = code;
-          item.product_code_cad = code;
-          item.product_id = toIntOrNull(resolvedProduct.product_id ?? resolvedProduct.id);
-          item.product_stock_id = toIntOrNull(resolvedProduct.product_stock_id);
-          item.product_description = String(
-            resolvedProduct.description ?? resolvedProduct.descricao ??
-            resolvedProduct.name ?? resolvedProduct.nome ?? ''
-          ).trim() || null;
-          item.product_name = item.product_description;
-          if (resolvedProduct.ncm) item.ncm = resolvedProduct.ncm;
-          if (resolvedProduct.cfop_compra) item.cfop = resolvedProduct.cfop_compra;
-          const unitCode = core.normalizeUnitCode(
-            getBarcodeUnit(resolvedProduct) || resolvedProduct.unit_compra ||
-            resolvedProduct.unit || resolvedProduct.unidade || ''
-          );
-          if (unitCode) item.unit = unitCode;
-
-          // A new selection is an explicit refresh, including previously empty lists.
-          clearLotsCaches(state);
-          // The renderer may clear _lots in STOCK_SIMPLE or load it in lot mode.
-          // Checking _lots before/without awaiting the renderer caused the false alert.
-          await state.actions.renderItemsTable(state.currentItems);
-          if (!isCurrent() || isSimpleStockMode(state)) return;
-
-          if (item._lotsLoadError) {
-            core.toast.error('Erro ao consultar lotes', item._lotsLoadError);
-            return;
-          }
-          const lots = Array.isArray(item._lots) ? item._lots : [];
-          if (!lots.length) {
-            core.toast.warn(
-              'Sem lotes',
-              `Nenhum lote foi retornado para o SKU ${code}. Verifique o v\u00ednculo e os filtros de lotes.`
-            );
-          } else if (!item.lot_id) {
-            core.toast.warn('Lote obrigat\u00f3rio', 'Selecione um lote para este item antes de salvar/postar.');
-          }
-        } catch (error) {
-          if (!isCurrent()) return;
-          console.error('[INBOUND][LINK_PRODUCT][ERROR]', { index, productCode: code, error });
-          core.toast.error('Erro ao vincular produto', error?.message || 'N\u00e3o foi poss\u00edvel vincular o produto.');
-        } finally {
-          state.pendingProductLinks = Math.max(0, Number(state.pendingProductLinks || 0) - 1);
-        }
-      },
+      onPick: (product) => linkProductToItem(index, item, product),
     });
   });
 }

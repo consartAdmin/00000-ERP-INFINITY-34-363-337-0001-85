@@ -11,6 +11,7 @@
 import { getStockMode, isSimpleStockMode, clearItemLotState } from './inboundInvoices.stock.js';
 
 import { buildUnitOptionsHtml } from './inboundInvoices.api.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 import {
   buildLotOptionsHtml,
@@ -81,7 +82,7 @@ export function initForm({ core, ROUTES, state, refs, switchTab }) {
       field.setAttribute('aria-readonly', String(enabled));
     });
 
-    form?.querySelectorAll('[data-act="link-product"]').forEach((button) => {
+    form?.querySelectorAll('[data-act="link-product"], [data-act="create-product"]').forEach((button) => {
       if (enabled) {
         if (!('inboundPreviousDisabled' in button.dataset)) {
           button.dataset.inboundPreviousDisabled = String(button.disabled);
@@ -228,30 +229,19 @@ export function initForm({ core, ROUTES, state, refs, switchTab }) {
               ${escapeHtml(erpProductLabel)}
             </span>
 
-            <button
-              type="button"
-              class="btn btn-lookup btn-icon-xs table-cell-inline__action"
-              data-act="link-product"
-              data-index="${idx}"
-              title="Vincular produto"
-              aria-label="Vincular produto"
-              style="
-                width:20px !important;
-                min-width:20px !important;
-                max-width:20px !important;
-                height:20px !important;
-                min-height:20px !important;
-                max-height:20px !important;
-                padding:0 !important;
-                margin:0 !important;
-                font-size:8px !important;
-                line-height:1 !important;
-                flex:0 0 20px !important;
-                box-sizing:border-box !important;
-              "
-            >
-              <span style="font-size:8px !important; line-height:1 !important;">🔍</span>
-            </button>
+            ${state.inboundInvoiceReadOnly ? '' : actionIconsHtml([
+              {
+                action: 'search',
+                title: 'Vincular produto',
+                attrs: { 'data-act': 'link-product', 'data-index': idx },
+              },
+              // Item sem produto no cadastro: cria a partir dos dados da NF-e.
+              !erpProductCode && {
+                action: 'add',
+                title: 'Cadastrar produto',
+                attrs: { 'data-act': 'create-product', 'data-index': idx },
+              },
+            ])}
           </div>
         </td>
 
