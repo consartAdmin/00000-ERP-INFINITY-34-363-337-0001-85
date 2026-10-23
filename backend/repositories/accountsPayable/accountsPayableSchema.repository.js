@@ -79,6 +79,12 @@ export async function ensureTable() {
     END $$;
   `);
 
+  // Conta do Plano de Contas do título (preenche o Pagar e a saída no Caixa)
+  await q(`
+    ALTER TABLE ${TB_FULL}
+      ADD COLUMN IF NOT EXISTS chart_account_id integer
+  `);
+
   // Grupo de contas a pagar por categoria (filtro "Grupo" na tela Contas a Pagar)
   await q(`
     ALTER TABLE ${SCHEMA}."cashCategories"

@@ -9,6 +9,7 @@
 import ExcelJS from 'exceljs';
 import * as repo from '../repositories/payrollCharges/payrollCharges.repository.js';
 import * as payables from '../repositories/payrollCharges/payrollCharges.payables.js';
+import * as chartAccounts from '../repositories/payrollCharges/payrollCharges.chartAccounts.js';
 import { REGIMES } from '../repositories/payrollCharges/payrollCharges.calc.js';
 import { generatePayrollMonthPdf, generateTerminationPdf } from '../generationPdf/generatePayrollChargesPdf.js';
 
@@ -141,6 +142,24 @@ export async function payablesGenerate(req, res) {
     return res.status(201).json({ ok: true, data: await payables.generate(req.body, req.user) });
   } catch (error) {
     return fail(res, 'payablesGenerate', error);
+  }
+}
+
+// ── Encargos × Plano de Contas ──────────────────────────────────────
+
+export async function chartAccountsList(req, res) {
+  try {
+    return res.json({ ok: true, data: await chartAccounts.list() });
+  } catch (error) {
+    return fail(res, 'chartAccountsList', error);
+  }
+}
+
+export async function chartAccountsSave(req, res) {
+  try {
+    return res.json({ ok: true, data: await chartAccounts.save(req.body) });
+  } catch (error) {
+    return fail(res, 'chartAccountsSave', error);
   }
 }
 

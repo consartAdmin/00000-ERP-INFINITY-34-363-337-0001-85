@@ -10,12 +10,15 @@
 // ║   O pagamento segue no Contas a Pagar, que lança a saída no Caixa. ║
 // ║ • Salários: um título por colaborador (fornecedor pelo CPF; cria   ║
 // ║   se não existir) ou um título só com a folha líquida.             ║
+// ║ • Conta do Plano de Contas vem do vínculo por despesa; a guia INSS ║
+// ║   vira um título por conta quando as parcelas têm contas distintas.║
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
 import { TB_SETTINGS, TB_PAYABLES, ensurePayrollChargesTables } from './payrollCharges.schema.js';
 import { monthReport, getSettings } from './payrollCharges.repository.js';
 import { round2 } from './payrollCharges.calc.js';
+import { accountMap, accountsByIds, accountLabel } from './payrollCharges.chartAccounts.js';
 
 const TB_AP = 'public."accountsPayable"';
 const TB_SUPPLIERS = 'public.suppliers';
@@ -28,10 +31,47 @@ export const SALARY_MODES = Object.freeze({
 
 // Linhas fixas: composição exibida na tela e vencimento sugerido
 const GUIDE_LINES = [
-  { key: 'INSS', title: 'INSS — DCTFWeb', columns: 'INSS (desc.) + INSS patronal + RAT + Terc.', guide: 'inss', due: 'DAY_20' },
-  { key: 'FGTS', title: 'FGTS Digital', columns: 'FGTS', guide: 'fgts', due: 'DAY_20' },
-  { key: 'IRRF', title: 'DARF IRRF 0561', columns: 'IRRF (desc.)', guide: 'irrf', due: 'DAY_20' },
+  { key: 'FGTS', title: 'FGTS Digital', columns: 'FGTS', guide: 'fgts', due: 'DAY_20', account: 'FGTS' },
+  { key: 'IRRF', title: 'DARF IRRF 0561', columns: 'IRRF (desc.)', guide: 'irrf', due: 'DAY_20', account: 'IRRF' },
 ];
+
+// Parcelas da guia INSS (DCTFWeb) e a despesa do Plano de Contas de cada uma
+const INSS_PARTS = [
+  { total: 'inss', columns: 'INSS (desc.)', account: 'INSS_EMPLOYEE' },
+  { total: 'patronal', columns: 'INSS patronal', account: 'INSS_PATRONAL' },
+  { total: 'rat_third', columns: 'RAT + Terc.', account: 'RAT_THIRD' },
+];
+
+/** Guia INSS: um título só, ou um por conta quando as parcelas têm contas diferentes. */
+function inssLines(totals, accounts) {
+  const byAccount = new Map();
+  INSS_PARTS.forEach((part) => {
+    const amount = round2(totals[part.total]);
+    if (!(amount > 0)) return;
+    const accountId = accounts[part.account] || null;
+    const entry = byAccount.get(accountId) || { accountId, amount: 0, columns: [] };
+    entry.amount = round2(entry.amount + amount);
+    entry.columns.push(part.columns);
+    byAccount.set(accountId, entry);
+  });
+  const entries = [...byAccount.values()];
+  if (entries.length <= 1) {
+    return [{
+      key: 'INSS',
+      columns: 'INSS (desc.) + INSS patronal + RAT + Terc.',
+      amount: entries[0]?.amount || 0,
+      chart_account_id: entries[0]?.accountId || null,
+      split: false,
+    }];
+  }
+  return entries.map((entry) => ({
+    key: `INSS:${entry.accountId || 0}`,
+    columns: entry.columns.join(' + '),
+    amount: entry.amount,
+    chart_account_id: entry.accountId,
+    split: true,
+  }));
+}
 
 function httpError(status, message) {
   return Object.assign(new Error(message), { status });
@@ -144,6 +184,7 @@ export async function preview(query = {}) {
     : (SALARY_MODES[defaults.salary_mode] ? defaults.salary_mode : 'PER_EMPLOYEE');
 
   const links = await existingLinks(competence);
+  const accounts = await accountMap();
   const perEmployeeDone = [...links.keys()].some((key) => key.startsWith('SALARY:'));
   const singleDone = links.has('SALARY_TOTAL');
   const label = competenceLabel(competence);
@@ -174,6 +215,7 @@ export async function preview(query = {}) {
         supplier_hint: supplier ? null : `Será cadastrado: ${row.full_name}`,
         category_id: def.category_id || null,
         subcategory_id: def.subcategory_id || null,
+        chart_account_id: accounts.SALARY,
         blocked: singleDone ? 'Folha já gerada em um título único' : null,
       });
     });
@@ -190,9 +232,30 @@ export async function preview(query = {}) {
       supplier_hint: null,
       category_id: def.category_id || null,
       subcategory_id: def.subcategory_id || null,
+      chart_account_id: accounts.SALARY,
       blocked: perEmployeeDone ? 'Salários já gerados por colaborador' : null,
     });
   }
+
+  // Guia INSS: se já foi gerada com outra divisão de contas, não gera de novo
+  const inssDefaults = lineDefaults.INSS || {};
+  const inssDone = [...links.keys()].some((key) => key === 'INSS' || key.startsWith('INSS:'));
+  inssLines(report.totals, accounts).forEach((part) => {
+    lines.push({
+      key: part.key,
+      title: `INSS — DCTFWeb ${label}${part.split ? ` · ${part.columns}` : ''}`,
+      columns: part.columns,
+      amount: part.amount,
+      due_date: suggestedDueDate(competence, 'DAY_20'),
+      supplier_id: inssDefaults.supplier_id || null,
+      supplier_name: null,
+      supplier_hint: null,
+      category_id: inssDefaults.category_id || null,
+      subcategory_id: inssDefaults.subcategory_id || null,
+      chart_account_id: part.chart_account_id,
+      blocked: inssDone && !links.has(part.key) ? 'Guia INSS já gerada nesta competência' : null,
+    });
+  });
 
   GUIDE_LINES.forEach((guide) => {
     const def = lineDefaults[guide.key] || {};
@@ -207,6 +270,7 @@ export async function preview(query = {}) {
       supplier_hint: null,
       category_id: def.category_id || null,
       subcategory_id: def.subcategory_id || null,
+      chart_account_id: accounts[guide.account],
       blocked: null,
     });
   });
@@ -223,12 +287,17 @@ export async function preview(query = {}) {
     supplier_hint: null,
     category_id: benefitDefaults.category_id || null,
     subcategory_id: benefitDefaults.subcategory_id || null,
+    chart_account_id: accounts.BENEFITS,
     blocked: null,
   });
 
-  // Nome dos fornecedores memorizados
+  // Nome dos fornecedores memorizados e das contas vinculadas
   const names = await suppliersByIds(lines.map((line) => line.supplier_id));
+  const chartAccounts = await accountsByIds(lines.map((line) => line.chart_account_id));
   lines.forEach((line) => {
+    const account = chartAccounts.get(Number(line.chart_account_id));
+    line.chart_account_id = account ? Number(account.id) : null;
+    line.chart_account_label = accountLabel(account);
     if (line.supplier_id && !line.supplier_name) line.supplier_name = names.get(Number(line.supplier_id)) || null;
     if (line.supplier_id && !names.has(Number(line.supplier_id)) && !line.supplier_name) line.supplier_id = null;
     const link = links.get(line.key);
@@ -322,9 +391,9 @@ export async function generate(input = {}, user = {}) {
         `INSERT INTO ${TB_AP} (
            supplier_id, invoice_number, issue_date, due_date, payment_date, payment_method_id,
            description, category_id, subcategory_id, document_number, total_value, amount_paid,
-           status, notes, attachment_url, source_type, source_id, created_at, updated_at
+           status, notes, attachment_url, source_type, source_id, chart_account_id, created_at, updated_at
          ) VALUES ($1, NULL, CURRENT_DATE, $2, NULL, NULL, $3, $4, $5, $6, $7, 0,
-                   'PENDING', $8, NULL, 'PAYROLL', NULL, NOW(), NOW())
+                   'PENDING', $8, NULL, 'PAYROLL', NULL, $9, NOW(), NOW())
          RETURNING id`,
         [
           supplierId,
@@ -335,6 +404,7 @@ export async function generate(input = {}, user = {}) {
           `FOLHA ${label}`,
           line.amount,
           `Gerado em Encargos e Rescisões (competência ${label}): ${line.columns}.`,
+          line.chart_account_id || null,
         ],
       );
       const payableId = Number(rows[0].id);
@@ -353,7 +423,7 @@ export async function generate(input = {}, user = {}) {
     const lines = { ...(defaults.lines || {}) };
     todo.forEach((line) => {
       const req = requested.get(line.key);
-      const group = line.key.startsWith('SALARY:') ? 'SALARY' : line.key;
+      const group = line.key.startsWith('SALARY:') ? 'SALARY' : line.key.split(':')[0];
       lines[group] = {
         supplier_id: group === 'SALARY' ? null : toIntOrNull(req.supplier_id),
         category_id: toIntOrNull(req.category_id),

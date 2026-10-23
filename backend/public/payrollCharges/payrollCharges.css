@@ -332,3 +332,44 @@
 .pc-supplier--auto { color: #6b7280; font-style: italic; }
 .pc-muted { color: #6b7280; }
 .pc-status--warn { background: rgba(234, 179, 8, .18); color: #a16207; }
+
+/* Coluna "Conta contábil" no Gerar contas a pagar */
+.pc-account-cell { max-width: 220px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pc-account-cell--empty { color: #b45309; }
+
+/* Modal Encargos × Plano de Contas */
+.pc-accounts-table th,
+.pc-accounts-table td { font-size: 12px; vertical-align: middle; }
+.pc-accounts-table .pc-accounts-col { width: 42%; }
+.pc-accounts-table tr.pc-accounts-group td {
+  background: #eef2f6;
+  color: #475467;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+.pc-account-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 4px;
+}
+.pc-account-picker input {
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+.pc-account-picker input.is-empty { color: #b45309; }
+.pc-account-picker .btn {
+  min-width: 30px;
+  height: 26px;
+  padding-inline: 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  opacity: 1;
+}
