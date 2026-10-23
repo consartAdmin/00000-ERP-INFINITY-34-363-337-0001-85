@@ -20,6 +20,7 @@ import { initForm } from './inboundInvoices.form.js';
 import { initLinkProduct } from './inboundInvoices.modal.js';
 import { initQuickProduct } from './inboundInvoices.quickProduct.js';
 import { initQuickLot } from './inboundInvoices.quickLot.js';
+import { initQuickUnit } from './inboundInvoices.quickUnit.js';
 import { initSave } from './inboundInvoices.validation.js';
 import { loadUnits } from './inboundInvoices.api.js';
 import { initInboundStockMode } from './inboundInvoices.stock.js';
@@ -177,6 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initLinkProduct({ core, ROUTES, state, refs });
     initQuickProduct({ core, ROUTES, state, refs });
     initQuickLot({ core, ROUTES, state, refs });
+    initQuickUnit({ core, ROUTES, state, refs });
     initSave({ core, ROUTES, state, refs, switchTab });
     initQuickSupplier({ core, ROUTES, state, refs });
     initImportXml({ core, ROUTES, state, refs, switchTab });

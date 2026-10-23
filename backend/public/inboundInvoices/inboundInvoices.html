@@ -676,6 +676,94 @@
   </div>
 
   <!-- ============================================================= -->
+  <!-- MODAL — NOVA UNIDADE DO PRODUTO (item da NF-e)                 -->
+  <!-- ============================================================= -->
+  <div id="quickUnitModal" class="modal">
+    <div id="quickUnitBackdrop" class="modal__backdrop"></div>
+
+    <div class="modal__dialog">
+      <div class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="quickUnitTitle">
+
+        <header class="modal__header modal-header-color-7">
+          <div>
+            <h3 id="quickUnitTitle" class="modal__title">Nova unidade</h3>
+            <div id="quickUnitSubtitle" class="muted" style="font-size:.8rem;"></div>
+          </div>
+
+          <button type="button" id="btnCloseQuickUnit" class="modal__close" aria-label="Fechar">
+            &times;
+          </button>
+        </header>
+
+        <form id="formQuickUnit" class="modal__body" autocomplete="off">
+          <div class="modal-section">
+
+            <div class="fields-inline fields-inline-wrap fields-gap-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
+                <label for="qu_unit_id">Unidade *</label>
+                <select id="qu_unit_id" required></select>
+              </div>
+
+              <div class="fields fields-w-12 fields-h-5 fields-font-3">
+                <label for="qu_fator">Fator</label>
+                <input id="qu_fator" readonly class="is-readonly" />
+              </div>
+
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
+                <label for="qu_barcode">C&oacute;digo de barras</label>
+                <input id="qu_barcode" maxlength="60" placeholder="Autom&aacute;tico se vazio" />
+              </div>
+            </div>
+
+            <label class="row center" style="gap:6px; justify-content:flex-start;">
+              <input type="checkbox" id="qu_standard" />
+              Unidade padr&atilde;o do produto
+            </label>
+
+            <div class="muted" style="font-size:.8rem; font-weight:600; margin-top:12px;">
+              Peso e dimens&otilde;es (opcional)
+            </div>
+
+            <div class="fields-inline fields-inline-wrap fields-gap-3">
+              <div class="fields fields-w-15 fields-h-5 fields-font-3">
+                <label for="qu_width_cm">Largura (cm)</label>
+                <input id="qu_width_cm" type="number" step="0.01" min="0" placeholder="0,00" />
+              </div>
+
+              <div class="fields fields-w-15 fields-h-5 fields-font-3">
+                <label for="qu_length_cm">Comprimento (cm)</label>
+                <input id="qu_length_cm" type="number" step="0.01" min="0" placeholder="0,00" />
+              </div>
+
+              <div class="fields fields-w-15 fields-h-5 fields-font-3">
+                <label for="qu_height_cm">Altura (cm)</label>
+                <input id="qu_height_cm" type="number" step="0.01" min="0" placeholder="0,00" />
+              </div>
+
+              <div class="fields fields-w-15 fields-h-5 fields-font-3">
+                <label for="qu_weight_kg">Peso (kg)</label>
+                <input id="qu_weight_kg" type="number" step="0.001" min="0" placeholder="0,000" />
+              </div>
+            </div>
+
+          </div>
+        </form>
+
+        <footer class="modal__footer modal-footer-color-2">
+          <button type="button" id="btnCancelQuickUnit" class="btn btn-cancel btn-sm">
+            Cancelar
+          </button>
+
+          <button type="submit" form="formQuickUnit" id="btnSaveQuickUnit" class="btn btn-save btn-sm">
+            Salvar unidade
+          </button>
+        </footer>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================= -->
   <!-- MODAL — IMPORTAR XML DIRETO DO DF-e                            -->
   <!-- Estrutura padrao de /public/includes/css/modals.css            -->
   <!-- ============================================================= -->
@@ -749,7 +837,7 @@
 
   <script type="module" src="/public/includes/js/core.js"></script>
 
-  <script type="module" src="./js/inboundInvoices.init.js?v=20261023-quick-lot-1"></script>
+  <script type="module" src="./js/inboundInvoices.init.js?v=20261023-units-1"></script>
 </body>
 
 </html>

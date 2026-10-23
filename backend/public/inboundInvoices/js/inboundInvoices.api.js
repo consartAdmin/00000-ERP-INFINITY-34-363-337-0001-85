@@ -507,6 +507,7 @@ export function clearLotsCaches(state) {
   state.lotsByStockCache?.clear?.();
   state.gradesByProductCache?.clear?.();
   state.gradesByStockCache?.clear?.();
+  state.productUnitsCache?.clear?.();
 }
 
 export async function loadUnits({ core, ROUTES, state }) {
@@ -517,10 +518,12 @@ export async function loadUnits({ core, ROUTES, state }) {
 
     state.unitsList = rows
       .map((unit) => ({
+        unit_id: toPositiveNumberOrNull(unit.unit_id ?? unit.id),
         unit: String(
           unit.unit ?? unit.unit_code ?? unit.sigla ?? unit.unidade ?? ''
         ).toUpperCase(),
         description: unit.description ?? unit.descricao ?? '',
+        fator: toPositiveNumberOrNull(unit.fator) ?? 1,
       }))
       .filter((unit) => unit.unit);
 
@@ -552,4 +555,64 @@ export function buildUnitOptionsHtml({ state }, selected) {
     });
 
   return html;
+}
+
+/* ------------------------------------------------------------------ */
+/* Unidades do produto (aba Unidades do cadastro = tabela barcodes)    */
+/* ------------------------------------------------------------------ */
+
+export function clearProductUnitsCache(state, productCode = null) {
+  if (productCode == null) state.productUnitsCache?.clear?.();
+  else state.productUnitsCache?.delete?.(normalizeProductCode(productCode));
+}
+
+export function loadProductUnits({ core, ROUTES, state }, productCode) {
+  const code = normalizeProductCode(productCode);
+  if (!code) return Promise.resolve([]);
+
+  state.productUnitsCache ??= new Map();
+  if (!state.productUnitsCache.has(code)) {
+    const request = fetch(ROUTES.productUnits(code), { credentials: 'same-origin', cache: 'no-store' })
+      .then(async (response) => {
+        const json = await response.json().catch(() => ({}));
+        if (!response.ok || json?.ok === false) {
+          throw new Error(json?.error || `Erro HTTP ${response.status}.`);
+        }
+        return safeRows(core, json)
+          .map((row) => ({
+            barcode_id: toPositiveNumberOrNull(row.barcode_id),
+            unit_id: toPositiveNumberOrNull(row.unit_id ?? row.product_unit_id),
+            unit: String(row.unit ?? '').trim().toUpperCase(),
+            description: firstText(row.unit_description, row.description),
+            fator: toPositiveNumberOrNull(row.fator) ?? 1,
+            standard: row.standard === true,
+          }))
+          .filter((row) => row.unit);
+      })
+      .catch((error) => {
+        // Falha não fica no cache: a próxima renderização tenta de novo.
+        state.productUnitsCache.delete(code);
+        throw error;
+      });
+    state.productUnitsCache.set(code, request);
+  }
+  return state.productUnitsCache.get(code);
+}
+
+// Unidade da NF-e fora do cadastro do produto → usa a padrão (ou a primeira).
+export function pickProductUnit(units, selected) {
+  const selectedUnit = String(selected || '').trim().toUpperCase();
+  return units.find((unit) => unit.unit === selectedUnit)
+    || units.find((unit) => unit.standard)
+    || units[0]
+    || null;
+}
+
+export function buildProductUnitOptionsHtml(units, selected) {
+  const selectedUnit = String(selected || '').trim().toUpperCase();
+  return units.map((unit) => {
+    const label = unit.description ? `${unit.unit} — ${unit.description}` : unit.unit;
+    const isSelected = unit.unit === selectedUnit ? ' selected' : '';
+    return `<option value="${htmlEscape(unit.unit)}"${isSelected}>${htmlEscape(label)}</option>`;
+  }).join('');
 }

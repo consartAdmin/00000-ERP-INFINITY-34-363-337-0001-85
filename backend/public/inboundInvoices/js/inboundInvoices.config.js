@@ -50,6 +50,10 @@ lotsOptionsByStockId: (product_stock_id) =>
   productByCode: (productCode) =>
     `${base()}/api/products/${encodeURIComponent(String(productCode ?? '').trim())}`,
 
+  productUnits: (productCode) =>
+    `${base()}/api/products/${encodeURIComponent(String(productCode ?? '').trim())}/units`,
+  barcodesUpsert: () => `${base()}/api/barcodes`,
+
   // Legacy alias retained for compatibility with external imports.
   productById: (id) => `${base()}/api/products/${encodeURIComponent(String(id))}`,
 };
