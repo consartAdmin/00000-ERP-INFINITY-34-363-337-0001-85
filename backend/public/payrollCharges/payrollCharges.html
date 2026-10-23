@@ -1,0 +1,308 @@
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║ payrollCharges.html — Encargos e Rescisões (CONSART ERP)         ║
+     ║ Aba 1: encargos da folha na competência (por colaborador)        ║
+     ║ Aba 2: simulação de rescisão (verbas + custo da empresa)         ║
+     ║ Dados do cadastro de Colaboradores (public.employees)            ║
+     ║ API: /api/payroll-charges                                        ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png" />
+  <title>ENCARGOS E RESCISÕES | CONSART ERP</title>
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/payrollCharges/payrollCharges.css?v=1" />
+</head>
+
+<body class="consart-theme page-payroll p-page pw-page--full ph-page--xr" data-pc-view="month">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <!-- HEADER -->
+    <div class="header header-row">
+      <div>
+        <h1>Encargos e Rescisões</h1>
+        <p>Impostos e encargos da folha do mês e simulação de rescisão dos colaboradores</p>
+      </div>
+
+      <div class="btn-inline btn-position-right">
+        <button id="pc-btn-tables" class="btn btn-toolbar btn-sm" type="button">⚙ Tabelas INSS / IRRF / Alíquotas</button>
+        <button id="pc-btn-excel" class="btn btn-toolbar btn-sm" type="button">⬇ Exportar Excel</button>
+        <button id="pc-btn-pdf" class="btn btn-toolbar btn-sm" type="button">🖨 PDF</button>
+      </div>
+    </div>
+
+    <!-- ABAS -->
+    <nav class="pc-tabs" aria-label="Abas">
+      <button type="button" class="btn btn-toolbar btn-sm is-active" data-pc-tab="month">📅 Encargos do mês</button>
+      <button type="button" class="btn btn-toolbar btn-sm" data-pc-tab="termination">🧾 Rescisão</button>
+    </nav>
+
+    <!-- ╭──────────────────────────────────────────────╮
+         │ ABA — ENCARGOS DO MÊS                        │
+         ╰──────────────────────────────────────────────╯ -->
+    <section class="table-layout-integrated pc-view pc-view--month">
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap">
+          <div class="fields fields-w-12 fields-h-6">
+            <label for="pc-competence">Competência</label>
+            <input type="month" id="pc-competence" />
+          </div>
+          <div class="fields fields-w-15 fields-h-6">
+            <label for="pc-department">Departamento</label>
+            <select id="pc-department"><option value="">Todos</option></select>
+          </div>
+          <div class="fields fields-w-20 fields-h-6">
+            <label for="pc-regime">Regime da empresa</label>
+            <select id="pc-regime"></select>
+          </div>
+          <div class="fields fields-w-8 fields-h-6">
+            <label for="pc-rat">RAT × FAP (%)</label>
+            <input type="number" id="pc-rat" step="0.01" min="0" />
+          </div>
+          <div class="fields fields-w-8 fields-h-6">
+            <label for="pc-third">Terceiros (%)</label>
+            <input type="number" id="pc-third" step="0.01" min="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="table-scroll table-scroll--flex">
+        <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head pc-month-table" aria-label="Encargos do mês">
+          <thead>
+            <tr>
+              <th class="pc-col-name">Colaborador</th>
+              <th class="pc-col-role">Cargo</th>
+              <th class="num">Salário</th>
+              <th class="num pc-col-dep">Dep.</th>
+              <th class="num">INSS (desc.)</th>
+              <th class="num">IRRF (desc.)</th>
+              <th class="num">Líquido</th>
+              <th class="num">FGTS</th>
+              <th class="num">INSS patronal</th>
+              <th class="num">RAT + Terc.</th>
+              <th class="num">Prov. 13º</th>
+              <th class="num">Prov. Férias + 1/3</th>
+              <th class="num" title="FGTS e INSS patronal sobre as provisões de 13º e férias">Enc. s/ prov.</th>
+              <th class="num">Benefícios</th>
+              <th class="num">Custo total</th>
+            </tr>
+          </thead>
+          <tbody id="pc-month-body">
+            <tr><td colspan="15" class="pc-empty">Carregando...</td></tr>
+          </tbody>
+          <tfoot id="pc-month-foot"></tfoot>
+        </table>
+      </div>
+
+      <footer class="table-footer pc-footer">
+        <div class="pc-pills" id="pc-month-pills"></div>
+        <div class="pc-note" id="pc-month-note">
+          Valores calculados a partir do cadastro de Colaboradores (salário base, admissão, dependentes, benefícios).
+          Tabelas INSS/IRRF por ano, editáveis. Estimativa gerencial: não substitui a folha do contador.
+        </div>
+      </footer>
+    </section>
+
+    <!-- ╭──────────────────────────────────────────────╮
+         │ ABA — RESCISÃO                               │
+         ╰──────────────────────────────────────────────╯ -->
+    <section class="table-layout-integrated pc-view pc-view--termination">
+      <div class="table-layout-integrated__filter">
+        <form id="pc-term-form" class="fields-inline fields-inline-wrap" autocomplete="off">
+          <div class="fields fields-w-20 fields-h-6">
+            <label for="pc-employee">Colaborador</label>
+            <select id="pc-employee" required><option value="">Selecione...</option></select>
+          </div>
+          <div class="fields fields-w-10 fields-h-6">
+            <label for="pc-admission">Admissão</label>
+            <input type="text" id="pc-admission" disabled />
+          </div>
+          <div class="fields fields-w-10 fields-h-6">
+            <label for="pc-term-date">Desligamento</label>
+            <input type="date" id="pc-term-date" required />
+          </div>
+          <div class="fields fields-w-15 fields-h-6">
+            <label for="pc-reason">Motivo</label>
+            <select id="pc-reason"></select>
+          </div>
+          <div class="fields fields-w-12 fields-h-6">
+            <label for="pc-notice">Aviso prévio</label>
+            <select id="pc-notice"></select>
+          </div>
+          <div class="fields fields-w-10 fields-h-6">
+            <label for="pc-vacation">Férias vencidas</label>
+            <select id="pc-vacation">
+              <option value="0">0 períodos</option>
+              <option value="1">1 período</option>
+              <option value="2">2 períodos</option>
+            </select>
+          </div>
+          <div class="fields fields-w-12 fields-h-6">
+            <label for="pc-fgts" title="Saldo do extrato do FGTS (vazio = estimado)">Saldo FGTS (extrato)</label>
+            <input type="number" id="pc-fgts" step="0.01" min="0" placeholder="Estimado" />
+          </div>
+          <div class="fields fields-w-12 fields-h-6">
+            <label for="pc-discounts" title="Adiantamento de 13º/salário e outros descontos">Adiant./descontos</label>
+            <input type="number" id="pc-discounts" step="0.01" min="0" placeholder="0,00" />
+          </div>
+          <button id="pc-btn-calc" class="btn btn-new btn-sm pc-btn-calc" type="submit">Calcular</button>
+        </form>
+      </div>
+
+      <div class="pc-term-body">
+        <div id="pc-term-empty" class="pc-empty">Selecione o colaborador, a data e o motivo e clique em Calcular.</div>
+
+        <div id="pc-term-result" hidden>
+          <div><span class="pc-chip" id="pc-term-chip"></span></div>
+
+          <div class="pc-grid">
+            <div class="pc-card">
+              <h4>Verbas rescisórias (TRCT)</h4>
+              <table class="pc-rows" id="pc-term-earnings"></table>
+            </div>
+            <div>
+              <div class="pc-card">
+                <h4>Custo da empresa</h4>
+                <table class="pc-rows" id="pc-term-costs"></table>
+              </div>
+              <div class="pc-pills" id="pc-term-pills"></div>
+            </div>
+          </div>
+
+          <div class="pc-term-actions">
+            <span class="pc-note" id="pc-term-meta"></span>
+            <div class="btn-inline btn-gap-3">
+              <button id="pc-btn-save" class="btn btn-save btn-sm" type="button">Salvar simulação</button>
+              <button id="pc-btn-term-pdf" class="btn btn-toolbar btn-sm" type="button">📄 Gerar PDF do demonstrativo</button>
+              <button id="pc-btn-confirm" class="btn btn-cancel btn-sm" type="button">Confirmar desligamento</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pc-card pc-saved">
+          <h4>Simulações salvas</h4>
+          <div class="table-scroll">
+            <table class="table table-zebra table-zebra-hover" aria-label="Simulações salvas">
+              <thead>
+                <tr>
+                  <th>Nº</th>
+                  <th>Colaborador</th>
+                  <th>Desligamento</th>
+                  <th>Motivo</th>
+                  <th class="num">Líquido</th>
+                  <th class="num">Custo total</th>
+                  <th>Status</th>
+                  <th>Salva em</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="pc-saved-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal Tabelas INSS / IRRF (padrão modals.css / modal.js) -->
+  <div id="pc-tables-modal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7 pc-tables-panel" role="dialog" aria-modal="true" aria-labelledby="pcTablesTitle">
+        <div class="modal__header modal-header-color-3">
+          <h2 id="pcTablesTitle" class="modal__title">Tabelas INSS / IRRF</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="modal-form-grid modal-form-grid--4">
+            <div class="fields fields-w-full fields-h-6">
+              <label for="pt-year">Ano</label>
+              <select id="pt-year"></select>
+            </div>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="pt-new-year">Novo ano (copia o selecionado)</label>
+              <input type="number" id="pt-new-year" min="2000" max="2100" placeholder="Ex.: 2027" />
+            </div>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="pt-min-wage">Salário mínimo</label>
+              <input type="number" id="pt-min-wage" step="0.01" />
+            </div>
+            <div class="fields fields-w-full fields-h-6">
+              <label for="pt-patronal">INSS patronal (%)</label>
+              <input type="number" id="pt-patronal" step="0.01" />
+            </div>
+          </div>
+
+          <div class="pc-tables-grid">
+            <div>
+              <h4 class="pc-subtitle">INSS do empregado (progressivo)</h4>
+              <table class="pc-edit-table">
+                <thead><tr><th>Até (R$)</th><th>Alíquota (%)</th></tr></thead>
+                <tbody id="pt-inss"></tbody>
+              </table>
+              <div class="fields fields-w-full fields-h-6 pc-mt">
+                <label for="pt-fgts">FGTS (%)</label>
+                <input type="number" id="pt-fgts" step="0.01" />
+              </div>
+            </div>
+            <div>
+              <h4 class="pc-subtitle">IRRF mensal</h4>
+              <table class="pc-edit-table">
+                <thead><tr><th>Base até (R$)</th><th>Alíquota (%)</th><th>Dedução (R$)</th></tr></thead>
+                <tbody id="pt-irrf"></tbody>
+              </table>
+              <div class="modal-form-grid modal-form-grid--2 pc-mt">
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="pt-dependent">Dedução por dependente</label>
+                  <input type="number" id="pt-dependent" step="0.01" />
+                </div>
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="pt-simplified">Desconto simplificado</label>
+                  <input type="number" id="pt-simplified" step="0.01" />
+                </div>
+              </div>
+              <h4 class="pc-subtitle">Redução do IRRF (Lei 15.270/2025)</h4>
+              <div class="modal-form-grid modal-form-grid--4">
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="pt-red-full">Isento até</label>
+                  <input type="number" id="pt-red-full" step="0.01" placeholder="sem redução" />
+                </div>
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="pt-red-partial">Reduz até</label>
+                  <input type="number" id="pt-red-partial" step="0.01" />
+                </div>
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="pt-red-a">Constante</label>
+                  <input type="number" id="pt-red-a" step="0.01" />
+                </div>
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="pt-red-b">Fator × renda</label>
+                  <input type="number" id="pt-red-b" step="0.000001" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="pc-note">Base da última faixa do IRRF em branco = sem limite. A redução usa o rendimento bruto do mês: zera o imposto até “Isento até” e, entre os dois limites, reduz “Constante − Fator × renda”.</p>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <span></span>
+          <div class="btn-inline btn-gap-3">
+            <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+            <button id="pt-save" class="btn btn-save btn-sm" type="button">Salvar tabelas</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/payrollCharges/payrollCharges.js?v=1"></script>
+</body>
+
+</html>

@@ -42,5 +42,6 @@ export const COLS = Object.freeze({
   food_benefit: 'food_benefit',
   meal_benefit: 'meal_benefit',
   health_benefit: 'health_benefit',
+  dependents: 'dependents',
   notes: 'notes',
 });

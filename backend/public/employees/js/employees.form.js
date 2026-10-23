@@ -44,6 +44,8 @@ export function fillEmployeeForm(r) {
   el.email.value = safeStr(r.email);
   el.phone.value = safeStr(r.phone);
   el.mobile.value = safeStr(r.mobile);
+  el.salary_base.value = safeStr(r.salary_base ?? '');
+  el.dependents.value = safeStr(r.dependents ?? '');
 
   el.active.checked = toBool(r.active);
 
@@ -93,6 +95,8 @@ export function currentEmployeePayload() {
     email: el.email.value.trim() || null,
     phone: el.phone.value.trim() || null,
     mobile: el.mobile.value.trim() || null,
+    salary_base: el.salary_base.value === '' ? null : Number(el.salary_base.value),
+    dependents: el.dependents.value === '' ? 0 : Math.max(0, Math.trunc(Number(el.dependents.value))),
 
     active: el.active.checked,
 
