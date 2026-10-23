@@ -249,7 +249,8 @@ export function initForm({ core, ROUTES, state, refs, switchTab }) {
         <td>
           <div class="table-cell-inline">
             <select
-              class="form-control form-control-sm"
+              class="form-control form-control-sm select-soft"
+              style="min-width:150px;"
               data-role="lot-select"
               data-index="${idx}"
               ${(!erpProductCode || item._lotsLoadError ? 'disabled' : '')}
@@ -277,7 +278,7 @@ export function initForm({ core, ROUTES, state, refs, switchTab }) {
 
         <td>
           <select
-            class="form-control form-control-sm"
+            class="form-control form-control-sm select-soft"
             data-role="unit-select"
             data-index="${idx}"
           >

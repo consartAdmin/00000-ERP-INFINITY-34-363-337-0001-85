@@ -1,0 +1,58 @@
+/* =====================================================================
+   selectSoft.css — Select discreto (tabelas e filtros)
+   CONSART ERP | importado pelo style.css
+
+   <select class="select-soft">…</select>
+
+   Borda fina e clara, cantos arredondados e seta cinza, no mesmo visual
+   do "Mostrar" do rodapé das tabelas. A cor aparece no hover/foco.
+===================================================================== */
+
+:root {
+  --select-soft-height: 28px;
+  --select-soft-border: #e2e8f0;
+  --select-soft-border-hover: #cbd5e1;
+  --select-soft-bg: #ffffff;
+  --select-soft-bg-muted: #f8fafc;
+  --select-soft-text: #475569;
+  --select-soft-text-muted: #94a3b8;
+  --select-soft-accent: #2563eb;
+  --select-soft-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+select.select-soft {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  max-width: 100%;
+  height: var(--select-soft-height);
+  padding: 0 28px 0 10px;
+  background: var(--select-soft-bg) var(--select-soft-arrow) no-repeat right 8px center / 14px;
+  border: 1px solid var(--select-soft-border);
+  border-radius: 8px;
+  box-shadow: none;
+  color: var(--select-soft-text);
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select.select-soft:hover:not(:disabled) {
+  border-color: var(--select-soft-border-hover);
+  background-color: var(--select-soft-bg-muted);
+}
+
+select.select-soft:focus {
+  outline: none;
+  border-color: var(--select-soft-accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+select.select-soft:disabled {
+  background-color: var(--select-soft-bg-muted);
+  color: var(--select-soft-text-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
