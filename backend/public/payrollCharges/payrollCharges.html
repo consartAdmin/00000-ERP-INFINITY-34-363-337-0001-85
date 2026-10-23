@@ -3,6 +3,7 @@
      ║ Aba 1: encargos da folha na competência (por colaborador)        ║
      ║ Aba 2: simulação de rescisão (verbas + custo da empresa)         ║
      ║ Dados do cadastro de Colaboradores (public.employees)            ║
+     ║ Botão "Gerar contas a pagar": guias/salários → Contas a Pagar    ║
      ║ API: /api/payroll-charges                                        ║
      ╚══════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
@@ -15,7 +16,8 @@
   <title>ENCARGOS E RESCISÕES | CONSART ERP</title>
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/payrollCharges/payrollCharges.css?v=1" />
+  <link rel="stylesheet" href="/public/modalsSearch/suppliersModalSearch.css" />
+  <link rel="stylesheet" href="/public/payrollCharges/payrollCharges.css?v=2" />
 </head>
 
 <body class="consart-theme page-payroll p-page pw-page--full ph-page--xr" data-pc-view="month">
@@ -29,6 +31,7 @@
       </div>
 
       <div class="btn-inline btn-position-right">
+        <button id="pc-btn-payables" class="btn btn-toolbar btn-sm pc-btn-payables" type="button">💳 Gerar contas a pagar</button>
         <button id="pc-btn-tables" class="btn btn-toolbar btn-sm" type="button">⚙ Tabelas INSS / IRRF / Alíquotas</button>
         <button id="pc-btn-excel" class="btn btn-toolbar btn-sm" type="button">⬇ Exportar Excel</button>
         <button id="pc-btn-pdf" class="btn btn-toolbar btn-sm" type="button">🖨 PDF</button>
@@ -301,8 +304,74 @@
     </div>
   </div>
 
+  <!-- Modal Gerar contas a pagar -->
+  <div id="pc-payables-modal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-12 pc-payables-panel" role="dialog" aria-modal="true" aria-labelledby="pcPayablesTitle">
+        <div class="modal__header modal-header-color-3">
+          <h2 id="pcPayablesTitle" class="modal__title">Gerar contas a pagar</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="pc-payables-top">
+            <p class="pc-note">
+              Cada linha vira um título em <b>Contas a Pagar</b>. Ao pagar o título lá (botão Pagar), o sistema lança a saída
+              na <b>Movimentação de Caixa</b>. Favorecido e categoria ficam memorizados para os próximos meses.
+            </p>
+            <div class="fields fields-w-20 fields-h-6">
+              <label for="pp-salary-mode">Salários</label>
+              <select id="pp-salary-mode"></select>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="table table-zebra pc-payables-table" aria-label="Títulos a gerar">
+              <thead>
+                <tr>
+                  <th class="pc-col-check"><input type="checkbox" id="pp-check-all" checked aria-label="Selecionar todos" /></th>
+                  <th>Título</th>
+                  <th>Colunas somadas</th>
+                  <th>Favorecido (fornecedor)</th>
+                  <th>Categoria</th>
+                  <th>Subcategoria</th>
+                  <th>Vencimento</th>
+                  <th class="num">Valor</th>
+                  <th>Situação</th>
+                </tr>
+              </thead>
+              <tbody id="pp-body"></tbody>
+              <tfoot>
+                <tr>
+                  <td></td>
+                  <td>Total selecionado</td>
+                  <td colspan="5"></td>
+                  <td class="num" id="pp-total">0,00</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <p class="pc-note">
+            Provisões de 13º e férias não geram título agora: viram conta a pagar quando forem pagas.
+            Na opção por colaborador, quem ainda não está no cadastro de fornecedores é cadastrado pelo CPF.
+          </p>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <span id="pp-summary" class="pc-note"></span>
+          <div class="btn-inline btn-gap-3">
+            <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+            <button id="pp-generate" class="btn btn-save btn-sm" type="button">Gerar títulos</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </div>
+
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/payrollCharges/payrollCharges.js?v=1"></script>
+  <script type="module" src="/public/payrollCharges/payrollCharges.js?v=2"></script>
 </body>
 
 </html>

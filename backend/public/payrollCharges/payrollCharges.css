@@ -266,3 +266,69 @@
 }
 
 .pc-mt { margin-top: 8px; }
+
+/* ── Modal Gerar contas a pagar ───────────────────────────────────── */
+.pc-btn-payables {
+  background: rgba(22, 163, 74, .12);
+  border-color: rgba(22, 163, 74, .5);
+  font-weight: 800;
+}
+
+.pc-payables-panel {
+  max-height: calc(100vh - 40px);
+}
+
+.pc-payables-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.pc-payables-top .pc-note { margin: 0; }
+
+.pc-payables-table th,
+.pc-payables-table td {
+  font-size: 12px;
+  text-align: left;
+}
+
+.pc-payables-table .num { text-align: right; }
+.pc-payables-table .pc-col-check { width: 30px; }
+.pc-payables-table tr.is-done td { opacity: .55; }
+.pc-payables-table tfoot td { font-weight: 800; background: #f3f4f6; }
+
+.pc-payables-table input[type="date"],
+.pc-payables-table select,
+.pc-supplier {
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 12px;
+}
+
+.pc-payables-table input[type="date"] { width: 125px; }
+
+.pc-supplier {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 210px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pc-supplier span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pc-supplier--empty { color: #b45309; }
+.pc-supplier--auto { color: #6b7280; font-style: italic; }
+.pc-muted { color: #6b7280; }
+.pc-status--warn { background: rgba(234, 179, 8, .18); color: #a16207; }

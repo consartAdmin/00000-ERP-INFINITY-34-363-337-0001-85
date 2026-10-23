@@ -8,6 +8,7 @@
 
 import ExcelJS from 'exceljs';
 import * as repo from '../repositories/payrollCharges/payrollCharges.repository.js';
+import * as payables from '../repositories/payrollCharges/payrollCharges.payables.js';
 import { REGIMES } from '../repositories/payrollCharges/payrollCharges.calc.js';
 import { generatePayrollMonthPdf, generateTerminationPdf } from '../generationPdf/generatePayrollChargesPdf.js';
 
@@ -118,6 +119,28 @@ export async function monthExcel(req, res) {
     return res.end();
   } catch (error) {
     return fail(res, 'monthExcel', error);
+  }
+}
+
+// ── Contas a Pagar ──────────────────────────────────────────────────
+
+export async function payablesPreview(req, res) {
+  try {
+    const [data, catalog] = await Promise.all([
+      payables.preview(req.query),
+      payables.listCashCategories(),
+    ]);
+    return res.json({ ok: true, data: { ...data, ...catalog } });
+  } catch (error) {
+    return fail(res, 'payablesPreview', error);
+  }
+}
+
+export async function payablesGenerate(req, res) {
+  try {
+    return res.status(201).json({ ok: true, data: await payables.generate(req.body, req.user) });
+  } catch (error) {
+    return fail(res, 'payablesGenerate', error);
   }
 }
 

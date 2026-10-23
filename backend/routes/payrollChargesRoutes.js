@@ -15,6 +15,8 @@ import {
   month,
   monthPdf,
   monthExcel,
+  payablesPreview,
+  payablesGenerate,
   employees,
   simulate,
   simulatePdf,
@@ -40,6 +42,10 @@ router.put('/tables/:year', saveTaxTable);
 router.get('/month', month);
 router.get('/month/pdf', monthPdf);
 router.get('/month/excel', monthExcel);
+
+// Encargos do mês → Contas a Pagar (o pagamento lá lança no Caixa)
+router.get('/payables', payablesPreview);
+router.post('/payables', payablesGenerate);
 
 // Rescisão
 router.get('/employees', employees);

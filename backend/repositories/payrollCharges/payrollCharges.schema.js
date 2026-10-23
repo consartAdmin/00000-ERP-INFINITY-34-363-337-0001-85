@@ -4,6 +4,8 @@
 // ║   public."payrollTaxTables"       → INSS/IRRF por ano (editável)   ║
 // ║   public."payrollChargesSettings" → regime e alíquotas da empresa  ║
 // ║   public."payrollTerminations"    → simulações de rescisão         ║
+// ║   public."payrollChargesPayables" → títulos gerados no Contas a    ║
+// ║                                     Pagar (competência + linha)    ║
 // ║ • Colaboradores vêm de public.employees (salário, admissão,        ║
 // ║   dependentes, benefícios).                                        ║
 // ║ • Roda uma vez por boot (primeira chamada do repositório).         ║
@@ -15,6 +17,7 @@ import { ensureTable as ensureEmployeesTable } from '../employees/employeesSchem
 export const TB_TABLES = 'public."payrollTaxTables"';
 export const TB_SETTINGS = 'public."payrollChargesSettings"';
 export const TB_TERMINATIONS = 'public."payrollTerminations"';
+export const TB_PAYABLES = 'public."payrollChargesPayables"';
 
 const IRRF_BRACKETS = [
   { limit: 2428.80, rate: 0, deduction: 0 },
@@ -96,6 +99,21 @@ async function createTables() {
     );
 
     INSERT INTO ${TB_SETTINGS} (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
+    -- Favorecido/categoria memorizados por linha + modo dos salários
+    ALTER TABLE ${TB_SETTINGS}
+      ADD COLUMN IF NOT EXISTS payables_defaults JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+    CREATE TABLE IF NOT EXISTS ${TB_PAYABLES} (
+      id                  BIGSERIAL PRIMARY KEY,
+      competence          CHAR(7) NOT NULL,
+      line_key            VARCHAR(40) NOT NULL,
+      account_payable_id  INTEGER NOT NULL,
+      amount              NUMERIC(14,2) NOT NULL DEFAULT 0,
+      created_by_name     VARCHAR(150),
+      created_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+      CONSTRAINT "payrollChargesPayables_line_uk" UNIQUE (competence, line_key)
+    );
 
     CREATE TABLE IF NOT EXISTS ${TB_TERMINATIONS} (
       id                BIGSERIAL PRIMARY KEY,

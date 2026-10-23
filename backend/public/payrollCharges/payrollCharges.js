@@ -1,6 +1,7 @@
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ payrollCharges.js — Encargos e Rescisões (CONSART ERP | ESM)       ║
 // ║ Aba "Encargos do mês" + aba "Rescisão" + modal de tabelas          ║
+// ║ + modal "Gerar contas a pagar" (guias/salários → Contas a Pagar)   ║
 // ║ API: /api/payroll-charges                                          ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
@@ -9,6 +10,7 @@
 import { apiFetch, getAuthToken } from '/public/includes/js/apiFetch.js';
 import { Modal } from '/public/includes/js/modal.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 
 const API = '/api/payroll-charges';
 const $ = (selector) => document.querySelector(selector);
@@ -21,6 +23,7 @@ const state = {
   termInput: null,
   termResult: null,
   savedId: null,
+  payables: null,
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -538,6 +541,177 @@ async function saveTables() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Modal Gerar contas a pagar
+// ─────────────────────────────────────────────────────────────────────
+
+async function openPayablesModal() {
+  if (!$('#pc-competence').value) return alert('Escolha a competência.');
+  await loadPayables();
+  if (state.payables) Modal.open('pc-payables-modal', { focusSelector: '#pp-salary-mode' });
+}
+
+async function loadPayables(salaryMode = null) {
+  const params = new URLSearchParams({ competence: $('#pc-competence').value });
+  if (salaryMode) params.set('salary_mode', salaryMode);
+  try {
+    const json = await apiFetch(`${API}/payables?${params}`);
+    state.payables = json.data;
+    renderPayables();
+  } catch (error) {
+    alert(`Erro ao montar os títulos: ${error.message}`);
+  }
+}
+
+function categoryOptions(selected) {
+  const list = state.payables.categories || [];
+  return '<option value="">(opcional)</option>' + list
+    .map((c) => `<option value="${c.id}" ${String(c.id) === String(selected ?? '') ? 'selected' : ''}>${esc(c.nome)}</option>`).join('');
+}
+
+function subcategoryOptions(categoryId, selected) {
+  const list = (state.payables.subcategories || []).filter((s) => String(s.categoria_id) === String(categoryId ?? ''));
+  return '<option value="">(opcional)</option>' + list
+    .map((s) => `<option value="${s.id}" ${String(s.id) === String(selected ?? '') ? 'selected' : ''}>${esc(s.nome)}</option>`).join('');
+}
+
+function supplierLabel(line) {
+  if (line.supplier_name) return `<span>${esc(line.supplier_name)}</span>`;
+  if (line.supplier_hint) return `<span class="pc-supplier--auto">${esc(line.supplier_hint)}</span>`;
+  return '<span>🔍 escolher fornecedor...</span>';
+}
+
+function lineStatus(line) {
+  if (line.account_payable_id) {
+    const paid = String(line.account_payable_status || '').toUpperCase() === 'PAID';
+    return `<span class="pc-status pc-status--ok">${paid ? 'Pago' : 'Já gerado'} nº ${line.account_payable_id}</span>`;
+  }
+  if (line.blocked) return `<span class="pc-status pc-status--warn" title="${esc(line.blocked)}">Bloqueado</span>`;
+  return '<span class="pc-status">Novo</span>';
+}
+
+function renderPayables() {
+  const data = state.payables;
+  const [year, month] = data.competence.split('-');
+  $('#pcPayablesTitle').textContent = `Gerar contas a pagar — competência ${month}/${year}`;
+  $('#pp-salary-mode').innerHTML = Object.entries(data.salary_modes)
+    .map(([key, label]) => `<option value="${key}" ${key === data.salary_mode ? 'selected' : ''}>${esc(label)}</option>`).join('');
+
+  $('#pp-body').innerHTML = data.lines.length ? data.lines.map((line, index) => {
+    const done = Boolean(line.account_payable_id || line.blocked);
+    return `
+      <tr data-index="${index}" class="${done ? 'is-done' : ''}">
+        <td><input type="checkbox" class="pp-check" ${done ? 'disabled' : 'checked'} /></td>
+        <td>${esc(line.title)}${line.blocked ? `<span class="pc-warn">${esc(line.blocked)}</span>` : ''}</td>
+        <td class="pc-muted">${esc(line.columns)}</td>
+        <td><button type="button" class="pc-supplier ${line.supplier_id || line.supplier_hint ? '' : 'pc-supplier--empty'}" data-supplier ${done ? 'disabled' : ''}>${supplierLabel(line)}</button></td>
+        <td><select class="pp-category" ${done ? 'disabled' : ''}>${categoryOptions(line.category_id)}</select></td>
+        <td><select class="pp-subcategory" ${done ? 'disabled' : ''}>${subcategoryOptions(line.category_id, line.subcategory_id)}</select></td>
+        <td><input type="date" class="pp-due" value="${esc(line.due_date)}" ${done ? 'disabled' : ''} /></td>
+        <td class="num"><b>${money(line.amount)}</b></td>
+        <td>${lineStatus(line)}</td>
+      </tr>`;
+  }).join('') : '<tr><td colspan="9" class="pc-empty">Nada a gerar nesta competência.</td></tr>';
+
+  updatePayablesTotal();
+}
+
+function selectedPayables() {
+  return [...document.querySelectorAll('#pp-body tr[data-index]')]
+    .filter((tr) => tr.querySelector('.pp-check')?.checked)
+    .map((tr) => state.payables.lines[Number(tr.dataset.index)]);
+}
+
+function updatePayablesTotal() {
+  const selected = selectedPayables();
+  const total = selected.reduce((sum, line) => sum + Number(line.amount || 0), 0);
+  const done = state.payables.lines.filter((line) => line.account_payable_id).length;
+  $('#pp-total').textContent = money(total);
+  $('#pp-summary').textContent = `${selected.length} título(s) selecionado(s)` + (done ? ` • ${done} já gerado(s), não duplica` : '');
+  $('#pp-generate').textContent = selected.length ? `Gerar ${selected.length} título(s) em Contas a Pagar` : 'Gerar títulos';
+  $('#pp-generate').disabled = !selected.length;
+  const enabled = [...document.querySelectorAll('#pp-body .pp-check:not(:disabled)')];
+  $('#pp-check-all').checked = enabled.length > 0 && enabled.every((input) => input.checked);
+}
+
+async function onPayablesClick(event) {
+  const button = event.target.closest('[data-supplier]');
+  if (!button) return;
+  const line = state.payables.lines[Number(button.closest('tr').dataset.index)];
+  const selected = await openSuppliersModalSearch();
+  if (!selected) return;
+  line.supplier_id = selected.supplier_id ?? selected.id ?? null;
+  line.supplier_name = selected.name || selected.nome || '';
+  line.supplier_hint = null;
+  button.classList.remove('pc-supplier--empty');
+  button.innerHTML = supplierLabel(line);
+
+  // categoria padrão do fornecedor, se a linha ainda não tem
+  if (!line.category_id && selected.cash_category_id) {
+    const tr = button.closest('tr');
+    line.category_id = selected.cash_category_id;
+    line.subcategory_id = selected.cash_subcategory_id || null;
+    tr.querySelector('.pp-category').value = String(line.category_id);
+    tr.querySelector('.pp-subcategory').innerHTML = subcategoryOptions(line.category_id, line.subcategory_id);
+  }
+}
+
+function onPayablesChange(event) {
+  const target = event.target;
+  if (target.id === 'pp-check-all') {
+    document.querySelectorAll('#pp-body .pp-check:not(:disabled)').forEach((input) => { input.checked = target.checked; });
+    return updatePayablesTotal();
+  }
+  if (target.id === 'pp-salary-mode') return loadPayables(target.value);
+
+  const tr = target.closest('tr[data-index]');
+  if (!tr) return;
+  const line = state.payables.lines[Number(tr.dataset.index)];
+  if (target.classList.contains('pp-check')) return updatePayablesTotal();
+  if (target.classList.contains('pp-category')) {
+    line.category_id = target.value || null;
+    line.subcategory_id = null;
+    tr.querySelector('.pp-subcategory').innerHTML = subcategoryOptions(line.category_id, null);
+  }
+  if (target.classList.contains('pp-subcategory')) line.subcategory_id = target.value || null;
+  if (target.classList.contains('pp-due')) line.due_date = target.value;
+}
+
+async function generatePayables() {
+  const selected = selectedPayables();
+  if (!selected.length) return;
+  const missing = selected.filter((line) => !line.supplier_id && !line.key.startsWith('SALARY:'));
+  if (missing.length) return alert(`Escolha o favorecido de:\n${missing.map((line) => `• ${line.title}`).join('\n')}`);
+
+  const total = selected.reduce((sum, line) => sum + Number(line.amount || 0), 0);
+  if (!confirm(`Gerar ${selected.length} título(s) em Contas a Pagar, total R$ ${money(total)}?`)) return;
+
+  const button = $('#pp-generate');
+  button.disabled = true;
+  try {
+    const json = await apiFetch(`${API}/payables`, {
+      method: 'POST',
+      body: JSON.stringify({
+        competence: state.payables.competence,
+        salary_mode: state.payables.salary_mode,
+        lines: selected.map((line) => ({
+          key: line.key,
+          supplier_id: line.supplier_id,
+          category_id: line.category_id,
+          subcategory_id: line.subcategory_id,
+          due_date: line.due_date,
+        })),
+      }),
+    });
+    alert(`${json.data.created.length} título(s) gerado(s) em Contas a Pagar (R$ ${money(json.data.total)}).\n`
+      + 'Pague pelo Contas a Pagar: o pagamento lança a saída na Movimentação de Caixa.');
+    await loadPayables(state.payables.salary_mode);
+  } catch (error) {
+    alert(`Não foi possível gerar:\n${error.message}`);
+    button.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Init
 // ─────────────────────────────────────────────────────────────────────
 
@@ -564,6 +738,10 @@ function bind() {
   $('#pc-saved-body').addEventListener('click', onSavedClick);
 
   $('#pc-btn-tables').addEventListener('click', openTablesModal);
+  $('#pc-btn-payables').addEventListener('click', openPayablesModal);
+  $('#pc-payables-modal').addEventListener('click', onPayablesClick);
+  $('#pc-payables-modal').addEventListener('change', onPayablesChange);
+  $('#pp-generate').addEventListener('click', generatePayables);
   $('#pt-year').addEventListener('change', () => {
     fillTableForm(state.options.tables.find((t) => String(t.year) === $('#pt-year').value) || {});
   });
