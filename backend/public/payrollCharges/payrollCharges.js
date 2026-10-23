@@ -11,6 +11,7 @@ import { apiFetch, getAuthToken } from '/public/includes/js/apiFetch.js';
 import { Modal } from '/public/includes/js/modal.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 const API = '/api/payroll-charges';
 const $ = (selector) => document.querySelector(selector);
@@ -38,6 +39,24 @@ function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[ch]));
+}
+
+// Avisos e confirmações no modal central (centerAlertModal), no lugar dos diálogos do navegador
+const NOTIFY_TITLES = { error: 'Erro', warning: 'Atenção', success: 'Concluído', info: 'Aviso' };
+
+function notify(message, variant = 'error', title = NOTIFY_TITLES[variant]) {
+  return showCenterModal({ variant, title, message: esc(message).replace(/\n/g, '<br>') });
+}
+
+async function ask(message, { title = 'Confirmar', okText = 'Confirmar' } = {}) {
+  const ok = await showCenterModal({
+    variant: 'warning',
+    title,
+    message: esc(message).replace(/\n/g, '<br>'),
+    okText,
+    closeText: 'Cancelar',
+  });
+  return ok === true;
 }
 
 function dateBR(value) {
@@ -83,7 +102,7 @@ async function download(url, options = {}, fallbackName = 'arquivo') {
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
   } catch (error) {
     console.error('[payrollCharges] download:', error);
-    alert(`Erro ao gerar o arquivo: ${error.message}`);
+    notify(`Erro ao gerar o arquivo: ${error.message}`);
   }
 }
 
@@ -145,7 +164,7 @@ async function saveSettings() {
     loadMonth();
     if (state.termResult) calculate();
   } catch (error) {
-    alert(`Erro ao salvar as alíquotas: ${error.message}`);
+    notify(`Erro ao salvar as alíquotas: ${error.message}`);
   }
 }
 
@@ -281,8 +300,8 @@ function resetResult() {
 async function calculate(event) {
   event?.preventDefault();
   const payload = termPayload();
-  if (!payload.employee_id) return alert('Selecione o colaborador.');
-  if (!payload.termination_date) return alert('Informe a data de desligamento.');
+  if (!payload.employee_id) return notify('Selecione o colaborador.', 'warning');
+  if (!payload.termination_date) return notify('Informe a data de desligamento.', 'warning');
 
   try {
     const json = await apiFetch(`${API}/terminations/simulate`, { method: 'POST', body: JSON.stringify(payload) });
@@ -291,7 +310,7 @@ async function calculate(event) {
     state.savedId = null;
     renderTermination(json.data, null);
   } catch (error) {
-    alert(`Não foi possível calcular: ${error.message}`);
+    notify(`Não foi possível calcular: ${error.message}`);
   }
 }
 
@@ -354,16 +373,17 @@ async function saveSimulation() {
     loadSaved();
     return json.data;
   } catch (error) {
-    alert(`Erro ao salvar a simulação: ${error.message}`);
+    notify(`Erro ao salvar a simulação: ${error.message}`);
     return null;
   }
 }
 
 async function confirmDismissal() {
   if (!state.termResult) return;
-  const ok = confirm(
+  const ok = await ask(
     `Confirmar o desligamento de ${state.termResult.full_name} em ${dateBR(state.termResult.termination_date)}?\n\n`
     + 'A data de desligamento será gravada no cadastro e o colaborador ficará inativo.',
+    { title: 'Confirmar desligamento' },
   );
   if (!ok) return;
 
@@ -378,12 +398,12 @@ async function confirmDismissal() {
     $('#pc-employee').value = String(json.data.employee_id);
     loadMonth();
   } catch (error) {
-    alert(`Erro ao confirmar o desligamento: ${error.message}`);
+    notify(`Erro ao confirmar o desligamento: ${error.message}`);
   }
 }
 
 function termPdf() {
-  if (!state.termResult) return alert('Calcule a rescisão primeiro.');
+  if (!state.termResult) return notify('Calcule a rescisão primeiro.', 'warning');
   if (state.savedId) return download(`${API}/terminations/${state.savedId}/pdf`, {}, 'rescisao.pdf');
   return download(`${API}/terminations/simulate/pdf`, {
     method: 'POST',
@@ -440,7 +460,7 @@ async function openSaved(id) {
     renderTermination(saved.result, saved);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (error) {
-    alert(`Erro ao abrir a simulação: ${error.message}`);
+    notify(`Erro ao abrir a simulação: ${error.message}`);
   }
 }
 
@@ -451,13 +471,13 @@ async function onSavedClick(event) {
   if (button.dataset.act === 'open') return openSaved(id);
   if (button.dataset.act === 'pdf') return download(`${API}/terminations/${id}/pdf`, {}, `rescisao-${id}.pdf`);
   if (button.dataset.act === 'delete') {
-    if (!confirm(`Excluir a simulação nº ${id}?`)) return;
+    if (!(await ask(`Excluir a simulação nº ${id}?`, { title: 'Excluir simulação', okText: 'Excluir' }))) return;
     try {
       await apiFetch(`${API}/terminations/${id}`, { method: 'DELETE' });
       if (String(state.savedId) === String(id)) resetResult();
       loadSaved();
     } catch (error) {
-      alert(`Erro ao excluir: ${error.message}`);
+      notify(`Erro ao excluir: ${error.message}`);
     }
   }
 }
@@ -536,7 +556,7 @@ async function saveTables() {
     loadMonth();
     if (state.termResult && !state.savedId) calculate();
   } catch (error) {
-    alert(`Erro ao salvar as tabelas: ${error.message}`);
+    notify(`Erro ao salvar as tabelas: ${error.message}`);
   }
 }
 
@@ -545,7 +565,7 @@ async function saveTables() {
 // ─────────────────────────────────────────────────────────────────────
 
 async function openPayablesModal() {
-  if (!$('#pc-competence').value) return alert('Escolha a competência.');
+  if (!$('#pc-competence').value) return notify('Escolha a competência.', 'warning');
   await loadPayables();
   if (state.payables) Modal.open('pc-payables-modal', { focusSelector: '#pp-salary-mode' });
 }
@@ -558,7 +578,7 @@ async function loadPayables(salaryMode = null) {
     state.payables = json.data;
     renderPayables();
   } catch (error) {
-    alert(`Erro ao montar os títulos: ${error.message}`);
+    notify(`Erro ao montar os títulos: ${error.message}`);
   }
 }
 
@@ -680,10 +700,10 @@ async function generatePayables() {
   const selected = selectedPayables();
   if (!selected.length) return;
   const missing = selected.filter((line) => !line.supplier_id && !line.key.startsWith('SALARY:'));
-  if (missing.length) return alert(`Escolha o favorecido de:\n${missing.map((line) => `• ${line.title}`).join('\n')}`);
+  if (missing.length) return notify(`Escolha o favorecido de:\n${missing.map((line) => `• ${line.title}`).join('\n')}`, 'warning', 'Favorecido obrigatório');
 
   const total = selected.reduce((sum, line) => sum + Number(line.amount || 0), 0);
-  if (!confirm(`Gerar ${selected.length} título(s) em Contas a Pagar, total R$ ${money(total)}?`)) return;
+  if (!(await ask(`Gerar ${selected.length} título(s) em Contas a Pagar, total R$ ${money(total)}?`, { title: 'Gerar contas a pagar', okText: 'Gerar' }))) return;
 
   const button = $('#pp-generate');
   button.disabled = true;
@@ -702,11 +722,11 @@ async function generatePayables() {
         })),
       }),
     });
-    alert(`${json.data.created.length} título(s) gerado(s) em Contas a Pagar (R$ ${money(json.data.total)}).\n`
-      + 'Pague pelo Contas a Pagar: o pagamento lança a saída na Movimentação de Caixa.');
+    notify(`${json.data.created.length} título(s) gerado(s) em Contas a Pagar (R$ ${money(json.data.total)}).\n`
+      + 'Pague pelo Contas a Pagar: o pagamento lança a saída na Movimentação de Caixa.', 'success');
     await loadPayables(state.payables.salary_mode);
   } catch (error) {
-    alert(`Não foi possível gerar:\n${error.message}`);
+    notify(`Não foi possível gerar:\n${error.message}`);
     button.disabled = false;
   }
 }
@@ -765,7 +785,7 @@ async function init() {
     await Promise.all([loadMonth(), loadEmployees()]);
   } catch (error) {
     console.error('[payrollCharges] init:', error);
-    alert(`Erro ao carregar o módulo: ${error.message}`);
+    notify(`Erro ao carregar o módulo: ${error.message}`);
   }
 }
 
