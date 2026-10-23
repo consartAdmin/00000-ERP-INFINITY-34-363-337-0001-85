@@ -18,6 +18,7 @@ export const ROUTES = {
     `${base()}/api/app-features/${encodeURIComponent(String(featureCode || '').trim())}/resolve`,
 
 // Lots
+lotsCreate: () => `${base()}/api/productsStockLots`,
 lotsByProductCode: (product_code) =>
   `${base()}/api/productsStockLots/by-product-code/${encodeURIComponent(
     String(product_code || '').trim()

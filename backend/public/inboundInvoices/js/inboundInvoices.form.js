@@ -247,14 +247,23 @@ export function initForm({ core, ROUTES, state, refs, switchTab }) {
 
         ${simpleMode ? '' : `
         <td>
-          <select
-            class="form-control form-control-sm"
-            data-role="lot-select"
-            data-index="${idx}"
-            ${(!erpProductCode || item._lotsLoadError ? 'disabled' : '')}
-          >
-            ${lotOptions}
-          </select>
+          <div class="table-cell-inline">
+            <select
+              class="form-control form-control-sm"
+              data-role="lot-select"
+              data-index="${idx}"
+              ${(!erpProductCode || item._lotsLoadError ? 'disabled' : '')}
+            >
+              ${lotOptions}
+            </select>
+
+            ${state.inboundInvoiceReadOnly ? '' : actionIconsHtml([{
+              action: 'add',
+              title: erpProductCode ? 'Novo lote' : 'Vincule o produto para criar um lote',
+              attrs: { 'data-act': 'create-lot', 'data-index': idx },
+              disabled: !erpProductCode,
+            }])}
+          </div>
 
           <div class="muted" style="font-size:.75rem; margin-top:2px;">
             ${escapeHtml(item._lotsLoadError || (erpProductCode ? 'Lote obrigat\u00f3rio' : 'Vincule o produto'))}
