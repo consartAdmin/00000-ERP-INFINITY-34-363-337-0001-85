@@ -21,6 +21,8 @@ const BASE_JOINS = `
       ON esc.id = ap.subcategory_id
     LEFT JOIN ${SCHEMA}."cashCategories" sc
       ON sc.id = s.cash_category_id
+    LEFT JOIN ${SCHEMA}."chartOfAccounts" coa
+      ON coa.id = ap.chart_account_id
 `;
 
 export async function list({
@@ -102,7 +104,9 @@ export async function list({
              s.name   AS supplier_name,
              pm.name  AS payment_method_name,
              ec.name  AS category_name,
-             esc.name AS subcategory_name
+             esc.name AS subcategory_name,
+             coa.code AS chart_account_code,
+             coa.description AS chart_account_description
       FROM ${TB_FULL} ap
       ${BASE_JOINS}
       ${whereSql}
@@ -171,6 +175,8 @@ export async function getById(id) {
       pm.name  AS payment_method_name,
       ec.name  AS category_name,
       esc.name AS subcategory_name,
+      coa.code AS chart_account_code,
+      coa.description AS chart_account_description,
       ${GROUP_SQL} AS payable_group,
       COALESCE(att.attachments_count, 0) AS attachments_count
     FROM ${TB_FULL} ap

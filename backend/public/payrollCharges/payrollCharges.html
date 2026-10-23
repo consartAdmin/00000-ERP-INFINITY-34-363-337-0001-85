@@ -4,6 +4,7 @@
      ║ Aba 2: simulação de rescisão (verbas + custo da empresa)         ║
      ║ Dados do cadastro de Colaboradores (public.employees)            ║
      ║ Botão "Gerar contas a pagar": guias/salários → Contas a Pagar    ║
+     ║ Botão "Plano de Contas": conta contábil de cada despesa          ║
      ║ API: /api/payroll-charges                                        ║
      ╚══════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
@@ -17,7 +18,8 @@
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
   <link rel="stylesheet" href="/public/modalsSearch/suppliersModalSearch.css" />
-  <link rel="stylesheet" href="/public/payrollCharges/payrollCharges.css?v=2" />
+  <link rel="stylesheet" href="/public/modalsSearch/chartAccountsModalSearch.css" />
+  <link rel="stylesheet" href="/public/payrollCharges/payrollCharges.css?v=3" />
 </head>
 
 <body class="consart-theme page-payroll p-page pw-page--full ph-page--xr" data-pc-view="month">
@@ -32,6 +34,7 @@
 
       <div class="btn-inline btn-position-right">
         <button id="pc-btn-payables" class="btn btn-toolbar btn-sm pc-btn-payables" type="button">💳 Gerar contas a pagar</button>
+        <button id="pc-btn-accounts" class="btn btn-toolbar btn-sm" type="button">🔗 Plano de Contas</button>
         <button id="pc-btn-tables" class="btn btn-toolbar btn-sm" type="button">⚙ Tabelas INSS / IRRF / Alíquotas</button>
         <button id="pc-btn-excel" class="btn btn-toolbar btn-sm" type="button">⬇ Exportar Excel</button>
         <button id="pc-btn-pdf" class="btn btn-toolbar btn-sm" type="button">🖨 PDF</button>
@@ -318,7 +321,8 @@
           <div class="pc-payables-top">
             <p class="pc-note">
               Cada linha vira um título em <b>Contas a Pagar</b>. Ao pagar o título lá (botão Pagar), o sistema lança a saída
-              na <b>Movimentação de Caixa</b>. Favorecido e categoria ficam memorizados para os próximos meses.
+              na <b>Movimentação de Caixa</b>. Favorecido e categoria ficam memorizados para os próximos meses;
+              a conta contábil vem do botão <b>Plano de Contas</b>.
             </p>
             <div class="fields fields-w-20 fields-h-6">
               <label for="pp-salary-mode">Salários</label>
@@ -336,6 +340,7 @@
                   <th>Favorecido (fornecedor)</th>
                   <th>Categoria</th>
                   <th>Subcategoria</th>
+                  <th>Conta contábil</th>
                   <th>Vencimento</th>
                   <th class="num">Valor</th>
                   <th>Situação</th>
@@ -346,7 +351,7 @@
                 <tr>
                   <td></td>
                   <td>Total selecionado</td>
-                  <td colspan="5"></td>
+                  <td colspan="6"></td>
                   <td class="num" id="pp-total">0,00</td>
                   <td></td>
                 </tr>
@@ -370,8 +375,50 @@
     </div>
   </div>
 
+  <!-- Modal Encargos × Plano de Contas -->
+  <div id="pc-accounts-modal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-10 pc-accounts-panel" role="dialog" aria-modal="true" aria-labelledby="pcAccountsTitle">
+        <div class="modal__header modal-header-color-3">
+          <h2 id="pcAccountsTitle" class="modal__title">Vínculo dos encargos com o Plano de Contas</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <p class="pc-note">
+            Escolha a conta contábil de cada despesa da folha. Ao gerar as contas a pagar, cada título já sai com a conta;
+            ao pagar, a saída no Caixa é lançada nessa conta. Se a guia do INSS juntar despesas com contas diferentes
+            (ex.: INSS retido x INSS patronal), ela é gerada em um título por conta.
+          </p>
+          <div class="table-scroll">
+            <table class="table pc-accounts-table" aria-label="Contas por despesa">
+              <thead>
+                <tr>
+                  <th>Despesa</th>
+                  <th>Coluna na tela</th>
+                  <th class="pc-accounts-col">Conta do Plano de Contas</th>
+                  <th>Onde é usada</th>
+                </tr>
+              </thead>
+              <tbody id="pa-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <span id="pa-summary" class="pc-note"></span>
+          <div class="btn-inline btn-gap-3">
+            <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+            <button id="pa-save" class="btn btn-save btn-sm" type="button">Salvar vínculos</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </div>
+
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/payrollCharges/payrollCharges.js?v=3"></script>
+  <script type="module" src="/public/payrollCharges/payrollCharges.js?v=4"></script>
 </body>
 
 </html>

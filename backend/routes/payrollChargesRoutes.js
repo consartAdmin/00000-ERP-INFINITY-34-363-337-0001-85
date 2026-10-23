@@ -17,6 +17,8 @@ import {
   monthExcel,
   payablesPreview,
   payablesGenerate,
+  chartAccountsList,
+  chartAccountsSave,
   employees,
   simulate,
   simulatePdf,
@@ -46,6 +48,10 @@ router.get('/month/excel', monthExcel);
 // Encargos do mês → Contas a Pagar (o pagamento lá lança no Caixa)
 router.get('/payables', payablesPreview);
 router.post('/payables', payablesGenerate);
+
+// Conta do Plano de Contas por despesa da folha
+router.get('/chart-accounts', chartAccountsList);
+router.put('/chart-accounts', chartAccountsSave);
 
 // Rescisão
 router.get('/employees', employees);

@@ -2,6 +2,7 @@
 // ║ payrollCharges.js — Encargos e Rescisões (CONSART ERP | ESM)       ║
 // ║ Aba "Encargos do mês" + aba "Rescisão" + modal de tabelas          ║
 // ║ + modal "Gerar contas a pagar" (guias/salários → Contas a Pagar)   ║
+// ║ + modal "Plano de Contas" (conta contábil de cada despesa)         ║
 // ║ API: /api/payroll-charges                                          ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
@@ -11,6 +12,7 @@ import { apiFetch, getAuthToken } from '/public/includes/js/apiFetch.js';
 import { Modal } from '/public/includes/js/modal.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
+import { openChartAccountsModalSearch } from '/public/modalsSearch/chartAccountsModalSearch.js';
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 const API = '/api/payroll-charges';
@@ -25,6 +27,7 @@ const state = {
   termResult: null,
   savedId: null,
   payables: null,
+  accounts: [],
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -626,11 +629,12 @@ function renderPayables() {
         <td><button type="button" class="pc-supplier ${line.supplier_id || line.supplier_hint ? '' : 'pc-supplier--empty'}" data-supplier ${done ? 'disabled' : ''}>${supplierLabel(line)}</button></td>
         <td><select class="pp-category" ${done ? 'disabled' : ''}>${categoryOptions(line.category_id)}</select></td>
         <td><select class="pp-subcategory" ${done ? 'disabled' : ''}>${subcategoryOptions(line.category_id, line.subcategory_id)}</select></td>
+        <td class="pc-account-cell ${line.chart_account_label ? '' : 'pc-account-cell--empty'}" title="${esc(line.chart_account_label || 'Sem conta: vincule no botão Plano de Contas')}">${esc(line.chart_account_label || 'sem conta')}</td>
         <td><input type="date" class="pp-due" value="${esc(line.due_date)}" ${done ? 'disabled' : ''} /></td>
         <td class="num"><b>${money(line.amount)}</b></td>
         <td>${lineStatus(line)}</td>
       </tr>`;
-  }).join('') : '<tr><td colspan="9" class="pc-empty">Nada a gerar nesta competência.</td></tr>';
+  }).join('') : '<tr><td colspan="10" class="pc-empty">Nada a gerar nesta competência.</td></tr>';
 
   updatePayablesTotal();
 }
@@ -732,6 +736,92 @@ async function generatePayables() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Modal Encargos × Plano de Contas
+// ─────────────────────────────────────────────────────────────────────
+
+function accountText(item) {
+  return item.chart_account_id
+    ? [item.chart_account_code, item.chart_account_description].filter(Boolean).join(' — ') || `Conta #${item.chart_account_id}`
+    : '';
+}
+
+function renderAccounts() {
+  let group = null;
+  $('#pa-body').innerHTML = state.accounts.map((item, index) => {
+    const header = item.group !== group ? `<tr class="pc-accounts-group"><td colspan="4">${esc(item.group)}</td></tr>` : '';
+    group = item.group;
+    const text = accountText(item);
+    return `${header}
+      <tr data-index="${index}">
+        <td><b>${esc(item.label)}</b></td>
+        <td class="pc-muted">${esc(item.column)}</td>
+        <td>
+          <div class="pc-account-picker">
+            <input type="text" readonly data-account-search class="${text ? '' : 'is-empty'}" value="${esc(text || 'Nenhuma conta — escolher...')}" />
+            <button type="button" class="btn btn-toolbar btn-sm action-keep" data-account-search title="Buscar conta contábil" aria-label="Buscar conta contábil">🔍</button>
+            <button type="button" class="btn btn-toolbar btn-sm action-keep" data-account-clear title="Limpar conta" aria-label="Limpar conta">✕</button>
+          </div>
+        </td>
+        <td class="pc-muted">${esc(item.used)}</td>
+      </tr>`;
+  }).join('');
+  const missing = state.accounts.filter((item) => !item.chart_account_id).length;
+  $('#pa-summary').textContent = missing ? `${missing} despesa(s) sem conta vinculada` : 'Todas as despesas têm conta vinculada';
+}
+
+async function openAccountsModal() {
+  try {
+    const json = await apiFetch(`${API}/chart-accounts`);
+    state.accounts = json.data || [];
+    renderAccounts();
+    Modal.open('pc-accounts-modal');
+  } catch (error) {
+    notify(`Erro ao carregar os vínculos: ${error.message}`);
+  }
+}
+
+async function onAccountsClick(event) {
+  const tr = event.target.closest('tr[data-index]');
+  if (!tr) return;
+  const item = state.accounts[Number(tr.dataset.index)];
+
+  if (event.target.closest('[data-account-clear]')) {
+    Object.assign(item, { chart_account_id: null, chart_account_code: null, chart_account_description: null });
+    return renderAccounts();
+  }
+  if (!event.target.closest('[data-account-search]')) return;
+
+  const selected = await openChartAccountsModalSearch({ query: '', onlyPosting: true, onlyActive: true });
+  const id = selected?.id ?? selected?.chart_account_id;
+  if (!id) return;
+  Object.assign(item, {
+    chart_account_id: Number(id),
+    chart_account_code: selected.code ?? selected.chart_account_code ?? null,
+    chart_account_description: selected.description ?? selected.chart_account_description ?? null,
+  });
+  renderAccounts();
+}
+
+async function saveAccounts() {
+  const button = $('#pa-save');
+  button.disabled = true;
+  try {
+    await apiFetch(`${API}/chart-accounts`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        accounts: Object.fromEntries(state.accounts.map((item) => [item.key, item.chart_account_id || null])),
+      }),
+    });
+    Modal.close('pc-accounts-modal');
+    notify('Vínculos salvos. Os próximos títulos gerados já saem com a conta contábil.', 'success');
+  } catch (error) {
+    notify(`Não foi possível salvar:\n${error.message}`);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Init
 // ─────────────────────────────────────────────────────────────────────
 
@@ -758,6 +848,9 @@ function bind() {
   $('#pc-saved-body').addEventListener('click', onSavedClick);
 
   $('#pc-btn-tables').addEventListener('click', openTablesModal);
+  $('#pc-btn-accounts').addEventListener('click', openAccountsModal);
+  $('#pa-body').addEventListener('click', onAccountsClick);
+  $('#pa-save').addEventListener('click', saveAccounts);
   $('#pc-btn-payables').addEventListener('click', openPayablesModal);
   $('#pc-payables-modal').addEventListener('click', onPayablesClick);
   $('#pc-payables-modal').addEventListener('change', onPayablesChange);

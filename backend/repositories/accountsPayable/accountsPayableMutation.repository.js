@@ -24,7 +24,8 @@ export async function create(payload) {
     notes,
     attachment_url,
     source_type,
-    source_id
+    source_id,
+    chart_account_id
   } = payload || {};
 
   const sql = `
@@ -46,13 +47,14 @@ export async function create(payload) {
       attachment_url,
       source_type,
       source_id,
+      chart_account_id,
       created_at,
       updated_at
     ) VALUES (
       $1, $2, $3, $4, $5,
       $6, $7, $8, $9, $10,
       $11, $12, $13, $14, $15,
-      $16, $17,
+      $16, $17, $18,
       NOW(), NOW()
     )
     RETURNING *
@@ -75,7 +77,8 @@ export async function create(payload) {
     notes || null,
     attachment_url || null,
     source_type || null,
-    source_id ?? null
+    source_id ?? null,
+    chart_account_id || null
   ];
 
   const res = await q(sql, params);
@@ -98,7 +101,8 @@ export async function update(id, payload) {
     amount_paid,
     status,
     notes,
-    attachment_url
+    attachment_url,
+    chart_account_id
   } = payload || {};
 
   const sql = `
@@ -119,6 +123,7 @@ export async function update(id, payload) {
       status            = $13,
       notes             = $14,
       attachment_url    = $15,
+      chart_account_id  = CASE WHEN $17::boolean THEN $18::integer ELSE chart_account_id END,
       updated_at        = NOW()
     WHERE id = $16
     RETURNING *
@@ -140,7 +145,10 @@ export async function update(id, payload) {
     status || 'PENDING',
     notes || null,
     attachment_url || null,
-    id
+    id,
+    // a conta só muda quando o payload traz o campo (telas antigas não apagam)
+    Object.prototype.hasOwnProperty.call(payload || {}, 'chart_account_id'),
+    chart_account_id || null
   ];
 
   const res = await q(sql, params);

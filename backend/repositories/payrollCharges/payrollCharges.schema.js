@@ -2,7 +2,8 @@
 // ║ payrollCharges.schema.js — Encargos e Rescisões (CONSART ERP)      ║
 // ║ Tabelas:                                                           ║
 // ║   public."payrollTaxTables"       → INSS/IRRF por ano (editável)   ║
-// ║   public."payrollChargesSettings" → regime e alíquotas da empresa  ║
+// ║   public."payrollChargesSettings" → regime, alíquotas e contas do  ║
+// ║                                     Plano de Contas por despesa    ║
 // ║   public."payrollTerminations"    → simulações de rescisão         ║
 // ║   public."payrollChargesPayables" → títulos gerados no Contas a    ║
 // ║                                     Pagar (competência + linha)    ║
@@ -103,6 +104,14 @@ async function createTables() {
     -- Favorecido/categoria memorizados por linha + modo dos salários
     ALTER TABLE ${TB_SETTINGS}
       ADD COLUMN IF NOT EXISTS payables_defaults JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+    -- Conta do Plano de Contas por despesa da folha (botão "Plano de Contas")
+    ALTER TABLE ${TB_SETTINGS}
+      ADD COLUMN IF NOT EXISTS chart_accounts JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+    -- Conta contábil no título (também criada pelo ensureTable do Contas a Pagar)
+    ALTER TABLE public."accountsPayable"
+      ADD COLUMN IF NOT EXISTS chart_account_id INTEGER;
 
     CREATE TABLE IF NOT EXISTS ${TB_PAYABLES} (
       id                  BIGSERIAL PRIMARY KEY,
