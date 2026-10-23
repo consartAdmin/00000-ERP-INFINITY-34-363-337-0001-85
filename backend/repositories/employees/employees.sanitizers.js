@@ -22,7 +22,7 @@ export function normalizePayload(input = {}) {
     'trial_start_date', 'trial_end_date', 'trial_extension_end_date',
   ].forEach((k) => { if (k in input) out[COLS[k]] = toDateOrNull(input[k]); });
 
-  ['salary_base', 'transport_benefit', 'food_benefit', 'meal_benefit', 'health_benefit']
+  ['salary_base', 'transport_benefit', 'food_benefit', 'meal_benefit', 'health_benefit', 'dependents']
     .forEach((k) => { if (k in input) out[COLS[k]] = toNumOrNull(input[k]); });
 
   ['active', 'trial_extended'].forEach((k) => {

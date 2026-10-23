@@ -1,0 +1,268 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ payrollCharges.css — Encargos e Rescisões (CONSART ERP)              ║
+   ║ ✅ Tabela/filtro/campos vêm do Design System (style.css)             ║
+   ║    Aqui ficam abas, cards da rescisão, pílulas de totais e modal     ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+:root {
+  --pc-line: var(--table-border-color, #02080f);
+  --pc-soft: rgba(17, 24, 39, .08);
+  --pc-muted: #6b7280;
+  --pc-text: #111827;
+}
+
+/* ── Abas ─────────────────────────────────────────────────────────── */
+.pc-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pc-tabs .btn.is-active {
+  background: rgba(59, 130, 246, .12);
+  border-color: rgba(59, 130, 246, .45);
+  font-weight: 800;
+}
+
+.page-payroll[data-pc-view="month"] .pc-view--termination,
+.page-payroll[data-pc-view="termination"] .pc-view--month {
+  display: none;
+}
+
+.page-payroll[data-pc-view="termination"] #pc-btn-excel {
+  visibility: hidden;
+}
+
+/* ── Tabela do mês ────────────────────────────────────────────────── */
+.pc-month-table th,
+.pc-month-table td {
+  font-size: 12px;
+}
+
+.pc-month-table .pc-col-name { width: 190px; }
+.pc-month-table .pc-col-role { width: 150px; }
+.pc-month-table .pc-col-dep { width: 48px; }
+
+.pc-month-table td:first-child,
+.pc-month-table td:nth-child(2) {
+  text-align: left;
+}
+
+.num,
+.pc-month-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pc-month-table tfoot td {
+  font-weight: 800;
+  background: #f3f4f6;
+}
+
+.pc-month-table tr.pc-row--warn td {
+  background: rgba(234, 179, 8, .14) !important;
+}
+
+.pc-warn {
+  display: block;
+  font-size: 10.5px;
+  color: #a16207;
+  font-weight: 700;
+}
+
+.pc-days {
+  color: var(--pc-muted);
+  font-size: 10.5px;
+}
+
+.pc-empty {
+  padding: 18px;
+  text-align: center;
+  color: var(--pc-muted);
+}
+
+/* ── Rodapé com pílulas ───────────────────────────────────────────── */
+.table-footer.pc-footer {
+  display: block;
+}
+
+.pc-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.pc-pill {
+  min-width: 170px;
+  padding: 8px 14px;
+  border: 1px solid rgba(17, 24, 39, .15);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--pc-text);
+}
+
+.pc-pill small {
+  display: block;
+  font-size: 11px;
+  color: var(--pc-muted);
+}
+
+.pc-pill b { font-size: 16px; }
+.pc-pill--blue { border-color: rgba(59, 130, 246, .45); background: rgba(59, 130, 246, .06); }
+.pc-pill--green { border-color: rgba(22, 163, 74, .45); background: rgba(22, 163, 74, .06); }
+.pc-pill--red { border-color: rgba(220, 38, 38, .45); background: rgba(220, 38, 38, .05); }
+
+.pc-note {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--pc-muted);
+}
+
+/* ── Rescisão ─────────────────────────────────────────────────────── */
+.pc-btn-calc { align-self: flex-end; }
+
+.pc-term-body {
+  padding: 10px 12px 14px;
+  background: #fff;
+  color: var(--pc-text);
+}
+
+.pc-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 1px solid rgba(234, 179, 8, .5);
+  border-radius: 999px;
+  background: rgba(234, 179, 8, .15);
+  font-size: 11.5px;
+}
+
+.pc-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+@media (max-width: 1000px) {
+  .pc-grid { grid-template-columns: 1fr; }
+}
+
+.pc-card {
+  overflow: hidden;
+  border: 1px solid var(--pc-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.pc-card h4 {
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--pc-line);
+  background: #f3f4f6;
+  font-size: 13px;
+}
+
+.pc-rows {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.pc-rows td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--pc-soft);
+}
+
+.pc-rows td.v {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pc-rows td.ref {
+  width: 110px;
+  text-align: center;
+  color: var(--pc-muted);
+}
+
+.pc-rows tr.tot td {
+  font-weight: 800;
+  background: #f9fafb;
+}
+
+.pc-rows tr.neg td.v { color: #dc2626; }
+
+.pc-term-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.pc-saved { margin-top: 16px; }
+
+.pc-saved table td,
+.pc-saved table th {
+  font-size: 12px;
+}
+
+.pc-status {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(59, 130, 246, .12);
+  color: #1d4ed8;
+}
+
+.pc-status--ok {
+  background: rgba(22, 163, 74, .12);
+  color: #15803d;
+}
+
+/* ── Modal de tabelas ─────────────────────────────────────────────── */
+.pc-tables-panel {
+  max-height: calc(100vh - 40px);
+}
+
+.pc-tables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.pc-subtitle {
+  margin: 10px 0 6px;
+  font-size: 13px;
+}
+
+.pc-edit-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pc-edit-table th {
+  font-size: 11.5px;
+  text-align: left;
+  color: var(--pc-muted);
+  padding: 2px 4px;
+}
+
+.pc-edit-table td { padding: 2px 4px; }
+
+.pc-edit-table input {
+  width: 100%;
+  height: 28px;
+  padding: 2px 6px;
+  border: 1px solid rgba(17, 24, 39, .25);
+  border-radius: 6px;
+  font-size: 12.5px;
+}
+
+.pc-mt { margin-top: 8px; }

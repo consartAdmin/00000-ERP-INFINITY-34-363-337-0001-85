@@ -615,6 +615,12 @@ import contractsConsartRoutes from './routes/contractsConsartRoutes.js';
 app.use('/api/contracts-consart', contractsConsartRoutes);
 
 /* ╔══════════════════════════════════════════════════════════╗
+   ║   ROTA: payrollCharges (Encargos e Rescisões)            ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import payrollChargesRoutes from './routes/payrollChargesRoutes.js';
+app.use('/api/payroll-charges', payrollChargesRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
    ║      ROTA: servicesConsart (Cadastro de serviços)        ║
    ╚══════════════════════════════════════════════════════════╝ */
 import servicesConsartRoutes from './routes/servicesConsartRoutes.js';

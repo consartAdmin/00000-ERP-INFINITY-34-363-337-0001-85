@@ -41,6 +41,8 @@ export const el = {
   email: qs('#email'),
   phone: qs('#phone'),
   mobile: qs('#mobile'),
+  salary_base: qs('#salary_base'),
+  dependents: qs('#dependents'),
   active: qs('#active'),
 
   // advanced

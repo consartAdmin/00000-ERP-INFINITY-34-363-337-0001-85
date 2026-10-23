@@ -108,6 +108,7 @@ export async function ensureTable() {
           food_benefit             NUMERIC(12,2) DEFAULT 0,
           meal_benefit             NUMERIC(12,2) DEFAULT 0,
           health_benefit           NUMERIC(12,2) DEFAULT 0,
+          dependents               INTEGER DEFAULT 0,
 
           notes                    TEXT,
           created_at               TIMESTAMP DEFAULT NOW(),
@@ -141,6 +142,7 @@ export async function ensureTable() {
           ADD COLUMN IF NOT EXISTS food_benefit             NUMERIC(12,2),
           ADD COLUMN IF NOT EXISTS meal_benefit             NUMERIC(12,2),
           ADD COLUMN IF NOT EXISTS health_benefit           NUMERIC(12,2),
+          ADD COLUMN IF NOT EXISTS dependents               INTEGER DEFAULT 0,
           ADD COLUMN IF NOT EXISTS notes                    TEXT,
           ADD COLUMN IF NOT EXISTS created_at               TIMESTAMP,
           ADD COLUMN IF NOT EXISTS updated_at               TIMESTAMP;
