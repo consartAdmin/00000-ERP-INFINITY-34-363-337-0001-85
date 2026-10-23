@@ -488,7 +488,7 @@
     <div id="quickProductBackdrop" class="modal__backdrop"></div>
 
     <div class="modal__dialog">
-      <div class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="quickProductTitle">
+      <div class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="quickProductTitle">
 
         <header class="modal__header modal-header-color-7">
           <div>
@@ -506,76 +506,76 @@
         <form id="formQuickProduct" class="modal__body" autocomplete="off">
           <div class="modal-section">
 
-            <div class="modal-form-grid modal-form-grid--3">
-              <div class="fields fields-h-5 fields-font-3 modal-field--span-full" style="width:100%;">
+            <div class="fields-inline fields-inline-wrap fields-gap-3">
+              <div class="fields fields-w-full fields-h-5 fields-font-3">
                 <label for="qp_description">Descri&ccedil;&atilde;o *</label>
-                <input id="qp_description" maxlength="255" required style="width:100%;" />
+                <input id="qp_description" maxlength="255" required />
               </div>
             </div>
 
-            <div class="modal-form-grid modal-form-grid--3">
-              <div class="fields fields-h-5 fields-font-3">
+            <div class="fields-inline fields-inline-wrap fields-gap-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
                 <label for="qp_barcode">C&oacute;digo de barras (EAN)</label>
                 <input id="qp_barcode" maxlength="100" />
               </div>
 
-              <div class="fields fields-h-5 fields-font-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
                 <label for="qp_manufacturer_ref">Ref. fabricante / c&oacute;d. fornecedor</label>
                 <input id="qp_manufacturer_ref" maxlength="100" />
               </div>
 
-              <div class="fields fields-h-5 fields-font-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
                 <label for="qp_cost_price">Pre&ccedil;o de custo</label>
                 <input id="qp_cost_price" type="number" min="0" step="0.01" />
               </div>
             </div>
 
-            <div class="modal-form-grid modal-form-grid--3">
-              <div class="fields fields-h-5 fields-font-3">
+            <div class="fields-inline fields-inline-wrap fields-gap-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
                 <label for="qp_product_group_id">Grupo</label>
                 <select id="qp_product_group_id"></select>
               </div>
 
-              <div class="fields fields-h-5 fields-font-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
                 <label for="qp_product_subgroup_id">Subgrupo</label>
                 <select id="qp_product_subgroup_id" disabled></select>
               </div>
 
-              <div class="fields fields-h-5 fields-font-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
                 <label for="qp_manufacturer_id">Fabricante</label>
                 <select id="qp_manufacturer_id"></select>
               </div>
             </div>
 
-            <div class="modal-form-grid modal-form-grid--3">
-              <div class="fields fields-h-5 fields-font-3">
+            <div class="fields-inline fields-inline-wrap fields-gap-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
                 <label for="qp_ncm">NCM (da NF-e)</label>
                 <input id="qp_ncm" readonly />
               </div>
 
-              <div class="fields fields-h-5 fields-font-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
                 <label for="qp_unit">Unidade (da NF-e)</label>
                 <input id="qp_unit" readonly />
               </div>
 
-              <div class="fields fields-h-5 fields-font-3">
+              <div class="fields fields-w-20 fields-h-5 fields-font-3">
                 <label for="qp_supplier">Fornecedor (emitente)</label>
                 <input id="qp_supplier" readonly />
               </div>
             </div>
 
-            <div id="qpLotSection">
+            <div id="qpLotSection" style="margin-top:12px;">
               <div class="muted" style="font-weight:600; margin:10px 0 4px;">
                 Lote inicial <span style="font-weight:400;">(j&aacute; fica selecionado no item)</span>
               </div>
 
-              <div class="modal-form-grid modal-form-grid--3">
-                <div class="fields fields-h-5 fields-font-3">
+              <div class="fields-inline fields-inline-wrap fields-gap-3">
+                <div class="fields fields-w-20 fields-h-5 fields-font-3">
                   <label for="qp_lot_code">C&oacute;digo do lote</label>
                   <input id="qp_lot_code" maxlength="100" placeholder="LOTE PADR&Atilde;O" />
                 </div>
 
-                <div class="fields fields-h-5 fields-font-3">
+                <div class="fields fields-w-20 fields-h-5 fields-font-3">
                   <label for="qp_expires_at">Validade</label>
                   <input id="qp_expires_at" type="date" />
                 </div>
