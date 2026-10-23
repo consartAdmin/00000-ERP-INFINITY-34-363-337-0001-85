@@ -527,12 +527,14 @@ export async function createCategoria(req, res) {
       nome,
       name,
       is_active = true,
+      payable_group,
     } = req.body || {};
 
     const row = await caixa.createCategoria({
       nome,
       name,
       is_active,
+      payable_group,
     });
 
     return created(res, row);
@@ -549,12 +551,14 @@ export async function updateCategoriaCtrl(req, res) {
       nome,
       name,
       is_active,
+      payable_group,
     } = req.body || {};
 
     const row = await caixa.updateCategoria(Number(id), {
       nome,
       name,
       is_active,
+      payable_group,
     });
 
     if (!row) return bad(res, 'Categoria não encontrada');

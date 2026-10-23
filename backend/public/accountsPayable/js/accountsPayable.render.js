@@ -3,6 +3,7 @@
 import { state } from './accountsPayable.state.js';
 import { formatDate, formatMoney, qs } from './accountsPayable.utils.js';
 import { getAttachmentDownloadUrl } from './accountsPayable.api.js';
+import { renderGroupTag } from './accountsPayable.groups.js';
 
 export function renderStatusTag(status) {
   const map = {
@@ -26,7 +27,7 @@ export function renderTable(rows) {
   if (!rows.length) {
     const row = body.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = 11;
+    cell.colSpan = 12;
     cell.className = 'table-empty';
     cell.textContent = 'Nenhum registro encontrado.';
   }
@@ -46,6 +47,7 @@ export function renderTable(rows) {
       <td>${item.id}</td>
       <td>${item.supplier_id ?? ''}</td>
       <td>${item.supplier_name ?? ''}</td>
+      <td>${renderGroupTag(item.payable_group)}</td>
       <td>${item.invoice_number ?? ''}</td>
       <td>${formatDate(item.issue_date)}</td>
       <td>${formatDate(item.due_date)}</td>

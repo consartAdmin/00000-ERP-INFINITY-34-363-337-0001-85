@@ -6,6 +6,22 @@
 import { SCHEMA, TB_FULL, TB_ATTACH } from './accountsPayable.constants.js';
 import { q } from './accountsPayable.utils.js';
 import { parseOrder } from './accountsPayable.sql.js';
+import { payableGroupSql, parseGroups } from './accountsPayable.groups.js';
+
+const GROUP_SQL = payableGroupSql();
+
+const BASE_JOINS = `
+    LEFT JOIN ${SCHEMA}.suppliers s
+      ON s.supplier_id = ap.supplier_id
+    LEFT JOIN ${SCHEMA}."paymentMethods" pm
+      ON pm."paymentMethods_id" = ap.payment_method_id
+    LEFT JOIN ${SCHEMA}."cashCategories" ec
+      ON ec.id = ap.category_id
+    LEFT JOIN ${SCHEMA}."cashSubcategories" esc
+      ON esc.id = ap.subcategory_id
+    LEFT JOIN ${SCHEMA}."cashCategories" sc
+      ON sc.id = s.cash_category_id
+`;
 
 export async function list({
   page = 1,
@@ -17,6 +33,7 @@ export async function list({
   toDueDate,
   month,
   year,
+  groups,
   orderBy
 } = {}) {
   const limit = Math.max(1, Math.min(Number(pageSize) || 20, 200));
@@ -78,31 +95,39 @@ export async function list({
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const orderSql = parseOrder(orderBy);
 
+  // Grupo resolvido numa subconsulta para o filtro e a contagem por grupo
   const baseFrom = `
-    FROM ${TB_FULL} ap
-    LEFT JOIN ${SCHEMA}.suppliers s
-      ON s.supplier_id = ap.supplier_id
-    LEFT JOIN ${SCHEMA}."paymentMethods" pm
-      ON pm."paymentMethods_id" = ap.payment_method_id
-    LEFT JOIN ${SCHEMA}."cashCategories" ec
-      ON ec.id = ap.category_id
-    LEFT JOIN ${SCHEMA}."cashSubcategories" esc
-      ON esc.id = ap.subcategory_id
+    FROM (
+      SELECT ap.*, ${GROUP_SQL} AS payable_group,
+             s.name   AS supplier_name,
+             pm.name  AS payment_method_name,
+             ec.name  AS category_name,
+             esc.name AS subcategory_name
+      FROM ${TB_FULL} ap
+      ${BASE_JOINS}
+      ${whereSql}
+    ) ap
   `;
+
+  const groupList = parseGroups(groups);
+  const groupWhere = groupList.length ? `WHERE ap.payable_group = ANY($${idx}::text[])` : '';
+  const listParams = groupList.length ? [...params, groupList] : params;
 
   const countSql = `
     SELECT COUNT(*) AS total
     ${baseFrom}
-    ${whereSql}
+    ${groupWhere}
+  `;
+
+  const groupCountSql = `
+    SELECT ap.payable_group, COUNT(*)::integer AS total
+    ${baseFrom}
+    GROUP BY ap.payable_group
   `;
 
   const dataSql = `
     SELECT
       ap.*,
-      s.name   AS supplier_name,
-      pm.name  AS payment_method_name,
-      ec.name  AS category_name,
-      esc.name AS subcategory_name,
       COALESCE(att.attachments_count, 0) AS attachments_count
     ${baseFrom}
     LEFT JOIN (
@@ -112,15 +137,19 @@ export async function list({
       GROUP BY account_payable_id
     ) att
       ON att.account_payable_id = ap.id
-    ${whereSql}
+    ${groupWhere}
     ${orderSql}
     LIMIT ${limit} OFFSET ${offset}
   `;
 
-  const [countRes, dataRes] = await Promise.all([
-    q(countSql, params),
-    q(dataSql, params)
+  const [countRes, dataRes, groupRes] = await Promise.all([
+    q(countSql, listParams),
+    q(dataSql, listParams),
+    q(groupCountSql, params)
   ]);
+
+  const groupCounts = {};
+  for (const r of groupRes.rows) groupCounts[r.payable_group] = r.total;
 
   const total = Number(countRes.rows[0]?.total || 0);
 
@@ -129,6 +158,7 @@ export async function list({
     total,
     page: currentPage,
     pageSize: limit,
+    groupCounts,
     rows: dataRes.rows
   };
 }
@@ -141,16 +171,10 @@ export async function getById(id) {
       pm.name  AS payment_method_name,
       ec.name  AS category_name,
       esc.name AS subcategory_name,
+      ${GROUP_SQL} AS payable_group,
       COALESCE(att.attachments_count, 0) AS attachments_count
     FROM ${TB_FULL} ap
-    LEFT JOIN ${SCHEMA}.suppliers s
-      ON s.supplier_id = ap.supplier_id
-    LEFT JOIN ${SCHEMA}."paymentMethods" pm
-      ON pm."paymentMethods_id" = ap.payment_method_id
-    LEFT JOIN ${SCHEMA}."cashCategories" ec
-      ON ec.id = ap.category_id
-    LEFT JOIN ${SCHEMA}."cashSubcategories" esc
-      ON esc.id = ap.subcategory_id
+    ${BASE_JOINS}
     LEFT JOIN (
       SELECT account_payable_id, COUNT(*)::integer AS attachments_count
       FROM ${TB_ATTACH}

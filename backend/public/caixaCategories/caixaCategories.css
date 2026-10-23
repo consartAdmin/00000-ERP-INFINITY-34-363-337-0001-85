@@ -160,6 +160,16 @@
 }
 
 /* responsivo: inputs ocupam mais largura */
+/* Grupo do Contas a Pagar (categoria) */
+.cc-select-grupo {
+  min-width: 190px;
+}
+
+.caixa-categories td.cc-grupo.is-auto {
+  color: rgba(15, 23, 42, 0.45);
+  font-style: italic;
+}
+
 @media (max-width: 980px) {
   .cc-actions {
     justify-content: flex-start;

@@ -12,6 +12,8 @@ export const state = {
   year: String(new Date().getFullYear()),
   fromDueDate: '',
   toDueDate: '',
+  groups: [],
+  groupCounts: {},
   sortColumn: 'due_date',
   sortDirection: 'asc',
   items: [],

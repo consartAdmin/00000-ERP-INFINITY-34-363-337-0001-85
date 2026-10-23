@@ -5,6 +5,7 @@
 
 import ExcelJS from 'exceljs';
 import { list } from '../repositories/accountsPayable/accountsPayable.index.js';
+import { PAYABLE_GROUPS, parseGroups } from '../repositories/accountsPayable/accountsPayable.groups.js';
 
 const EXPORT_PAGE_SIZE = 200;
 const MAX_EXPORT_ROWS = 50000;
@@ -176,6 +177,10 @@ function getBalance(row) {
  * Filtros
  * ===================================================================== */
 
+function formatGroup(key) {
+    return PAYABLE_GROUPS.find((g) => g.key === key)?.label || key;
+}
+
 function normalizeFilters(filters = {}) {
     return {
         search:
@@ -206,6 +211,10 @@ function normalizeFilters(filters = {}) {
             filters.year ||
             undefined,
 
+        groups:
+            filters.groups ||
+            undefined,
+
         orderBy:
             filters.orderBy ||
             'due_date asc',
@@ -218,6 +227,13 @@ function buildFilterDescription(filters = {}) {
     if (filters.search) {
         parts.push(
             `Busca: ${filters.search}`
+        );
+    }
+
+    const groups = parseGroups(filters.groups);
+    if (groups.length) {
+        parts.push(
+            `Grupos: ${groups.map(formatGroup).join(', ')}`
         );
     }
 

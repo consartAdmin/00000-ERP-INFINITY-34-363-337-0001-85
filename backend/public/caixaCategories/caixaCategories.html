@@ -55,6 +55,17 @@
         <input type="hidden" id="categoriaId" />
         <input id="categoriaNome" class="cc-input" placeholder="Nome da categoria" aria-label="Nome da categoria"
           maxlength="120" required />
+        <select id="categoriaGrupo" class="cc-input cc-select-grupo" aria-label="Grupo no Contas a Pagar"
+          title="Grupo usado no filtro do Contas a Pagar">
+          <option value="">Grupo: automático</option>
+          <option value="IMPOSTOS">Impostos e Tributos</option>
+          <option value="PARCELAMENTOS">Parcelamentos</option>
+          <option value="RH">R.H / Folha</option>
+          <option value="FORNECEDORES">Fornecedores (mercadorias)</option>
+          <option value="OPERACIONAIS">Despesas operacionais</option>
+          <option value="FINANCEIRO">Financeiro e bancário</option>
+          <option value="OUTROS">Outros / sem grupo</option>
+        </select>
         <label class="cc-check">
           <input type="checkbox" id="categoriaAtivo" checked />
           <span>Ativo</span>
@@ -74,6 +85,7 @@
             <tr>
               <th class="cc-col-id">ID</th>
               <th>Nome</th>
+              <th class="cc-col-grupo" title="Grupo usado no filtro do Contas a Pagar">Grupo</th>
               <th class="cc-col-status">Status</th>
               <th class="cc-col-actions">Ações</th>
             </tr>

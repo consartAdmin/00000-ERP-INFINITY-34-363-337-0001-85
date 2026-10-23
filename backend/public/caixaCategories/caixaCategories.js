@@ -16,6 +16,17 @@ let cacheSubcategorias = [];
 // evita que uma resposta antiga sobrescreva a categoria clicada por último
 let subRequestSeq = 0;
 
+// Grupos do Contas a Pagar (mesmas chaves de repositories/accountsPayable/accountsPayable.groups.js)
+const GRUPOS_PAGAR = {
+  IMPOSTOS: 'Impostos e Tributos',
+  PARCELAMENTOS: 'Parcelamentos',
+  RH: 'R.H / Folha',
+  FORNECEDORES: 'Fornecedores',
+  OPERACIONAIS: 'Despesas operacionais',
+  FINANCEIRO: 'Financeiro e bancário',
+  OUTROS: 'Outros',
+};
+
 // paginação (client-side) de cada tabela
 const paginacao = {
   cat: { page: 1, pageSize: 50 },
@@ -35,6 +46,7 @@ const el = {
   categoriaId: document.getElementById('categoriaId'),
   categoriaNome: document.getElementById('categoriaNome'),
   categoriaAtivo: document.getElementById('categoriaAtivo'),
+  categoriaGrupo: document.getElementById('categoriaGrupo'),
   cancelCategoria: document.getElementById('cancelCategoria'),
 
   categoriaSelecionada: document.getElementById('categoriaSelecionada'),
@@ -90,8 +102,8 @@ function badge(active) {
   return `<span class="badge ${active ? 'on' : 'off'}">${active ? 'Ativo' : 'Inativo'}</span>`;
 }
 
-function emptyRow(msg) {
-  return `<tr class="cc-empty"><td colspan="4">${escapeHtml(msg)}</td></tr>`;
+function emptyRow(msg, cols = 4) {
+  return `<tr class="cc-empty"><td colspan="${cols}">${escapeHtml(msg)}</td></tr>`;
 }
 
 function acoes(tipo, row) {
@@ -199,7 +211,8 @@ function renderCategorias(rows) {
     el.tbodyCategorias.innerHTML = emptyRow(
       el.searchCategoria.value.trim()
         ? 'Nenhuma categoria encontrada para essa busca.'
-        : 'Nenhuma categoria cadastrada.'
+        : 'Nenhuma categoria cadastrada.',
+      5
     );
     return;
   }
@@ -211,6 +224,7 @@ function renderCategorias(rows) {
           data-id="${c.id}" tabindex="0" aria-selected="${selected}">
         <td>${c.id}</td>
         <td>${escapeHtml(c.nome)}</td>
+        <td class="cc-grupo ${c.payable_group ? '' : 'is-auto'}">${escapeHtml(GRUPOS_PAGAR[c.payable_group] || 'Automático')}</td>
         <td>${badge(!!c.is_active)}</td>
         <td class="td-actions">${acoes('cat', c)}</td>
       </tr>
@@ -298,10 +312,11 @@ function aplicarFiltroCategorias() {
 /* ─────────────────────────────
    Form Categoria
 ───────────────────────────── */
-function openCategoriaForm({ id = '', nome = '', is_active = true } = {}) {
+function openCategoriaForm({ id = '', nome = '', is_active = true, payable_group = '' } = {}) {
   el.formCategoria.classList.remove('hidden');
   el.categoriaId.value = id;
   el.categoriaNome.value = nome;
+  el.categoriaGrupo.value = payable_group || '';
   el.categoriaAtivo.checked = !!is_active;
   el.categoriaNome.focus();
   el.categoriaNome.select();
@@ -311,6 +326,7 @@ function closeCategoriaForm() {
   el.formCategoria.classList.add('hidden');
   el.categoriaId.value = '';
   el.categoriaNome.value = '';
+  el.categoriaGrupo.value = '';
   el.categoriaAtivo.checked = true;
 }
 
@@ -368,6 +384,7 @@ async function salvarCategoria() {
   const payload = {
     nome: el.categoriaNome.value.trim(),
     is_active: el.categoriaAtivo.checked,
+    payable_group: el.categoriaGrupo.value || null,
   };
 
   if (!payload.nome) throw new Error('Informe o nome da categoria.');
@@ -510,7 +527,7 @@ el.tbodyCategorias.addEventListener('click', async (ev) => {
 
       if (action === 'edit-cat') {
         const cat = cacheCategorias.find(c => Number(c.id) === id);
-        if (cat) openCategoriaForm({ id, nome: cat.nome, is_active: !!cat.is_active });
+        if (cat) openCategoriaForm({ id, nome: cat.nome, is_active: !!cat.is_active, payable_group: cat.payable_group });
         return;
       }
 

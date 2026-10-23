@@ -17,7 +17,10 @@ export function parseOrder(orderBy) {
     'created_at',
     'updated_at',
     'invoice_number',
-    'document_number'
+    'document_number',
+    'supplier_id',
+    'supplier_name',
+    'payable_group'
   ]);
 
   const [colRaw, dirRaw] = String(orderBy).trim().split(/\s+/);

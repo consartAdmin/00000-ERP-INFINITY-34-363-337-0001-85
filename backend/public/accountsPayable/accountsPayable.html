@@ -70,6 +70,23 @@
                   locale="pt-BR"></date-range-field>
               </div>
 
+              <!-- Grupo (multi-seleção) -->
+              <div class="fields fields-h-6 fields-w-16 fields-font-3 ap-group-filter" id="apGroupFilter">
+                <label for="apGroupTrigger">Grupo</label>
+                <button type="button" id="apGroupTrigger" class="ap-group-trigger" aria-haspopup="true"
+                  aria-expanded="false" aria-controls="apGroupMenu">
+                  <span id="apGroupTriggerLabel">Todos os grupos</span>
+                  <span aria-hidden="true">▾</span>
+                </button>
+                <div id="apGroupMenu" class="ap-group-menu" role="group" aria-label="Grupos" hidden>
+                  <div class="ap-group-menu__head">
+                    <button type="button" data-group-action="all">Marcar todos</button>
+                    <button type="button" data-group-action="none">Limpar</button>
+                  </div>
+                  <div id="apGroupOptions"></div>
+                </div>
+              </div>
+
               <!-- =========================================================
      FILTER ACTIONS
 ========================================================= -->
@@ -107,6 +124,8 @@
             </div>
           </div>
         </div>
+
+        <div id="apGroupChips" class="ap-group-chips" hidden></div>
       </div>
       </div>
       </div>
@@ -124,6 +143,9 @@
                     aria-hidden="true">↕</span></button></th>
               <th class="table-col-w-10 table-sortable" data-sort-column="supplier_name" aria-sort="none"><button
                   type="button" class="table-sort-button" data-sort-button>Fornecedor <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="payable_group" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Grupo <span data-sort-icon
                     aria-hidden="true">↕</span></button></th>
               <th class="table-col-w-6 table-sortable" data-sort-column="invoice_number" aria-sort="none"><button
                   type="button" class="table-sort-button" data-sort-button>Nº Fatura <span data-sort-icon
@@ -398,7 +420,7 @@
 
   <script type="module" src="/public/includes/js/core.js"></script>
 
-  <script type="module" src="/public/accountsPayable/js/accountsPayable.init.js?v=4"></script>
+  <script type="module" src="/public/accountsPayable/js/accountsPayable.init.js?v=5"></script>
 
 </body>
 
