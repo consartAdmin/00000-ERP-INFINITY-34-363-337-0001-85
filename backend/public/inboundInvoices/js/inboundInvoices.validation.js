@@ -95,7 +95,7 @@ export function initSave({ core, ROUTES, state, refs, switchTab }) {
 
   const normalizeItemForSave = (it, index = 0) => {
     // Transient UI lists/errors are not persistence fields.
-    const { _lots, _grades, _lotsLoadError, ...persistedItem } = it ?? {};
+    const { _lots, _grades, _lotsLoadError, _productUnits, ...persistedItem } = it ?? {};
     return {
       // Preserve the expanded fiscal snapshot fields loaded from the API
       // (CBS, IBS, PIS, COFINS, FCP, commercial and taxable values).

@@ -10,7 +10,12 @@
 
 import { getStockMode, isSimpleStockMode, clearItemLotState } from './inboundInvoices.stock.js';
 
-import { buildUnitOptionsHtml } from './inboundInvoices.api.js';
+import {
+  buildUnitOptionsHtml,
+  buildProductUnitOptionsHtml,
+  loadProductUnits,
+  pickProductUnit,
+} from './inboundInvoices.api.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 import {
@@ -32,6 +37,15 @@ function formatDateOnlyBR(value) {
   }
 
   return raw;
+}
+
+// Unidade do cadastro do produto: o fator entra na conversão do estoque.
+function applyProductUnit(item, unit) {
+  if (!unit) return;
+  item.unit = unit.unit;
+  item.barcode_id = unit.barcode_id ?? null;
+  item.barcode_unit = unit.unit;
+  item.conversion_factor = unit.fator || 1;
 }
 
 function escapeHtml(value) {
@@ -214,6 +228,20 @@ export function initForm({ core, ROUTES, state, refs, switchTab }) {
         item?.erp_description ??
         ''
       ).trim();
+      // Com produto vinculado, a U.M lista só as unidades cadastradas nele.
+      let productUnits = [];
+      if (erpProductCode) {
+        try {
+          productUnits = await loadProductUnits({ core, ROUTES, state }, erpProductCode);
+        } catch (error) {
+          console.warn('[INBOUND][PRODUCT_UNITS]', { erpProductCode, error });
+        }
+        if (currentRender !== renderVersion) return;
+      }
+      const useProductUnits = productUnits.length > 0 && !state.inboundInvoiceReadOnly;
+      item._productUnits = useProductUnits ? productUnits : null;
+      if (useProductUnits) applyProductUnit(item, pickProductUnit(productUnits, item.unit));
+
       const erpProductLabel = erpProductCode
         ? `${erpProductCode}${erpProductDescription ? ` — ${erpProductDescription}` : ''}`
         : 'Nenhum produto vinculado';
@@ -277,13 +305,25 @@ export function initForm({ core, ROUTES, state, refs, switchTab }) {
         <td>${item.cfop || ''}</td>
 
         <td>
-          <select
-            class="form-control form-control-sm select-soft"
-            data-role="unit-select"
-            data-index="${idx}"
-          >
-            ${buildUnitOptionsHtml({ state }, item.unit)}
-          </select>
+          <div class="table-cell-inline">
+            <select
+              class="form-control form-control-sm select-soft"
+              style="min-width:120px;"
+              data-role="unit-select"
+              data-index="${idx}"
+            >
+              ${useProductUnits
+                ? buildProductUnitOptionsHtml(productUnits, item.unit)
+                : buildUnitOptionsHtml({ state }, item.unit)}
+            </select>
+
+            ${state.inboundInvoiceReadOnly ? '' : actionIconsHtml([{
+              action: 'add',
+              title: erpProductCode ? 'Nova unidade' : 'Vincule o produto para criar uma unidade',
+              attrs: { 'data-act': 'create-unit', 'data-index': idx },
+              disabled: !erpProductCode,
+            }])}
+          </div>
         </td>
 
         <td>${item.quantity ?? ''}</td>
@@ -491,7 +531,10 @@ export function initForm({ core, ROUTES, state, refs, switchTab }) {
     const idx = Number(sel.dataset.index);
     if (!state.currentItems[idx]) return;
 
-    state.currentItems[idx].unit = sel.value || null;
+    const item = state.currentItems[idx];
+    const productUnit = item._productUnits?.find((unit) => unit.unit === sel.value);
+    if (productUnit) applyProductUnit(item, productUnit);
+    else item.unit = sel.value || null;
   });
 
   refs.itemsTbody?.addEventListener('change', async (ev) => {
