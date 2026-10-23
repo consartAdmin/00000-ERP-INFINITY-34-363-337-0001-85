@@ -49,6 +49,7 @@ function getExportFilters(query = {}) {
     toDueDate,
     month,
     year,
+    groups,
     orderBy
   } = query;
 
@@ -60,6 +61,7 @@ function getExportFilters(query = {}) {
     toDueDate: toDueDate || undefined,
     month: month ? toInt(month) : undefined,
     year: year ? toInt(year) : undefined,
+    groups: groups || undefined,
     orderBy: orderBy || undefined
   };
 }
@@ -77,6 +79,7 @@ export async function listAccountsPayable(req, res) {
       toDueDate,
       month,
       year,
+      groups,
       orderBy
     } = req.query;
 
@@ -90,6 +93,7 @@ export async function listAccountsPayable(req, res) {
       toDueDate: toDueDate || undefined,
       month: month ? toInt(month) : undefined,
       year: year ? toInt(year) : undefined,
+      groups: groups || undefined,
       orderBy: orderBy || undefined
     });
 

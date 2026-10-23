@@ -56,6 +56,10 @@ import {
 } from './accountsPayable.state.js';
 
 import {
+  initGroupFilter,
+} from './accountsPayable.groups.js';
+
+import {
   qs,
 } from './accountsPayable.utils.js';
 
@@ -404,6 +408,8 @@ async function init() {
 
   bindEvents(pageSize);
 
+  initGroupFilter(() => void loadList());
+
   createSortableTable({
     table: '#accountsPayableTable',
     defaultColumn: state.sortColumn,
@@ -412,6 +418,7 @@ async function init() {
       'id',
       'supplier_id',
       'supplier_name',
+      'payable_group',
       'invoice_number',
       'issue_date',
       'due_date',

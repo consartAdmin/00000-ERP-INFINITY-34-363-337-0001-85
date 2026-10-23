@@ -23,6 +23,10 @@ import {
   qs,
 } from './accountsPayable.utils.js';
 
+import {
+  clearGroupFilter,
+} from './accountsPayable.groups.js';
+
 
 // ======================================================================
 // CONSTANTS
@@ -63,6 +67,10 @@ function appendActiveFilters(
       key,
       String(value)
     );
+  }
+
+  if (state.groups?.length) {
+    params.set('groups', state.groups.join(','));
   }
 
   return params;
@@ -212,6 +220,9 @@ export function clearFilterFields() {
       endDate: '',
     };
   }
+
+
+  clearGroupFilter();
 
 
   // --------------------------------------------------------------------

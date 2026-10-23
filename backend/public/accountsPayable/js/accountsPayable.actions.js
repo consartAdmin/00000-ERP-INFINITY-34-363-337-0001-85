@@ -4,15 +4,17 @@ import * as api from './accountsPayable.api.js';
 import { buildExportParams, buildListParams, clearFilterFields, readFilters } from './accountsPayable.filters.js';
 import { closePayModal, openAccountForm, openBatchForm, openPayModal } from './accountsPayable.modal.js';
 import { renderPagination, renderTable } from './accountsPayable.render.js';
+import { renderGroupFilter } from './accountsPayable.groups.js';
 import { state, patchState } from './accountsPayable.state.js';
 import { qs, toFloat, toInt } from './accountsPayable.utils.js';
 import { validatePayment } from './accountsPayable.validation.js';
 
 export async function loadList() {
   try {
-    const { rows, total } = await api.listAccounts(buildListParams());
-    patchState({ items: rows, total });
+    const { rows, total, groupCounts } = await api.listAccounts(buildListParams());
+    patchState({ items: rows, total, groupCounts });
     renderTable(rows);
+    renderGroupFilter();
     renderPagination();
   } catch (error) {
     console.error('[accountsPayable] loadList:', error);

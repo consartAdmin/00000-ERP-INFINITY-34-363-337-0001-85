@@ -5,6 +5,7 @@
 
 import { q } from './cashMoviments.utils.js';
 import { toBool } from './cashMoviments.sanitizers.js';
+import { normalizeGroupKey } from '../accountsPayable/accountsPayable.groups.js';
 
 /* =========================================================================
    CATEGORIAS
@@ -17,6 +18,7 @@ export async function listCategorias() {
       id,
       name,
       name AS nome,
+      payable_group,
       is_active,
       created_at,
       updated_at
@@ -28,28 +30,29 @@ export async function listCategorias() {
   return res.rows;
 }
 
-export async function createCategoria({ nome, name, is_active = true }) {
+export async function createCategoria({ nome, name, is_active = true, payable_group }) {
   const finalName = name ?? nome;
 
   const res = await q(
     `
-    INSERT INTO "cashCategories" (name, is_active)
-    VALUES ($1, $2)
+    INSERT INTO "cashCategories" (name, is_active, payable_group)
+    VALUES ($1, $2, $3)
     RETURNING
       id,
       name,
       name AS nome,
+      payable_group,
       is_active,
       created_at,
       updated_at
     `,
-    [finalName, is_active]
+    [finalName, is_active, normalizeGroupKey(payable_group)]
   );
 
   return res.rows[0];
 }
 
-export async function updateCategoria(id, { nome, name, is_active } = {}) {
+export async function updateCategoria(id, { nome, name, is_active, payable_group } = {}) {
   const sets = [];
   const params = [];
   let i = 1;
@@ -64,6 +67,12 @@ export async function updateCategoria(id, { nome, name, is_active } = {}) {
   if (is_active !== undefined) {
     sets.push(`is_active = $${i++}`);
     params.push(is_active);
+  }
+
+  // '' ou chave inválida → NULL (classificação automática)
+  if (payable_group !== undefined) {
+    sets.push(`payable_group = $${i++}`);
+    params.push(normalizeGroupKey(payable_group));
   }
 
   if (!sets.length) {
@@ -95,6 +104,7 @@ export async function updateCategoria(id, { nome, name, is_active } = {}) {
       id,
       name,
       name AS nome,
+      payable_group,
       is_active,
       created_at,
       updated_at
@@ -131,6 +141,7 @@ export async function setCategoriaActive(id, { is_active } = {}) {
       id,
       name,
       name AS nome,
+      payable_group,
       is_active,
       created_at,
       updated_at

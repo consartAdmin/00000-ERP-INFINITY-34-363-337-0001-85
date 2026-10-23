@@ -27,7 +27,11 @@ async function request(url, options = {}) {
 export async function listAccounts(params) {
   const data = await request(`${API.base}?${params}`);
   const rows = extractRows(data);
-  return { rows, total: Number(data.total ?? rows.length) };
+  return {
+    rows,
+    total: Number(data.total ?? rows.length),
+    groupCounts: data.groupCounts || {},
+  };
 }
 
 export async function downloadExport(format, params) {

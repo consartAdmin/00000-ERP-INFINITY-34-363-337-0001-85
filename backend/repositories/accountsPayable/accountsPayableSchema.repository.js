@@ -79,6 +79,12 @@ export async function ensureTable() {
     END $$;
   `);
 
+  // Grupo de contas a pagar por categoria (filtro "Grupo" na tela Contas a Pagar)
+  await q(`
+    ALTER TABLE ${SCHEMA}."cashCategories"
+      ADD COLUMN IF NOT EXISTS payable_group varchar(20)
+  `);
+
   await q(`
     CREATE INDEX IF NOT EXISTS idx_accounts_payable_attachments_account
       ON ${TB_ATTACH}(account_payable_id)
