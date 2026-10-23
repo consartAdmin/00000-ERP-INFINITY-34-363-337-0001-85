@@ -11,6 +11,7 @@ const base = () => core.getBase();
 
 export const ROUTES = {
   inboundBase: () => `${base()}/api/inbound-invoices`,
+  quickProduct: () => `${base()}/api/inbound-invoices/quick-product`,
 
   // App Features
   appFeatureResolve: (featureCode) =>
