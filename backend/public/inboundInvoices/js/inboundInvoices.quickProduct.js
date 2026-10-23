@@ -114,7 +114,10 @@ export function initQuickProduct({ core, ROUTES, state, refs }) {
     if (!groupId) return;
 
     try {
-      const rows = await getRows(`${base()}/api/products/products-subgroups?group_id=${groupId}`);
+      // Mesma rota do createProduct (a tabela usa group_id).
+      const rows = await getRows(
+        `${base()}/api/products-subgroups?group_id=${groupId}&is_active=true&limit=500`
+      );
       fillSelect(f.subgroup, rows, {
         idKey: 'product_subgroup_id',
         textKeys: ['name'],
