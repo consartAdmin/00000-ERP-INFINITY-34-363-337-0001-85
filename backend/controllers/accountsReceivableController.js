@@ -21,6 +21,10 @@ import {
   updateAccount,
   updateBoletoValueAndDueDate,
   receivePayment,
+  listAttachments,
+  addAttachment,
+  signAttachmentDownload,
+  deactivateAttachment,
   syncFromAsaas,
   cancelAsaasBoleto,
   updateBoletoLocalInfo,
@@ -220,6 +224,60 @@ export async function receive(req, res) {
     });
   } catch (err) {
     return boom(res, err, 'ACCOUNTS-RECEIVABLE/RECEIVE');
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* ANEXOS                                                             */
+/* ------------------------------------------------------------------ */
+
+function attachmentError(res, err, ctx) {
+  if (err?.code === 'VALIDATION') {
+    return res.status(400).json({ ok: false, message: err.message });
+  }
+  if (err?.code === 'NOT_FOUND') {
+    return res.status(404).json({ ok: false, message: err.message });
+  }
+  return boom(res, err, ctx);
+}
+
+// GET /api/accounts-receivable/:id/attachments
+export async function listAttachmentsHandler(req, res) {
+  try {
+    const data = await listAttachments(req.params.id);
+    return res.json({ ok: true, data });
+  } catch (err) {
+    return attachmentError(res, err, 'ACCOUNTS-RECEIVABLE/ATTACHMENTS');
+  }
+}
+
+// POST /api/accounts-receivable/:id/attachments (multipart, campo "arquivo")
+export async function addAttachmentHandler(req, res) {
+  try {
+    const data = await addAttachment(req.params.id, req.file);
+    return res.status(201).json({ ok: true, data });
+  } catch (err) {
+    return attachmentError(res, err, 'ACCOUNTS-RECEIVABLE/ATTACHMENTS/UPLOAD');
+  }
+}
+
+// GET /api/accounts-receivable/:id/attachments/:attachmentId/download
+export async function downloadAttachmentHandler(req, res) {
+  try {
+    const url = await signAttachmentDownload(req.params.id, req.params.attachmentId);
+    return res.redirect(302, url);
+  } catch (err) {
+    return attachmentError(res, err, 'ACCOUNTS-RECEIVABLE/ATTACHMENTS/DOWNLOAD');
+  }
+}
+
+// DELETE /api/accounts-receivable/:id/attachments/:attachmentId
+export async function deleteAttachmentHandler(req, res) {
+  try {
+    await deactivateAttachment(req.params.id, req.params.attachmentId);
+    return res.json({ ok: true });
+  } catch (err) {
+    return attachmentError(res, err, 'ACCOUNTS-RECEIVABLE/ATTACHMENTS/DELETE');
   }
 }
 

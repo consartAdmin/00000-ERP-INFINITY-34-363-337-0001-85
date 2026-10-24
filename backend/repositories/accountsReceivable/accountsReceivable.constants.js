@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 export const TB = 'public."accountsReceivable"';
 export const TB_BRIDGE = 'public."accountsReceivableAsaas"';
+export const TB_ATTACH = 'public."accountsReceivableAttachments"';
 export const TB_CUSTOMERS = 'public."customers"';
 export const TB_BANK_ACCOUNTS = 'public."bankAccounts"';
 export const TB_CASH_CATEGORIES = 'public."cashCategories"';

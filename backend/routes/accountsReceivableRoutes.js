@@ -6,11 +6,18 @@
 'use strict';
 
 import express from 'express';
+import multer from 'multer';
 
 import * as ctrl
    from '../controllers/accountsReceivableController.js';
 
 const router = express.Router();
+
+// Anexos: arquivo em memória e enviado ao bucket (máx. 50MB)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
 
 /* ------------------------------------------------------------------
    LISTA
@@ -52,5 +59,14 @@ router.put('/:id', ctrl.update);
 ------------------------------------------------------------------ */
 
 router.post('/:id/receive', ctrl.receive);
+
+/* ------------------------------------------------------------------
+   ANEXOS (bucket do projeto)
+------------------------------------------------------------------ */
+
+router.get('/:id/attachments', ctrl.listAttachmentsHandler);
+router.post('/:id/attachments', upload.single('arquivo'), ctrl.addAttachmentHandler);
+router.get('/:id/attachments/:attachmentId/download', ctrl.downloadAttachmentHandler);
+router.delete('/:id/attachments/:attachmentId', ctrl.deleteAttachmentHandler);
 
 export default router;
