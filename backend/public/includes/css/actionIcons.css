@@ -153,6 +153,32 @@
   font-weight: 500;
 }
 
+/* Botão só com ícone de recarregar: azul suave, sem borda (ex.: Débitos) */
+.btn-icon-reload {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: #60a5fa;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-icon-reload:hover {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.btn-icon-reload:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 1px;
+}
+
 /* Título de página com ícone à esquerda (ex.: Débitos) */
 .page-header__title--icon {
   display: flex;
