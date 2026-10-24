@@ -153,6 +153,13 @@
   font-weight: 500;
 }
 
+/* Título de página com ícone à esquerda (ex.: Débitos) */
+.page-header__title--icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Resumos ao lado do contador (ex.: Débitos): mesmo estilo discreto, só o valor colorido */
 .table-footer .table-footer__info--totals {
   gap: 6px 8px;
