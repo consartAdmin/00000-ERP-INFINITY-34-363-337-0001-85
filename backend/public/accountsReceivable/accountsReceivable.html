@@ -20,23 +20,11 @@
   <!-- CSS do modal de busca do plano de contas -->
   <link rel="stylesheet" href="/public/modalsSearch/chartAccountsModalSearch.css" />
 
+  <!-- Modais Nova/Editar Conta e Receber (cards, padrão modals.css / modal.js) -->
+  <link rel="stylesheet" href="/public/accountsReceivable/accountsReceivable.css" />
+
   <!-- CSS específico do módulo -->
   <style>
-    /* Mantém as linhas do cadastro visualmente separadas sem afetar os outros modais. */
-    #arForm,
-    #receiveForm {
-      display: flex;
-      flex-direction: column;
-      row-gap: 16px;
-      padding-bottom: 8px;
-    }
-
-    #arForm>.fields-inline,
-    #receiveForm>.fields-inline {
-      flex: 0 0 auto;
-      align-items: flex-start;
-    }
-
     /* Ações da tabela: só ícones, numa linha */
     .ar-actions {
       flex-wrap: nowrap;
@@ -393,387 +381,390 @@
     </section>
   </main>
 
-  <div id="arFormOverlay" class="modal modal-width-7 modal-height-7" aria-hidden="true">
-    <div class="modal__backdrop"></div>
+  <!-- Modal Nova / Editar Conta a Receber -->
+  <div id="arFormOverlay" class="modal ar-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
 
     <div class="modal__dialog">
-      <section class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="arFormTitle">
-        <header class="modal__header modal-header-color-3">
-          <h3 id="arFormTitle">Nova Conta a Receber</h3>
+      <section class="modal__panel modal-width-10" role="dialog" aria-modal="true" aria-labelledby="arFormTitle">
 
-          <button type="button" id="btnCloseForm" data-modal-close class="btn btn-new btn-sm btn-icon"
-            aria-label="Fechar">
-            ✕
-          </button>
-        </header>
+        <!-- div (e não <header>): a barra de título global (topGradientBar) se ancora no 1º <header> da página -->
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="arFormTitle" class="modal__title">Nova Conta a Receber</h2>
+            <p class="ar-modal__subtitle">Cadastre ou edite uma conta a receber.</p>
+          </div>
+          <button type="button" id="btnCloseForm" class="modal__close" data-modal-close aria-label="Fechar"
+            title="Fechar">&times;</button>
+        </div>
 
         <div class="modal__body">
-          <form id="arForm">
+          <form id="arForm" class="ar-form" autocomplete="off">
             <input type="hidden" id="arId">
 
-            <!-- Cliente, fatura and document -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-25 fields-h-5 fields-p-left-10">
-                <label for="arCustomerSearch">Cliente</label>
+            <div class="ar-grid">
 
-                <input type="hidden" id="arCustomerId" name="customer_id">
+              <!-- Conta -->
+              <div class="ar-section">
+                <div class="ar-section__title">📄 Conta</div>
+                <div class="ar-section__grid">
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="arCustomerSearch">Cliente *</label>
+                    <input type="hidden" id="arCustomerId" name="customer_id">
+                    <input type="text" id="arCustomerSearch" placeholder="Clique para localizar um cliente"
+                      autocomplete="off" readonly required role="button" aria-haspopup="dialog">
+                  </div>
 
-                <input type="text" id="arCustomerSearch" placeholder="Clique para localizar um cliente"
-                  autocomplete="off" readonly required role="button" aria-haspopup="dialog">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arInvoiceNumber">Nº da Fatura</label>
+                    <input type="text" id="arInvoiceNumber" placeholder="Número da fatura">
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arDocumentNumber">Nº Documento</label>
+                    <input type="text" id="arDocumentNumber" placeholder="Número do documento">
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="arDescription">Descrição</label>
+                    <input type="text" id="arDescription" placeholder="Descrição da conta">
+                  </div>
+                </div>
               </div>
 
-              <div class="fields fields-w-14 fields-h-5">
-                <label for="arInvoiceNumber">Nº da Fatura</label>
-                <input type="text" id="arInvoiceNumber" placeholder="Número da fatura">
+              <!-- Datas e status -->
+              <div class="ar-section">
+                <div class="ar-section__title">📅 Datas e status</div>
+                <div class="ar-section__grid">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arIssueDate">Emissão *</label>
+                    <input type="date" id="arIssueDate" required>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arDueDate">Vencimento *</label>
+                    <input type="date" id="arDueDate" required>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arPaymentDate">Pagamento</label>
+                    <input type="date" id="arPaymentDate">
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arStatus">Status *</label>
+                    <select id="arStatus" required>
+                      <option value="PENDING">Pendente</option>
+                      <option value="PAID">Recebido</option>
+                      <option value="OVERDUE">Vencido</option>
+                      <option value="CANCELLED">Cancelado</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="arPaymentMethodId">Forma de Pagamento</label>
+                    <select id="arPaymentMethodId">
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div class="fields fields-w-16 fields-h-5">
-                <label for="arDocumentNumber">Nº Documento</label>
-                <input type="text" id="arDocumentNumber" placeholder="Número do documento">
-              </div>
-            </div>
+              <!-- Valores -->
+              <div class="ar-section">
+                <div class="ar-section__title">💰 Valores</div>
+                <div class="ar-section__grid">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arTotalValue">Valor Total *</label>
+                    <input type="number" id="arTotalValue" min="0" step="0.01" required>
+                  </div>
 
-            <!-- Dates and status -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-10 fields-h-5 fields-p-left-10">
-                <label for="arIssueDate">Emissão</label>
-                <input type="date" id="arIssueDate" required>
-              </div>
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arAmountPaid">Valor Recebido</label>
+                    <input type="number" id="arAmountPaid" min="0" step="0.01" value="0">
+                  </div>
 
-              <div class="fields fields-w-10 fields-h-5 fields-p-left-10">
-                <label for="arDueDate">Vencimento</label>
-                <input type="date" id="arDueDate" required>
-              </div>
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arFine">Multa (R$)</label>
+                    <input type="number" id="arFine" min="0" step="0.01" value="0.00">
+                  </div>
 
-              <div class="fields fields-w-10 fields-h-5 fields-p-left-10">
-                <label for="arPaymentDate">Pagamento</label>
-                <input type="date" id="arPaymentDate">
-              </div>
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arInterest">Juros (R$)</label>
+                    <input type="number" id="arInterest" min="0" step="0.01" value="0.00">
+                  </div>
 
-              <div class="fields fields-w-15 fields-h-5 fields-p-left-10">
-                <label for="arStatus">Status</label>
-
-                <select id="arStatus" required>
-                  <option value="PENDING">Pendente</option>
-                  <option value="PAID">Recebido</option>
-                  <option value="OVERDUE">Vencido</option>
-                  <option value="CANCELLED">Cancelado</option>
-                </select>
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arCharges">Encargos (R$)</label>
+                    <input type="number" id="arCharges" min="0" step="0.01" value="0.00">
+                  </div>
+                </div>
               </div>
 
-              <div class="fields fields-w-15 fields-h-5 fields-p-left-10">
-                <label for="arPaymentMethodId">
-                  Forma de Pagamento
-                </label>
+              <!-- Classificação financeira -->
+              <div class="ar-section">
+                <div class="ar-section__title">🏷️ Classificação</div>
+                <div class="ar-section__grid">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arDocumentTypeId">Tipo de Documento</label>
+                    <select id="arDocumentTypeId">
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
 
-                <select id="arPaymentMethodId">
-                  <option value="">Selecione...</option>
-                </select>
-              </div>
-            </div>
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arCashAccountId">Conta Caixa</label>
+                    <select id="arCashAccountId" name="bank_account_id">
+                      <option value="">Selecione...</option>
+                      <!-- Contas bancárias (public."bankAccounts") via JS -->
+                    </select>
+                  </div>
 
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arCategoryId">Categoria</label>
+                    <select id="arCategoryId">
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
 
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-11 fields-h-5  fields-p-left-10">
-                <label for="arDocumentTypeId">Tipo de Documento</label>
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arSubcategoryId">Subcategoria</label>
+                    <select id="arSubcategoryId">
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
 
-                <select id="arDocumentTypeId">
-                  <option value="">Selecione...</option>
-                </select>
-              </div>
-
-              <div class="fields fields-w-15 fields-h-5">
-                <label for="arCategoryId">Categoria</label>
-
-                <select id="arCategoryId">
-                  <option value="">Selecione...</option>
-                </select>
-              </div>
-
-              <div class="fields fields-w-15 fields-h-5">
-                <label for="arSubcategoryId">Subcategoria</label>
-
-                <select id="arSubcategoryId">
-                  <option value="">Selecione...</option>
-                </select>
-              </div>
-
-              <div class="fields fields-w-18 fields-h-5">
-                <label for="arChartAccountId">Plano de Contas</label>
-                <input type="hidden" id="arChartAccountId">
-                <input type="text" id="arChartAccountSearch" placeholder="Clique para localizar uma conta contábil"
-                  readonly role="button" aria-haspopup="dialog">
-              </div>
-            </div>
-
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-10 fields-h-5 fields-p-left-10">
-                <label for="arCashAccountId">Conta Caixa</label>
-                <select id="arCashAccountId" name="bank_account_id">
-                  <option value="">Selecione...</option>
-                  <!-- Contas bancárias (public."bankAccounts") via JS -->
-                </select>
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="arChartAccountSearch">Plano de Contas</label>
+                    <input type="hidden" id="arChartAccountId">
+                    <input type="text" id="arChartAccountSearch" placeholder="Clique para localizar uma conta contábil"
+                      readonly role="button" aria-haspopup="dialog">
+                  </div>
+                </div>
               </div>
 
-              <!-- Values and payment method -->
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="arTotalValue">Valor Total</label>
-                <input type="number" id="arTotalValue" min="0" step="0.01" required>
+              <!-- Observações e anexo -->
+              <div class="ar-section ar-section--wide">
+                <div class="ar-section__title">📝 Observações e anexo</div>
+                <div class="ar-section__fill">
+                  <div class="fields fields-font-3 ar-section__fill">
+                    <label for="arNotes" class="sr-only">Observações</label>
+                    <textarea id="arNotes" rows="3" placeholder="Observações sobre a conta..."></textarea>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arAttachmentUrl">URL do Anexo</label>
+                    <input type="url" id="arAttachmentUrl" placeholder="https://...">
+                  </div>
+                </div>
               </div>
 
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="arAmountPaid">Valor Recebido</label>
-                <input type="number" id="arAmountPaid" min="0" step="0.01" value="0">
-              </div>
-
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="arFine">Multa (R$)</label>
-                <input type="number" id="arFine" min="0" step="0.01" value="0.00">
-              </div>
-
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="arInterest">Juros (R$)</label>
-                <input type="number" id="arInterest" min="0" step="0.01" value="0.00">
-              </div>
-
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="arCharges">Encargos (R$)</label>
-                <input type="number" id="arCharges" min="0" step="0.01" value="0.00">
-              </div>
-            </div>
-
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-full fields-h-5 fields-p-left-10">
-                <label for="arDescription">Descrição</label>
-
-                <input type="text" id="arDescription" placeholder="Descrição da conta">
-              </div>
-            </div>
-
-            <!-- Notes and attachment -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-full fields-h-5 fields-p-left-10">
-                <label for="arNotes">Observações</label>
-                <textarea id="arNotes" rows="3"></textarea>
-              </div>
-            </div>
-
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-full fields-h-5 fields-p-left-10">
-                <label for="arAttachmentUrl">URL do Anexo</label>
-                <input type="url" id="arAttachmentUrl">
-              </div>
             </div>
           </form>
         </div>
 
-        <!-- Direct child of modal__panel -->
-        <footer class="modal__footer modal-footer-color-3">
-          <button type="button" id="btnCancelForm" data-modal-close class="btn btn-new btn-sm">
+        <div class="modal__footer">
+          <button type="button" id="btnCancelForm" class="btn btn-cancel btn-sm" data-modal-close>
             Cancelar
           </button>
 
-          <button type="submit" form="arForm" class="btn btn-new btn-sm">
-            Salvar Conta
+          <button type="submit" form="arForm" class="btn btn-save btn-sm">
+            💾 Salvar Conta
           </button>
-        </footer>
+        </div>
       </section>
     </div>
   </div>
 
   <!-- Modal Receber Conta a Receber -->
-  <div id="receiveModal" class="modal modal-width-7 modal-height-7" aria-hidden="true">
-    <div class="modal__backdrop"></div>
+  <div id="receiveModal" class="modal ar-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
 
     <div class="modal__dialog">
-      <section class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="receiveModalTitle">
+      <section class="modal__panel modal-width-10" role="dialog" aria-modal="true" aria-labelledby="receiveModalTitle">
 
-        <header class="modal__header modal-header-color-3">
-          <h3 id="receiveModalTitle">💵 Receber Conta a Receber</h3>
-
-          <button type="button" id="btnCloseReceive" data-modal-close class="btn btn-new btn-sm btn-icon"
-            aria-label="Fechar">
-            ✕
-          </button>
-        </header>
+        <!-- div (e não <header>): a barra de título global (topGradientBar) se ancora no 1º <header> da página -->
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="receiveModalTitle" class="modal__title">💵 Receber Conta a Receber</h2>
+            <p class="ar-modal__subtitle">Confirme os dados do recebimento. A movimentação entra no Caixa.</p>
+          </div>
+          <button type="button" id="btnCloseReceive" class="modal__close" data-modal-close aria-label="Fechar"
+            title="Fechar">&times;</button>
+        </div>
 
         <div class="modal__body">
-          <form id="receiveForm">
+          <form id="receiveForm" class="ar-form" autocomplete="off">
             <input type="hidden" id="receive_account_id">
 
-            <!-- ====================================================== -->
-            <!-- DADOS ORIGINAIS DA CONTA                               -->
-            <!-- ====================================================== -->
+            <div class="ar-grid">
 
-            <!-- Cliente, fatura e documento -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-25 fields-h-5 fields-p-left-10">
-                <label for="receive_cliente">Cliente</label>
-                <input type="text" id="receive_cliente" readonly>
+              <!-- Dados originais da conta (somente leitura) -->
+              <div class="ar-section">
+                <div class="ar-section__title">📄 Conta</div>
+                <div class="ar-section__grid">
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="receive_cliente">Cliente</label>
+                    <input type="text" id="receive_cliente" readonly>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_fatura">Nº da Fatura</label>
+                    <input type="text" id="receive_fatura" readonly>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_documento">Nº Documento</label>
+                    <input type="text" id="receive_documento" readonly>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_emissao">Emissão</label>
+                    <input type="date" id="receive_emissao" readonly>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_vencimento">Vencimento</label>
+                    <input type="date" id="receive_vencimento" readonly>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_status">Status</label>
+                    <input type="text" id="receive_status" readonly>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_payment_method_id">Forma de Pagamento</label>
+                    <select id="receive_payment_method_id" disabled>
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="receive_descricao">Descrição</label>
+                    <input type="text" id="receive_descricao" readonly>
+                  </div>
+                </div>
               </div>
 
-              <div class="fields fields-w-14 fields-h-5">
-                <label for="receive_fatura">Nº da Fatura</label>
-                <input type="text" id="receive_fatura" readonly>
+              <!-- Dados do recebimento -->
+              <div class="ar-section">
+                <div class="ar-section__title">💵 Recebimento</div>
+                <div class="ar-section__grid">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_data_hora">Data Recebimento *</label>
+                    <input type="datetime-local" id="receive_data_hora" required>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_conta_caixa">Conta Caixa *</label>
+                    <select id="receive_conta_caixa" name="bank_account_id" required>
+                      <option value="">Selecione...</option>
+                      <!-- Contas bancárias (public."bankAccounts") via JS -->
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_valor_original">Valor Original</label>
+                    <input type="number" id="receive_valor_original" class="ar-total" step="0.01" min="0" readonly>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_valor_recebido">Valor Recebido *</label>
+                    <input type="number" id="receive_valor_recebido" step="0.01" min="0" required>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_desconto">Desconto (R$)</label>
+                    <input type="number" id="receive_desconto" step="0.01" min="0" value="0.00">
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_multa">Multa (R$)</label>
+                    <input type="number" id="receive_multa" step="0.01" min="0" value="0.00">
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_juros">Juros (R$)</label>
+                    <input type="number" id="receive_juros" step="0.01" min="0" value="0.00">
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_encargos">Encargos (R$)</label>
+                    <input type="number" id="receive_encargos" step="0.01" min="0" value="0.00">
+                  </div>
+                </div>
               </div>
 
-              <div class="fields fields-w-16 fields-h-5">
-                <label for="receive_documento">Nº Documento</label>
-                <input type="text" id="receive_documento" readonly>
+              <!-- Classificação financeira -->
+              <div class="ar-section">
+                <div class="ar-section__title">🏷️ Classificação</div>
+                <div class="ar-section__grid">
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="receive_document_type_id">Tipo de Documento</label>
+                    <select id="receive_document_type_id">
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_categoria">Categoria</label>
+                    <select id="receive_categoria">
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="receive_subcategoria">Subcategoria</label>
+                    <select id="receive_subcategoria">
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="receive_chart_account_search">Plano de Contas</label>
+                    <input type="hidden" id="receive_chart_account_id">
+                    <input type="text" id="receive_chart_account_search"
+                      placeholder="Clique para localizar uma conta contábil" readonly role="button" aria-haspopup="dialog">
+                  </div>
+                </div>
               </div>
+
+              <!-- Observações e anexo -->
+              <div class="ar-section ar-section--full">
+                <div class="ar-section__title">📝 Observações e anexo</div>
+                <div class="ar-notes-row">
+                  <div class="fields fields-font-3 ar-section__fill">
+                    <label for="receive_observacao" class="sr-only">Observações</label>
+                    <textarea id="receive_observacao" rows="3" placeholder="Observações do recebimento..."></textarea>
+                  </div>
+
+                  <div class="fields fields-font-3">
+                    <label for="receive_anexoFile">Anexo da movimentação (opcional)</label>
+                    <input type="file" id="receive_anexoFile">
+
+                    <progress id="receive_anexoProgress" class="ar-progress" max="100" value="0" hidden></progress>
+
+                    <small class="ar-help">
+                      O arquivo será vinculado à movimentação no Caixa após confirmar o recebimento.
+                    </small>
+                  </div>
+                </div>
+              </div>
+
             </div>
-
-            <!-- Datas, status e forma de pagamento -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-10 fields-h-5 fields-p-left-10">
-                <label for="receive_emissao">Emissão</label>
-                <input type="date" id="receive_emissao" readonly>
-              </div>
-
-              <div class="fields fields-w-10 fields-h-5 fields-p-left-10">
-                <label for="receive_vencimento">Vencimento</label>
-                <input type="date" id="receive_vencimento" readonly>
-              </div>
-
-              <div class="fields fields-w-10 fields-h-5 fields-p-left-10">
-                <label for="receive_data_hora">Data Recebimento</label>
-                <input type="datetime-local" id="receive_data_hora" required>
-              </div>
-
-              <div class="fields fields-w-10 fields-h-5 fields-p-left-10">
-                <label for="receive_status">Status</label>
-                <input type="text" id="receive_status" readonly>
-              </div>
-
-              <div class="fields fields-w-15 fields-h-5 fields-p-left-10">
-                <label for="receive_payment_method_id">Forma de Pagamento</label>
-                <select id="receive_payment_method_id" disabled>
-                  <option value="">Selecione...</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Classificação financeira -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-11 fields-h-5 fields-p-left-10">
-                <label for="receive_document_type_id">Tipo de Documento</label>
-                <select id="receive_document_type_id">
-                  <option value="">Selecione...</option>
-                </select>
-              </div>
-
-              <div class="fields fields-w-15 fields-h-5">
-                <label for="receive_categoria">Categoria</label>
-                <select id="receive_categoria">
-                  <option value="">Selecione...</option>
-                </select>
-              </div>
-
-              <div class="fields fields-w-15 fields-h-5">
-                <label for="receive_subcategoria">Subcategoria</label>
-                <select id="receive_subcategoria">
-                  <option value="">Selecione...</option>
-                </select>
-              </div>
-
-              <div class="fields fields-w-18 fields-h-5">
-                <label for="receive_chart_account_search">Plano de Contas</label>
-                <input type="hidden" id="receive_chart_account_id">
-                <input type="text" id="receive_chart_account_search"
-                  placeholder="Clique para localizar uma conta contábil" readonly role="button" aria-haspopup="dialog">
-              </div>
-            </div>
-
-            <!-- ====================================================== -->
-            <!-- DADOS DO RECEBIMENTO                                   -->
-            <!-- ====================================================== -->
-
-            <!-- Conta caixa e valores -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-10 fields-h-5 fields-p-left-10">
-                <label for="receive_conta_caixa">Conta Caixa</label>
-                <select id="receive_conta_caixa" name="bank_account_id" required>
-                  <option value="">Selecione...</option>
-                  <!-- Contas bancárias (public."bankAccounts") via JS -->
-                </select>
-              </div>
-
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="receive_valor_original">Valor Original</label>
-                <input type="number" id="receive_valor_original" step="0.01" min="0" readonly>
-              </div>
-
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="receive_valor_recebido">Valor Recebido</label>
-                <input type="number" id="receive_valor_recebido" step="0.01" min="0" required>
-              </div>
-
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="receive_desconto">Desconto (R$)</label>
-                <input type="number" id="receive_desconto" step="0.01" min="0" value="0.00">
-              </div>
-
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="receive_multa">Multa (R$)</label>
-                <input type="number" id="receive_multa" step="0.01" min="0" value="0.00">
-              </div>
-
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="receive_juros">Juros (R$)</label>
-                <input type="number" id="receive_juros" step="0.01" min="0" value="0.00">
-              </div>
-
-              <div class="fields fields-w-8 fields-h-5">
-                <label for="receive_encargos">Encargos (R$)</label>
-                <input type="number" id="receive_encargos" step="0.01" min="0" value="0.00">
-              </div>
-            </div>
-
-            <!-- Descrição -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-full fields-h-5 fields-p-left-10">
-                <label for="receive_descricao">Descrição</label>
-                <input type="text" id="receive_descricao" readonly>
-              </div>
-            </div>
-
-            <!-- Observação -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-full fields-h-5 fields-p-left-10">
-                <label for="receive_observacao">Observações</label>
-                <textarea id="receive_observacao" rows="3"></textarea>
-              </div>
-            </div>
-
-            <!-- Anexo -->
-            <div class="fields-inline fields-gap-2">
-              <div class="fields fields-w-full fields-h-6 fields-p-left-10">
-                <label for="receive_anexoFile">Anexo da movimentação (opcional)</label>
-                <input type="file" id="receive_anexoFile">
-
-                <progress id="receive_anexoProgress" max="100" value="0"
-                  style="width:100%; height:6px; margin-top:6px; display:none;">
-                </progress>
-
-                <small class="help-text">
-                  O arquivo será vinculado à movimentação no Caixa após confirmar o recebimento.
-                </small>
-              </div>
-            </div>
-
           </form>
         </div>
 
-        <footer class="modal__footer modal-footer-color-3">
-          <button type="button" id="btnCancelReceive" data-modal-close class="btn btn-new btn-sm">
+        <div class="modal__footer">
+          <button type="button" id="btnCancelReceive" class="btn btn-cancel btn-sm" data-modal-close>
             Cancelar
           </button>
 
-          <button type="submit" form="receiveForm" id="btnConfirmReceive" class="btn btn-new btn-sm">
-            Confirmar Recebimento
+          <button type="submit" form="receiveForm" id="btnConfirmReceive" class="btn btn-save btn-sm">
+            💵 Confirmar Recebimento
           </button>
-        </footer>
-
+        </div>
       </section>
     </div>
   </div>

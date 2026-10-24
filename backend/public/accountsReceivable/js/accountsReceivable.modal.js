@@ -2,6 +2,7 @@ import { showCenterModal } from './accountsReceivable.alert.js';
 import { getAccount, receiveAccount } from './accountsReceivable.api.js';
 import { $, dateISO } from './accountsReceivable.utils.js';
 import { Modal } from './modal.js';
+import { statusBR } from './accountsReceivable.render.js';
 import {
   clearChartAccountPicker,
   setChartAccountPickerFromRecord,
@@ -36,9 +37,14 @@ export async function openReceiveModal(row, id) {
     const account = await getAccount(accountId);
 
     $('#receive_cliente').value = account.customer_name || '';
+    $('#receive_fatura').value = account.invoice_number || '';
     $('#receive_documento').value =
       account.document_number || account.invoice_number || '';
+    $('#receive_emissao').value = account.issue_date ? dateInputValue(account.issue_date) : '';
     $('#receive_vencimento').value = dateInputValue(account.due_date);
+    $('#receive_status').value = statusBR(account.status);
+    $('#receive_descricao').value = account.description || '';
+    $('#receive_payment_method_id').value = account.payment_method_id || '';
     $('#receive_valor_original').value = Number(account.value || 0).toFixed(2);
 
     // "Conta Caixa" = conta bancária (public."bankAccounts")
