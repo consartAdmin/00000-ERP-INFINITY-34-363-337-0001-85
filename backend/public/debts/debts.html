@@ -25,14 +25,15 @@
       <div class="table-layout-integrated__filter">
 
         <!-- =================================================== -->
-        <!-- HEADER: TITLE + SUMMARY + BUTTONS                    -->
+        <!-- HEADER: TITLE + BUTTONS                              -->
         <!-- =================================================== -->
 
         <div class="fields-inline fields-gap-3">
 
           <div>
-            <h1 class="page-header__title">
-              Controle de Dívidas
+            <h1 class="page-header__title page-header__title--icon">
+              <img src="/iconsImagens/debts.svg" alt="" width="28" height="28" aria-hidden="true" />
+              <span>Controle de Dívidas</span>
             </h1>
 
             <p class="page-header__subtitle">
@@ -40,33 +41,15 @@
             </p>
           </div>
 
-          <div class="summary summary--center summary-gap-8 summary-width-auto summary-flex-1">
-
-            <div class="summary-pill summary-pill--info summary-width-7 summary-height-5">
-              <span>Total em Aberto:&nbsp;</span>
-              <strong id="sumTotalOpen">R$ 0,00</strong>
-            </div>
-
-            <div class="summary-pill summary-pill--danger summary-width-7 summary-height-5">
-              <span>Vencidas:&nbsp;</span>
-              <strong id="sumTotalOverdue">R$ 0,00</strong>
-            </div>
-
-            <div class="summary-pill summary-pill--warning summary-width-7 summary-height-5">
-              <span>Vencem Hoje:&nbsp;</span>
-              <strong id="sumDueToday">R$ 0,00</strong>
-            </div>
-
-            <div class="summary-pill summary-pill--success summary-width-7 summary-height-5">
-              <span>Pagas:&nbsp;</span>
-              <strong id="sumTotalPaid">R$ 0,00</strong>
-            </div>
-
-          </div>
-
-          <div class="btn-inline">
-            <button id="btnReload" class="btn btn-new btn-sm" type="button">
-              Recarregar
+          <div class="btn-inline btn-position-right">
+            <button id="btnReload" class="btn-icon-reload" type="button" title="Recarregar" aria-label="Recarregar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
             </button>
 
             <button id="btnNewDebt" class="btn btn-new btn-sm" type="button">
@@ -94,7 +77,7 @@
 
               <select id="status" name="status">
                 <option value="">Todos</option>
-                <option value="EM_ABERTO">Em Aberto</option>
+                <option value="EM_ABERTO" selected>Em Aberto</option>
                 <option value="PARCIAL">Parcial</option>
                 <option value="PAGO">Pago</option>
                 <option value="VENCIDO">Vencido</option>
@@ -123,26 +106,9 @@
               <input id="creditor_name" name="creditor_name" type="text" placeholder="Nome do credor" />
             </div>
 
-            <div class="fields fields-h-6 fields-w-10 fields-font-3">
-              <label for="due_date_from">Venc. Inicial</label>
-              <input id="due_date_from" name="due_date_from" type="date" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-12 fields-font-3">
-              <label for="due_date_to">Venc. Final</label>
-              <input id="due_date_to" name="due_date_to" type="date" />
-            </div>
-
-            <div class="checkbox-group">
-              <label class="checkbox">
-                <input type="checkbox" id="only_overdue" name="only_overdue" />
-                <span>Somente vencidas</span>
-              </label>
-
-              <label class="checkbox">
-                <input type="checkbox" id="only_open" name="only_open" checked />
-                <span>Somente em aberto</span>
-              </label>
+            <div class="fields fields-h-6 fields-w-16 fields-font-3">
+              <date-range-field id="filterDueDateRange" class="drf-width-3 drf-height-3" label="Vencimento"
+                locale="pt-BR" name-start="due_date_from" name-end="due_date_to"></date-range-field>
             </div>
 
             <div class="btn-inline btn-gap-3">
@@ -157,26 +123,35 @@
           </div>
 
         </form>
+      </div>
 
-        <div class="table-scroll table-height-500 table-row-h-20" data-table-settings="debts.tablebody">
-          <table class="table table-zebra table-zebra-hover table-sticky-head">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Descrição</th>
-                <th>Credor</th>
-                <th>Tipo</th>
-                <th>Vencimento</th>
-                <th>Original</th>
-                <th>Pago</th>
-                <th>Aberto</th>
-                <th>Status</th>
-                <th class="th-actions">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-        </div>
+      <div class="table-scroll table-height-500 table-row-h-20" data-table-settings="debts.tablebody">
+        <table id="debtsTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-sortable" data-sort-column="code" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Código <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="description" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Descrição <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="creditor_name" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Credor <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="debt_type" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Tipo <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="due_date" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Vencimento <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="original_amount" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Original <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="paid_amount" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Pago <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="open_amount" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Aberto <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="status" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Status <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="th-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
       </div>
 
       <!-- =================================================== -->
@@ -184,11 +159,26 @@
       <!-- =================================================== -->
 
       <footer class="table-footer">
-        <div class="table-footer__info">
+        <div class="table-footer__info table-footer__info--totals">
           <div class="summary-pill summary-pill-success summary-width-5 summary-left-space-3">
             <span id="apTableInfo">
               0 Registros
             </span>
+          </div>
+
+          <div class="summary-pill">
+            <span>Total em Aberto:&nbsp;</span>
+            <strong id="sumTotalOpen" class="table-footer__total--info">R$ 0,00</strong>
+          </div>
+
+          <div class="summary-pill">
+            <span>Vencidas:&nbsp;</span>
+            <strong id="sumTotalOverdue" class="table-footer__total--danger">R$ 0,00</strong>
+          </div>
+
+          <div class="summary-pill">
+            <span>Pagas:&nbsp;</span>
+            <strong id="sumTotalPaid" class="table-footer__total--success">R$ 0,00</strong>
           </div>
         </div>
 

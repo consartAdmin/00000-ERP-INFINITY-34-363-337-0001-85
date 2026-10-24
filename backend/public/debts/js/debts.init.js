@@ -17,6 +17,8 @@ import { bindEvents } from './debts.actions.js';
 import { refreshAll } from './debts.filters.js';
 import { showToast } from './debts.utils.js';
 import { initializeDebtModals } from './debts.modal.js';
+import { loadDebts } from './debts.render.js';
+import createSortableTable from '/public/includes/js/sortableTable.js';
 
 /**
  * Inicializa o módulo Controle de Dívidas.
@@ -40,6 +42,17 @@ async function initDebts() {
 
     // Registra os eventos gerais do módulo.
     bindEvents();
+
+    // Ordenação pelos cabeçalhos (feita no backend: sort_by / sort_dir).
+    createSortableTable({
+      table: '#debtsTable',
+      onSort: async ({ column, direction }) => {
+        state.sortColumn = column;
+        state.sortDirection = direction;
+        state.page = 1;
+        await loadDebts();
+      },
+    });
 
     // Carrega tabela, paginação e indicadores.
     await refreshAll();

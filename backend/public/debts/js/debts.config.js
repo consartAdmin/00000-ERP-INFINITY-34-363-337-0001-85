@@ -16,10 +16,7 @@ export function refreshDom() {
   els.status = document.getElementById('status');
   els.debt_type = document.getElementById('debt_type');
   els.creditor_name = document.getElementById('creditor_name');
-  els.due_date_from = document.getElementById('due_date_from');
-  els.due_date_to = document.getElementById('due_date_to');
-  els.only_overdue = document.getElementById('only_overdue');
-  els.only_open = document.getElementById('only_open');
+  els.filterDueDateRange = document.getElementById('filterDueDateRange');
 
   els.btnClearFilters = document.getElementById('btnClearFilters');
   els.btnReload = document.getElementById('btnReload');
@@ -37,7 +34,6 @@ export function refreshDom() {
 
   els.sumTotalOpen = document.getElementById('sumTotalOpen');
   els.sumTotalOverdue = document.getElementById('sumTotalOverdue');
-  els.sumDueToday = document.getElementById('sumDueToday');
   els.sumTotalPaid = document.getElementById('sumTotalPaid');
 
   els.debtModal = document.getElementById('debtModal');

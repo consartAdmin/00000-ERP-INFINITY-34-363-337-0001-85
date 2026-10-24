@@ -8,15 +8,24 @@ import { buildQuery, formatMoney, showToast } from './debts.utils.js';
 import { loadDebts } from './debts.render.js';
 
 export function getFilters() {
+  const selectedStatus = els.status?.value || '';
+
+  // "Em Aberto" = tudo com saldo (inclui Parcial/Vencido);
+  // "Vencido" = vencimento passado com saldo (o status gravado pode estar desatualizado).
+  const onlyOpen = selectedStatus === 'EM_ABERTO';
+  const onlyOverdue = selectedStatus === 'VENCIDO';
+
   return {
     q: els.q?.value.trim() || '',
-    status: els.status?.value || '',
+    status: onlyOpen || onlyOverdue ? '' : selectedStatus,
     debt_type: els.debt_type?.value || '',
     creditor_name: els.creditor_name?.value.trim() || '',
-    due_date_from: els.due_date_from?.value || '',
-    due_date_to: els.due_date_to?.value || '',
-    only_overdue: Boolean(els.only_overdue?.checked),
-    only_open: Boolean(els.only_open?.checked),
+    due_date_from: els.filterDueDateRange?.value?.startDate || '',
+    due_date_to: els.filterDueDateRange?.value?.endDate || '',
+    only_overdue: onlyOverdue,
+    only_open: onlyOpen,
+    sort_by: state.sortColumn,
+    sort_dir: state.sortColumn ? state.sortDirection : '',
     page: state.page,
     limit: state.limit
   };
@@ -28,6 +37,8 @@ export async function loadSummary() {
 
     delete filters.page;
     delete filters.limit;
+    delete filters.sort_by;
+    delete filters.sort_dir;
 
     const qs = buildQuery(filters);
     const data = await fetchJSON(`${API_BASE}/debts/summary?${qs}`);
@@ -36,7 +47,6 @@ export async function loadSummary() {
 
     els.sumTotalOpen.textContent = formatMoney(summary.total_open);
     els.sumTotalOverdue.textContent = formatMoney(summary.total_overdue);
-    els.sumDueToday.textContent = formatMoney(summary.due_today);
     els.sumTotalPaid.textContent = formatMoney(summary.total_paid);
   } catch (error) {
     console.error('[debts] loadSummary', error);

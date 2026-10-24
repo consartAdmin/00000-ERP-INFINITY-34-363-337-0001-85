@@ -7,6 +7,34 @@ import pool from '../../config/db.js';
 import { TB_DEBTS, TB_PAYMENTS } from './debts.constants.js';
 import { normalizeDate, normalizePaging } from './debts.utils.js';
 
+// Colunas ordenáveis pela tela (sort_by) → expressão SQL. Nunca interpolar o valor recebido.
+const SORT_COLUMNS = Object.freeze({
+  code: "LPAD(COALESCE(NULLIF(code, ''), id::text), 30, '0')",
+  description: 'description',
+  creditor_name: 'creditor_name',
+  debt_type: 'debt_type',
+  due_date: 'due_date',
+  original_amount: 'original_amount',
+  paid_amount: 'paid_amount',
+  open_amount: 'open_amount',
+  status: 'status'
+});
+
+function buildOrderBy(sortBy, sortDir) {
+  const expr = SORT_COLUMNS[String(sortBy || '').trim()];
+
+  if (!expr) {
+    return `
+        CASE WHEN open_amount > 0 THEN 0 ELSE 1 END,
+        due_date ASC NULLS LAST,
+        id DESC`;
+  }
+
+  const dir = String(sortDir || '').trim().toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+
+  return `${expr} ${dir} NULLS LAST, id DESC`;
+}
+
 export async function list(filters = {}) {
   const {
     page = 1,
@@ -18,7 +46,9 @@ export async function list(filters = {}) {
     due_date_from,
     due_date_to,
     only_overdue,
-    only_open
+    only_open,
+    sort_by,
+    sort_dir
   } = filters;
 
   const { safePage, safeLimit, offset } = normalizePaging(page, limit);
@@ -131,10 +161,7 @@ export async function list(filters = {}) {
         updated_at
       FROM ${TB_DEBTS}
       ${whereSql}
-      ORDER BY
-        CASE WHEN open_amount > 0 THEN 0 ELSE 1 END,
-        due_date ASC NULLS LAST,
-        id DESC
+      ORDER BY ${buildOrderBy(sort_by, sort_dir)}
       LIMIT $${p} OFFSET $${p + 1}
     `,
     params

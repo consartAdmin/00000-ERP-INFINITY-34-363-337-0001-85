@@ -46,8 +46,13 @@ export function bindEvents() {
   els.btnClearFilters?.addEventListener('click', async () => {
     els.filtersForm?.reset();
 
-    if (els.only_open) {
-      els.only_open.checked = true;
+    // date-range-field não limpa com form.reset()
+    if (els.filterDueDateRange) {
+      els.filterDueDateRange.value = { startDate: '', endDate: '' };
+    }
+
+    if (els.status) {
+      els.status.value = 'EM_ABERTO';
     }
 
     state.page = 1;
