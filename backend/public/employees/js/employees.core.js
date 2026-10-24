@@ -9,7 +9,7 @@ import { fetchJSON, API_EMP } from './employees.api.js';
 import { qsa, toast } from './employees.utils.js';
 import { renderEmployeesTable, renderDocsTable } from './employees.render.js';
 import { fillEmployeeForm, resetEmployeeForm, currentEmployeePayload } from './employees.form.js';
-import { enableDetailsTabIfNeeded, setEmpView } from './employees.view.js';
+import { refreshModalHeader, closeEmployeeModal } from './employees.view.js';
 import { loadEmployeeDocs, resetDocForm } from './employees.docs.js';
 
 export async function loadEmployees({
@@ -41,7 +41,6 @@ export async function loadEmployees({
   }
 
   renderEmployeesTable();
-  enableDetailsTabIfNeeded();
 }
 
 export async function selectEmployee(id) {
@@ -62,19 +61,18 @@ export async function selectEmployee(id) {
   }
 
   await loadEmployeeDocs(id);
-  enableDetailsTabIfNeeded();
+  refreshModalHeader();
 }
 
 export async function clearSelection() {
   state.selectedId = null;
-  el.selectedEmployeeHint.textContent = 'Selecione um colaborador na lista para ver/editar e gerenciar documentos.';
+  el.selectedEmployeeHint.textContent = 'Novo colaborador — preencha os dados e clique em Salvar.';
   qsa('#employeesTableBody tr').forEach((tr) => tr.classList.remove('emp-row--selected'));
   resetEmployeeForm(false);
   resetDocForm();
   state.docs = [];
   renderDocsTable([]);
-  enableDetailsTabIfNeeded();
-  setEmpView('list');
+  refreshModalHeader();
 }
 
 export async function saveEmployee() {
@@ -100,8 +98,8 @@ export async function saveEmployee() {
 
   toast('✅ Colaborador salvo.');
   await loadEmployees();
+  // continua no modal (colaborador novo já pode receber documentos)
   await selectEmployee(saved.employee_id);
-  setEmpView('details');
 }
 
 export async function softInactivateSelected() {
@@ -113,6 +111,7 @@ export async function softInactivateSelected() {
   await fetchJSON(`${API_EMP}/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
   toast('✅ Colaborador inativado.');
+  closeEmployeeModal();
   await loadEmployees();
   await clearSelection();
 }
@@ -126,6 +125,7 @@ export async function hardDeleteSelected() {
   await fetchJSON(`${API_EMP}/${encodeURIComponent(id)}?hard=true`, { method: 'DELETE' });
 
   toast('✅ Excluído (hard).');
+  closeEmployeeModal();
   await loadEmployees();
   await clearSelection();
 }

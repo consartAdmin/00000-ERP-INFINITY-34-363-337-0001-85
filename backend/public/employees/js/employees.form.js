@@ -6,7 +6,7 @@
 import { el } from './employees.dom.js';
 import { state } from './employees.state.js';
 import { safeStr, toBool } from './employees.utils.js';
-import { enableDetailsTabIfNeeded } from './employees.view.js';
+import { refreshModalHeader } from './employees.view.js';
 import { renderDocsTable } from './employees.render.js';
 
 export function resetEmployeeForm(keepSelection = false) {
@@ -15,7 +15,6 @@ export function resetEmployeeForm(keepSelection = false) {
   el.active.checked = true;
 
   el.trial_extended.checked = false;
-  el.advDetails.open = false;
 
   const hasSel = Boolean(state.selectedId);
   el.btnInactivateEmployee.disabled = !hasSel;
@@ -27,7 +26,7 @@ export function resetEmployeeForm(keepSelection = false) {
     x.disabled = !hasSel;
   });
 
-  enableDetailsTabIfNeeded();
+  refreshModalHeader();
 
   if (!hasSel) renderDocsTable([]);
 }
@@ -77,9 +76,9 @@ export function fillEmployeeForm(r) {
     x.disabled = false;
   });
 
-  el.selectedEmployeeHint.textContent = `Editando colaborador #${r.employee_id} — ${safeStr(r.full_name)}`;
+  el.selectedEmployeeHint.textContent = safeStr(r.full_name);
 
-  enableDetailsTabIfNeeded();
+  refreshModalHeader();
 }
 
 export function currentEmployeePayload() {
