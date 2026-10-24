@@ -1,0 +1,145 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ accountsReceivable.css — Contas a Receber (CONSART ERP)              ║
+   ║ Modais Nova/Editar Conta e Receber no padrão modals.css / modal.js   ║
+   ║ (mesmo visual de cards do modal de Débitos e de Colaboradores)       ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.ar-modal {
+  --ar-soft-line: #dbe1e8;
+  --ar-title-bg: #f8fafc;
+  --ar-radius: var(--table-radius-top, 10px);
+  --fields-border-color: #c7d0db;
+}
+
+/* altura automática, mas nunca maior que a tela (o corpo rola, cabeçalho e rodapé ficam fixos) */
+.ar-modal .modal__panel {
+  max-height: calc(100vh - (var(--modal-space, 16px) * 2));
+}
+
+.ar-modal__subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Cards em 3 colunas */
+.ar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.ar-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--ar-soft-line);
+  border-radius: var(--ar-radius);
+  padding: 10px 12px 12px;
+}
+
+.ar-section--wide {
+  grid-column: span 2;
+}
+
+.ar-section--full {
+  grid-column: 1 / -1;
+}
+
+.ar-section__title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin: -10px -12px 10px;
+  padding: 7px 12px;
+  background: var(--ar-title-bg);
+  border-bottom: 1px solid var(--ar-soft-line);
+  border-radius: var(--ar-radius) var(--ar-radius) 0 0;
+}
+
+.ar-section__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: end;
+}
+
+.ar-section__grid > .fields {
+  width: auto;
+}
+
+.ar-span-full {
+  grid-column: 1 / -1;
+}
+
+/* Observações preenche a altura do card */
+.ar-section__fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 8px;
+  width: auto;
+}
+
+.ar-section__fill textarea {
+  flex: 1 1 auto;
+  min-height: 60px;
+  resize: vertical;
+}
+
+/* Receber: observações + anexo lado a lado */
+.ar-notes-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 8px 12px;
+}
+
+.ar-notes-row > .fields {
+  width: auto;
+}
+
+.ar-help {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.ar-progress {
+  width: 100%;
+  height: 6px;
+}
+
+/* Valor Original em destaque discreto */
+.ar-modal .ar-total {
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.ar-modal .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .ar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .ar-grid,
+  .ar-notes-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ar-section--wide,
+  .ar-section--full {
+    grid-column: auto;
+  }
+}
