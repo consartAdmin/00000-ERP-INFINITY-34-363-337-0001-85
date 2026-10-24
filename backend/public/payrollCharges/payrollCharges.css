@@ -11,11 +11,57 @@
   --pc-text: #111827;
 }
 
+/* ── Cabeçalho integrado (título + abas + ações, no card da tabela) ── */
+.pc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pc-toolbar__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 8px;
+}
+
+.pc-toolbar__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-size: 18px;
+}
+
+.pc-toolbar__title h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--pc-text);
+  line-height: 1.2;
+}
+
+.pc-toolbar__title p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--pc-muted);
+}
+
+.pc-toolbar > .pc-toolbar__actions {
+  flex: 0 0 auto;
+  width: auto;
+  margin-left: auto;
+}
+
 /* ── Abas ─────────────────────────────────────────────────────────── */
 .pc-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
 }
 
 .pc-tabs .btn.is-active {
@@ -30,7 +76,7 @@
 }
 
 .page-payroll[data-pc-view="termination"] #pc-btn-excel {
-  visibility: hidden;
+  display: none;
 }
 
 /* ── Tabela do mês ────────────────────────────────────────────────── */
@@ -56,8 +102,13 @@
 }
 
 .pc-month-table tfoot td {
+  height: 34px;
+  padding: 6px var(--table-cell-pad-x, 10px);
+  font-size: 13px;
   font-weight: 800;
   background: #f3f4f6;
+  border-top: 2px solid #cbd5e1;
+  vertical-align: middle;
 }
 
 .pc-month-table tr.pc-row--warn td {
@@ -85,6 +136,7 @@
 /* ── Rodapé com pílulas ───────────────────────────────────────────── */
 .table-footer.pc-footer {
   display: block;
+  padding: 0 12px 10px;
 }
 
 .pc-pills {
@@ -124,6 +176,9 @@
 .pc-btn-calc { align-self: flex-end; }
 
 .pc-term-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
   padding: 10px 12px 14px;
   background: #fff;
   color: var(--pc-text);
