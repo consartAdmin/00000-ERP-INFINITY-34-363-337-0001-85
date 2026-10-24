@@ -6,11 +6,6 @@
 import { qs } from './employees.utils.js';
 
 export const el = {
-  // tabs
-  tabEmployeesList: qs('#tabEmployeesList'),
-  tabEmployeesDetails: qs('#tabEmployeesDetails'),
-  btnBackToList: qs('#btnBackToList'),
-
   // left list
   employeesSearch: qs('#employeesSearch'),
   btnSearchEmployees: qs('#btnSearchEmployees'),
@@ -25,9 +20,13 @@ export const el = {
   btnNextPage: qs('#btnNextPage'),
   empRowsPerPage: qs('#empRowsPerPage'),
 
-  // selection
-  btnClearSelection: qs('#btnClearSelection'),
+  // modal
+  employeeModal: qs('#employeeModal'),
+  employeeModalTitle: qs('#employeeModalTitle'),
   selectedEmployeeHint: qs('#selectedEmployeeHint'),
+  modalTabs: qs('.emp-modal-tabs'),
+  tabEmployeeDocs: qs('#tabEmployeeDocs'),
+  docsCount: qs('#docsCount'),
 
   // form fields
   form: qs('#employeeForm'),
@@ -46,7 +45,6 @@ export const el = {
   active: qs('#active'),
 
   // advanced
-  advDetails: qs('#advDetails'),
   trial_start_date: qs('#trial_start_date'),
   trial_end_date: qs('#trial_end_date'),
   trial_extended: qs('#trial_extended'),

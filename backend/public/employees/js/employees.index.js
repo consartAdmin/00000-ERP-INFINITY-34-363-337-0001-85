@@ -8,17 +8,16 @@ import { resetEmployeeForm } from './employees.form.js';
 import { loadEmployees } from './employees.core.js';
 import { renderDocsTable } from './employees.render.js';
 import { resetDocForm } from './employees.docs.js';
-import { setEmpView } from './employees.view.js';
+import { Modal } from '/public/includes/js/modal.js';
 
 async function boot() {
+  Modal.setup();
   bindEvents();
   resetEmployeeForm(false);
 
   await loadEmployees({ q: '', includeInactive: false });
   renderDocsTable([]);
   resetDocForm();
-
-  setEmpView('list');
 }
 
 boot().catch((e) => {

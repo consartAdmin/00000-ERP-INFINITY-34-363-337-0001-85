@@ -5,20 +5,21 @@
 
 import { el } from './employees.dom.js';
 import { state } from './employees.state.js';
-import { fetchJSON, API_EMP } from './employees.api.js';
-import { qs } from './employees.utils.js';
-import { setEmpView } from './employees.view.js';
-import { resetEmployeeForm, fillEmployeeForm } from './employees.form.js';
+import { openEmployeeModal, setModalTab } from './employees.view.js';
 import { resetDocForm, saveDocument, loadEmployeeDocs, openDocSmart, downloadDocSmart, loadDocByIdToForm, deleteDocument } from './employees.docs.js';
 import { loadEmployees, selectEmployee, clearSelection, saveEmployee, softInactivateSelected, hardDeleteSelected } from './employees.core.js';
 
 export function bindEvents() {
-  // tabs
-  el.tabEmployeesList?.addEventListener('click', () => setEmpView('list'));
-  el.tabEmployeesDetails?.addEventListener('click', () => {
-    if (!el.tabEmployeesDetails.disabled) setEmpView('details');
+  // abas internas do modal
+  el.modalTabs.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.emp-modal-tab');
+    if (btn && !btn.disabled) setModalTab(btn.dataset.empTab);
   });
-  el.btnBackToList?.addEventListener('click', () => setEmpView('list'));
+
+  // fechar o modal (X, Cancelar, Esc, fundo) descarta alterações não salvas
+  el.employeeModal.addEventListener('modal:close', () => {
+    clearSelection().catch(e => alert(e.message));
+  });
 
   // search (sempre volta para a página 1)
   const doSearch = async () => {
@@ -50,35 +51,20 @@ export function bindEvents() {
   // new
   el.btnNewEmployee.addEventListener('click', async () => {
     await clearSelection();
-    el.selectedEmployeeHint.textContent = 'Novo colaborador — preencha os dados e clique em Salvar.';
-    setEmpView('details', { force: true });
-    el.full_name.focus();
+    openEmployeeModal('dados');
   });
 
-  // clear selection
-  el.btnClearSelection.addEventListener('click', () => clearSelection().catch(e => alert(e.message)));
-
-  // table click (select + edit/docs)
+  // table click (linha/✏️ abre o modal; 📄 abre direto na aba Documentos)
   el.employeesTableBody.addEventListener('click', async (ev) => {
     const tr = ev.target.closest('tr[data-id]');
     if (!tr) return;
 
     const id = tr.getAttribute('data-id');
-    const btnEdit = ev.target.closest('.js-edit');
     const btnDocs = ev.target.closest('.js-viewdocs');
 
     try {
       await selectEmployee(id);
-
-      if (btnEdit) {
-        setEmpView('details');
-        el.full_name.focus();
-      } else if (btnDocs) {
-        setEmpView('details');
-        qs('.emp-docs')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        setEmpView('list');
-      }
+      openEmployeeModal(btnDocs ? 'docs' : 'dados');
     } catch (e) {
       alert(e.message);
     }
@@ -88,24 +74,6 @@ export function bindEvents() {
   el.form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     try { await saveEmployee(); } catch (e) { alert(e.message); }
-  });
-
-  // cancel edit
-  el.btnCancelEdit.addEventListener('click', async () => {
-    if (!state.selectedId) {
-      resetEmployeeForm(false);
-      el.selectedEmployeeHint.textContent = 'Selecione um colaborador na lista para ver/editar e gerenciar documentos.';
-      setEmpView('list');
-      return;
-    }
-    try {
-      // rehydrate (descarta alterações não salvas)
-      const row = state.list.find((x) => Number(x.employee_id) === Number(state.selectedId));
-      fillEmployeeForm(row || await fetchJSON(`${API_EMP}/${encodeURIComponent(state.selectedId)}`));
-      await loadEmployeeDocs(state.selectedId);
-    } catch (e) {
-      alert(e.message);
-    }
   });
 
   // inactivate/hard delete

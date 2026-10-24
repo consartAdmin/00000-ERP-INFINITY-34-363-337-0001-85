@@ -24,8 +24,9 @@ export function renderPagination() {
 }
 
 export function setSummaryDocs(total, employeeId) {
+  el.docsCount.textContent = String(total || 0);
   if (!employeeId) {
-    el.docsSummary.textContent = 'Selecione um colaborador para ver os documentos.';
+    el.docsSummary.textContent = 'Salve o colaborador para anexar documentos.';
     return;
   }
   el.docsSummary.textContent = `${total} documento(s) para o colaborador #${employeeId}`;
