@@ -159,7 +159,7 @@ export async function saveDocument() {
         }),
       });
 
-      toast('✅ Documento atualizado.');
+      toast('Documento atualizado.');
       resetDocForm();
       await loadEmployeeDocs(employeeId);
       return;
@@ -181,7 +181,7 @@ export async function saveDocument() {
 
     if (!confirmed?.ok) throw new Error('Upload OK, mas falhou ao registrar no banco (confirm).');
 
-    toast('✅ Documento salvo (Bucket + DB).');
+    toast('Documento salvo.');
     resetDocForm();
     await loadEmployeeDocs(employeeId);
   } finally {
@@ -195,7 +195,7 @@ export async function deleteDocument(documentId) {
 
   await fetchJSON(API_DOC_BY_ID(documentId), { method: 'DELETE' });
 
-  toast('✅ Documento excluído.');
+  toast('Documento excluído.');
   if (Number(el.employee_document_id.value) === Number(documentId)) resetDocForm();
   if (state.selectedId) await loadEmployeeDocs(state.selectedId);
 }

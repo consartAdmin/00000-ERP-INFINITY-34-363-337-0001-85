@@ -96,7 +96,7 @@ export async function saveEmployee() {
     });
   }
 
-  toast('✅ Colaborador salvo.');
+  toast('Colaborador salvo.');
   await loadEmployees();
   // continua no modal (colaborador novo já pode receber documentos)
   await selectEmployee(saved.employee_id);
@@ -110,7 +110,7 @@ export async function softInactivateSelected() {
 
   await fetchJSON(`${API_EMP}/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
-  toast('✅ Colaborador inativado.');
+  toast('Colaborador inativado.');
   closeEmployeeModal();
   await loadEmployees();
   await clearSelection();
@@ -124,7 +124,7 @@ export async function hardDeleteSelected() {
 
   await fetchJSON(`${API_EMP}/${encodeURIComponent(id)}?hard=true`, { method: 'DELETE' });
 
-  toast('✅ Excluído (hard).');
+  toast('Excluído (hard).');
   closeEmployeeModal();
   await loadEmployees();
   await clearSelection();
