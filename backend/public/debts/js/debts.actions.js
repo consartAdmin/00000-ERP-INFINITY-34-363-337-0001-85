@@ -10,6 +10,7 @@
 import { els } from './debts.config.js';
 import { state } from './debts.state.js';
 import { closeModal } from './debts.utils.js';
+import { Modal } from '/public/includes/js/modal.js';
 import { loadDebts } from './debts.render.js';
 import { refreshAll } from './debts.filters.js';
 
@@ -30,8 +31,9 @@ import {
   startEditPayment
 } from './debts.payments.js';
 
+// O modal de dívida (modal.js) fecha sozinho no ESC; aqui só o de pagamentos.
 function closeAllModals() {
-  closeModal(els.debtModal);
+  if (Modal.isOpen('debtModal')) return;
   closeModal(els.paymentModal);
 }
 

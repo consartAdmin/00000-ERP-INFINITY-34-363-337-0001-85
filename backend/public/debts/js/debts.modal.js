@@ -6,6 +6,7 @@
 'use strict';
 
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
+import { Modal } from '/public/includes/js/modal.js';
 
 const DEBT_MODAL_ID = 'debtModal';
 const PAYMENT_MODAL_ID = 'paymentModal';
@@ -49,229 +50,231 @@ function injectCreateDebtModal() {
   if (document.getElementById(DEBT_MODAL_ID)) return;
 
   document.body.insertAdjacentHTML('beforeend', `
-<div id="debtModal" class="modal modal-width-9 modal-height-auto" hidden aria-hidden="true">
-    <div class="modal__backdrop" data-close-modal="debtModal"></div>
-    <div class="modal__dialog">
-        <section class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="debtModalTitle">
-            <header class="modal__header">
-                <div>
-                    <h2 id="debtModalTitle">Nova Dívida</h2>
-                    <p>Cadastre ou edite uma dívida.</p>
-                </div>
-                <button class="btn btn-clean btn-sm" type="button" data-close-modal="debtModal"
-                    aria-label="Fechar">×</button>
-            </header>
+<div id="debtModal" class="modal debt-modal" aria-hidden="true">
+  <div class="modal__backdrop" data-modal-close></div>
 
-            <form id="debtForm" class="modal__body">
-                <input type="hidden" id="debt_id" name="debt_id">
+  <div class="modal__dialog">
+    <section class="modal__panel modal-width-10" role="dialog" aria-modal="true" aria-labelledby="debtModalTitle">
 
-                <div class="fields-inline fields-gap-3">
-                    <div class="fields fields-h-5 fields-w-5 fields-font-3">
-                        <label for="code">
-                            Código
-                        </label><input id="code" name="code" maxlength="30">
-                    </div>
+      <!-- div (e não <header>): a barra de título global (topGradientBar) se ancora no 1º <header> da página -->
+      <div class="modal__header modal-header-color-3">
+        <div>
+          <h2 id="debtModalTitle" class="modal__title">Nova Dívida</h2>
+          <p class="debt-modal__subtitle">Cadastre ou edite uma dívida.</p>
+        </div>
+        <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+      </div>
 
-                    <div class="fields fields-h-5 fields-w-20 fields-font-3">
-                        <label for="description">
-                            Descrição *
-                        </label><input id="description" name="description" required maxlength="255">
-                    </div>
+      <div class="modal__body">
+        <form id="debtForm" class="debt-form" autocomplete="off">
+          <input type="hidden" id="debt_id" name="debt_id">
 
-                    <div class="fields fields-h-5 fields-w-12 fields-font-3">
-                        <label for="debt_type_form">
-                            Tipo
-                        </label><select id="debt_type_form" name="debt_type" required>
-                            <option value="">Selecione</option>
-                            <option value="FORNECEDOR">
-                                Fornecedor
-                            </option>
-                            <option value="IMPOSTO">
-                                Imposto
-                            </option>
-                            <option value="ALUGUEL">
-                                Aluguel
-                            </option>
-                            <option value="EMPRESTIMO">
-                                Empréstimo
-                            </option>
-                            <option value="CARTAO">
-                                Cartão
-                            </option>
-                            <option value="FOLHA">
-                                Folha
-                            </option>
-                            <option value="SERVICOS">
-                                Serviços
-                            </option>
-                            <option value="OUTROS">
-                                Outros
-                            </option>
-                        </select>
-                    </div>
+          <div class="debt-grid">
 
-                    <div class="fields fields-h-5 fields-w-25 fields-font-3">
-                        <label for="creditor_name_form">
-                            Credor / Fornecedor
-                        </label>
-                        <input id="creditor_name_form" name="creditor_name" maxlength="200"
-                            placeholder="Clique para pesquisar fornecedor..." readonly>
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-20 fields-font-3">
-                        <label for="creditor_document">
-                            CPF/CNPJ
-                        </label><input id="creditor_document" name="creditor_document" maxlength="20">
-                    </div>
-                 </div> 
-
-                   <div class="fields-inline fields-gap-3">
-                     <div class="fields fields-h-5 fields-w-25 fields-font-3">
-                        <label for="company_name">
-                            Empresa
-                        </label><input id="company_name" name="company_name" maxlength="150">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-12 fields-font-3">
-                        <label for="category">Categoria</label><input id="category" name="category" maxlength="100">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-12 fields-font-3">
-                        <label for="cost_center">
-                          Centro de Custo
-                          </label><input id="cost_center" name="cost_center" maxlength="100">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-12 fields-font-3">
-                        <label for="document_number">
-                            Documento
-                          </label><input id="document_number" name="document_number" maxlength="50">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-12 fields-font-3">
-                        <label for="reference_number">
-                           Referência
-                        </label><input id="reference_number" name="reference_number" maxlength="50">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-12 fields-font-3">
-                        <label for="issue_date">
-                          Emissão
-                          </label><input id="issue_date" name="issue_date" type="date">
-                    </div>
-                  </div> 
-
-                  <div class="fields-inline fields-gap-3">
-                    <div class="fields fields-h-5 fields-w-10 fields-font-3">
-                        <label for="agreement_closed_at">
-                            Data Fechamento Acordo
-                            </label><input id="agreement_closed_at" name="agreement_closed_at" type="date">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-10 fields-font-3">
-                        <label for="first_installment_due_at">
-                          Vencimento Primeira Parcela
-                          </label><input id="first_installment_due_at" name="first_installment_due_at" type="date">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-10 fields-font-3">
-                        <label for="installment_total">Qtde. Parcelas *</label><input id="installment_total"
-                            name="installment_total" type="number" min="1" max="360" value="1" required>
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-10 fields-font-3">
-                        <label for="due_day_mode">Tipo de Vencimento *</label><select id="due_day_mode"
-                            name="due_day_mode">
-                            <option value="LAST_DAY">Último dia do mês</option>
-                            <option value="MANUAL">Preencher manualmente</option>
-                        </select>
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-20 fields-font-3" id="due_day_manual_box" hidden><label
-                            for="due_day">Dia de Vencimento *
-                            </label><input id="due_day" name="due_day" type="number" min="1" max="31" placeholder="Ex: 15">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-7 fields-font-3">
-                        <label for="original_amount">Valor Original *</label><input id="original_amount"
-                            name="original_amount" inputmode="decimal" required placeholder="0,00">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-7 fields-font-3">
-                        <label for="interest_amount">Juros</label><input id="interest_amount" name="interest_amount"
-                            inputmode="decimal" placeholder="0,00">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-7 fields-font-3">
-                        <label for="fine_amount">Multa</label><input id="fine_amount" name="fine_amount"
-                            inputmode="decimal" placeholder="0,00">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-7 fields-font-3">
-                        <label for="discount_amount">Desconto</label><input id="discount_amount" name="discount_amount"
-                            inputmode="decimal" placeholder="0,00">
-                    </div>
-
-                    <div class="fields fields-h-5 fields-w-7 fields-font-3">
-                        <label for="updated_amount_preview">Valor Atualizado</label><input id="updated_amount_preview"
-                            readonly>
-                    </div>
+            <!-- Dívida -->
+            <div class="debt-section">
+              <div class="debt-section__title">📄 Dívida</div>
+              <div class="debt-section__grid debt-section__grid--3">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="code">Código</label>
+                  <input id="code" name="code" maxlength="30">
                 </div>
 
-                <section class="installment-plan-box">
-                    <h3>Faixas de Parcelas</h3>
-                   <div class="fields-inline fields-gap-3">
-                    <div class="fields fields-h-6 fields-w-20 fields-font-3">
-                            <label for="plan_start_installment">Parcela Inicial</label><input
-                                id="plan_start_installment" type="number" min="1" placeholder="Ex: 1">
-                        </div>
-
-                        <div class="fields fields-h-6 fields-w-20 fields-font-3">
-                            <label for="plan_end_installment">Parcela Final</label><input id="plan_end_installment"
-                                type="number" min="1" placeholder="Ex: 12">
-                        </div>
-
-                        <div class="fields fields-h-6 fields-w-20 fields-font-3">
-                            <label for="plan_installment_amount">Valor da Parcela</label><input
-                                id="plan_installment_amount" inputmode="decimal" placeholder="0,00">
-                        </div>
-
-                        <div class="btn-inline btn-h-6">
-                            <label>&nbsp;</label><button id="btnAddInstallmentPlan" class="btn btn-new btn-sm"
-                                type="button">Adicionar Faixa</button>
-                        </div>
-                    </div>
-
-                    <div class="table-scroll table-scroll--flex table-scroll--rounded">
-                        <table class="table table-zebra table-zebra-hover table-sticky-head">
-                            <thead>
-                                <tr>
-                                    <th>Inicial</th>
-                                    <th>Final</th>
-                                    <th>Valor</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="installmentPlansTableBody">
-                                <tr>
-                                    <td colspan="4" class="empty-row">Nenhuma faixa adicionada.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <div class="fields fields-h-5 fields-w-20 fields-font-3">
-                    <label for="notes">
-                        Observações
-                    </label><textarea id="notes" name="notes" rows="4" maxlength="5000"></textarea>
+                <div class="fields fields-h-6 fields-font-3 debt-span-2">
+                  <label for="debt_type_form">Tipo</label>
+                  <select id="debt_type_form" name="debt_type" required>
+                    <option value="">Selecione</option>
+                    <option value="FORNECEDOR">Fornecedor</option>
+                    <option value="IMPOSTO">Imposto</option>
+                    <option value="ALUGUEL">Aluguel</option>
+                    <option value="EMPRESTIMO">Empréstimo</option>
+                    <option value="CARTAO">Cartão</option>
+                    <option value="FOLHA">Folha</option>
+                    <option value="SERVICOS">Serviços</option>
+                    <option value="OUTROS">Outros</option>
+                  </select>
                 </div>
-                <footer class="modal__footer"><button class="btn btn-clean btn-sm" type="button"
-                        data-close-modal="debtModal">Cancelar</button><button class="btn btn-save btn-sm"
-                        type="submit">Salvar Dívida</button></footer>
-            </form>
-        </section>
-    </div>
+
+                <div class="fields fields-h-6 fields-font-3 debt-span-full">
+                  <label for="description">Descrição *</label>
+                  <input id="description" name="description" required maxlength="255">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="document_number">Documento</label>
+                  <input id="document_number" name="document_number" maxlength="50">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="reference_number">Referência</label>
+                  <input id="reference_number" name="reference_number" maxlength="50">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="issue_date">Emissão</label>
+                  <input id="issue_date" name="issue_date" type="date">
+                </div>
+              </div>
+            </div>
+
+            <!-- Credor -->
+            <div class="debt-section">
+              <div class="debt-section__title">🏢 Credor</div>
+              <div class="debt-section__grid">
+                <div class="fields fields-h-6 fields-font-3 debt-span-full">
+                  <label for="creditor_name_form">Credor / Fornecedor</label>
+                  <input id="creditor_name_form" name="creditor_name" maxlength="200"
+                    placeholder="Clique para pesquisar fornecedor..." readonly>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="creditor_document">CPF/CNPJ</label>
+                  <input id="creditor_document" name="creditor_document" maxlength="20">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="company_name">Empresa</label>
+                  <input id="company_name" name="company_name" maxlength="150">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="category">Categoria</label>
+                  <input id="category" name="category" maxlength="100">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="cost_center">Centro de Custo</label>
+                  <input id="cost_center" name="cost_center" maxlength="100">
+                </div>
+              </div>
+            </div>
+
+            <!-- Valores -->
+            <div class="debt-section">
+              <div class="debt-section__title">💰 Valores</div>
+              <div class="debt-section__grid">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="original_amount">Valor Original *</label>
+                  <input id="original_amount" name="original_amount" inputmode="decimal" required placeholder="0,00">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="interest_amount">Juros</label>
+                  <input id="interest_amount" name="interest_amount" inputmode="decimal" placeholder="0,00">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="fine_amount">Multa</label>
+                  <input id="fine_amount" name="fine_amount" inputmode="decimal" placeholder="0,00">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="discount_amount">Desconto</label>
+                  <input id="discount_amount" name="discount_amount" inputmode="decimal" placeholder="0,00">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3 debt-span-full">
+                  <label for="updated_amount_preview">Valor Atualizado</label>
+                  <input id="updated_amount_preview" class="debt-total" readonly>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parcelamento -->
+            <div class="debt-section">
+              <div class="debt-section__title">📅 Parcelamento</div>
+              <div class="debt-section__grid">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="agreement_closed_at">Fechamento do Acordo</label>
+                  <input id="agreement_closed_at" name="agreement_closed_at" type="date">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="first_installment_due_at">Venc. 1ª Parcela</label>
+                  <input id="first_installment_due_at" name="first_installment_due_at" type="date">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="installment_total">Qtde. Parcelas *</label>
+                  <input id="installment_total" name="installment_total" type="number" min="1" max="360" value="1" required>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="due_day_mode">Tipo de Vencimento *</label>
+                  <select id="due_day_mode" name="due_day_mode">
+                    <option value="LAST_DAY">Último dia do mês</option>
+                    <option value="MANUAL">Preencher manualmente</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3" id="due_day_manual_box" hidden>
+                  <label for="due_day">Dia de Vencimento *</label>
+                  <input id="due_day" name="due_day" type="number" min="1" max="31" placeholder="Ex: 15">
+                </div>
+              </div>
+            </div>
+
+            <!-- Faixas de Parcelas -->
+            <div class="debt-section debt-section--wide">
+              <div class="debt-section__title">📊 Faixas de Parcelas</div>
+              <div class="debt-plan-inputs">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="plan_start_installment">Parcela Inicial</label>
+                  <input id="plan_start_installment" type="number" min="1" placeholder="Ex: 1">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="plan_end_installment">Parcela Final</label>
+                  <input id="plan_end_installment" type="number" min="1" placeholder="Ex: 12">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="plan_installment_amount">Valor da Parcela</label>
+                  <input id="plan_installment_amount" inputmode="decimal" placeholder="0,00">
+                </div>
+
+                <button id="btnAddInstallmentPlan" class="btn btn-new btn-sm" type="button">+ Adicionar Faixa</button>
+              </div>
+
+              <div class="table-scroll table-scroll--rounded debt-plan-table">
+                <table class="table table-zebra table-zebra-hover table-sticky-head">
+                  <thead>
+                    <tr>
+                      <th>Inicial</th>
+                      <th>Final</th>
+                      <th>Valor</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="installmentPlansTableBody">
+                    <tr>
+                      <td colspan="4" class="empty-row">Nenhuma faixa adicionada.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="debt-section debt-section--full">
+              <div class="debt-section__title">📝 Observações</div>
+              <div class="fields fields-font-3 debt-section__fill">
+                <label for="notes" class="sr-only">Observações</label>
+                <textarea id="notes" name="notes" rows="2" maxlength="5000"
+                  placeholder="Anotações sobre a dívida, acordo, contato..."></textarea>
+              </div>
+            </div>
+
+          </div>
+        </form>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+        <button class="btn btn-save btn-sm" type="submit" form="debtForm">💾 Salvar Dívida</button>
+      </div>
+    </section>
+  </div>
 </div>
 `);
 }
@@ -489,9 +492,10 @@ function bindModalEvents() {
     if (event.target?.id === 'due_day_mode') syncDueDayMode();
   });
 
+  // ESC do modal de dívida fica com o modal.js (fecha só o de cima)
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    setModalVisibility(DEBT_MODAL_ID, false);
+    if (Modal.isOpen(DEBT_MODAL_ID)) return;
     setModalVisibility(PAYMENT_MODAL_ID, false);
   });
 }
@@ -500,26 +504,20 @@ export function initializeDebtModals() {
   injectCreateDebtModal();
   injectPaymentModal();
 
-  if (!document.getElementById('toast')) {
-    document.body.insertAdjacentHTML(
-      'beforeend',
-      '<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>'
-    );
-  }
-
   syncDueDayMode();
   bindModalEvents();
+  Modal.setup();
 }
 
 export function openCreateDebtsModal(title = 'Nova Dívida') {
   const titleElement = document.getElementById('debtModalTitle');
   if (titleElement) titleElement.textContent = title;
   syncDueDayMode();
-  setModalVisibility(DEBT_MODAL_ID, true);
+  Modal.open(DEBT_MODAL_ID, { focusSelector: '#description' });
 }
 
 export function closeCreateDebtsModal() {
-  setModalVisibility(DEBT_MODAL_ID, false);
+  Modal.close(DEBT_MODAL_ID);
 }
 
 export function openDebtPaymentsModal() {

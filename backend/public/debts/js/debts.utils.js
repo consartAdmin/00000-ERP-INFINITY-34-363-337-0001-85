@@ -7,6 +7,8 @@
 
 'use strict';
 
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
 /* ──────────────────────────────────────────────────────────────────────
  * Numbers
  * ────────────────────────────────────────────────────────────────────── */
@@ -194,15 +196,21 @@ export function getStatusBadge(status) {
   `;
 }
 
+// Avisos no centro da tela (centerAlertModal): o antigo #toast não tinha estilo
+// e ficava escondido atrás do modal.
+const TOAST_TITLES = {
+  success: 'Sucesso',
+  error: 'Erro',
+  warning: 'Atenção',
+  info: 'Aviso'
+};
+
 export function showToast(message, type = 'info') {
-  const toast = document.getElementById('toast');
-  if (!toast) return;
+  const variant = TOAST_TITLES[type] ? type : 'info';
 
-  toast.textContent = message || '';
-  toast.className = `toast toast--${type}`;
-
-  window.clearTimeout(showToast._timer);
-  showToast._timer = window.setTimeout(() => {
-    toast.className = 'toast hidden';
-  }, 3200);
+  showCenterModal({
+    variant,
+    title: TOAST_TITLES[variant],
+    message: message || ''
+  });
 }
