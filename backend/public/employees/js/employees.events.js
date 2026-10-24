@@ -7,6 +7,7 @@ import { el } from './employees.dom.js';
 import { state } from './employees.state.js';
 import { openEmployeeModal, setModalTab } from './employees.view.js';
 import { resetDocForm, saveDocument, loadEmployeeDocs, openDocSmart, downloadDocSmart, loadDocByIdToForm, deleteDocument } from './employees.docs.js';
+import { openReportsModal, generateReport } from './employees.reports.js';
 import { loadEmployees, selectEmployee, clearSelection, saveEmployee, softInactivateSelected, hardDeleteSelected } from './employees.core.js';
 
 export function bindEvents() {
@@ -52,6 +53,13 @@ export function bindEvents() {
   el.btnNewEmployee.addEventListener('click', async () => {
     await clearSelection();
     openEmployeeModal('dados');
+  });
+
+  // relatórios
+  el.btnReports.addEventListener('click', () => openReportsModal().catch(e => alert(e.message)));
+  el.reportsForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    generateReport();
   });
 
   // table click (linha/✏️ abre o modal; 📄 abre direto na aba Documentos)

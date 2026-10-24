@@ -37,6 +37,8 @@ export async function listEmployees(req, res) {
       active: active === null ? '' : active,
       limit,
       offset,
+      sort: String(req.query.sort || ''),
+      dir: String(req.query.dir || 'asc'),
     });
 
     return res.json(data);

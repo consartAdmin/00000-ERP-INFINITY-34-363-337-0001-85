@@ -14,4 +14,8 @@ export const state = {
   page: 1,
   pageSize: 50,
   total: 0,
+
+  // ordenação (sortableTable → backend) | '' = padrão (mais recentes primeiro)
+  sort: '',
+  dir: 'asc',
 };

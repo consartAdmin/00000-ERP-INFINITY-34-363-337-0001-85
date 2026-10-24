@@ -11,6 +11,7 @@ export const el = {
   btnSearchEmployees: qs('#btnSearchEmployees'),
   employeesShowInactive: qs('#employeesShowInactive'),
   btnNewEmployee: qs('#btnNewEmployee'),
+  btnReports: qs('#btnReports'),
   employeesTableBody: qs('#employeesTableBody'),
 
   // footer / paginação
@@ -79,4 +80,11 @@ export const el = {
   filePickLabel: qs('#filePickLabel'),
   btnAddDoc: qs('#btnAddDoc'),
   btnClearDocForm: qs('#btnClearDocForm'),
+
+  // relatórios
+  reportsForm: qs('#reportsForm'),
+  report_status: qs('#report_status'),
+  report_department: qs('#report_department'),
+  report_format: qs('#report_format'),
+  btnGenerateReport: qs('#btnGenerateReport'),
 };
