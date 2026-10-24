@@ -3,6 +3,8 @@
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 'use strict';
 
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
 export function qs(s, el = document) { return el.querySelector(s); }
 export function qsa(s, el = document) { return [...el.querySelectorAll(s)]; }
 
@@ -14,8 +16,9 @@ export function sanitizeFileName(name = 'documento'){
     .replace(/^_+|_+$/g, '');
 }
 
+// aviso central de sucesso (fecha sozinho)
 export function toast(msg) {
-  console.log('[employees]', msg);
+  showCenterModal({ variant: 'success', title: 'Sucesso', message: msg });
 }
 
 export function safeStr(v) {
