@@ -9,8 +9,6 @@
 
 import { els } from './debts.config.js';
 import { state } from './debts.state.js';
-import { closeModal } from './debts.utils.js';
-import { Modal } from '/public/includes/js/modal.js';
 import { loadDebts } from './debts.render.js';
 import { refreshAll } from './debts.filters.js';
 
@@ -30,12 +28,6 @@ import {
   deletePayment,
   startEditPayment
 } from './debts.payments.js';
-
-// O modal de dívida (modal.js) fecha sozinho no ESC; aqui só o de pagamentos.
-function closeAllModals() {
-  if (Modal.isOpen('debtModal')) return;
-  closeModal(els.paymentModal);
-}
 
 export function bindEvents() {
   els.filtersForm?.addEventListener('submit', async (event) => {
@@ -110,18 +102,10 @@ export function bindEvents() {
       return;
     }
 
-    const btn = event.target.closest('[data-action], [data-close-modal]');
+    const btn = event.target.closest('[data-action]');
     if (!btn) return;
 
     event.preventDefault();
-
-    const closeName = btn.getAttribute('data-close-modal');
-
-    if (closeName) {
-      const modal = document.getElementById(closeName);
-      closeModal(modal);
-      return;
-    }
 
     const action = btn.getAttribute('data-action');
     const id = Number(btn.getAttribute('data-id'));
@@ -161,9 +145,4 @@ export function bindEvents() {
     }
   });
 
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeAllModals();
-    }
-  });
 }

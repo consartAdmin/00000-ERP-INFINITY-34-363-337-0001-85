@@ -152,26 +152,6 @@ export function buildQuery(paramsObj = {}) {
 }
 
 /* ──────────────────────────────────────────────────────────────────────
- * Modal
- * ────────────────────────────────────────────────────────────────────── */
-
-export function openModal(modalEl) {
-  if (!modalEl) return;
-
-  modalEl.hidden = false;
-  modalEl.classList.remove('hidden');
-  modalEl.setAttribute('aria-hidden', 'false');
-}
-
-export function closeModal(modalEl) {
-  if (!modalEl) return;
-
-  modalEl.hidden = true;
-  modalEl.classList.add('hidden');
-  modalEl.setAttribute('aria-hidden', 'true');
-}
-
-/* ──────────────────────────────────────────────────────────────────────
  * Status
  * ────────────────────────────────────────────────────────────────────── */
 

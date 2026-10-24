@@ -12,26 +12,6 @@ const DEBT_MODAL_ID = 'debtModal';
 const PAYMENT_MODAL_ID = 'paymentModal';
 let eventsBound = false;
 
-function setModalVisibility(id, visible) {
-  const modal = document.getElementById(id);
-  if (!modal) return;
-
-  if (visible) {
-    modal.hidden = false;
-    modal.setAttribute('aria-hidden', 'false');
-    modal.classList.add('is-open');
-    document.body.classList.add('modal-open');
-    return;
-  }
-
-  modal.classList.remove('is-open');
-  modal.hidden = true;
-  modal.setAttribute('aria-hidden', 'true');
-
-  const hasOpenModal = document.querySelector('.modal.is-open:not([hidden])');
-  if (!hasOpenModal) document.body.classList.remove('modal-open');
-}
-
 function syncDueDayMode() {
   const mode = document.getElementById('due_day_mode');
   const box = document.getElementById('due_day_manual_box');
@@ -283,178 +263,165 @@ function injectPaymentModal() {
   if (document.getElementById(PAYMENT_MODAL_ID)) return;
 
   document.body.insertAdjacentHTML('beforeend', `
-    <div id="paymentModal" class="modal modal-width-9 modal-height-8" hidden aria-hidden="true">
-      <div class="modal__backdrop" data-close-modal="paymentModal"></div>
+<div id="paymentModal" class="modal debt-modal" aria-hidden="true">
+  <div class="modal__backdrop" data-modal-close></div>
 
-      <div class="modal__dialog">
-      <section class="modal__panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="formTitle">
+  <div class="modal__dialog">
+    <section class="modal__panel modal-width-10" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
 
-        <header class="modal__header modal-header-color-3">
-          <div>
-            <h2 id="paymentModalTitle" class="modal__title">
-             Pagamentos
-            </h2>
-            <p id="paymentModalSubtitle" class="modal__subtitle">
-              Histórico e parcelas da dívida.
-            </p>
-          </div>
+      <!-- div (e não <header>): a barra de título global (topGradientBar) se ancora no 1º <header> da página -->
+      <div class="modal__header modal-header-color-3">
+        <div>
+          <h2 id="paymentModalTitle" class="modal__title">Pagamentos</h2>
+          <p id="paymentModalSubtitle" class="debt-modal__subtitle">Histórico e parcelas da dívida.</p>
+        </div>
+        <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+      </div>
 
-          <div class="btn-inline">
-            <button
-              type="button"
-              class="btn btn-clean btn-sm"
-              data-close-modal="paymentModal"
-              aria-label="Fechar">
-              ×
-            </button>
-          </div>
-        </header>
-
-        <form
-        id="paymentForm"
-        class="modal__body payment-modal__form">
-        
+      <div class="modal__body">
+        <form id="paymentForm" class="debt-form" autocomplete="off">
           <input type="hidden" id="payment_debt_id" name="payment_debt_id">
 
-          <div class="fields-inline fields-gap-3">
-            <div class="fields fields-h-5 fields-w-20 fields-font-3">
-             <label for="payment_installment">Parcela *</label>
-             <select id="payment_installment" name="payment_installment" required><option value="">Selecione a parcela</option></select>
-           </div>
+          <div class="debt-grid debt-grid--payment">
 
-            <div class="fields fields-h-5 fields-w-10 fields-font-3">
-              <label for="payment_date">Data *</label>
-              <input id="payment_date" name="payment_date" type="date" required>
-            </div>
+            <!-- Registrar pagamento -->
+            <div class="debt-section">
+              <div class="debt-section__title">💳 Registrar pagamento</div>
+              <div class="debt-section__grid debt-section__grid--4">
+                <div class="fields fields-h-6 fields-font-3 debt-span-2">
+                  <label for="payment_installment">Parcela *</label>
+                  <select id="payment_installment" name="payment_installment" required>
+                    <option value="">Selecione a parcela</option>
+                  </select>
+                </div>
 
-            <div class="fields fields-h-5 fields-w-10 fields-font-3">
-              <label for="payment_amount">Valor Pago *</label><input id="payment_amount" name="payment_amount" inputmode="decimal" required placeholder="0,00">
-            </div>
-            
-            <div class="fields fields-h-5 fields-w-10 fields-font-3">
-              <label for="payment_interest">Juros</label><input id="payment_interest" name="payment_interest" inputmode="decimal" placeholder="0,00">
-             </div>
-            
-            <div class="fields fields-h-5 fields-w-10 fields-font-3">
-              <label for="payment_fine">Multa</label><input id="payment_fine" name="payment_fine" inputmode="decimal" placeholder="0,00">
-            </div>
-          </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payment_date">Data *</label>
+                  <input id="payment_date" name="payment_date" type="date" required>
+                </div>
 
-          <div class="fields-inline fields-gap-3">
-            <div class="fields fields-h-5 fields-w-10 fields-font-3">
-            <label for="payment_discount">Desconto</label><input id="payment_discount" name="payment_discount" inputmode="decimal" placeholder="0,00">
-            </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payment_amount">Valor Pago *</label>
+                  <input id="payment_amount" name="payment_amount" inputmode="decimal" required placeholder="0,00">
+                </div>
 
-            <div class="fields fields-h-5 fields-w-10 fields-font-3">
-            <label for="payment_method">
-            Forma de Pagamento
-            </label>
-            <input id="payment_method" name="payment_method" maxlength="80">
-            </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payment_interest">Juros</label>
+                  <input id="payment_interest" name="payment_interest" inputmode="decimal" placeholder="0,00">
+                </div>
 
-            <div class="fields fields-h-5 fields-w-10 fields-font-3">
-            <label for="receipt_number">
-            Nº do Comprovante
-            </label><input id="receipt_number" name="receipt_number" maxlength="100" placeholder="Número ou identificação">
-            </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payment_fine">Multa</label>
+                  <input id="payment_fine" name="payment_fine" inputmode="decimal" placeholder="0,00">
+                </div>
 
-            <div class="fields fields-h-5 fields-w-10 fields-font-3">
-            <label for="payment_notes">Observações</label><input id="payment_notes" name="payment_notes" maxlength="500">
-            </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payment_discount">Desconto</label>
+                  <input id="payment_discount" name="payment_discount" inputmode="decimal" placeholder="0,00">
+                </div>
 
-          </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payment_method">Forma de Pagamento</label>
+                  <input id="payment_method" name="payment_method" maxlength="80">
+                </div>
 
-          <!-- Saída no caixa (Movimentações): criada junto com o pagamento -->
-          <div class="fields-inline fields-gap-3 payment-cash-row">
-            <div class="fields fields-h-5 fields-w-12 fields-font-3">
-              <label for="payment_cash_account">Conta (caixa)</label>
-              <select id="payment_cash_account" name="payment_cash_account"><option value="">Selecione...</option></select>
-            </div>
+                <div class="fields fields-h-6 fields-font-3 debt-span-2">
+                  <label for="receipt_number">Nº do Comprovante</label>
+                  <input id="receipt_number" name="receipt_number" maxlength="100" placeholder="Número ou identificação">
+                </div>
 
-            <div class="fields fields-h-5 fields-w-12 fields-font-3">
-              <label for="payment_cash_category">Categoria</label>
-              <select id="payment_cash_category" name="payment_cash_category"><option value="">Selecione...</option></select>
-            </div>
-
-            <div class="fields fields-h-5 fields-w-12 fields-font-3">
-              <label for="payment_cash_subcategory">Subcategoria</label>
-              <select id="payment_cash_subcategory" name="payment_cash_subcategory"><option value="">Selecione...</option></select>
-            </div>
-
-            <div class="fields fields-h-5 fields-w-15 fields-font-3">
-              <label for="payment_cash_chart_label">Conta Contábil</label>
-              <input id="payment_cash_chart_label" readonly placeholder="Selecione a conta contábil">
-              <input type="hidden" id="payment_cash_chart_id" name="payment_cash_chart_id">
-            </div>
-
-            <div class="cx-field-search" style="display:flex;align-items:center;align-self:flex-end;height:25px;">
-              <button type="button" id="payment_cash_chart_search" class="action-icon action-icon--search"
-                title="Buscar conta contábil" aria-label="Buscar conta contábil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
-            </div>
-
-            <div class="fields fields-h-5 fields-w-20 fields-font-3">
-              <label for="payment_cash_files_btn">Anexos (vão para a movimentação)</label>
-              <div id="payment_cash_files_box" style="display:flex;align-items:center;gap:6px;height:25px;min-width:0;">
-                <button type="button" id="payment_cash_files_btn" class="btn btn-flat btn-sm">Anexar</button>
-                <span id="payment_cash_files_label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#64748b;" title="Nenhum arquivo">Nenhum arquivo</span>
-                <button type="button" id="payment_cash_files_clear" class="action-icon action-icon--cancel"
-                  title="Remover anexos escolhidos" aria-label="Remover anexos escolhidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-                <input type="file" id="payment_cash_files" accept=".pdf,.xml,.png,.jpg,.jpeg,.webp" multiple hidden style="display:none !important;">
+                <div class="fields fields-h-6 fields-font-3 debt-span-2">
+                  <label for="payment_notes">Observações</label>
+                  <input id="payment_notes" name="payment_notes" maxlength="500">
+                </div>
               </div>
             </div>
+
+            <!-- Saída no caixa (Movimentações): criada junto com o pagamento -->
+            <div class="debt-section payment-cash-row">
+              <div class="debt-section__title">🏦 Saída no caixa</div>
+              <div class="debt-section__grid">
+                <div class="fields fields-h-6 fields-font-3 debt-span-full">
+                  <label for="payment_cash_account">Conta (caixa)</label>
+                  <select id="payment_cash_account" name="payment_cash_account"><option value="">Selecione...</option></select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payment_cash_category">Categoria</label>
+                  <select id="payment_cash_category" name="payment_cash_category"><option value="">Selecione...</option></select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payment_cash_subcategory">Subcategoria</label>
+                  <select id="payment_cash_subcategory" name="payment_cash_subcategory"><option value="">Selecione...</option></select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3 debt-span-full">
+                  <label for="payment_cash_chart_label">Conta Contábil</label>
+                  <div class="debt-inline-field">
+                    <input id="payment_cash_chart_label" readonly placeholder="Selecione a conta contábil">
+                    <button type="button" id="payment_cash_chart_search" class="action-icon action-icon--search"
+                      title="Buscar conta contábil" aria-label="Buscar conta contábil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+                  </div>
+                  <input type="hidden" id="payment_cash_chart_id" name="payment_cash_chart_id">
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3 debt-span-full">
+                  <label for="payment_cash_files_btn">Anexos (vão para a movimentação)</label>
+                  <div id="payment_cash_files_box" class="debt-inline-field">
+                    <button type="button" id="payment_cash_files_btn" class="btn btn-flat btn-sm">📎 Anexar</button>
+                    <span id="payment_cash_files_label" class="debt-files-label" title="Nenhum arquivo">Nenhum arquivo</span>
+                    <button type="button" id="payment_cash_files_clear" class="action-icon action-icon--cancel"
+                      title="Remover anexos escolhidos" aria-label="Remover anexos escolhidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                    <input type="file" id="payment_cash_files" accept=".pdf,.xml,.png,.jpg,.jpeg,.webp" multiple hidden style="display:none !important;">
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </form>
-        
-        <div class="modal__body">
-          <div id="paymentSummaryBox" class="summary-card"></div>
 
-      <section class="table-layout">
-        <div class="table-scroll table-height-300 table-row-h-20 table-scroll--rounded">
-          <table class="table table-zebra table-zebra-hover table-sticky-head">
-          <thead>
-          <tr>
-          <th>Parcela</th>
-          <th>Vencimento</th>
-          <th>Pagamento</th>
-          <th>Valor</th>
-          <th>Juros</th>
-          <th>Multa</th>
-          <th>Desconto</th>
-          <th>Efetivo</th>
-          <th>Forma</th>
-          <th>Comprovante</th>
-          <th>Ações</th>
-          </tr>
-          </thead>
-          <tbody id="paymentsTableBody">
-          <tr>
-          <td colspan="11" class="empty-row">Nenhum pagamento registrado.</td>
-          </tr>
-          </tbody></table>
-         </div>
-        </section>
-       </div>
+        <!-- Resumo + parcelas -->
+        <div class="debt-section debt-section--stack">
+          <div class="debt-section__title">📋 Parcelas</div>
+          <div id="paymentSummaryBox" class="summary-card debt-payment-summary"></div>
 
-     <footer class="modal__footer modal-footer-color-3">
-       <button class="btn btn-new btn-sm"type="button" data-close-modal="paymentModal">
-         Cancelar
-       </button>
+          <div class="table-scroll table-height-300 table-row-h-20 table-scroll--rounded debt-plan-table debt-payments-table">
+            <table class="table table-zebra table-zebra-hover table-sticky-head">
+              <thead>
+                <tr>
+                  <th>Parcela</th>
+                  <th>Vencimento</th>
+                  <th>Pagamento</th>
+                  <th>Valor</th>
+                  <th>Juros</th>
+                  <th>Multa</th>
+                  <th>Desconto</th>
+                  <th>Efetivo</th>
+                  <th>Forma</th>
+                  <th>Comprovante</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="paymentsTableBody">
+                <tr>
+                  <td colspan="11" class="empty-row">Nenhum pagamento registrado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-       <button
-        id="btnSavePayment"
-        class="btn btn-save btn-sm"
-        type="submit"
-        form="paymentForm">
-         Salvar Pagamento
-       </button>
-      </footer>
-     </section>
-     </div>
-    </div>
-  `);
+      <div class="modal__footer">
+        <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+        <button id="btnSavePayment" class="btn btn-save btn-sm" type="submit" form="paymentForm">💾 Salvar Pagamento</button>
+      </div>
+    </section>
+  </div>
+</div>
+`);
 }
 
 async function chooseSupplier() {
@@ -480,11 +447,6 @@ function bindModalEvents() {
   document.addEventListener('click', async (event) => {
     if (!(event.target instanceof Element)) return;
 
-    const closeButton = event.target.closest('[data-close-modal]');
-    if (closeButton) {
-      setModalVisibility(closeButton.dataset.closeModal, false);
-      return;
-    }
     if (event.target.closest('#creditor_name_form')) await chooseSupplier();
   });
 
@@ -492,12 +454,6 @@ function bindModalEvents() {
     if (event.target?.id === 'due_day_mode') syncDueDayMode();
   });
 
-  // ESC do modal de dívida fica com o modal.js (fecha só o de cima)
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    if (Modal.isOpen(DEBT_MODAL_ID)) return;
-    setModalVisibility(PAYMENT_MODAL_ID, false);
-  });
 }
 
 export function initializeDebtModals() {
@@ -521,9 +477,9 @@ export function closeCreateDebtsModal() {
 }
 
 export function openDebtPaymentsModal() {
-  setModalVisibility(PAYMENT_MODAL_ID, true);
+  Modal.open(PAYMENT_MODAL_ID, { focusSelector: '#payment_installment' });
 }
 
 export function closeDebtPaymentsModal() {
-  setModalVisibility(PAYMENT_MODAL_ID, false);
+  Modal.close(PAYMENT_MODAL_ID);
 }
