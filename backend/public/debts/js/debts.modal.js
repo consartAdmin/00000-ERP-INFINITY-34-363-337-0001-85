@@ -7,6 +7,7 @@
 
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { Modal } from '/public/includes/js/modal.js';
+import { enhanceCompactSelect } from '/public/includes/js/compactSelect.js';
 
 const DEBT_MODAL_ID = 'debtModal';
 const PAYMENT_MODAL_ID = 'paymentModal';
@@ -463,6 +464,9 @@ export function initializeDebtModals() {
   syncDueDayMode();
   bindModalEvents();
   Modal.setup();
+
+  // Lista de parcelas pode ter 100+ itens: abre com altura limitada
+  enhanceCompactSelect('payment_installment', { maxRows: 20 });
 }
 
 export function openCreateDebtsModal(title = 'Nova Dívida') {
