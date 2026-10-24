@@ -90,5 +90,4 @@ export function refreshDom() {
   els.paymentsTableBody = document.getElementById('paymentsTableBody');
   els.paymentSummaryBox = document.getElementById('paymentSummaryBox');
 
-  els.toast = document.getElementById('toast');
 }

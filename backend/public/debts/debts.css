@@ -1,0 +1,202 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ debts.css — Controle de Dívidas (CONSART ERP)                        ║
+   ║ Modal Nova/Editar Dívida no padrão modals.css / modal.js             ║
+   ║ (mesmo visual de cards do modal de Colaboradores)                    ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.debt-modal {
+  --debt-soft-line: #dbe1e8;
+  --debt-title-bg: #f8fafc;
+  --debt-radius: var(--table-radius-top, 10px);
+  --fields-border-color: #c7d0db;
+}
+
+/* altura automática, mas nunca maior que a tela (o corpo rola, cabeçalho e rodapé ficam fixos) */
+.debt-modal .modal__panel {
+  max-height: calc(100vh - (var(--modal-space, 16px) * 2));
+}
+
+.debt-modal__subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Cards: Dívida | Credor | Valores  /  Parcelamento | Faixas (largo) | Observações */
+.debt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.debt-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--debt-soft-line);
+  border-radius: var(--debt-radius);
+  padding: 10px 12px 12px;
+}
+
+.debt-section--wide {
+  grid-column: span 2;
+}
+
+.debt-section--full {
+  grid-column: 1 / -1;
+}
+
+.debt-section__title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin: -10px -12px 10px;
+  padding: 7px 12px;
+  background: var(--debt-title-bg);
+  border-bottom: 1px solid var(--debt-soft-line);
+  border-radius: var(--debt-radius) var(--debt-radius) 0 0;
+}
+
+.debt-section__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: end;
+}
+
+.debt-section__grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.debt-section__grid > .fields {
+  width: auto;
+}
+
+.debt-span-2 {
+  grid-column: span 2;
+}
+
+.debt-span-full {
+  grid-column: 1 / -1;
+}
+
+/* Valor Atualizado em destaque discreto */
+.debt-modal .debt-total {
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+/* Faixas de parcelas: inputs + botão na mesma linha, tabela embaixo */
+.debt-plan-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 8px 12px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+
+.debt-plan-inputs > .fields {
+  width: auto;
+}
+
+.debt-plan-table {
+  max-height: 160px;
+  background: #fff;
+  border-color: var(--debt-soft-line);
+}
+
+/* Observações preenche a altura do card */
+.debt-section__fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: auto;
+}
+
+.debt-section__fill textarea {
+  flex: 1 1 auto;
+  min-height: 60px;
+  resize: vertical;
+}
+
+.debt-modal .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .debt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .debt-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .debt-section--wide,
+  .debt-section--full {
+    grid-column: auto;
+  }
+
+  .debt-plan-inputs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL PAGAMENTOS
+   ───────────────────────────────────────────────────────────── */
+.debt-grid--payment {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  margin-bottom: 12px;
+}
+
+.debt-section__grid--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* input + ícone (Conta Contábil / Anexos) */
+.debt-inline-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.debt-inline-field > input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.debt-files-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.debt-section--stack {
+  gap: 10px;
+}
+
+.debt-payments-table {
+  max-height: 300px;
+}
+
+@media (max-width: 1100px) {
+  .debt-grid--payment {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
