@@ -7,10 +7,28 @@ import pool from '../../config/db.js';
 import { TB, PK } from './employees.constants.js';
 import { ensureTable } from './employeesSchema.repository.js';
 
+// Ordenação da lista (sortableTable) — só colunas desta whitelist chegam ao SQL
+const SORT_COLUMNS = Object.freeze({
+  id: PK,
+  full_name: 'LOWER(full_name)',
+  cpf: 'cpf',
+  department: "LOWER(COALESCE(department,''))",
+  position: "LOWER(COALESCE(position,''))",
+  admission_date: 'admission_date',
+  active: 'active',
+});
+
+function orderBy(sort, dir) {
+  const col = SORT_COLUMNS[String(sort || '')];
+  if (!col) return `created_at DESC, ${PK} DESC`;
+  const direction = String(dir).toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+  return `${col} ${direction} NULLS LAST, ${PK} DESC`;
+}
+
 // ─────────────────────────────────────────────────────────────
 // Employees CRUD
 // ─────────────────────────────────────────────────────────────
-export async function list({ q = '', active = true, limit = 50, offset = 0 } = {}) {
+export async function list({ q = '', active = true, limit = 50, offset = 0, sort = '', dir = 'asc' } = {}) {
   await ensureTable();
 
   const params = [];
@@ -44,7 +62,7 @@ export async function list({ q = '', active = true, limit = 50, offset = 0 } = {
       SELECT *
       FROM ${TB}
       ${where}
-      ORDER BY created_at DESC, ${PK} DESC
+      ORDER BY ${orderBy(sort, dir)}
       LIMIT ${Number(limit)} OFFSET ${Number(offset)}
     `,
     params

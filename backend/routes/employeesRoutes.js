@@ -8,6 +8,8 @@
 // ║ Endpoints:                                                                ║
 // ║  Employees:                                                               ║
 // ║   - GET    /api/employees                                                 ║
+// ║   - GET    /api/employees/reports?type=&format=  (PDF / Excel)            ║
+// ║   - GET    /api/employees/departments                                     ║
 // ║   - GET    /api/employees/:id                                             ║
 // ║   - POST   /api/employees                                                 ║
 // ║   - PUT    /api/employees/:id                                             ║
@@ -45,6 +47,8 @@ import {
   confirmUploadForEmployee,
   signReadByObject,
 } from '../controllers/employeesController.js';
+import { requireAuth } from '../middleware/authMiddleware.js';
+import { exportEmployeesReport, listEmployeeDepartments } from '../controllers/employeesReportsController.js';
 
 const r = Router();
 
@@ -52,6 +56,11 @@ const r = Router();
 // Employees
 // ─────────────────────────────────────────────
 r.get('/employees', listEmployees);
+
+// Relatórios (antes de /employees/:id para não cair no :id)
+// GET /api/employees/reports?type=list|payroll|trial&format=pdf|xlsx&active=&department=
+r.get('/employees/reports', requireAuth, exportEmployeesReport);
+r.get('/employees/departments', requireAuth, listEmployeeDepartments);
 r.get('/employees/:id', getEmployee);
 r.post('/employees', createEmployee);
 r.put('/employees/:id', updateEmployee);

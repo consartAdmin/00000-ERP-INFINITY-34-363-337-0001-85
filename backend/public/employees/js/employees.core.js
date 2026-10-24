@@ -26,6 +26,10 @@ export async function loadEmployees({
   const pageNum = Math.max(1, Number(page) || 1);
   params.set('limit', String(state.pageSize));
   params.set('offset', String((pageNum - 1) * state.pageSize));
+  if (state.sort) {
+    params.set('sort', state.sort);
+    params.set('dir', state.dir);
+  }
 
   const data = await fetchJSON(`${API_EMP}?${params.toString()}`);
 
