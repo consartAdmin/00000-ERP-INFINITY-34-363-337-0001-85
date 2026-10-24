@@ -12,6 +12,10 @@ const PICKERS = {
     id: '#receive_chart_account_id',
     search: '#receive_chart_account_search',
   },
+  link: {
+    id: '#arLinkChartAccountId',
+    search: '#arLinkChartAccountSearch',
+  },
 };
 
 function labelFrom(code, description) {

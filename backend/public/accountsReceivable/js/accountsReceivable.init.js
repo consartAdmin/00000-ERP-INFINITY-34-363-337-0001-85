@@ -14,6 +14,7 @@ import { bindFilters } from './accountsReceivable.filters.js';
 import { bindForm } from './accountsReceivable.form.js';
 import { bindReceiveModal } from './accountsReceivable.modal.js';
 import { bindAttachments } from './accountsReceivable.attachments.js';
+import { bindCustomerLink } from './accountsReceivable.customerLink.js';
 import { $ } from './accountsReceivable.utils.js';
 import { openCustomersModalSearch } from './customersModalSearch.js';
 import { Modal } from './modal.js';
@@ -89,6 +90,7 @@ async function initializeAccountsReceivable() {
   });
 
   bindAttachments();
+  bindCustomerLink();
   bindForm(loadAccounts);
   bindReceiveModal(loadAccounts);
   bindFilters();

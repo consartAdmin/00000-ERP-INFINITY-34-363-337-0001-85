@@ -140,3 +140,20 @@ export function uploadCashMovementFile(movId, file) {
   formData.append('arquivo', file, file.name);
   return postFile(`${window.API_BASE || window.apiBase || ''}/api/upload/anexo`, formData);
 }
+
+// -------------------------------------------------------------------
+// VÍNCULO FINANCEIRO DO CLIENTE (default_* em public."customers")
+// -------------------------------------------------------------------
+const ROOT_API = `${window.API_BASE || window.apiBase || ''}/api`;
+
+export const getCustomer = (id) =>
+  safeFetch(`${ROOT_API}/customers/${encodeURIComponent(id)}`);
+
+export const getChartAccount = (id) =>
+  safeFetch(`${ROOT_API}/chart-of-accounts/${encodeURIComponent(id)}`);
+
+export const updateCustomerFinancialDefaults = (id, payload) =>
+  safeFetch(`${ROOT_API}/customers/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
