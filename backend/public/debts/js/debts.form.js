@@ -16,6 +16,7 @@ import {
   openCreateDebtsModal,
   closeCreateDebtsModal
 } from './debts.modal.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 let installmentPlans = [];
 
@@ -57,9 +58,9 @@ export function renderInstallmentPlans() {
       <td>${escapeHtml(plan.end_installment)}</td>
       <td>${escapeHtml(formatMoney(plan.installment_amount))}</td>
       <td class="td-actions">
-        <button class="btn btn-danger btn-sm" type="button" data-action="remove-installment-plan" data-index="${index}">
-          Excluir
-        </button>
+        ${actionIconsHtml([
+          { action: 'delete', title: 'Excluir faixa', attrs: { 'data-action': 'remove-installment-plan', 'data-index': index } },
+        ])}
       </td>
     </tr>
   `).join('');
