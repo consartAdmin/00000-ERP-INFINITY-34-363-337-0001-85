@@ -314,6 +314,40 @@ async function createDeal(req, res) {
   }
 }
 
+// Tela Clientes Consart: clientes marcados → cards na etapa escolhida (padrão Triagem).
+// Body: { customer_ids: number[], stage_id?: number }
+async function createDealsFromCustomers(req, res) {
+  try {
+    const { customer_ids: customerIds = [], stage_id: stageId = null } = req.body || {};
+
+    const scope = await getSellerScope(req);
+    if (!scope.ok) return sendError(res, 401, scope.error || 'UNAUTHORIZED');
+
+    const pickSellerId = scope.is_admin
+      ? null
+      : (sellerId) => pickAllowedSellerId({
+        payloadSellerId: sellerId,
+        sellerIds: scope.sellerIds,
+        primarySellerId: scope.primarySellerId,
+      });
+
+    const { ok, data, error } = await crmDealsApi.createDealsFromCustomers({
+      customerIds,
+      stageId,
+      crmCompany: getCrmCompany(req),
+      pickSellerId,
+      updatedBy: getUserId(req),
+    });
+
+    if (!ok) return sendError(res, 400, error || 'DEALS_FROM_CUSTOMERS_ERROR');
+
+    return res.status(201).json({ ok: true, data });
+  } catch (err) {
+    console.error('[crmDealsController.createDealsFromCustomers]', err);
+    return sendError(res, 500, 'DEALS_FROM_CUSTOMERS_EXCEPTION');
+  }
+}
+
 async function updateDeal(req, res) {
   try {
     const id = Number(req.params.id);
@@ -571,6 +605,7 @@ const crmDealsController = {
   listCustomerLocations,
   getDeal,
   createDeal,
+  createDealsFromCustomers,
   updateDeal,
   moveDeal,
   deleteDeal,

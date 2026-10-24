@@ -9,6 +9,7 @@ import { ensureCrmCompanyColumn } from './crmDealsSchema.repository.js';
 import { listStages, getStageById, getStageByCode } from './crmDealsStages.repository.js';
 import { listDeals, getDealById, listCustomerLocations } from './crmDealsQuery.repository.js';
 import { createDeal } from './crmDealsCreate.repository.js';
+import { createDealsFromCustomers } from './crmDealsFromCustomers.repository.js';
 import { updateDeal, moveDealToStage } from './crmDealsUpdate.repository.js';
 import { deleteDeal } from './crmDealsRemove.repository.js';
 import {
@@ -51,6 +52,7 @@ const crmDealsApi = {
   listCustomerLocations,
   getDealById,
   createDeal,
+  createDealsFromCustomers,
   updateDeal,
   moveDealToStage,
   deleteDeal,
