@@ -117,26 +117,35 @@
           </div>
 
         </form>
+      </div>
 
-        <div class="table-scroll table-height-500 table-row-h-20" data-table-settings="debts.tablebody">
-          <table class="table table-zebra table-zebra-hover table-sticky-head">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Descrição</th>
-                <th>Credor</th>
-                <th>Tipo</th>
-                <th>Vencimento</th>
-                <th>Original</th>
-                <th>Pago</th>
-                <th>Aberto</th>
-                <th>Status</th>
-                <th class="th-actions">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-        </div>
+      <div class="table-scroll table-height-500 table-row-h-20" data-table-settings="debts.tablebody">
+        <table id="debtsTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-sortable" data-sort-column="code" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Código <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="description" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Descrição <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="creditor_name" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Credor <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="debt_type" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Tipo <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="due_date" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Vencimento <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="original_amount" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Original <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="paid_amount" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Pago <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="open_amount" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Aberto <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable" data-sort-column="status" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Status <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="th-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
       </div>
 
       <!-- =================================================== -->

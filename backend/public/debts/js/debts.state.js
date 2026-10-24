@@ -8,5 +8,7 @@ export const state = {
   total: 0,
   pages: 1,
   activeDebtId: null,
-  loading: false
+  loading: false,
+  sortColumn: '',
+  sortDirection: 'asc'
 };

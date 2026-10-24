@@ -24,6 +24,8 @@ export function getFilters() {
     due_date_to: els.filterDueDateRange?.value?.endDate || '',
     only_overdue: onlyOverdue,
     only_open: onlyOpen,
+    sort_by: state.sortColumn,
+    sort_dir: state.sortColumn ? state.sortDirection : '',
     page: state.page,
     limit: state.limit
   };
@@ -35,6 +37,8 @@ export async function loadSummary() {
 
     delete filters.page;
     delete filters.limit;
+    delete filters.sort_by;
+    delete filters.sort_dir;
 
     const qs = buildQuery(filters);
     const data = await fetchJSON(`${API_BASE}/debts/summary?${qs}`);
