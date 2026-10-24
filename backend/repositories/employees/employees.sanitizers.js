@@ -22,15 +22,22 @@ export function normalizePayload(input = {}) {
     'trial_start_date', 'trial_end_date', 'trial_extension_end_date',
   ].forEach((k) => { if (k in input) out[COLS[k]] = toDateOrNull(input[k]); });
 
-  ['salary_base', 'transport_benefit', 'food_benefit', 'meal_benefit', 'health_benefit', 'dependents']
+  ['salary_base', 'transport_benefit', 'food_benefit', 'meal_benefit', 'health_benefit', 'dependents',
+    'employee_department_id', 'employee_position_id']
     .forEach((k) => { if (k in input) out[COLS[k]] = toNumOrNull(input[k]); });
 
   ['active', 'trial_extended'].forEach((k) => {
     if (k in input) out[COLS[k]] = toBoolOrNull(input[k]);
   });
 
+  // null nesses campos significa "limpar" (ex.: tirar o departamento do colaborador)
+  const CLEARABLE = new Set([
+    COLS.notes, COLS.trial_notes,
+    COLS.department, COLS.position, COLS.employee_department_id, COLS.employee_position_id,
+  ]);
+
   Object.keys(out).forEach((k) => {
-    if (out[k] === null && k !== COLS.notes && k !== COLS.trial_notes) delete out[k];
+    if (out[k] === null && !CLEARABLE.has(k)) delete out[k];
   });
 
   return out;

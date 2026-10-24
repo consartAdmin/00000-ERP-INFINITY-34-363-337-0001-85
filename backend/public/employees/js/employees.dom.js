@@ -38,6 +38,8 @@ export const el = {
   admission_date: qs('#admission_date'),
   department: qs('#department'),
   position: qs('#position'),
+  employee_department_id: qs('#employee_department_id'),
+  employee_position_id: qs('#employee_position_id'),
   email: qs('#email'),
   phone: qs('#phone'),
   mobile: qs('#mobile'),

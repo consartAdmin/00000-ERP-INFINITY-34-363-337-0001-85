@@ -129,6 +129,8 @@ export async function ensureTable() {
           ADD COLUMN IF NOT EXISTS postal_code              VARCHAR(10),
           ADD COLUMN IF NOT EXISTS position                 VARCHAR(100),
           ADD COLUMN IF NOT EXISTS department               VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS employee_department_id   INTEGER,
+          ADD COLUMN IF NOT EXISTS employee_position_id     INTEGER,
           ADD COLUMN IF NOT EXISTS employment_type          VARCHAR(50),
           ADD COLUMN IF NOT EXISTS salary_base              NUMERIC(12,2),
           ADD COLUMN IF NOT EXISTS termination_date         DATE,

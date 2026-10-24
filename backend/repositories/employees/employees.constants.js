@@ -28,6 +28,10 @@ export const COLS = Object.freeze({
   postal_code: 'postal_code',
   position: 'position',
   department: 'department',
+  // vínculo com os cadastros (employeesDepartments / employeesPositions);
+  // position/department continuam guardando o nome (lista e relatórios)
+  employee_department_id: 'employee_department_id',
+  employee_position_id: 'employee_position_id',
   employment_type: 'employment_type',
   salary_base: 'salary_base',
   admission_date: 'admission_date',

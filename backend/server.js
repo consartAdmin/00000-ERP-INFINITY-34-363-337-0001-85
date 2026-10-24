@@ -1514,6 +1514,10 @@ app.use('/api/transporters', transportersRoutes);
 import employeesRoutes from './routes/employeesRoutes.js';
 app.use('/api', employeesRoutes);
 
+/* Departamentos e Cargos (R.H) */
+import employeesCatalogsRoutes from './routes/employeesCatalogsRoutes.js';
+app.use('/api', employeesCatalogsRoutes);
+
 import parametrosFiscaisRoutes from './routes/parametrosFiscaisRoutes.js';
 app.use("/api/paramfiscais", parametrosFiscaisRoutes);
 
