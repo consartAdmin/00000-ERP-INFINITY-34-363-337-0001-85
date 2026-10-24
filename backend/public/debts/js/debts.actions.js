@@ -51,8 +51,8 @@ export function bindEvents() {
       els.filterDueDateRange.value = { startDate: '', endDate: '' };
     }
 
-    if (els.only_open) {
-      els.only_open.checked = true;
+    if (els.status) {
+      els.status.value = 'EM_ABERTO';
     }
 
     state.page = 1;

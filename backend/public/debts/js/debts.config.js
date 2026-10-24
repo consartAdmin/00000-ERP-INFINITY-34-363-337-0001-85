@@ -17,8 +17,6 @@ export function refreshDom() {
   els.debt_type = document.getElementById('debt_type');
   els.creditor_name = document.getElementById('creditor_name');
   els.filterDueDateRange = document.getElementById('filterDueDateRange');
-  els.only_overdue = document.getElementById('only_overdue');
-  els.only_open = document.getElementById('only_open');
 
   els.btnClearFilters = document.getElementById('btnClearFilters');
   els.btnReload = document.getElementById('btnReload');

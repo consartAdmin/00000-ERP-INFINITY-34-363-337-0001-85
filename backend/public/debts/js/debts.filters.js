@@ -8,15 +8,22 @@ import { buildQuery, formatMoney, showToast } from './debts.utils.js';
 import { loadDebts } from './debts.render.js';
 
 export function getFilters() {
+  const selectedStatus = els.status?.value || '';
+
+  // "Em Aberto" = tudo com saldo (inclui Parcial/Vencido);
+  // "Vencido" = vencimento passado com saldo (o status gravado pode estar desatualizado).
+  const onlyOpen = selectedStatus === 'EM_ABERTO';
+  const onlyOverdue = selectedStatus === 'VENCIDO';
+
   return {
     q: els.q?.value.trim() || '',
-    status: els.status?.value || '',
+    status: onlyOpen || onlyOverdue ? '' : selectedStatus,
     debt_type: els.debt_type?.value || '',
     creditor_name: els.creditor_name?.value.trim() || '',
     due_date_from: els.filterDueDateRange?.value?.startDate || '',
     due_date_to: els.filterDueDateRange?.value?.endDate || '',
-    only_overdue: Boolean(els.only_overdue?.checked),
-    only_open: Boolean(els.only_open?.checked),
+    only_overdue: onlyOverdue,
+    only_open: onlyOpen,
     page: state.page,
     limit: state.limit
   };
