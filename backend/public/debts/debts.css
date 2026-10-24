@@ -200,3 +200,9 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Ícone ＋ no rótulo do Tipo (cadastro rápido), igual ao Departamento/Cargo do Colaborador */
+.debt-field-actions { position: relative; }
+.debt-field-actions__icons { position: absolute; top: -3px; right: 0; }
+.debt-field-actions .action-icons { --action-icon-gap: 2px; --action-icon-size: 14px; }
+.debt-field-actions .action-icon { padding: 1px 3px; }
