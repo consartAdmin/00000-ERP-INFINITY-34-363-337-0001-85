@@ -200,6 +200,17 @@ a.ar-files__name:hover {
   padding: 1px 3px;
 }
 
+/* Ícone 🔗 no rótulo do Cliente (vínculo com Categoria/Subcategoria/Plano de Contas) */
+.ar-field-actions { position: relative; }
+.ar-field-actions__icons { position: absolute; top: -3px; right: 0; }
+.ar-field-actions .action-icons { --action-icon-gap: 2px; --action-icon-size: 14px; }
+.ar-field-actions .action-icon { padding: 1px 3px; }
+
+.ar-link-status {
+  display: block;
+  margin-top: 8px;
+}
+
 /* Valor Original em destaque discreto */
 .ar-modal .ar-total {
   font-weight: 700;

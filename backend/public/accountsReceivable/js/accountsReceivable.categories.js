@@ -18,6 +18,11 @@ const SELECT_PAIRS = [
     subcategory: '#receive_subcategoria',
     placeholder: '(opcional)',
   },
+  {
+    category: '#arLinkCategoryId',
+    subcategory: '#arLinkSubcategoryId',
+    placeholder: '— Nenhuma —',
+  },
 ];
 
 let categories = [];

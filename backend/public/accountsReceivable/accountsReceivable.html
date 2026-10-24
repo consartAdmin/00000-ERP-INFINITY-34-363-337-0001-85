@@ -411,8 +411,13 @@
               <div class="ar-section">
                 <div class="ar-section__title">📄 Conta</div>
                 <div class="ar-section__grid">
-                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full ar-field-actions">
                     <label for="arCustomerSearch">Cliente *</label>
+                    <span class="ar-field-actions__icons action-icons">
+                      <button type="button" id="btnCustomerLink" class="action-icon action-icon--view"
+                        title="Vínculo do cliente com Categoria, Subcategoria e Plano de Contas"
+                        aria-label="Vínculo do cliente com Categoria, Subcategoria e Plano de Contas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg></button>
+                    </span>
                     <input type="hidden" id="arCustomerId" name="customer_id">
                     <input type="text" id="arCustomerSearch" placeholder="Clique para localizar um cliente"
                       autocomplete="off" readonly required role="button" aria-haspopup="dialog">
@@ -785,6 +790,68 @@
     </div>
   </div>
 
+
+  <!-- Modal Vínculo financeiro do cliente (padrões gravados no cadastro do cliente) -->
+  <div id="arCustomerLinkModal" class="modal ar-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true" aria-labelledby="arCustomerLinkTitle">
+
+        <!-- div (e não <header>): a barra de título global (topGradientBar) se ancora no 1º <header> da página -->
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="arCustomerLinkTitle" class="modal__title">🔗 Vínculo do cliente</h2>
+            <p class="ar-modal__subtitle">Categoria, Subcategoria e Plano de Contas usados nas contas deste cliente.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="arCustomerLinkForm" class="ar-form" autocomplete="off">
+            <input type="hidden" id="arLinkCustomerId">
+
+            <div class="ar-section">
+              <div class="ar-section__title">🏷️ Classificação padrão do cliente</div>
+              <div class="ar-section__grid">
+                <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                  <label for="arLinkCustomerName">Cliente</label>
+                  <input type="text" id="arLinkCustomerName" readonly>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="arLinkCategoryId">Categoria</label>
+                  <select id="arLinkCategoryId">
+                    <option value="">— Nenhuma —</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="arLinkSubcategoryId">Subcategoria</label>
+                  <select id="arLinkSubcategoryId">
+                    <option value="">— Nenhuma —</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                  <label for="arLinkChartAccountSearch">Plano de Contas</label>
+                  <input type="hidden" id="arLinkChartAccountId">
+                  <input type="text" id="arLinkChartAccountSearch" placeholder="Clique para localizar uma conta contábil"
+                    readonly role="button" aria-haspopup="dialog">
+                </div>
+              </div>
+              <small id="arLinkStatus" class="ar-help ar-link-status"></small>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="submit" form="arCustomerLinkForm" class="btn btn-save btn-sm">🔗 Salvar vínculo</button>
+        </div>
+      </section>
+    </div>
+  </div>
 
   <!-- Core (centerAlertModal, helpers globais, etc.) -->
   <script type="module" src="/public/includes/js/core.js"></script>
