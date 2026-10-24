@@ -36,7 +36,6 @@ export async function loadSummary() {
 
     els.sumTotalOpen.textContent = formatMoney(summary.total_open);
     els.sumTotalOverdue.textContent = formatMoney(summary.total_overdue);
-    els.sumDueToday.textContent = formatMoney(summary.due_today);
     els.sumTotalPaid.textContent = formatMoney(summary.total_paid);
   } catch (error) {
     console.error('[debts] loadSummary', error);

@@ -37,7 +37,6 @@ export function refreshDom() {
 
   els.sumTotalOpen = document.getElementById('sumTotalOpen');
   els.sumTotalOverdue = document.getElementById('sumTotalOverdue');
-  els.sumDueToday = document.getElementById('sumDueToday');
   els.sumTotalPaid = document.getElementById('sumTotalPaid');
 
   els.debtModal = document.getElementById('debtModal');

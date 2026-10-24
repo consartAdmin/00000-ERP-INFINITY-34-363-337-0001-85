@@ -25,7 +25,7 @@
       <div class="table-layout-integrated__filter">
 
         <!-- =================================================== -->
-        <!-- HEADER: TITLE + SUMMARY + BUTTONS                    -->
+        <!-- HEADER: TITLE + BUTTONS                              -->
         <!-- =================================================== -->
 
         <div class="fields-inline fields-gap-3">
@@ -40,31 +40,7 @@
             </p>
           </div>
 
-          <div class="summary summary--center summary-gap-8 summary-width-auto summary-flex-1">
-
-            <div class="summary-pill summary-pill--info summary-width-7 summary-height-5">
-              <span>Total em Aberto:&nbsp;</span>
-              <strong id="sumTotalOpen">R$ 0,00</strong>
-            </div>
-
-            <div class="summary-pill summary-pill--danger summary-width-7 summary-height-5">
-              <span>Vencidas:&nbsp;</span>
-              <strong id="sumTotalOverdue">R$ 0,00</strong>
-            </div>
-
-            <div class="summary-pill summary-pill--warning summary-width-7 summary-height-5">
-              <span>Vencem Hoje:&nbsp;</span>
-              <strong id="sumDueToday">R$ 0,00</strong>
-            </div>
-
-            <div class="summary-pill summary-pill--success summary-width-7 summary-height-5">
-              <span>Pagas:&nbsp;</span>
-              <strong id="sumTotalPaid">R$ 0,00</strong>
-            </div>
-
-          </div>
-
-          <div class="btn-inline">
+          <div class="btn-inline btn-position-right">
             <button id="btnReload" class="btn btn-new btn-sm" type="button">
               Recarregar
             </button>
@@ -184,11 +160,26 @@
       <!-- =================================================== -->
 
       <footer class="table-footer">
-        <div class="table-footer__info">
+        <div class="table-footer__info table-footer__info--totals">
           <div class="summary-pill summary-pill-success summary-width-5 summary-left-space-3">
             <span id="apTableInfo">
               0 Registros
             </span>
+          </div>
+
+          <div class="summary-pill">
+            <span>Total em Aberto:&nbsp;</span>
+            <strong id="sumTotalOpen" class="table-footer__total--info">R$ 0,00</strong>
+          </div>
+
+          <div class="summary-pill">
+            <span>Vencidas:&nbsp;</span>
+            <strong id="sumTotalOverdue" class="table-footer__total--danger">R$ 0,00</strong>
+          </div>
+
+          <div class="summary-pill">
+            <span>Pagas:&nbsp;</span>
+            <strong id="sumTotalPaid" class="table-footer__total--success">R$ 0,00</strong>
           </div>
         </div>
 

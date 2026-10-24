@@ -153,6 +153,33 @@
   font-weight: 500;
 }
 
+/* Resumos ao lado do contador (ex.: Débitos): mesmo estilo discreto, só o valor colorido */
+.table-footer .table-footer__info--totals {
+  gap: 6px 8px;
+  flex-wrap: wrap;
+  padding: 6px 0 6px var(--summary-side-space-3, 12px);
+}
+
+.table-footer .table-footer__info--totals .summary-pill {
+  margin-left: 0;
+  white-space: nowrap;
+}
+
+.table-footer .table-footer__total--info {
+  color: var(--summary-pill-info-tx, #1d4ed8);
+  font-weight: 600;
+}
+
+.table-footer .table-footer__total--danger {
+  color: var(--summary-pill-danger-tx, #991b1b);
+  font-weight: 600;
+}
+
+.table-footer .table-footer__total--success {
+  color: var(--summary-pill-success-tx, #166534);
+  font-weight: 600;
+}
+
 /* Paginação: grupo único (Anterior | Página x de y | Próxima) */
 .table-footer .table-footer__pagination {
   gap: 0;
