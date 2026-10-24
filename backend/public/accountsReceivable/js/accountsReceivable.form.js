@@ -23,6 +23,11 @@ import { validateAccount } from './accountsReceivable.validation.js';
 import { Modal } from './modal.js';
 import { refreshCashSubcategorySelect } from './accountsReceivable.categories.js';
 import {
+  resetAttachments,
+  uploadPendingAttachments,
+  uploadSummary,
+} from './accountsReceivable.attachments.js';
+import {
   clearChartAccountPicker,
   setChartAccountPickerFromRecord,
 } from './accountsReceivable.chartAccountPicker.js';
@@ -32,6 +37,7 @@ let editingAsaasBoleto = false;
 const BOLETO_EDITABLE_FIELDS = new Set([
   'arDueDate',
   'arTotalValue',
+  'arFilesInput',
 ]);
 
 function setBoletoEditMode(enabled) {
@@ -159,6 +165,7 @@ export function resetForm() {
   setValue('arDescription', '');
   setValue('arNotes', '');
   setValue('arAttachmentUrl', '');
+  resetAttachments('form');
 }
 
 // ---------------------------------------------------------------------
@@ -278,6 +285,10 @@ function fillForm(data = {}) {
   refreshCashSubcategorySelect('#arCategoryId');
   setValue('arSubcategoryId', values.arSubcategoryId);
   setChartAccountPickerFromRecord('form', data);
+  resetAttachments('form', {
+    accountId: values.arId || null,
+    legacyUrl: values.arAttachmentUrl,
+  });
 }
 // ---------------------------------------------------------------------
 // ABRIR EDIÇÃO
@@ -418,6 +429,7 @@ async function handleSubmit(event, onSaved) {
     }
 
     const payload = formPayload();
+    let savedId = id;
 
     if (id && editingAsaasBoleto) {
       if (!payload.due_date) {
@@ -437,17 +449,21 @@ async function handleSubmit(event, onSaved) {
       await updateAccount(id, payload);
     } else {
       validateAccount(payload);
-      await createAccount(payload);
+      const created = await createAccount(payload);
+      savedId = created?.data?.id ?? created?.id ?? null;
     }
+
+    // Anexos escolhidos sobem depois que a conta existe
+    const uploaded = await uploadPendingAttachments('form', savedId);
 
     showCenterModal({
       type: 'success',
       title: id ? 'Conta atualizada' : 'Conta criada',
-      message: id
+      message: (id
         ? editingAsaasBoleto
           ? 'Vencimento e valor atualizados no Asaas e no ERP.'
           : 'Conta a receber atualizada com sucesso.'
-        : 'Nova conta a receber criada com sucesso.',
+        : 'Nova conta a receber criada com sucesso.') + uploadSummary(uploaded),
     });
 
     closeDrawer();

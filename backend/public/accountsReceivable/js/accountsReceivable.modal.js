@@ -4,6 +4,11 @@ import { $, dateISO } from './accountsReceivable.utils.js';
 import { Modal } from './modal.js';
 import { statusBR } from './accountsReceivable.render.js';
 import {
+  resetAttachments,
+  uploadPendingAttachments,
+  uploadSummary,
+} from './accountsReceivable.attachments.js';
+import {
   clearChartAccountPicker,
   setChartAccountPickerFromRecord,
 } from './accountsReceivable.chartAccountPicker.js';
@@ -31,6 +36,7 @@ export async function openReceiveModal(row, id) {
   $('#receive_document_type_id').value = '';
   $('#receive_chart_account_id').value = '';
   clearChartAccountPicker('receive');
+  resetAttachments('receive', { accountId });
   $('#receive_categoria').dispatchEvent(new Event('change', { bubbles: true }));
 
   try {
@@ -92,8 +98,10 @@ export function bindReceiveModal(onReceived) {
       subcategory_id: $('#receive_subcategoria').value || null, notes: $('#receive_observacao').value || null,
     };
     try {
-      await receiveAccount(id, payload);
-      showCenterModal({ type: 'success', title: 'Recebimento registrado', message: 'Conta marcada como recebida e movimentação registrada.' });
+      const result = await receiveAccount(id, payload);
+      // Anexos vão para a movimentação do Caixa criada no recebimento
+      const uploaded = await uploadPendingAttachments('receive', result?.data?.cash_movement_id);
+      showCenterModal({ type: 'success', title: 'Recebimento registrado', message: 'Conta marcada como recebida e movimentação registrada.' + uploadSummary(uploaded) });
       closeReceiveModal();
       await onReceived();
     } catch (error) { showCenterModal({ type: 'error', title: 'Erro ao registrar recebimento', message: error.message || 'Falha ao comunicar com a API.' }); }

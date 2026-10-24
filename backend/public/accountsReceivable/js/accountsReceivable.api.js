@@ -101,3 +101,42 @@ export async function syncAsaasStream(onEvent) {
 export const boletoUrl = (id) => `${API_BASE}/${encodeURIComponent(id)}/boleto`;
 export const pdfUrl = (params) => `${API_BASE}/export/pdf?${params}`;
 export const excelUrl = (params) => `${API_BASE}/export/excel?${params}`;
+
+// -------------------------------------------------------------------
+// ANEXOS (bucket do projeto)
+// -------------------------------------------------------------------
+async function postFile(url, formData) {
+  const response = await fetch(url, { method: 'POST', body: formData, credentials: 'include' });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || data?.details || data?.error || `HTTP ${response.status}`);
+  }
+  return data;
+}
+
+export const listAttachments = (id) =>
+  safeFetch(`${API_BASE}/${encodeURIComponent(id)}/attachments`);
+
+export const attachmentDownloadUrl = (id, attachmentId) =>
+  `${API_BASE}/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}/download`;
+
+export const deleteAttachment = (id, attachmentId) =>
+  safeFetch(`${API_BASE}/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`, {
+    method: 'DELETE',
+  });
+
+export function uploadAttachment(id, file) {
+  const formData = new FormData();
+  formData.append('arquivo', file, file.name);
+  return postFile(`${API_BASE}/${encodeURIComponent(id)}/attachments`, formData);
+}
+
+// Mesmo endpoint do cadastro em Movimentações (e de Débitos): o arquivo
+// fica na pasta accountsReceivable/ do bucket, vinculado à movimentação.
+export function uploadCashMovementFile(movId, file) {
+  const formData = new FormData();
+  formData.append('movId', String(movId));
+  formData.append('basePrefix', 'accountsReceivable');
+  formData.append('arquivo', file, file.name);
+  return postFile(`${window.API_BASE || window.apiBase || ''}/api/upload/anexo`, formData);
+}

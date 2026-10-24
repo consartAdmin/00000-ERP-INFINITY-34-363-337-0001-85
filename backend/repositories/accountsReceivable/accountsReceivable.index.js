@@ -19,6 +19,12 @@ import { getById } from './accountsReceivableGetById.repository.js';
 import { createAccount } from './accountsReceivableCreate.repository.js';
 import { updateAccount } from './accountsReceivableUpdate.repository.js';
 import { receivePayment } from './accountsReceivableReceive.repository.js';
+import {
+  listAttachments,
+  addAttachment,
+  signAttachmentDownload,
+  deactivateAttachment,
+} from './accountsReceivableAttachments.repository.js';
 import { updateBoletoValueAndDueDate, cancelAsaasBoleto } from './accountsReceivableBoletoUpdate.repository.js';
 import { syncFromAsaas } from './accountsReceivableAsaasSync.repository.js';
 import { resolveAsaasPaymentIdByAccountsReceivableId } from './accountsReceivableBridge.repository.js';
@@ -45,6 +51,10 @@ export {
   updateAccount,
   updateBoletoValueAndDueDate,
   receivePayment,
+  listAttachments,
+  addAttachment,
+  signAttachmentDownload,
+  deactivateAttachment,
   syncFromAsaas,
   resumoMes,
   resolveAsaasPaymentIdByAccountsReceivableId,

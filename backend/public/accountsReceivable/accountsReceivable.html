@@ -543,18 +543,27 @@
                 </div>
               </div>
 
-              <!-- Observações e anexo -->
+              <!-- Observações e anexos -->
               <div class="ar-section ar-section--wide">
-                <div class="ar-section__title">📝 Observações e anexo</div>
-                <div class="ar-section__fill">
+                <div class="ar-section__title">📝 Observações e anexos</div>
+                <div class="ar-notes-row ar-notes-row--half">
                   <div class="fields fields-font-3 ar-section__fill">
                     <label for="arNotes" class="sr-only">Observações</label>
                     <textarea id="arNotes" rows="3" placeholder="Observações sobre a conta..."></textarea>
                   </div>
 
-                  <div class="fields fields-h-6 fields-font-3">
-                    <label for="arAttachmentUrl">URL do Anexo</label>
-                    <input type="url" id="arAttachmentUrl" placeholder="https://...">
+                  <div class="fields fields-font-3">
+                    <label for="arFilesBtn">Anexos da conta</label>
+                    <div id="arFilesBox" class="ar-files">
+                      <div class="ar-files__bar">
+                        <button type="button" id="arFilesBtn" class="btn btn-flat btn-sm">📎 Anexar</button>
+                        <span class="ar-files__hint">ou arraste aqui (até 50 MB)</span>
+                      </div>
+                      <ul id="arFilesList" class="ar-files__list" aria-live="polite"></ul>
+                      <input type="file" id="arFilesInput" multiple hidden>
+                    </div>
+                    <!-- Link antigo (attachment_url): mantido e mostrado na lista -->
+                    <input type="hidden" id="arAttachmentUrl">
                   </div>
                 </div>
               </div>
@@ -732,7 +741,7 @@
 
               <!-- Observações e anexo -->
               <div class="ar-section ar-section--full">
-                <div class="ar-section__title">📝 Observações e anexo</div>
+                <div class="ar-section__title">📝 Observações e anexos</div>
                 <div class="ar-notes-row">
                   <div class="fields fields-font-3 ar-section__fill">
                     <label for="receive_observacao" class="sr-only">Observações</label>
@@ -740,13 +749,17 @@
                   </div>
 
                   <div class="fields fields-font-3">
-                    <label for="receive_anexoFile">Anexo da movimentação (opcional)</label>
-                    <input type="file" id="receive_anexoFile">
-
-                    <progress id="receive_anexoProgress" class="ar-progress" max="100" value="0" hidden></progress>
-
+                    <label for="receiveFilesBtn">Anexos da movimentação (opcional)</label>
+                    <div id="receiveFilesBox" class="ar-files">
+                      <div class="ar-files__bar">
+                        <button type="button" id="receiveFilesBtn" class="btn btn-flat btn-sm">📎 Anexar</button>
+                        <span class="ar-files__hint">ou arraste aqui (até 50 MB)</span>
+                      </div>
+                      <ul id="receiveFilesList" class="ar-files__list" aria-live="polite"></ul>
+                      <input type="file" id="receiveFilesInput" multiple hidden>
+                    </div>
                     <small class="ar-help">
-                      O arquivo será vinculado à movimentação no Caixa após confirmar o recebimento.
+                      Os arquivos vão para a movimentação no Caixa ao confirmar o recebimento.
                     </small>
                   </div>
                 </div>
