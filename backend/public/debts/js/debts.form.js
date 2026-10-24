@@ -17,6 +17,7 @@ import {
   closeCreateDebtsModal
 } from './debts.modal.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { setDebtTypeValue } from './debts.types.js';
 
 let installmentPlans = [];
 
@@ -175,7 +176,7 @@ export function fillDebtForm(row = {}) {
   els.debt_id.value = row.id ?? '';
   els.code.value = row.code ?? '';
   els.description.value = row.description ?? '';
-  els.debt_type_form.value = row.debt_type ?? '';
+  setDebtTypeValue(els.debt_type_form, row.debt_type ?? '');
 
   els.creditor_name_form.value = row.creditor_name ?? '';
   els.creditor_document.value = row.creditor_document ?? '';

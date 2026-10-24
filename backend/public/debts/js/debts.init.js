@@ -17,6 +17,7 @@ import { bindEvents } from './debts.actions.js';
 import { refreshAll } from './debts.filters.js';
 import { showToast } from './debts.utils.js';
 import { initializeDebtModals } from './debts.modal.js';
+import { initDebtTypes } from './debts.types.js';
 import { loadDebts } from './debts.render.js';
 import createSortableTable from '/public/includes/js/sortableTable.js';
 
@@ -33,6 +34,9 @@ async function initDebts() {
 
     // Atualiza as referências para incluir os elementos dos modais.
     refreshDom();
+
+    // Tipos de dívida (filtro, modal e cadastro rápido).
+    await initDebtTypes().catch((error) => console.error('[debts.init] Tipos de dívida:', error));
 
     // Define o tamanho inicial da página.
     state.limit = Number(els.pageSize?.value) || 50;

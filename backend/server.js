@@ -1210,6 +1210,12 @@ import debtsRoutes from './routes/debtsRoutes.js';
 app.use('/api', debtsRoutes);
 
 /* ╔══════════════════════════════════════════════════════════╗
+   ║ ROTA: "debtsTypesRoutes"                                 ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import debtsTypesRoutes from './routes/debtsTypesRoutes.js';
+app.use('/api', debtsTypesRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
  * ║ ROTA: "chartOfAccountsRoutes"                            ║
  * ╚══════════════════════════════════════════════════════════╝ */
 import chartOfAccountsRoutes from './routes/chartOfAccountsRoutes.js';

@@ -61,18 +61,11 @@ function injectCreateDebtModal() {
                   <input id="code" name="code" maxlength="30">
                 </div>
 
-                <div class="fields fields-h-6 fields-font-3 debt-span-2">
+                <div class="fields fields-h-6 fields-font-3 debt-span-2 debt-field-actions">
                   <label for="debt_type_form">Tipo</label>
+                  <span class="debt-field-actions__icons" data-debt-type-actions></span>
                   <select id="debt_type_form" name="debt_type" required>
                     <option value="">Selecione</option>
-                    <option value="FORNECEDOR">Fornecedor</option>
-                    <option value="IMPOSTO">Imposto</option>
-                    <option value="ALUGUEL">Aluguel</option>
-                    <option value="EMPRESTIMO">Empréstimo</option>
-                    <option value="CARTAO">Cartão</option>
-                    <option value="FOLHA">Folha</option>
-                    <option value="SERVICOS">Serviços</option>
-                    <option value="OUTROS">Outros</option>
                   </select>
                 </div>
 

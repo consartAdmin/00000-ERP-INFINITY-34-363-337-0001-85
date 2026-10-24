@@ -14,6 +14,7 @@ import {
   showToast
 } from './debts.utils.js';
 import { getFilters } from './debts.filters.js';
+import { getDebtTypeName } from './debts.types.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 export function renderTable() {
@@ -57,7 +58,7 @@ export function renderTable() {
           </td>
 
           <td>
-            ${escapeHtml(row.debt_type || '-')}
+            ${escapeHtml(getDebtTypeName(row.debt_type) || '-')}
           </td>
 
           <td>
