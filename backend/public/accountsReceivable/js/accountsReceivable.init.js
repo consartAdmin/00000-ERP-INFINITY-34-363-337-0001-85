@@ -16,7 +16,7 @@ import { bindReceiveModal } from './accountsReceivable.modal.js';
 import { bindAttachments } from './accountsReceivable.attachments.js';
 import { bindCustomerLink } from './accountsReceivable.customerLink.js';
 import { $ } from './accountsReceivable.utils.js';
-import { openCustomersModalSearch } from './customersModalSearch.js';
+import { openCustomersModalSearch } from '/public/modalsSearch/customersModalSearch.js';
 import { Modal } from './modal.js';
 import { initCashCategorySelects } from './accountsReceivable.categories.js';
 import { initCashDocumentTypeSelects } from './accountsReceivable.documentTypes.js';
