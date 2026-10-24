@@ -100,14 +100,9 @@
               <input id="creditor_name" name="creditor_name" type="text" placeholder="Nome do credor" />
             </div>
 
-            <div class="fields fields-h-6 fields-w-10 fields-font-3">
-              <label for="due_date_from">Venc. Inicial</label>
-              <input id="due_date_from" name="due_date_from" type="date" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-12 fields-font-3">
-              <label for="due_date_to">Venc. Final</label>
-              <input id="due_date_to" name="due_date_to" type="date" />
+            <div class="fields fields-h-6 fields-w-16 fields-font-3">
+              <date-range-field id="filterDueDateRange" class="drf-width-3 drf-height-3" label="Vencimento"
+                locale="pt-BR" name-start="due_date_from" name-end="due_date_to"></date-range-field>
             </div>
 
             <div class="checkbox-group">

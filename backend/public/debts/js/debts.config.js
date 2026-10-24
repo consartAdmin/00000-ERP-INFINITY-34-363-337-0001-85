@@ -16,8 +16,7 @@ export function refreshDom() {
   els.status = document.getElementById('status');
   els.debt_type = document.getElementById('debt_type');
   els.creditor_name = document.getElementById('creditor_name');
-  els.due_date_from = document.getElementById('due_date_from');
-  els.due_date_to = document.getElementById('due_date_to');
+  els.filterDueDateRange = document.getElementById('filterDueDateRange');
   els.only_overdue = document.getElementById('only_overdue');
   els.only_open = document.getElementById('only_open');
 

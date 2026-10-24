@@ -46,6 +46,11 @@ export function bindEvents() {
   els.btnClearFilters?.addEventListener('click', async () => {
     els.filtersForm?.reset();
 
+    // date-range-field não limpa com form.reset()
+    if (els.filterDueDateRange) {
+      els.filterDueDateRange.value = { startDate: '', endDate: '' };
+    }
+
     if (els.only_open) {
       els.only_open.checked = true;
     }
