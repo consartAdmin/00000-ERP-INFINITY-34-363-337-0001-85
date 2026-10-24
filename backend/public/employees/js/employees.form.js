@@ -13,6 +13,9 @@ export function resetEmployeeForm(keepSelection = false) {
   el.form.reset();
   el.employee_id.value = keepSelection ? safeStr(state.selectedId || '') : '';
   el.active.checked = true;
+  // hidden não volta com form.reset()
+  el.employee_department_id.value = '';
+  el.employee_position_id.value = '';
 
   el.trial_extended.checked = false;
 
@@ -40,6 +43,8 @@ export function fillEmployeeForm(r) {
 
   el.department.value = safeStr(r.department);
   el.position.value = safeStr(r.position);
+  el.employee_department_id.value = safeStr(r.employee_department_id ?? '');
+  el.employee_position_id.value = safeStr(r.employee_position_id ?? '');
   el.email.value = safeStr(r.email);
   el.phone.value = safeStr(r.phone);
   el.mobile.value = safeStr(r.mobile);
@@ -90,6 +95,8 @@ export function currentEmployeePayload() {
     admission_date: el.admission_date.value || null,
     department: el.department.value.trim() || null,
     position: el.position.value.trim() || null,
+    employee_department_id: Number(el.employee_department_id.value) || null,
+    employee_position_id: Number(el.employee_position_id.value) || null,
 
     email: el.email.value.trim() || null,
     phone: el.phone.value.trim() || null,

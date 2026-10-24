@@ -14,7 +14,7 @@
   <title>COLABORADORES | CONSART ERP</title>
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/employees/employees.css?v=esm-10" />
+  <link rel="stylesheet" href="/public/employees/employees.css?v=esm-11" />
 </head>
 
 <!-- ✅ Lista na página; ver/editar abre o modal #employeeModal -->
@@ -234,14 +234,22 @@
                       <input type="date" id="admission_date" required />
                     </div>
 
-                    <div class="fields fields-h-6 fields-font-3">
+                    <!-- Departamento/Cargo vêm dos cadastros (R.H › Departamentos / Cargos):
+                         lupa = localizar, + = cadastro rápido (employees.catalogPicker.js) -->
+                    <div class="fields fields-h-6 fields-font-3 emp-field-actions">
                       <label for="department">Departamento</label>
-                      <input type="text" id="department" placeholder="Ex.: Comercial" />
+                      <span class="emp-field-actions__icons" data-catalog-actions="departments"></span>
+                      <input type="hidden" id="employee_department_id" />
+                      <input type="text" id="department" class="emp-picker-input" placeholder="Clique para escolher" readonly
+                        data-catalog-open="departments" />
                     </div>
 
-                    <div class="fields fields-h-6 fields-font-3">
+                    <div class="fields fields-h-6 fields-font-3 emp-field-actions">
                       <label for="position">Cargo</label>
-                      <input type="text" id="position" placeholder="Ex.: Vendedor" />
+                      <span class="emp-field-actions__icons" data-catalog-actions="positions"></span>
+                      <input type="hidden" id="employee_position_id" />
+                      <input type="text" id="position" class="emp-picker-input" placeholder="Clique para escolher" readonly
+                        data-catalog-open="positions" />
                     </div>
 
                     <div class="fields fields-h-6 fields-font-3">
@@ -461,6 +469,95 @@
 
 
   <!-- ╭──────────────────────────────────────────────────────────────╮
+       │ MODAL — Localizar departamento / cargo (employees.catalogPicker.js)
+       │ fica depois do #employeeModal para abrir por cima dele       │
+       ╰──────────────────────────────────────────────────────────────╯ -->
+  <div id="catalogPickerModal" class="modal emp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="catalogPickerTitle">
+
+        <div class="modal__header modal-header-color-3">
+          <h2 id="catalogPickerTitle" class="modal__title">🔎 Localizar</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="emp-picker-toolbar">
+            <div class="fields fields-h-6 fields-font-3">
+              <input type="search" id="catalogPickerSearch" placeholder="Digite para filtrar..." autocomplete="off" />
+            </div>
+            <button type="button" id="catalogPickerNew" class="btn btn-new btn-sm">➕ Novo</button>
+          </div>
+
+          <div class="table-scroll table-row-h-20 emp-picker-scroll">
+            <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head">
+              <thead id="catalogPickerHead"></thead>
+              <tbody id="catalogPickerBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal__footer emp-modal__footer">
+          <div class="emp-actions-left">
+            <button type="button" id="catalogPickerClear" class="btn btn-toolbar btn-sm">✕ Limpar campo</button>
+          </div>
+          <div class="emp-actions-right">
+            <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Fechar</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ╭──────────────────────────────────────────────────────────────╮
+       │ MODAL — Cadastro rápido de departamento / cargo              │
+       ╰──────────────────────────────────────────────────────────────╯ -->
+  <div id="catalogQuickModal" class="modal emp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true" aria-labelledby="catalogQuickTitle">
+
+        <div class="modal__header modal-header-color-3">
+          <h2 id="catalogQuickTitle" class="modal__title">➕ Novo</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="catalogQuickForm" class="emp-section" autocomplete="off" novalidate>
+            <div class="emp-section__grid">
+              <div class="fields fields-h-6 fields-font-3" id="catalogQuickNameWrap">
+                <label for="catalogQuickName">Nome *</label>
+                <input type="text" id="catalogQuickName" maxlength="100" required />
+              </div>
+
+              <div class="fields fields-h-6 fields-font-3" id="catalogQuickDeptWrap" hidden>
+                <label for="catalogQuickDept">Departamento</label>
+                <select id="catalogQuickDept">
+                  <option value="">— Nenhum —</option>
+                </select>
+              </div>
+
+              <div class="fields fields-font-3 emp-span-full">
+                <label for="catalogQuickDesc">Descrição</label>
+                <textarea id="catalogQuickDesc" rows="2" placeholder="Opcional"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="submit" class="btn btn-save btn-sm" form="catalogQuickForm">💾 Salvar e usar</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+
+  <!-- ╭──────────────────────────────────────────────────────────────╮
        │ MODAL — Relatórios de colaboradores                          │
        ╰──────────────────────────────────────────────────────────────╯ -->
   <div id="reportsModal" class="modal emp-modal" aria-hidden="true">
@@ -544,7 +641,7 @@
   </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/employees/js/employees.index.js?v=esm-07"></script>
+  <script type="module" src="/public/employees/js/employees.index.js?v=esm-08"></script>
 
 </body>
 

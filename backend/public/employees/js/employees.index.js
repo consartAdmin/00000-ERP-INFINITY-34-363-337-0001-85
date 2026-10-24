@@ -11,10 +11,12 @@ import { resetDocForm } from './employees.docs.js';
 import { Modal } from '/public/includes/js/modal.js';
 import { createSortableTable } from '/public/includes/js/sortableTable.js';
 import { state } from './employees.state.js';
+import { initCatalogPicker } from './employees.catalogPicker.js';
 
 async function boot() {
   Modal.setup();
   bindEvents();
+  initCatalogPicker();
   resetEmployeeForm(false);
 
   // ordenação em todas as colunas (feita no backend → vale para a lista inteira)
