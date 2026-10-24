@@ -153,7 +153,7 @@
   font-weight: 500;
 }
 
-/* Botão só com ícone de recarregar: azul suave, sem borda (ex.: Débitos) */
+/* Botão só com ícone (Recarregar, Novo…): azul suave, sem borda (ex.: Débitos) */
 .btn-icon-reload {
   width: 30px;
   height: 30px;
