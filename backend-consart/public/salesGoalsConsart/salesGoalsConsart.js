@@ -1,6 +1,8 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ salesGoalsConsart.js — Metas de Vendas (CONSART ERP)                 ║
 // ║ • Cabeçalho no visual do CRM Consart: indicadores do mês + filtros   ║
+// ║ • Painel (Chart.js): atingido da empresa, meta x vendido por         ║
+// ║   vendedor e evolução de 12 meses · alterna Valor (R$)/Quantidade    ║
 // ║ • Um card por vendedor: meta x realizado (valor e qtd. de propostas) ║
 // ║ • Realizado = Propostas de Serviços APROVADAS (data da proposta)     ║
 // ║ • Modal "Definir metas" (todos os vendedores do mês, copiar do mês   ║
@@ -27,7 +29,14 @@ const state = {
   sellerId: '',
   rows: [],
   totals: null,
+  history: [],
+  measure: 'value', // 'value' | 'count' (gráficos)
 };
+
+// Cores dos gráficos (par validado p/ daltonismo): meta = índigo, vendido = verde Consart
+const COLORS = { goal: '#6366f1', done: '#0f9d84', track: '#e2e8f0' };
+const LEVEL_COLORS = { done: '#16a34a', near: '#f59e0b', low: '#ef4444', none: '#cbd5e1' };
+const charts = {};
 
 // ─────────────────────────────────────────────────────────────────────
 // Helpers
@@ -125,7 +134,10 @@ async function loadMonth() {
   try {
     // Busca sempre o mês inteiro: os indicadores e o filtro de vendedor
     // usam todos; o filtro só esconde cards.
-    const json = await apiFetch(`${API}?year=${state.year}&month=${state.month}`);
+    const [json] = await Promise.all([
+      apiFetch(`${API}?year=${state.year}&month=${state.month}`),
+      loadHistory(false),
+    ]);
     state.allSellers = json.data || [];
     state.totals = json.totals || null;
     fillSellerFilter();
@@ -136,11 +148,149 @@ async function loadMonth() {
   }
 }
 
+async function loadHistory(redraw = true) {
+  const params = new URLSearchParams({ year: state.year, month: state.month, months: 12 });
+  if (state.sellerId) params.set('seller_id', state.sellerId);
+  try {
+    const json = await apiFetch(`${API}/history?${params}`);
+    state.history = json.data || [];
+  } catch (error) {
+    console.error('[salesGoalsConsart] histórico:', error);
+    state.history = [];
+  }
+  if (redraw) renderHistoryChart();
+}
+
 function render() {
   const sid = Number(state.sellerId || 0);
   state.rows = sid ? state.allSellers.filter((r) => r.seller_id === sid) : state.allSellers;
   renderSummary();
+  renderCharts();
   renderGrid();
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Painel (Chart.js)
+// ─────────────────────────────────────────────────────────────────────
+
+const isValue = () => state.measure === 'value';
+const fmtMeasure = (n) => (isValue() ? `R$ ${money(n)}` : Number(n || 0).toLocaleString('pt-BR'));
+const fmtAxis = (n) => (isValue()
+  ? Number(n).toLocaleString('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
+  : Number(n).toLocaleString('pt-BR'));
+
+function drawChart(key, canvasId, config) {
+  if (!window.Chart) return;
+  if (charts[key]) charts[key].destroy();
+  charts[key] = new window.Chart(document.getElementById(canvasId), config);
+}
+
+function baseOptions(extra = {}) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, color: '#475569', font: { size: 11 } } },
+      tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmtMeasure(ctx.parsed.y)}` } },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
+      y: {
+        beginAtZero: true,
+        grid: { color: '#f1f5f9' },
+        border: { display: false },
+        ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0, callback: fmtAxis },
+      },
+    },
+    ...extra,
+  };
+}
+
+function renderCharts() {
+  renderGauge();
+  renderSellersChart();
+  renderHistoryChart();
+}
+
+/** Meia-rosca com o % atingido (empresa, ou do vendedor filtrado). */
+function renderGauge() {
+  const sid = Number(state.sellerId || 0);
+  const src = sid ? (state.rows[0] || {}) : (state.totals || {});
+  const key = isValue() ? 'value' : 'count';
+  const goal = Number(src[`goal_${key}`] || 0);
+  const done = Number(src[`done_${key}`] || 0);
+  const pct = goal > 0 ? (done / goal) * 100 : null;
+  const color = LEVEL_COLORS[level(pct)];
+  const filled = pct === null ? 0 : Math.min(100, pct);
+
+  drawChart('gauge', 'sg-chart-gauge', {
+    type: 'doughnut',
+    data: { datasets: [{ data: [filled, 100 - filled], backgroundColor: [color, COLORS.track], borderWidth: 0 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      rotation: -90,
+      circumference: 180,
+      cutout: '74%',
+      animation: { duration: 300 },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    },
+  });
+
+  $('#sg-gauge-title').textContent = sid ? 'Atingido do vendedor' : 'Atingido da empresa';
+  $('#sg-gauge-pct').textContent = pctText(pct === null ? null : Math.round(pct * 10) / 10);
+  $('#sg-gauge-pct').style.color = pct === null ? '#94a3b8' : color;
+  $('#sg-gauge-sub').textContent = sid ? (state.rows[0]?.seller_name || '') : periodLabel();
+  $('#sg-gauge-legend').innerHTML = `
+    <span><i style="background:${COLORS.done}"></i>Vendido <strong>${fmtMeasure(done)}</strong></span>
+    <span><i style="background:${COLORS.goal}"></i>Meta <strong>${goal ? fmtMeasure(goal) : '—'}</strong></span>`;
+}
+
+function renderSellersChart() {
+  const key = isValue() ? 'value' : 'count';
+  const rows = state.rows;
+  drawChart('sellers', 'sg-chart-sellers', {
+    type: 'bar',
+    data: {
+      labels: rows.map((r) => r.seller_name),
+      datasets: [
+        { label: 'Meta', data: rows.map((r) => r[`goal_${key}`]), backgroundColor: COLORS.goal,
+          borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 },
+        { label: 'Vendido', data: rows.map((r) => r[`done_${key}`]), backgroundColor: COLORS.done,
+          borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 },
+      ],
+    },
+    options: baseOptions({ datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9 } } }),
+  });
+}
+
+function renderHistoryChart() {
+  const key = isValue() ? 'value' : 'count';
+  const rows = state.history;
+  const short = (r) => `${MONTHS[r.month - 1].slice(0, 3)}/${String(r.year).slice(2)}`;
+  drawChart('history', 'sg-chart-history', {
+    type: 'bar',
+    data: {
+      labels: rows.map(short),
+      datasets: [
+        { type: 'line', label: 'Meta', data: rows.map((r) => r[`goal_${key}`]), borderColor: COLORS.goal,
+          backgroundColor: COLORS.goal, borderWidth: 2, borderDash: [6, 4], pointRadius: 4,
+          pointBackgroundColor: '#ffffff', pointBorderWidth: 2, tension: 0.25, order: 0 },
+        { type: 'bar', label: 'Vendido', data: rows.map((r) => r[`done_${key}`]),
+          backgroundColor: rows.map((r, i) => (i === rows.length - 1 ? COLORS.done : `${COLORS.done}99`)),
+          borderRadius: 4, borderSkipped: 'start', maxBarThickness: 34, order: 1 },
+      ],
+    },
+    options: baseOptions(),
+  });
+}
+
+function setMeasure(measure) {
+  state.measure = measure;
+  document.querySelectorAll('.sg-toggle__btn').forEach((b) => b.classList.toggle('is-active', b.dataset.measure === measure));
+  renderCharts();
 }
 
 function renderSummary() {
@@ -295,6 +445,7 @@ async function saveGoals() {
     state.allSellers = json.data || [];
     state.totals = json.totals || null;
     render();
+    loadHistory();
     Modal.close('sg-goals-modal');
     notify('success', 'Metas salvas', `Metas de ${periodLabel()} salvas.`);
   } catch (error) {
@@ -349,7 +500,12 @@ function onSalesClick(event) {
 function bindEvents() {
   $('#sg-month').addEventListener('change', (e) => { state.month = Number(e.target.value); loadMonth(); });
   $('#sg-year').addEventListener('change', (e) => { state.year = Number(e.target.value); loadMonth(); });
-  $('#sg-seller').addEventListener('change', (e) => { state.sellerId = e.target.value; render(); });
+  $('#sg-seller').addEventListener('change', (e) => {
+    state.sellerId = e.target.value;
+    render();
+    loadHistory();
+  });
+  document.querySelectorAll('.sg-toggle__btn').forEach((b) => b.addEventListener('click', () => setMeasure(b.dataset.measure)));
   $('#sg-prev').addEventListener('click', () => shiftMonth(-1));
   $('#sg-next').addEventListener('click', () => shiftMonth(1));
   $('#sg-today').addEventListener('click', () => {

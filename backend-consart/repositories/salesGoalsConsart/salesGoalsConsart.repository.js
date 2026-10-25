@@ -4,6 +4,7 @@
 // ║ • Venda = Proposta de Serviços APROVADA, no mês da data da         ║
 // ║   proposta (issue_date).                                           ║
 // ║ • Realizado: valor (total da proposta) e quantidade de propostas.  ║
+// ║ • getHistory: evolução mês a mês para os gráficos do painel.       ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
@@ -220,4 +221,61 @@ export async function listSales({ year, month, seller_id } = {}) {
   );
 
   return rows.map((r) => ({ ...r, total: Number(r.total || 0) }));
+}
+
+/**
+ * Evolução mês a mês (gráfico): meta x realizado dos últimos `months` meses
+ * terminando no mês informado. Com seller_id, só daquele vendedor.
+ */
+export async function getHistory({ year, month, months = 12, seller_id } = {}) {
+  await ensureTables();
+  const period = parsePeriod(year, month);
+  const n = Math.min(24, Math.max(1, Math.trunc(Number(months) || 12)));
+  const sellerId = positiveId(seller_id);
+
+  const params = [period.from, n, SALE_STATUS];
+  let goalSeller = '';
+  let saleSeller = '';
+  if (sellerId) {
+    params.push(sellerId);
+    goalSeller = `AND g.seller_id = $${params.length}`;
+    saleSeller = `AND p.seller_id = $${params.length}`;
+  }
+
+  const { rows } = await pool.query(
+    `
+    WITH months AS (
+      SELECT (date_trunc('month', $1::date) - make_interval(months => s.i))::date AS month_start
+        FROM generate_series(0, $2::int - 1) AS s(i)
+    )
+    SELECT EXTRACT(YEAR FROM m.month_start)::int  AS year,
+           EXTRACT(MONTH FROM m.month_start)::int AS month,
+           COALESCE((SELECT SUM(g.goal_value) FROM ${TB} g
+                      WHERE g.goal_year = EXTRACT(YEAR FROM m.month_start)
+                        AND g.goal_month = EXTRACT(MONTH FROM m.month_start) ${goalSeller}), 0) AS goal_value,
+           COALESCE((SELECT SUM(g.goal_count) FROM ${TB} g
+                      WHERE g.goal_year = EXTRACT(YEAR FROM m.month_start)
+                        AND g.goal_month = EXTRACT(MONTH FROM m.month_start) ${goalSeller}), 0) AS goal_count,
+           COALESCE((SELECT SUM(p.total) FROM ${TB_PROPOSALS} p
+                      WHERE p.status = $3
+                        AND p.issue_date >= m.month_start
+                        AND p.issue_date < (m.month_start + INTERVAL '1 month') ${saleSeller}), 0) AS done_value,
+           (SELECT COUNT(*) FROM ${TB_PROPOSALS} p
+             WHERE p.status = $3
+               AND p.issue_date >= m.month_start
+               AND p.issue_date < (m.month_start + INTERVAL '1 month') ${saleSeller})::int AS done_count
+      FROM months m
+     ORDER BY m.month_start
+    `,
+    params
+  );
+
+  return rows.map((r) => ({
+    year: r.year,
+    month: r.month,
+    goal_value: Number(r.goal_value),
+    goal_count: Number(r.goal_count),
+    done_value: Number(r.done_value),
+    done_count: Number(r.done_count),
+  }));
 }

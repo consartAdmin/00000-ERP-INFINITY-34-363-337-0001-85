@@ -40,3 +40,12 @@ export async function listSales(req, res) {
     return fail(res, 'listSales', error);
   }
 }
+
+export async function getHistory(req, res) {
+  try {
+    const rows = await repo.getHistory(req.query);
+    return res.json({ ok: true, data: rows });
+  } catch (error) {
+    return fail(res, 'getHistory', error);
+  }
+}

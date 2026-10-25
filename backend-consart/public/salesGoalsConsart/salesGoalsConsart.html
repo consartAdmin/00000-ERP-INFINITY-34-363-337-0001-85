@@ -3,6 +3,7 @@
      ║ ✅ Visual do CRM Consart (cabeçalho com indicadores e filtros)    ║
      ║ ✅ Meta mensal por vendedor (sellersConsart): valor e quantidade  ║
      ║ ✅ Realizado = Propostas de Serviços APROVADAS no mês             ║
+     ║ ✅ Painel com gráficos (Chart.js): atingido, por vendedor, 12 meses║
      ║ ✅ Modal "Definir metas" e modal com as propostas do vendedor     ║
      ║ API: /api/sales-goals-consart, /api/sellers (Consart)             ║
      ╚════════════════════════════════════════════════════════════════════╝ -->
@@ -66,6 +67,40 @@
         </div>
       </div>
 
+      <!-- Painel de gráficos (Chart.js) -->
+      <div class="sg-dash-head">
+        <h2 class="sg-section-title">Painel</h2>
+        <div class="sg-toggle" role="group" aria-label="Medida dos gráficos">
+          <button type="button" class="sg-toggle__btn is-active" data-measure="value">Valor (R$)</button>
+          <button type="button" class="sg-toggle__btn" data-measure="count">Quantidade</button>
+        </div>
+      </div>
+
+      <div class="sg-dash">
+        <div class="sg-panel sg-panel--gauge">
+          <div class="sg-panel__title" id="sg-gauge-title">Atingido da empresa</div>
+          <div class="sg-gauge">
+            <canvas id="sg-chart-gauge" aria-label="Percentual da meta atingido"></canvas>
+            <div class="sg-gauge__center">
+              <strong id="sg-gauge-pct">—</strong>
+              <span id="sg-gauge-sub"></span>
+            </div>
+          </div>
+          <div class="sg-gauge__legend" id="sg-gauge-legend"></div>
+        </div>
+
+        <div class="sg-panel sg-panel--bars">
+          <div class="sg-panel__title">Meta x Vendido por vendedor</div>
+          <div class="sg-chart sg-chart--bars"><canvas id="sg-chart-sellers" aria-label="Meta e vendido por vendedor"></canvas></div>
+        </div>
+
+        <div class="sg-panel sg-panel--wide">
+          <div class="sg-panel__title">Evolução nos últimos 12 meses</div>
+          <div class="sg-chart sg-chart--line"><canvas id="sg-chart-history" aria-label="Meta e vendido mês a mês"></canvas></div>
+        </div>
+      </div>
+
+      <h2 class="sg-section-title">Vendedores</h2>
       <div id="sg-grid" class="sg-grid"></div>
       <div id="sg-empty" class="sg-empty" hidden>Nenhum vendedor ativo em Vendedores Consart.</div>
     </section>
@@ -156,6 +191,7 @@
 
   <script>window.ERP_COMPANY = 'CONSART';</script>
   <script src="/public/includes/js/erpCompany.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
   <script type="module" src="/public/salesGoalsConsart/salesGoalsConsart.js?v=1"></script>
 </body>
