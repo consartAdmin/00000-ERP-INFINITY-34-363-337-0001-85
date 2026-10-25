@@ -3,44 +3,17 @@
 // O script de permissões deve marcar links bloqueados com hidden=true,
 // style.display='none' ou class='modulo-bloqueado'.
 // Itens com `feature` ficam ocultos quando a appFeature correspondente está desativada.
-// Itens com `company` ('BH3' | 'CONSART') só aparecem quando essa é a empresa
-// ativa (botão do rodapé, statusUsuario.js); sem `company` aparecem nas duas.
 
 import { initProductLocationsFeature } from './productLocationsFeature.js';
 
 // O menu vem da tabela public."moduleSystem" (tela "Criação de Módulos").
 // Formato de cada item: { type: 'dropdown'|'submenu'|'link', id, htmlId,
-// label, href, className, feature, external, company, children }.
+// label, href, className, feature, external, children }.
 // id = id do módulo (userModules); itens públicos vêm com id null.
 const MENU_API_URL = '/api/module-system/menu';
 const MENU_CACHE_KEY = 'consart:menu-config';
-const COMPANY_KEY = 'consart:active-company';
-// backend-consart/: o menu é sempre o da CONSART (não lê a escolha do Infinity)
-const COMPANIES = ['CONSART'];
 
-let MENU_FULL = [];   // menu completo da API
-let MENU_CONFIG = []; // menu da empresa ativa
-
-function getActiveCompany() {
-  try {
-    const value = String(localStorage.getItem(COMPANY_KEY) || '').toUpperCase();
-    return COMPANIES.includes(value) ? value : 'CONSART';
-  } catch {
-    return 'CONSART';
-  }
-}
-
-// Remove os itens de outra empresa; dropdown/submenu que fica vazio some.
-function filterByCompany(items, company) {
-  return items
-    .filter(item => !item.company || item.company === company)
-    .map(item => {
-      if (!item.children) return item;
-      const children = filterByCompany(item.children, company);
-      return children.length ? { ...item, children } : null;
-    })
-    .filter(Boolean);
-}
+let MENU_CONFIG = [];
 
 function readMenuCache() {
   try {
@@ -278,8 +251,10 @@ function mountMenuSearch(menuElement) {
 
 let menuBuildStarted = false;
 
-function renderMenu() {
-  MENU_CONFIG = filterByCompany(MENU_FULL, getActiveCompany());
+async function buildMenuPrincipal() {
+  if (menuBuildStarted || document.querySelector('.menu-principal')) return;
+  menuBuildStarted = true;
+  MENU_CONFIG = await loadMenuConfig();
   const menu = document.createElement('div');
   menu.classList.add('menu-principal');
   Object.assign(menu.style, {
@@ -291,13 +266,14 @@ function renderMenu() {
     else if (item.type === 'dropdown') menu.appendChild(createDropdown(item));
   });
   [...menu.children].forEach(child => { child.style.pointerEvents = 'auto'; });
+  const mount = document.getElementById('menuConsartMount') ||
+    document.getElementById('menu-consart-mount');
+  if (mount) mount.appendChild(menu);
+  else document.body.prepend(menu);
 
   // appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta os links de localização
   initProductLocationsFeature({ root: menu }).catch(() => { });
-  return menu;
-}
 
-function emitMenuReady(menu) {
   // Dispara somente depois que todos os links existem no DOM.
   try {
     window.CONSART_MENU_CONFIG = MENU_CONFIG;
@@ -307,32 +283,8 @@ function emitMenuReady(menu) {
   } catch (error) {
     console.warn('[MENU] Não foi possível emitir consart:menu-ready:', error);
   }
-}
-
-async function buildMenuPrincipal() {
-  if (menuBuildStarted || document.querySelector('.menu-principal')) return;
-  menuBuildStarted = true;
-  MENU_FULL = await loadMenuConfig();
-  const menu = renderMenu();
-  const mount = document.getElementById('menuConsartMount') ||
-    document.getElementById('menu-consart-mount');
-  if (mount) mount.appendChild(menu);
-  else document.body.prepend(menu);
-
-  emitMenuReady(menu);
   console.log('[MENU] Menu principal gerado e fixado no topo.');
 }
-
-// Botão de empresa do rodapé: troca o menu sem recarregar a página.
-// O securityModules.js reaplica as permissões ao ver o menu novo no DOM.
-window.addEventListener('consart:company-change', () => {
-  const old = document.querySelector('.menu-principal');
-  if (!menuBuildStarted || !old) return;
-  const menu = renderMenu();
-  old.replaceWith(menu);
-  emitMenuReady(menu);
-  console.log(`[MENU] Menu trocado para a empresa ${getActiveCompany()}.`);
-});
 
 function initMenuConsart() {
   buildMenuPrincipal()

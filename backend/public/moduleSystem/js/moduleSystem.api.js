@@ -35,7 +35,7 @@ export function alterarStatusModulo(id, isActive) {
   });
 }
 
-/** Alteração em lote: { company } e/ou { isActive } para vários ids */
+/** Alteração em lote: { isActive } para vários ids */
 export function alterarEmLote(ids, alteracoes) {
   return request(`${API_BASE}/batch`, {
     method: 'PUT',

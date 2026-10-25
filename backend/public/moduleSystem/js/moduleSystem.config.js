@@ -6,13 +6,6 @@ export const MENU_TYPE_LABELS = Object.freeze({
   link: '🔗 Link',
 });
 
-/** Empresa do item (botão do rodapé). Sem empresa = aparece nas duas. */
-export const COMPANY_LABELS = Object.freeze({
-  BH3: '🔵 BH3',
-  CONSART: '🟢 CONSART',
-  '': '🔁 BH3 e CONSART',
-});
-
 export const elements = Object.freeze({
   moduleForm: document.getElementById('moduleForm'),
   moduleId: document.getElementById('moduleId'),
@@ -21,7 +14,6 @@ export const elements = Object.freeze({
   menuType: document.getElementById('menuType'),
   parentId: document.getElementById('parentId'),
   sortOrder: document.getElementById('sortOrder'),
-  company: document.getElementById('company'),
   htmlId: document.getElementById('htmlId'),
   cssClass: document.getElementById('cssClass'),
   feature: document.getElementById('feature'),
@@ -35,15 +27,12 @@ export const elements = Object.freeze({
   filterStatus: document.getElementById('filterStatus'),
   filterType: document.getElementById('filterType'),
   filterParent: document.getElementById('filterParent'),
-  filterCompany: document.getElementById('filterCompany'),
   filterVisibility: document.getElementById('filterVisibility'),
   btnClearFilters: document.getElementById('btnClearFilters'),
   tbody: document.getElementById('modulesTableBody'),
   selectAll: document.getElementById('selectAll'),
   batchBar: document.getElementById('batchBar'),
   batchCount: document.getElementById('batchCount'),
-  batchCompany: document.getElementById('batchCompany'),
-  btnBatchCompany: document.getElementById('btnBatchCompany'),
   btnBatchActivate: document.getElementById('btnBatchActivate'),
   btnBatchDeactivate: document.getElementById('btnBatchDeactivate'),
   btnBatchClear: document.getElementById('btnBatchClear'),

@@ -8,6 +8,10 @@
 import { TABLE } from './moduleSystem.constants.js';
 import { q } from './moduleSystem.utils.js';
 
+// Cada backend tem o seu menu no próprio banco (sem campo Empresa). Os
+// módulos que ainda estavam marcados como "Só CONSART" são excluídos daqui.
+const EMPRESA_DE_OUTRO_BACKEND = 'CONSART';
+
 /**
  * Garante que a tabela exista e esteja com colunas atualizadas (idempotente).
  * @param {Function} run executor de SQL (padrão: pool). O script de migração
@@ -72,6 +76,19 @@ export async function ensureTable(run = q) {
       WHERE path ~* '(crmConsartErp|customersListConsart|customersRegistrationConsart|customersEditConsart|customerStatusTypesConsart|customerSegmentsConsart|sellersConsart|proposalsConsart|proposalsServicesConsart|servicesConsart|moduleDocsConsart|contractsConsart)/';
     `);
   }
+
+  // Sem campo Empresa: exclui os módulos da outra empresa (e o que estiver
+  // dentro deles no menu) e limpa a coluna company, que fica só por
+  // histórico. Idempotente: depois da primeira vez não acha mais nada.
+  await run(`
+    WITH RECURSIVE removidos AS (
+      SELECT id FROM ${TABLE} WHERE company = $1
+      UNION
+      SELECT m.id FROM ${TABLE} m JOIN removidos r ON m.parent_id = r.id
+    )
+    DELETE FROM ${TABLE} WHERE id IN (SELECT id FROM removidos);
+  `, [EMPRESA_DE_OUTRO_BACKEND]);
+  await run(`UPDATE ${TABLE} SET company = NULL WHERE company IS NOT NULL;`);
 
   await run(`
     CREATE INDEX IF NOT EXISTS idx_moduleSystem_name
