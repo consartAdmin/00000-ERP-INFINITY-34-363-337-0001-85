@@ -15,8 +15,12 @@ import {
 import { fetchCustomerName, fetchSellerName } from './crmDealsLookup.repository.js';
 import { upsertCustomerStatus, syncCustomerActivityFromOutcome } from './crmDealsSync.repository.js';
 import { getDealById } from './crmDealsQuery.repository.js';
+import { ensureCrmDealsConsartFks } from './crmDealsSchema.repository.js';
 
 export async function createDeal(payload = {}) {
+  // Cliente/vendedor/status do card são os cadastros da Consart (1ª vez: ajusta as FKs)
+  await ensureCrmDealsConsartFks();
+
   const client = await pool.connect();
 
   try {
