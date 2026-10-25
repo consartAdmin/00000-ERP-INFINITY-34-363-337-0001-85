@@ -2,8 +2,10 @@
 // ║ salesGoalsConsart.js — Metas de Vendas (CONSART ERP)                 ║
 // ║ • Cabeçalho no visual do CRM Consart: indicadores do mês + filtros   ║
 // ║ • Painel (Chart.js): atingido da empresa, meta x vendido por         ║
-// ║   vendedor e evolução de 12 meses · alterna Valor (R$)/Quantidade    ║
-// ║ • Um card por vendedor: meta x realizado (valor e qtd. de propostas) ║
+// ║   vendedor e evolução de 12 meses · alterna Valor/Propostas/Leads    ║
+// ║ • Leads contatados = cards do CRM Consart concluídos no mês; painel  ║
+// ║   por estado (UF do cliente) para o plano por estado                 ║
+// ║ • Um card por vendedor: meta x realizado (valor, propostas e leads)  ║
 // ║ • Realizado = Propostas de Serviços APROVADAS (data da proposta)     ║
 // ║ • Modal "Definir metas" (todos os vendedores do mês, copiar do mês   ║
 // ║   anterior) e modal com as propostas aprovadas do vendedor           ║
@@ -30,11 +32,14 @@ const state = {
   rows: [],
   totals: null,
   history: [],
-  measure: 'value', // 'value' | 'count' (gráficos)
+  measure: 'value', // 'value' | 'count' | 'leads' (gráficos)
+  states: [],
 };
 
 // Cores dos gráficos (par validado p/ daltonismo): meta = índigo, vendido = verde Consart
 const COLORS = { goal: '#6366f1', done: '#0f9d84', track: '#e2e8f0' };
+// Desfechos dos leads (paleta validada): conversão, queda de venda, sem sucesso no contato
+const OUTCOME_COLORS = { converted: '#0f9d84', lost: '#d97706', no_contact: '#6366f1' };
 const LEVEL_COLORS = { done: '#16a34a', near: '#f59e0b', low: '#ef4444', none: '#cbd5e1' };
 const charts = {};
 
@@ -137,6 +142,7 @@ async function loadMonth() {
     const [json] = await Promise.all([
       apiFetch(`${API}?year=${state.year}&month=${state.month}`),
       loadHistory(false),
+      loadStates(false),
     ]);
     state.allSellers = json.data || [];
     state.totals = json.totals || null;
@@ -161,6 +167,19 @@ async function loadHistory(redraw = true) {
   if (redraw) renderHistoryChart();
 }
 
+async function loadStates(redraw = true) {
+  const params = new URLSearchParams({ year: state.year, month: state.month });
+  if (state.sellerId) params.set('seller_id', state.sellerId);
+  try {
+    const json = await apiFetch(`${API}/leads-by-state?${params}`);
+    state.states = json.data || [];
+  } catch (error) {
+    console.error('[salesGoalsConsart] leads por estado:', error);
+    state.states = [];
+  }
+  if (redraw) renderStates();
+}
+
 function render() {
   const sid = Number(state.sellerId || 0);
   state.rows = sid ? state.allSellers.filter((r) => r.seller_id === sid) : state.allSellers;
@@ -174,6 +193,7 @@ function render() {
 // ─────────────────────────────────────────────────────────────────────
 
 const isValue = () => state.measure === 'value';
+const doneLabel = () => (state.measure === 'leads' ? 'Contatados' : 'Vendido');
 const fmtMeasure = (n) => (isValue() ? `R$ ${money(n)}` : Number(n || 0).toLocaleString('pt-BR'));
 const fmtAxis = (n) => (isValue()
   ? Number(n).toLocaleString('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
@@ -212,13 +232,14 @@ function renderCharts() {
   renderGauge();
   renderSellersChart();
   renderHistoryChart();
+  renderStates();
 }
 
 /** Meia-rosca com o % atingido (empresa, ou do vendedor filtrado). */
 function renderGauge() {
   const sid = Number(state.sellerId || 0);
   const src = sid ? (state.rows[0] || {}) : (state.totals || {});
-  const key = isValue() ? 'value' : 'count';
+  const key = state.measure;
   const goal = Number(src[`goal_${key}`] || 0);
   const done = Number(src[`done_${key}`] || 0);
   const pct = goal > 0 ? (done / goal) * 100 : null;
@@ -244,12 +265,12 @@ function renderGauge() {
   $('#sg-gauge-pct').style.color = pct === null ? '#94a3b8' : color;
   $('#sg-gauge-sub').textContent = sid ? (state.rows[0]?.seller_name || '') : periodLabel();
   $('#sg-gauge-legend').innerHTML = `
-    <span><i style="background:${COLORS.done}"></i>Vendido <strong>${fmtMeasure(done)}</strong></span>
+    <span><i style="background:${COLORS.done}"></i>${doneLabel()} <strong>${fmtMeasure(done)}</strong></span>
     <span><i style="background:${COLORS.goal}"></i>Meta <strong>${goal ? fmtMeasure(goal) : '—'}</strong></span>`;
 }
 
 function renderSellersChart() {
-  const key = isValue() ? 'value' : 'count';
+  const key = state.measure;
   const rows = state.rows;
   drawChart('sellers', 'sg-chart-sellers', {
     type: 'bar',
@@ -258,7 +279,7 @@ function renderSellersChart() {
       datasets: [
         { label: 'Meta', data: rows.map((r) => r[`goal_${key}`]), backgroundColor: COLORS.goal,
           borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 },
-        { label: 'Vendido', data: rows.map((r) => r[`done_${key}`]), backgroundColor: COLORS.done,
+        { label: doneLabel(), data: rows.map((r) => r[`done_${key}`]), backgroundColor: COLORS.done,
           borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 },
       ],
     },
@@ -267,7 +288,7 @@ function renderSellersChart() {
 }
 
 function renderHistoryChart() {
-  const key = isValue() ? 'value' : 'count';
+  const key = state.measure;
   const rows = state.history;
   const short = (r) => `${MONTHS[r.month - 1].slice(0, 3)}/${String(r.year).slice(2)}`;
   drawChart('history', 'sg-chart-history', {
@@ -278,13 +299,70 @@ function renderHistoryChart() {
         { type: 'line', label: 'Meta', data: rows.map((r) => r[`goal_${key}`]), borderColor: COLORS.goal,
           backgroundColor: COLORS.goal, borderWidth: 2, borderDash: [6, 4], pointRadius: 4,
           pointBackgroundColor: '#ffffff', pointBorderWidth: 2, tension: 0.25, order: 0 },
-        { type: 'bar', label: 'Vendido', data: rows.map((r) => r[`done_${key}`]),
+        { type: 'bar', label: doneLabel(), data: rows.map((r) => r[`done_${key}`]),
           backgroundColor: rows.map((r, i) => (i === rows.length - 1 ? COLORS.done : `${COLORS.done}99`)),
           borderRadius: 4, borderSkipped: 'start', maxBarThickness: 34, order: 1 },
       ],
     },
     options: baseOptions(),
   });
+}
+
+/** Leads contatados por UF: barras empilhadas por desfecho + tabela com conversão e em aberto. */
+function renderStates() {
+  const rows = state.states.filter((r) => r.contacted > 0);
+  const ds = (key, label) => ({
+    label, data: rows.map((r) => r[key]), backgroundColor: OUTCOME_COLORS[key],
+    borderColor: '#ffffff', borderWidth: { right: 2 }, borderSkipped: false, maxBarThickness: 22,
+  });
+
+  document.querySelector('.sg-chart--states').style.height = `${Math.max(160, rows.length * 34 + 70)}px`;
+
+  drawChart('states', 'sg-chart-states', {
+    type: 'bar',
+    data: {
+      labels: rows.map((r) => r.state),
+      datasets: [
+        ds('converted', 'Conversão'),
+        ds('lost', 'Queda de venda'),
+        ds('no_contact', 'Sem sucesso no contato'),
+      ],
+    },
+    options: {
+      ...baseOptions(),
+      indexAxis: 'y',
+      interaction: { mode: 'index', intersect: false, axis: 'y' },
+      plugins: {
+        legend: baseOptions().plugins.legend,
+        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.x}` } },
+      },
+      scales: {
+        x: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, border: { display: false },
+          ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0 } },
+        y: { stacked: true, grid: { display: false }, ticks: { color: '#334155', font: { size: 12, weight: '600' } } },
+      },
+    },
+  });
+
+  const all = state.states;
+  $('#sg-states-body').innerHTML = all.map((r) => `
+    <tr>
+      <td class="sg-col-uf">${esc(r.state)}</td>
+      <td>${r.contacted}</td>
+      <td>${r.converted}</td>
+      <td>${pctText(r.conversion_rate)}</td>
+      <td>${r.open_leads}</td>
+    </tr>`).join('');
+  const sum = (k) => all.reduce((acc, r) => acc + r[k], 0);
+  const contacted = sum('contacted');
+  const converted = sum('converted');
+  $('#sg-states-total').innerHTML = all.length ? `
+    <th class="sg-col-uf">Total</th>
+    <th>${contacted}</th>
+    <th>${converted}</th>
+    <th>${pctText(contacted ? Math.round((converted / contacted) * 1000) / 10 : null)}</th>
+    <th>${sum('open_leads')}</th>` : '';
+  $('#sg-states-empty').hidden = all.length > 0;
 }
 
 function setMeasure(measure) {
@@ -312,6 +390,7 @@ function renderSummary() {
       ${metric('Atingido', pctText(t.pct_value), t.goal_value > t.done_value
         ? `faltam R$ ${money(t.goal_value - t.done_value)}` : 'meta batida', `sg-summary__metric--${level(t.pct_value)}`)}
       ${metric('Propostas', `${t.done_count || 0} / ${t.goal_count || 0}`, 'aprovadas / meta')}
+      ${metric('Leads contatados', `${t.done_leads || 0} / ${t.goal_leads || 0}`, 'concluídos no CRM / meta')}
       ${metric('Na meta', `${hit} / ${withGoal.length}`, 'vendedores')}
     </div>`;
 }
@@ -330,8 +409,8 @@ function bar(label, doneText, goalText, pct) {
 }
 
 function statusPill(r) {
-  if (!r.goal_value && !r.goal_count) return '<span class="sg-pill sg-pill--none">Sem meta</span>';
-  const p = r.goal_value ? r.pct_value : r.pct_count;
+  if (!r.goal_value && !r.goal_count && !r.goal_leads) return '<span class="sg-pill sg-pill--none">Sem meta</span>';
+  const p = r.goal_value ? r.pct_value : (r.goal_count ? r.pct_count : r.pct_leads);
   const map = { done: 'Meta atingida', near: 'No caminho', low: 'Abaixo da meta', none: 'Sem meta' };
   return `<span class="sg-pill sg-pill--${level(p)}">${map[level(p)]}</span>`;
 }
@@ -349,6 +428,7 @@ function renderGrid() {
       </div>
       ${bar('Valor vendido', `R$ ${money(r.done_value)}`, r.goal_value ? `R$ ${money(r.goal_value)}` : '—', r.pct_value)}
       ${bar('Propostas aprovadas', String(r.done_count), r.goal_count ? String(r.goal_count) : '—', r.pct_count)}
+      ${bar('Leads contatados', String(r.done_leads), r.goal_leads ? String(r.goal_leads) : '—', r.pct_leads)}
       <div class="sg-seller__foot">
         <span class="sg-hint" title="${esc(r.notes)}">${esc(r.notes)}</span>
         ${actionIconsHtml([
@@ -379,6 +459,7 @@ function goalRowHtml(r) {
       <td class="sg-col-left" title="${esc(r.seller_name)}">${esc(r.seller_name)}${r.seller_active ? '' : ' <small class="sg-hint">(inativo)</small>'}</td>
       <td><div class="fields fields-h-5 fields-w-full"><input type="text" inputmode="decimal" class="sg-in-value" value="${moneyInput(r.goal_value)}" placeholder="0,00"></div></td>
       <td><div class="fields fields-h-5 fields-w-full"><input type="number" min="0" step="1" class="sg-in-count" value="${r.goal_count || ''}" placeholder="0"></div></td>
+      <td><div class="fields fields-h-5 fields-w-full"><input type="number" min="0" step="1" class="sg-in-leads" value="${r.goal_leads || ''}" placeholder="0"></div></td>
       <td><div class="fields fields-h-5 fields-w-full"><input type="text" maxlength="255" class="sg-in-notes" value="${esc(r.notes)}" placeholder="Opcional"></div></td>
     </tr>`;
 }
@@ -386,10 +467,13 @@ function goalRowHtml(r) {
 function updateGoalsTotals() {
   let value = 0;
   let count = 0;
+  let leads = 0;
   document.querySelectorAll('#sg-goals-body tr').forEach((tr) => {
     value += parseNumber(tr.querySelector('.sg-in-value').value);
     count += Math.trunc(parseNumber(tr.querySelector('.sg-in-count').value));
+    leads += Math.trunc(parseNumber(tr.querySelector('.sg-in-leads').value));
   });
+  $('#sg-goals-total-leads').textContent = String(leads);
   $('#sg-goals-total-value').textContent = `R$ ${money(value)}`;
   $('#sg-goals-total-count').textContent = String(count);
 }
@@ -410,9 +494,10 @@ async function copyPreviousMonth() {
     let copied = 0;
     document.querySelectorAll('#sg-goals-body tr').forEach((tr) => {
       const p = prev.get(Number(tr.dataset.seller));
-      if (!p || (!p.goal_value && !p.goal_count)) return;
+      if (!p || (!p.goal_value && !p.goal_count && !p.goal_leads)) return;
       tr.querySelector('.sg-in-value').value = moneyInput(p.goal_value);
       tr.querySelector('.sg-in-count').value = p.goal_count || '';
+      tr.querySelector('.sg-in-leads').value = p.goal_leads || '';
       copied += 1;
     });
     updateGoalsTotals();
@@ -432,6 +517,7 @@ async function saveGoals() {
     seller_id: Number(tr.dataset.seller),
     goal_value: parseNumber(tr.querySelector('.sg-in-value').value),
     goal_count: Math.trunc(parseNumber(tr.querySelector('.sg-in-count').value)),
+    goal_leads: Math.trunc(parseNumber(tr.querySelector('.sg-in-leads').value)),
     notes: tr.querySelector('.sg-in-notes').value,
   }));
 
@@ -504,6 +590,7 @@ function bindEvents() {
     state.sellerId = e.target.value;
     render();
     loadHistory();
+    loadStates();
   });
   document.querySelectorAll('.sg-toggle__btn').forEach((b) => b.addEventListener('click', () => setMeasure(b.dataset.measure)));
   $('#sg-prev').addEventListener('click', () => shiftMonth(-1));

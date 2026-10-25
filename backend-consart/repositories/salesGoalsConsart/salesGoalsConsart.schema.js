@@ -2,7 +2,7 @@
 // ║ salesGoalsConsart.schema.js — Metas de vendas (CONSART ERP)        ║
 // ║ Tabela: public."salesGoalsConsart"                                 ║
 // ║ • Uma linha por vendedor (sellersConsart) por mês/ano.             ║
-// ║ • Duas metas: valor vendido (R$) e quantidade de propostas.        ║
+// ║ • Metas: valor vendido (R$), qtd. de propostas e leads contatados. ║
 // ║ • Roda uma vez por boot (primeira chamada do repositório).         ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
@@ -31,6 +31,7 @@ async function createTable() {
       seller_id        BIGINT NOT NULL,
       goal_value       NUMERIC(14,2) NOT NULL DEFAULT 0,
       goal_count       INTEGER NOT NULL DEFAULT 0,
+      goal_leads       INTEGER NOT NULL DEFAULT 0,
       notes            VARCHAR(255),
       created_by       INTEGER,
       created_by_name  VARCHAR(150),
@@ -38,5 +39,7 @@ async function createTable() {
       updated_at       TIMESTAMP NOT NULL DEFAULT NOW(),
       CONSTRAINT "salesGoalsConsart_period_seller_uk" UNIQUE (goal_year, goal_month, seller_id)
     );
+
+    ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS goal_leads INTEGER NOT NULL DEFAULT 0;
   `);
 }

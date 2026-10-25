@@ -78,7 +78,7 @@
 
 /* ── Indicadores (summary do CRM) ──────────────────────────────────── */
 .sg-summary {
-  max-width: 920px;
+  max-width: 1000px;
   border-radius: 18px;
   padding: 10px 12px;
   background: #ffffff;
@@ -87,9 +87,9 @@
 }
 
 .sg-summary__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
   gap: 10px;
-  overflow-x: auto;
   padding: 2px 2px 6px;
 }
 
@@ -274,6 +274,28 @@
 .sg-gauge__legend strong { margin-left: auto; color: #0f172a; }
 .sg-gauge__legend i { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
 
+/* Leads por estado: gráfico + tabela */
+.sg-states {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 480px);
+  gap: 16px;
+  align-items: start;
+}
+
+.sg-chart--states { height: 220px; }
+
+.sg-states-table th,
+.sg-states-table td { text-align: center; }
+
+.sg-states-table .sg-col-uf { width: 56px; font-weight: 700; }
+.sg-states-table th { white-space: nowrap; font-size: 0.8rem; }
+
+.sg-states-table tfoot th {
+  font-weight: 700;
+  color: #0f172a;
+  border-top: 2px solid #e2e8f0;
+}
+
 /* ── Cards por vendedor ────────────────────────────────────────────── */
 .sg-grid {
   display: grid;
@@ -402,7 +424,8 @@
 }
 
 .sg-goals-table .sg-in-value { text-align: right; }
-.sg-goals-table .sg-in-count { text-align: center; }
+.sg-goals-table .sg-in-count,
+.sg-goals-table .sg-in-leads { text-align: center; }
 
 .sg-col-value   { width: 150px; }
 .sg-col-count   { width: 130px; }
@@ -425,6 +448,7 @@
 
 @media (max-width: 900px) {
   .sg-dash { grid-template-columns: 1fr; }
+  .sg-states { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {

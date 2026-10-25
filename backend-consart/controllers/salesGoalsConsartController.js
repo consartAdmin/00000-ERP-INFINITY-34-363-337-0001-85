@@ -49,3 +49,12 @@ export async function getHistory(req, res) {
     return fail(res, 'getHistory', error);
   }
 }
+
+export async function getLeadsByState(req, res) {
+  try {
+    const rows = await repo.getLeadsByState(req.query);
+    return res.json({ ok: true, data: rows });
+  } catch (error) {
+    return fail(res, 'getLeadsByState', error);
+  }
+}
