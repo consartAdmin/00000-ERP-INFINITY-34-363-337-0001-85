@@ -36,6 +36,7 @@ router.get('/customer-locations', crmDealsController.listCustomerLocations);
 router.get('/deals', crmDealsController.listDeals);
 router.get('/deals/:id', crmDealsController.getDeal);
 router.post('/deals', crmDealsController.createDeal);
+router.post('/deals/from-customers', crmDealsController.createDealsFromCustomers);
 router.patch('/deals/:id', crmDealsController.updateDeal);
 router.patch('/deals/:id/move', crmDealsController.moveDeal);
 router.delete('/deals/:id', crmDealsController.deleteDeal);

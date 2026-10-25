@@ -66,6 +66,8 @@ export async function resolveCustomersCustomerId({ client, crmCustomerId }) {
 }
 
 export async function upsertCustomerStatus({ client, customerId, statusTypeId, note = null, updatedBy = null }) {
+  // Card sem Tag/Status: não mexe no status do cliente (Number(null) seria 0)
+  if (statusTypeId === null || statusTypeId === undefined || statusTypeId === '') return;
   const st = Number(statusTypeId);
   if (!Number.isFinite(st)) return;
   if (!customerId) return;

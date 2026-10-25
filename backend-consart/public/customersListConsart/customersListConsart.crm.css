@@ -1,0 +1,105 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ customersListConsart.crm.css — Clientes Consart: Enviar ao CRM      ║
+   ║ Seleção usa o padrão .table-col-select / .table-cell-select         ║
+   ║ (table.css); aqui só o botão com contador e a lista do modal.       ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.crm-send-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.crm-send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crm-send-button__count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #166534;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.crm-send-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.crm-send-head .fields {
+  max-width: 260px;
+}
+
+.crm-send-head__count {
+  padding-bottom: 6px;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.crm-send-list {
+  max-height: 280px;
+  margin: 12px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.crm-send-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.crm-send-list__item:last-child {
+  border-bottom: 0;
+}
+
+.crm-send-list__id {
+  flex: 0 0 64px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-send-list__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-send-list__remove {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.crm-send-list__remove:hover {
+  color: #dc2626;
+}
+
+.crm-send-hint {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 0.8rem;
+}
