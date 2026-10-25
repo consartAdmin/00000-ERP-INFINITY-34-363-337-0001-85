@@ -29,6 +29,7 @@ import {
   renderLeadConclusionZones,
   attachConclusionDropzones,
 } from './dropzones.conclusion.js';
+import { initTouchDragDrop } from './touch.dragdrop.js';
 
 import { apiBase } from './config.js';
 import { cssEscapeAttr } from './helpers.js';
@@ -428,6 +429,7 @@ function initTopSummaryConclusionModal() {
     attachDynamicEvents();
     renderLeadConclusionZones();
     attachConclusionDropzones();
+    initTouchDragDrop();
 
     await loadOutcomesSummary();
     enhanceOutcomeSummaryCards();
