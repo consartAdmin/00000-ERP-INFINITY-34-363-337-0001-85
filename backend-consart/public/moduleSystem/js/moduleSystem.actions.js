@@ -56,11 +56,6 @@ export function registrarLote() {
     });
     renderCurrentPage();
   });
-  elements.btnBatchCompany.addEventListener('click', () => {
-    const company = elements.batchCompany.value;
-    const texto = elements.batchCompany.selectedOptions[0]?.textContent.replace(/^\S+\s/, '') || '';
-    aplicarEmLote({ company: company || null }, `mudar a empresa para "${texto}"`);
-  });
   elements.btnBatchActivate.addEventListener('click', () => aplicarEmLote({ isActive: true }, 'ativar'));
   elements.btnBatchDeactivate.addEventListener('click', () => aplicarEmLote({ isActive: false }, 'desativar'));
   elements.btnBatchClear.addEventListener('click', () => {
@@ -97,7 +92,6 @@ export function renderCurrentPage() {
       type: elements.filterType.value,
       parentId: elements.filterParent.value,
       visibility: elements.filterVisibility.value,
-      company: elements.filterCompany.value,
     }
   );
   state.filtered = filtrados;
@@ -132,14 +126,13 @@ export function registrarPaginacao() {
     renderCurrentPage();
   };
   elements.searchInput.addEventListener('input', aoFiltrar);
-  [elements.filterStatus, elements.filterType, elements.filterParent, elements.filterCompany, elements.filterVisibility]
+  [elements.filterStatus, elements.filterType, elements.filterParent, elements.filterVisibility]
     .forEach((select) => select.addEventListener('change', aoFiltrar));
   elements.btnClearFilters.addEventListener('click', () => {
     elements.searchInput.value = '';
     elements.filterStatus.value = '';
     elements.filterType.value = '';
     elements.filterParent.value = '';
-    elements.filterCompany.value = '';
     elements.filterVisibility.value = '';
     aoFiltrar();
   });

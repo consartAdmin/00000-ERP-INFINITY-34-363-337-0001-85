@@ -3,7 +3,7 @@
 // ║ Tabela: public."moduleSystem"                                      ║
 // ║ Devolve o mesmo formato do antigo MENU_CONFIG do menuConsart.js:   ║
 // ║ { type, id, htmlId, label, href, className, feature, external,    ║
-// ║   company, children }  (company: 'BH3' | 'CONSART' | ausente)      ║
+// ║   children }                                                       ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import { TABLE } from './moduleSystem.constants.js';
@@ -25,7 +25,6 @@ function toMenuItem(row) {
   if (row.css_class) item.className = row.css_class;
   if (row.feature) item.feature = row.feature;
   if (row.is_external) item.external = true;
-  if (row.company) item.company = row.company;
   return item;
 }
 
@@ -37,7 +36,7 @@ function toMenuItem(row) {
 export async function getMenuTree() {
   const { rows } = await q(`
     SELECT id, name, path, menu_type, parent_id, sort_order,
-           html_id, css_class, feature, is_external, is_public, company
+           html_id, css_class, feature, is_external, is_public
     FROM ${TABLE}
     WHERE is_active = true
       AND menu_type IS NOT NULL

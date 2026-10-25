@@ -1,5 +1,5 @@
 import { salvarModulo } from './moduleSystem.api.js';
-import { elements, MENU_TYPE_LABELS, COMPANY_LABELS } from './moduleSystem.config.js';
+import { elements, MENU_TYPE_LABELS } from './moduleSystem.config.js';
 import { showToast } from './moduleSystem.modal.js';
 import { state, setEditingId } from './moduleSystem.state.js';
 import { validarModulo } from './moduleSystem.validation.js';
@@ -14,20 +14,15 @@ const PAIS_PERMITIDOS = Object.freeze({
 });
 
 /**
- * Preenche o select "Menu pai" conforme o tipo e a empresa escolhidos.
- * Empresa "Só CONSART" → só menus da CONSART e menus das duas empresas
- * (os de "Só BH3" somem); "Só BH3" → o inverso; "BH3 e CONSART" → todos.
+ * Preenche o select "Menu pai" conforme o tipo escolhido.
  */
 export function atualizarOpcoesPai(selecionado = elements.parentId.value) {
   const tipo = elements.menuType.value;
-  const empresa = elements.company.value;
   const permitidos = PAIS_PERMITIDOS[tipo] || [];
   const editandoId = String(elements.moduleId.value || '');
 
   const opcoes = state.modules
     .filter((m) => permitidos.includes(m.menu_type) && String(m.id) !== editandoId)
-    // O pai já escolhido continua na lista, para não mover o item sem querer
-    .filter((m) => !empresa || !m.company || m.company === empresa || String(m.id) === String(selecionado ?? ''))
     .map((m) => ({ id: String(m.id), texto: caminhoNoMenu(m, state.modules), modulo: m }))
     .sort((a, b) => a.texto.localeCompare(b.texto, 'pt-BR'));
 
@@ -40,8 +35,7 @@ export function atualizarOpcoesPai(selecionado = elements.parentId.value) {
   opcoes.forEach(({ id, texto, modulo }) => {
     const option = document.createElement('option');
     option.value = id;
-    option.textContent = `${texto}  —  ${MENU_TYPE_LABELS[modulo.menu_type]}${moduloEstaAtivo(modulo) ? '' : ' (inativo)'}` +
-      (modulo.company ? `  ·  ${COMPANY_LABELS[modulo.company]}` : '');
+    option.textContent = `${texto}  —  ${MENU_TYPE_LABELS[modulo.menu_type]}${moduloEstaAtivo(modulo) ? '' : ' (inativo)'}`;
     elements.parentId.appendChild(option);
   });
 
@@ -56,7 +50,6 @@ export function resetForm() {
   elements.path.value = '';
   elements.menuType.value = 'link';
   elements.sortOrder.value = '';
-  elements.company.value = '';
   elements.htmlId.value = '';
   elements.cssClass.value = '';
   elements.feature.value = '';
@@ -81,7 +74,6 @@ export function fillForm(modulo) {
   elements.isActive.checked = moduloEstaAtivo(modulo);
   elements.isExternal.checked = !!modulo.is_external;
   elements.isPublic.checked = !!modulo.is_public;
-  elements.company.value = modulo.company || '';
   atualizarOpcoesPai(modulo.parent_id ?? '');
   elements.formTitle.textContent = '✏️ Editar Módulo';
   elements.btnSave.textContent = '💾 Atualizar';
@@ -97,7 +89,6 @@ function obterDadosFormulario() {
     menuType: elements.menuType.value,
     parentId: elements.menuType.value === 'dropdown' ? '' : elements.parentId.value,
     sortOrder: elements.sortOrder.value.trim(),
-    company: elements.company.value,
     htmlId: elements.htmlId.value.trim(),
     cssClass: elements.cssClass.value.trim(),
     feature: elements.feature.value.trim(),
@@ -108,8 +99,6 @@ function obterDadosFormulario() {
 }
 
 export function registrarFormulario(recarregar) {
-  elements.company.addEventListener('change', () => atualizarOpcoesPai());
-
   elements.menuType.addEventListener('change', () => {
     atualizarOpcoesPai();
     // Dropdown e submenu não abrem página: caminho padrão '#'

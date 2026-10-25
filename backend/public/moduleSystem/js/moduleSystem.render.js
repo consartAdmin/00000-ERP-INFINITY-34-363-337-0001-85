@@ -1,8 +1,8 @@
-import { elements, MENU_TYPE_LABELS, COMPANY_LABELS } from './moduleSystem.config.js';
+import { elements, MENU_TYPE_LABELS } from './moduleSystem.config.js';
 import { caminhoNoMenu, moduloEstaAtivo } from './moduleSystem.utils.js';
 import { createActionIcons } from '/public/includes/js/actionIcons.js';
 
-const TOTAL_COLUNAS = 10;
+const TOTAL_COLUNAS = 9;
 
 function criarCelula(texto = '') {
   const td = document.createElement('td');
@@ -70,7 +70,6 @@ export function renderModulesTable(modules, handlers, allModules = modules) {
       criarCelula(modulo.path || ''),
       criarCelula(modulo.is_public ? `${tipo} (todos)` : tipo),
       criarCelula(pai ? caminhoNoMenu(pai, allModules) : (modulo.menu_type ? '(Topo)' : '')),
-      criarCelula(modulo.menu_type ? COMPANY_LABELS[modulo.company || ''] : ''),
       criarCelula(modulo.menu_type ? String(modulo.sort_order ?? '') : ''),
       tdActive,
       tdActions

@@ -65,15 +65,6 @@
               </select>
             </div>
 
-            <div class="fields fields-h-6 fields-w-10 fields-font-3">
-              <label for="company" title="Empresa ativa no botão do rodapé">Empresa</label>
-              <select id="company">
-                <option value="">🔁 BH3 e CONSART</option>
-                <option value="BH3">🔵 Só BH3</option>
-                <option value="CONSART">🟢 Só CONSART</option>
-              </select>
-            </div>
-
             <div class="fields fields-h-6 fields-w-20 fields-font-3">
               <label for="parentId">Menu pai</label>
               <select id="parentId">
@@ -169,16 +160,6 @@
           </div>
 
           <div class="fields fields-h-6 fields-w-10 fields-font-3">
-            <label for="filterCompany">Empresa</label>
-            <select id="filterCompany">
-              <option value="">Todas</option>
-              <option value="BH3">Aparece na BH3</option>
-              <option value="CONSART">Aparece na CONSART</option>
-              <option value="both">BH3 e CONSART</option>
-            </select>
-          </div>
-
-          <div class="fields fields-h-6 fields-w-10 fields-font-3">
             <label for="filterVisibility">Visibilidade</label>
             <select id="filterVisibility">
               <option value="">Todas</option>
@@ -196,14 +177,6 @@
       <!-- Alteração em lote: aparece quando há módulos marcados -->
       <div class="ms-batch" id="batchBar" hidden>
         <strong id="batchCount">0 selecionados</strong>
-        <span class="ms-batch__sep"></span>
-        <label for="batchCompany">Empresa</label>
-        <select id="batchCompany">
-          <option value="">🔁 BH3 e CONSART</option>
-          <option value="BH3">🔵 Só BH3</option>
-          <option value="CONSART">🟢 Só CONSART</option>
-        </select>
-        <button type="button" id="btnBatchCompany" class="btn btn-new btn-sm">Aplicar empresa</button>
         <span class="ms-batch__sep"></span>
         <button type="button" id="btnBatchActivate" class="btn btn-new btn-sm">▶ Ativar</button>
         <button type="button" id="btnBatchDeactivate" class="btn btn-new btn-sm">⏸ Desativar</button>
@@ -223,7 +196,6 @@
               <th>Caminho</th>
               <th>Tipo</th>
               <th>Menu pai</th>
-              <th>Empresa</th>
               <th>Ordem</th>
               <th>Ativo</th>
               <th>Ações</th>
