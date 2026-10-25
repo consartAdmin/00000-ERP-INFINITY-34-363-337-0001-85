@@ -13,6 +13,8 @@ export function isFiniteNum(v) {
 }
 
 export function toNumOrNull(v) {
+  // null/'' não são número: Number(null) = 0 gravava status_type_id/lead_source_id = 0 (FK)
+  if (v === null || v === undefined || String(v).trim() === '') return null;
   return isFiniteNum(v) ? Number(v) : null;
 }
 
