@@ -5,7 +5,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import perfApi from '../crmDealsPerformance/crmDealsPerformance.index.js';
-import { ensureCrmCompanyColumn } from './crmDealsSchema.repository.js';
+import { ensureCrmCompanyColumn, ensureCrmDealsConsartFks } from './crmDealsSchema.repository.js';
 import { listStages, getStageById, getStageByCode } from './crmDealsStages.repository.js';
 import { listDeals, getDealById, listCustomerLocations } from './crmDealsQuery.repository.js';
 import { createDeal } from './crmDealsCreate.repository.js';
@@ -42,6 +42,11 @@ ensureCrmCompanyColumn()
     else console.warn('[crmDealsApi] ensureCrmCompanyColumn retorno:', r);
   })
   .catch((e) => console.warn('[crmDealsApi] ensureCrmCompanyColumn falhou:', e?.message || e));
+
+// Cards da Consart apontam para customersConsart / sellersConsart / customerStatusTypesConsart.
+ensureCrmDealsConsartFks()
+  .then((r) => { if (r?.ok) console.log('[crmDealsApi] crmDeals FKs Consart OK'); })
+  .catch((e) => console.warn('[crmDealsApi] ensureCrmDealsConsartFks falhou:', e?.message || e));
 
 const crmDealsApi = {
   listStages,

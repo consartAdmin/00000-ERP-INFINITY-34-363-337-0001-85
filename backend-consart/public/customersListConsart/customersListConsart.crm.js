@@ -202,8 +202,17 @@ async function send() {
     lines.push(`<b>${summary.skipped}</b> já ${summary.skipped === 1 ? 'tinha card aberto' : 'tinham card aberto'} no CRM (não duplicado).`);
   }
   if (summary.failed) {
-    const names = results.filter((r) => !r.ok).map((r) => esc(r.customer_name || r.customer_id)).join(', ');
-    lines.push(`<b>${summary.failed}</b> com erro: ${names}.`);
+    // Agrupa por mensagem do servidor para mostrar o motivo do erro
+    const byError = new Map();
+    for (const r of results.filter((x) => !x.ok)) {
+      const key = r.error || 'erro desconhecido';
+      if (!byError.has(key)) byError.set(key, []);
+      byError.get(key).push(r.customer_name || r.customer_id);
+    }
+    lines.push(`<b>${summary.failed}</b> com erro:`);
+    for (const [error, names] of byError) {
+      lines.push(`<small>• <i>${esc(error)}</i>: ${names.map(esc).join(', ')}</small>`);
+    }
   }
 
   Modal.close(MODAL_ID);
