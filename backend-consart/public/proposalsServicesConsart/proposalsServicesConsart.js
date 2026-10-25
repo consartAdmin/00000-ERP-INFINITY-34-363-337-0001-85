@@ -4,6 +4,7 @@
 // ║ • Editor em modal (cliente/vendedor por duplo clique, serviços do    ║
 // ║   cadastro ou avulsos, condições, escopo e observações)              ║
 // ║ • PDF, duplicar, excluir e gerar contrato (propostas aprovadas)      ║
+// ║ • ?open=ID abre a proposta direto                                    ║
 // ║ API: /api/proposals-services-consart                                 ║
 // ║ Serviços: /api/services-consart (modal Buscar Serviço)               ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -634,3 +635,10 @@ bindEvents();
 loadSellers();
 loadPaymentMethods();
 loadList();
+
+// ?open=ID (vindo da tela de Metas de Vendas) abre a proposta direto
+const openId = Number(new URLSearchParams(location.search).get('open'));
+if (openId > 0) {
+  history.replaceState(null, '', location.pathname);
+  openEditor(openId);
+}

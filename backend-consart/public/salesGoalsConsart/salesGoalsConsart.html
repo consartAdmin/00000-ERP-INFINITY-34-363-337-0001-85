@@ -1,0 +1,162 @@
+<!-- ╔════════════════════════════════════════════════════════════════════╗
+     ║ salesGoalsConsart.html — Metas de Vendas (CONSART ERP)            ║
+     ║ ✅ Visual do CRM Consart (cabeçalho com indicadores e filtros)    ║
+     ║ ✅ Meta mensal por vendedor (sellersConsart): valor e quantidade  ║
+     ║ ✅ Realizado = Propostas de Serviços APROVADAS no mês             ║
+     ║ ✅ Modal "Definir metas" e modal com as propostas do vendedor     ║
+     ║ API: /api/sales-goals-consart, /api/sellers (Consart)             ║
+     ╚════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>METAS DE VENDAS | CONSART ERP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/salesGoalsConsart/salesGoalsConsart.css?v=1" />
+</head>
+<body>
+  <div id="menuConsartMount"></div>
+
+  <main class="sg-page">
+    <section class="sg-card">
+      <div class="sg-header">
+        <div class="sg-header__titles">
+          <h1>Metas de Vendas - Consart ERP</h1>
+          <p>Meta x realizado de cada vendedor no mês (propostas de serviços aprovadas).</p>
+        </div>
+
+        <div class="sg-header__center">
+          <div id="sg-summary" class="sg-summary" aria-label="Indicadores do mês">
+            <div class="sg-summary__placeholder">Carregando indicadores...</div>
+          </div>
+        </div>
+
+        <div class="sg-header__filters">
+          <div class="sg-filter">
+            <label for="sg-month" class="sg-label">Mês</label>
+            <select id="sg-month" class="sg-select"></select>
+          </div>
+          <div class="sg-filter">
+            <label for="sg-year" class="sg-label">Ano</label>
+            <select id="sg-year" class="sg-select"></select>
+          </div>
+          <div class="sg-filter sg-filter--full">
+            <label for="sg-seller" class="sg-label">Vendedor</label>
+            <select id="sg-seller" class="sg-select">
+              <option value="">Todos os vendedores</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-actions">
+        <button id="sg-btn-goals" class="sg-btn-goals" type="button">
+          <span class="sg-btn-goals__icon" aria-hidden="true">+</span>
+          <span>Definir metas do mês</span>
+        </button>
+        <div class="btn-inline btn-gap-3">
+          <button id="sg-prev" class="btn btn-toolbar btn-sm" type="button" title="Mês anterior">‹ Anterior</button>
+          <button id="sg-today" class="btn btn-toolbar btn-sm" type="button">Mês atual</button>
+          <button id="sg-next" class="btn btn-toolbar btn-sm" type="button" title="Próximo mês">Próximo ›</button>
+          <button id="sg-reload" class="btn btn-load btn-sm" type="button">Recarregar</button>
+        </div>
+      </div>
+
+      <div id="sg-grid" class="sg-grid"></div>
+      <div id="sg-empty" class="sg-empty" hidden>Nenhum vendedor ativo em Vendedores Consart.</div>
+    </section>
+  </main>
+
+  <!-- Modal Definir metas (padrão modals.css / modal.js) -->
+  <div id="sg-goals-modal" class="modal sg-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="sgGoalsTitle">
+        <div class="modal__header modal-header-color-3">
+          <h2 id="sgGoalsTitle" class="modal__title">Metas do mês</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="sg-goals-bar">
+            <span class="sg-hint">Deixe a meta em branco (ou zero) para o vendedor sem meta no mês.</span>
+            <button id="sg-copy-prev" class="btn btn-toolbar btn-sm" type="button">Copiar do mês anterior</button>
+          </div>
+          <div class="table-scroll">
+            <table class="table table-fixed table-zebra sg-goals-table">
+              <thead>
+                <tr>
+                  <th class="sg-col-left">Vendedor</th>
+                  <th class="sg-col-value">Meta de valor (R$)</th>
+                  <th class="sg-col-count">Meta de propostas</th>
+                  <th class="sg-col-left">Observação</th>
+                </tr>
+              </thead>
+              <tbody id="sg-goals-body"></tbody>
+              <tfoot>
+                <tr>
+                  <th class="sg-col-left">Total da empresa</th>
+                  <th id="sg-goals-total-value" class="sg-col-value">R$ 0,00</th>
+                  <th id="sg-goals-total-count" class="sg-col-count">0</th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal__footer modal-footer-color-3">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+          <button id="sg-goals-save" class="btn btn-save btn-sm" type="button">Salvar Metas</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal Propostas aprovadas do vendedor -->
+  <div id="sg-sales-modal" class="modal sg-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-8" role="dialog" aria-modal="true" aria-labelledby="sgSalesTitle">
+        <div class="modal__header modal-header-color-3">
+          <h2 id="sgSalesTitle" class="modal__title">Propostas aprovadas</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="table-scroll">
+            <table class="table table-fixed table-zebra table-zebra-hover sg-sales-table">
+              <thead>
+                <tr>
+                  <th class="sg-col-number">Nº</th>
+                  <th class="sg-col-date">Data</th>
+                  <th class="sg-col-left">Cliente</th>
+                  <th class="sg-col-left">Título</th>
+                  <th class="sg-col-value">Valor (R$)</th>
+                  <th class="sg-col-actions">Abrir</th>
+                </tr>
+              </thead>
+              <tbody id="sg-sales-body"></tbody>
+            </table>
+            <div id="sg-sales-empty" class="sg-empty" hidden>Nenhuma proposta aprovada no mês.</div>
+          </div>
+        </div>
+
+        <div class="modal__footer modal-footer-color-3">
+          <span id="sg-sales-info" class="sg-hint"></span>
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Fechar</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>window.ERP_COMPANY = 'CONSART';</script>
+  <script src="/public/includes/js/erpCompany.js"></script>
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/salesGoalsConsart/salesGoalsConsart.js?v=1"></script>
+</body>
+</html>
