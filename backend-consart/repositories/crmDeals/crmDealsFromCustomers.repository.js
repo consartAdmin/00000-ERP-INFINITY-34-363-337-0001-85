@@ -43,8 +43,10 @@ async function loadCustomers(ids) {
       SELECT
         c.customer_id,
         COALESCE(NULLIF(TRIM(c.trade_name), ''), c.legal_name) AS customer_name,
-        sfc.seller_id,
-        cs.status_type_id
+        -- Só vendedor/status que existem nos cadastros da Consart (FKs do crmDeals);
+        -- vínculo antigo apontando para id inexistente vira card sem vendedor/status
+        s.id   AS seller_id,
+        cst.id AS status_type_id
       FROM ${erpTable('public."customers"')} c
       LEFT JOIN LATERAL (
         SELECT sfc1.seller_id
@@ -54,8 +56,12 @@ async function loadCustomers(ids) {
         ORDER BY sfc1.created_at DESC
         LIMIT 1
       ) sfc ON TRUE
+      LEFT JOIN ${erpTable('public."sellers"')} s
+        ON s.id = sfc.seller_id
       LEFT JOIN ${erpTable('public."customerStatus"')} cs
         ON cs.customer_id = c.customer_id
+      LEFT JOIN ${erpTable('public."customerStatusTypes"')} cst
+        ON cst.id = cs.status_type_id
       WHERE c.customer_id = ANY($1::int[])
     `,
     [ids]
