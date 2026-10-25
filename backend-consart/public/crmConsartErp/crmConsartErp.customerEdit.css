@@ -1,0 +1,65 @@
+/* =====================================================================
+   crmConsartErp.customerEdit.css — CRM Consart ERP
+   Ícone "Editar cliente" no card + modal Editar Cliente
+   (estrutura e tamanhos do modal vêm do modals.css)
+===================================================================== */
+
+/* Rodapé do card: data à esquerda, ícone à direita */
+.crm-card__footer--actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.crm-card__customer-edit {
+  margin: -4px -4px -4px auto;
+}
+
+/* Títulos dos blocos do modal */
+.crm-customer-edit-modal .crm-ce-section-title {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.crm-customer-edit-modal .modal-section + .modal-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.crm-customer-edit-modal [hidden] {
+  display: none !important;
+}
+
+/* "Buscar CNPJ" discreto ao lado do rótulo */
+.crm-customer-edit-modal .crm-ce-link-btn {
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2563eb;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.crm-customer-edit-modal .crm-ce-link-btn:hover,
+.crm-customer-edit-modal .crm-ce-link-btn:focus-visible {
+  text-decoration: underline;
+}
+
+.crm-customer-edit-modal .crm-ce-link-btn[disabled] {
+  color: #94a3b8;
+  cursor: progress;
+}
+
+/* Rodapé: "Cadastro completo" à esquerda, ações à direita */
+.crm-ce-footer .crm-ce-open-full {
+  margin-right: auto;
+  text-decoration: none;
+}
