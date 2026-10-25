@@ -1,20 +1,28 @@
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ salesGoalsConsart.repository.js — Metas de vendas (CONSART ERP)    ║
-// ║ • Meta x Realizado por vendedor no mês.                            ║
-// ║ • Venda = Proposta de Serviços APROVADA, no mês da data da         ║
-// ║   proposta (issue_date).                                           ║
-// ║ • Realizado: valor (total da proposta) e quantidade de propostas.  ║
-// ║ • Lead contatado = card do CRM Consart concluído no mês (Conversão,║
-// ║   Queda de venda ou Sem sucesso no contato); UF vem do cliente.    ║
+// ║ • Meta x Realizado por vendedor e por estado (UF) no mês.          ║
+// ║ • Realizado (FACTS_SQL, um fato por linha):                        ║
+// ║   value/count → Propostas de Serviços APROVADAS (issue_date)       ║
+// ║   sent        → propostas emitidas, menos rascunho (issue_date)    ║
+// ║   leads       → cards do CRM Consart concluídos (outcome_at):      ║
+// ║                 Conversão, Queda de venda ou Sem sucesso           ║
+// ║   conversions → cards concluídos como Conversão                    ║
+// ║   recurring   → mensalidade de contratos ATIVO/ENCERRADO pela      ║
+// ║                 assinatura (senão início, senão emissão)           ║
+// ║ • UF = estado do cliente (customersConsart).                       ║
 // ║ • getHistory: evolução mês a mês para os gráficos do painel.       ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB, ensureSalesGoalsConsartTable } from './salesGoalsConsart.schema.js';
+import { TB, TB_STATES, ensureSalesGoalsConsartTable } from './salesGoalsConsart.schema.js';
 import {
   TB as TB_PROPOSALS,
   ensureProposalsServicesConsartTables,
 } from '../proposalsServicesConsart/proposalsServicesConsart.schema.js';
+import {
+  TB as TB_CONTRACTS,
+  ensureContractsConsartTables,
+} from '../contractsConsart/contractsConsart.schema.js';
 
 const TB_SELLERS = 'public."sellersConsart"';
 const TB_CUSTOMERS = 'public."customersConsart"';
@@ -30,6 +38,122 @@ const LEADS_WHERE = `
   AND UPPER(COALESCE(d.outcome, '')) = ANY($LEADS_OUTCOMES::text[])
 `;
 const leadsWhere = (paramIndex) => LEADS_WHERE.replace('$LEADS_OUTCOMES', `$${paramIndex}`);
+
+// Metas por vendedor e por estado: chave → dinheiro (R$) ou contagem
+export const SELLER_METRICS = Object.freeze(['value', 'count', 'sent', 'leads', 'conversions', 'recurring']);
+export const STATE_METRICS = Object.freeze(['leads', 'conversions', 'value']);
+const MONEY_METRICS = new Set(['value', 'recurring']);
+
+export const UFS = Object.freeze(['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT',
+  'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO']);
+
+/**
+ * Fatos do realizado entre [$from, $to): (seller_id, customer_id, fact_date, metric, amount).
+ * Os desfechos dos leads vão no parâmetro $outcomes (LEAD_OUTCOMES).
+ */
+function factsSql(from, to, outcomes) {
+  const proposalDate = `p.issue_date >= $${from}::date AND p.issue_date < $${to}::date`;
+  const dealDate = `d.outcome_at >= $${from}::date AND d.outcome_at < $${to}::date`;
+  const contractDate = 'COALESCE(c.signing_date, c.start_date, c.issue_date)';
+  return `
+    SELECT p.seller_id, p.customer_id, p.issue_date AS fact_date, 'value' AS metric, p.total::numeric AS amount
+      FROM ${TB_PROPOSALS} p WHERE p.status = '${SALE_STATUS}' AND ${proposalDate}
+    UNION ALL
+    SELECT p.seller_id, p.customer_id, p.issue_date, 'count', 1
+      FROM ${TB_PROPOSALS} p WHERE p.status = '${SALE_STATUS}' AND ${proposalDate}
+    UNION ALL
+    SELECT p.seller_id, p.customer_id, p.issue_date, 'sent', 1
+      FROM ${TB_PROPOSALS} p WHERE p.status <> 'RASCUNHO' AND ${proposalDate}
+    UNION ALL
+    SELECT d.seller_id, d.customer_id, d.outcome_at::date, 'leads', 1
+      FROM ${TB_DEALS} d WHERE ${leadsWhere(outcomes)} AND ${dealDate}
+    UNION ALL
+    SELECT d.seller_id, d.customer_id, d.outcome_at::date, 'conversions', 1
+      FROM ${TB_DEALS} d WHERE ${leadsWhere(outcomes)} AND UPPER(d.outcome) = 'CONVERSION' AND ${dealDate}
+    UNION ALL
+    SELECT c.seller_id, c.customer_id, ${contractDate}, 'recurring', COALESCE(c.recurring_total, c.total)
+      FROM ${TB_CONTRACTS} c
+     WHERE c.status IN ('ATIVO', 'ENCERRADO')
+       AND ${contractDate} >= $${from}::date AND ${contractDate} < $${to}::date
+  `;
+}
+
+/** SUM(amount) de cada métrica como colunas done_<métrica>. */
+function doneColumns(metrics, alias = 'f') {
+  return metrics
+    .map((m) => `COALESCE(SUM(${alias}.amount) FILTER (WHERE ${alias}.metric = '${m}'), 0) AS done_${m}`)
+    .join(',\n             ');
+}
+
+/** Monta goal_/done_/pct_ de cada métrica numa linha do banco. */
+function metricRow(r, metrics) {
+  const row = {};
+  for (const m of metrics) {
+    const goal = Number(r[`goal_${m}`] || 0);
+    const done = Number(r[`done_${m}`] || 0);
+    row[`goal_${m}`] = MONEY_METRICS.has(m) ? round2(goal) : goal;
+    row[`done_${m}`] = MONEY_METRICS.has(m) ? round2(done) : done;
+    row[`pct_${m}`] = percent(done, goal);
+  }
+  return row;
+}
+
+function totalsOf(rows, metrics) {
+  const t = {};
+  for (const m of metrics) {
+    t[`goal_${m}`] = round2(rows.reduce((acc, r) => acc + r[`goal_${m}`], 0));
+    t[`done_${m}`] = round2(rows.reduce((acc, r) => acc + r[`done_${m}`], 0));
+    t[`pct_${m}`] = percent(t[`done_${m}`], t[`goal_${m}`]);
+  }
+  return t;
+}
+
+function cleanGoal(g, metrics) {
+  const out = {};
+  for (const m of metrics) {
+    const n = Math.max(0, toNumber(g[`goal_${m}`]));
+    out[`goal_${m}`] = MONEY_METRICS.has(m) ? round2(n) : Math.trunc(n);
+  }
+  out.notes = String(g.notes || '').trim().slice(0, 255) || null;
+  return out;
+}
+
+/** Grava metas (upsert por chave); meta toda zerada e sem observação é removida. */
+async function upsertGoals({ table, keyCol, period, goals, metrics, user }) {
+  const cols = metrics.map((m) => `goal_${m}`);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const g of goals) {
+      const empty = cols.every((c) => !g[c]) && !g.notes;
+      if (empty) {
+        await client.query(
+          `DELETE FROM ${table} WHERE goal_year = $1 AND goal_month = $2 AND ${keyCol} = $3`,
+          [period.year, period.month, g.key]
+        );
+        continue;
+      }
+      const values = [period.year, period.month, g.key, ...cols.map((c) => g[c]), g.notes,
+        positiveId(user?.user_id ?? user?.id), user?.name || null];
+      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+      await client.query(
+        `INSERT INTO ${table}
+           (goal_year, goal_month, ${keyCol}, ${cols.join(', ')}, notes, created_by, created_by_name)
+         VALUES (${placeholders})
+         ON CONFLICT (goal_year, goal_month, ${keyCol}) DO UPDATE SET
+           ${[...cols, 'notes'].map((c) => `${c} = EXCLUDED.${c}`).join(',\n           ')},
+           updated_at = NOW()`,
+        values
+      );
+    }
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 function validationError(message) {
   const error = new Error(message);
@@ -67,6 +191,7 @@ export function parsePeriod(year, month) {
 
 async function ensureTables() {
   await ensureProposalsServicesConsartTables();
+  await ensureContractsConsartTables();
   await ensureSalesGoalsConsartTable();
 }
 
@@ -75,15 +200,15 @@ function percent(done, goal) {
 }
 
 /**
- * Meta x Realizado do mês. Lista os vendedores ativos e também os inativos
- * que tenham meta ou venda no mês.
+ * Meta x Realizado do mês por vendedor. Lista os vendedores ativos e também
+ * os inativos que tenham meta ou realizado no mês.
  */
 export async function getMonth({ year, month, seller_id } = {}) {
   await ensureTables();
   const period = parsePeriod(year, month);
   const sellerId = positiveId(seller_id);
 
-  const params = [period.year, period.month, period.from, period.to, SALE_STATUS, LEAD_OUTCOMES];
+  const params = [period.year, period.month, period.from, period.to, LEAD_OUTCOMES];
   let sellerFilter = '';
   if (sellerId) {
     params.push(sellerId);
@@ -92,137 +217,54 @@ export async function getMonth({ year, month, seller_id } = {}) {
 
   const { rows } = await pool.query(
     `
-    WITH leads AS (
-      SELECT d.seller_id, COUNT(*)::int AS done_leads
-        FROM ${TB_DEALS} d
-       WHERE ${leadsWhere(6)}
-         AND d.outcome_at >= $3::date
-         AND d.outcome_at <  $4::date
-         AND d.seller_id IS NOT NULL
-       GROUP BY d.seller_id
-    ),
-    sales AS (
-      SELECT p.seller_id,
-             COUNT(*)::int                AS done_count,
-             COALESCE(SUM(p.total), 0)    AS done_value
-        FROM ${TB_PROPOSALS} p
-       WHERE p.status = $5
-         AND p.issue_date >= $3::date
-         AND p.issue_date <  $4::date
-         AND p.seller_id IS NOT NULL
-       GROUP BY p.seller_id
+    WITH facts AS (${factsSql(3, 4, 5)}),
+    done AS (
+      SELECT f.seller_id,
+             ${doneColumns(SELLER_METRICS)}
+        FROM facts f
+       WHERE f.seller_id IS NOT NULL
+       GROUP BY f.seller_id
     )
     SELECT s.id AS seller_id,
            COALESCE(NULLIF(s.nickname, ''), s.name) AS seller_name,
            COALESCE(s.active, TRUE)                 AS seller_active,
            g.id AS goal_id,
-           COALESCE(g.goal_value, 0) AS goal_value,
-           COALESCE(g.goal_count, 0) AS goal_count,
-           COALESCE(g.goal_leads, 0) AS goal_leads,
            g.notes,
-           COALESCE(x.done_value, 0) AS done_value,
-           COALESCE(x.done_count, 0) AS done_count,
-           COALESCE(l.done_leads, 0) AS done_leads
+           ${SELLER_METRICS.map((m) => `COALESCE(g.goal_${m}, 0) AS goal_${m}`).join(', ')},
+           ${SELLER_METRICS.map((m) => `COALESCE(x.done_${m}, 0) AS done_${m}`).join(', ')}
       FROM ${TB_SELLERS} s
       LEFT JOIN ${TB} g ON g.seller_id = s.id AND g.goal_year = $1 AND g.goal_month = $2
-      LEFT JOIN sales x ON x.seller_id = s.id
-      LEFT JOIN leads l ON l.seller_id = s.id
-     WHERE (COALESCE(s.active, TRUE) OR g.id IS NOT NULL OR x.seller_id IS NOT NULL OR l.seller_id IS NOT NULL)
+      LEFT JOIN done x ON x.seller_id = s.id
+     WHERE (COALESCE(s.active, TRUE) OR g.id IS NOT NULL OR x.seller_id IS NOT NULL)
        ${sellerFilter}
      ORDER BY seller_name
     `,
     params
   );
 
-  const data = rows.map((r) => {
-    const row = {
-      seller_id: Number(r.seller_id),
-      seller_name: r.seller_name,
-      seller_active: r.seller_active,
-      has_goal: !!r.goal_id,
-      notes: r.notes || '',
-      goal_value: Number(r.goal_value),
-      goal_count: Number(r.goal_count),
-      goal_leads: Number(r.goal_leads),
-      done_value: Number(r.done_value),
-      done_count: Number(r.done_count),
-      done_leads: Number(r.done_leads),
-    };
-    row.pct_value = percent(row.done_value, row.goal_value);
-    row.pct_count = percent(row.done_count, row.goal_count);
-    row.pct_leads = percent(row.done_leads, row.goal_leads);
-    return row;
-  });
+  const data = rows.map((r) => ({
+    seller_id: Number(r.seller_id),
+    seller_name: r.seller_name,
+    seller_active: r.seller_active,
+    has_goal: !!r.goal_id,
+    notes: r.notes || '',
+    ...metricRow(r, SELLER_METRICS),
+  }));
 
-  const sum = (key) => round2(data.reduce((acc, r) => acc + r[key], 0));
-  const totals = {
-    goal_value: sum('goal_value'),
-    goal_count: sum('goal_count'),
-    goal_leads: sum('goal_leads'),
-    done_value: sum('done_value'),
-    done_count: sum('done_count'),
-    done_leads: sum('done_leads'),
-  };
-  totals.pct_value = percent(totals.done_value, totals.goal_value);
-  totals.pct_count = percent(totals.done_count, totals.goal_count);
-  totals.pct_leads = percent(totals.done_leads, totals.goal_leads);
-
-  return { year: period.year, month: period.month, rows: data, totals };
+  return { year: period.year, month: period.month, rows: data, totals: totalsOf(data, SELLER_METRICS) };
 }
 
-/**
- * Grava as metas do mês (uma linha por vendedor). Vendedor com as metas
- * zeradas e sem observação tem a meta removida.
- */
+/** Grava as metas do mês por vendedor (uma linha por vendedor). */
 export async function saveMonth({ year, month }, goals, user) {
   await ensureTables();
   const period = parsePeriod(year, month);
   if (!Array.isArray(goals)) throw validationError('Envie a lista de metas.');
 
   const clean = goals
-    .map((g) => ({
-      seller_id: positiveId(g.seller_id),
-      goal_value: round2(Math.max(0, toNumber(g.goal_value))),
-      goal_count: Math.max(0, Math.trunc(toNumber(g.goal_count))),
-      goal_leads: Math.max(0, Math.trunc(toNumber(g.goal_leads))),
-      notes: String(g.notes || '').trim().slice(0, 255) || null,
-    }))
-    .filter((g) => g.seller_id);
+    .map((g) => ({ key: positiveId(g.seller_id), ...cleanGoal(g, SELLER_METRICS) }))
+    .filter((g) => g.key);
 
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    for (const g of clean) {
-      if (!g.goal_value && !g.goal_count && !g.goal_leads && !g.notes) {
-        await client.query(
-          `DELETE FROM ${TB} WHERE goal_year = $1 AND goal_month = $2 AND seller_id = $3`,
-          [period.year, period.month, g.seller_id]
-        );
-        continue;
-      }
-      await client.query(
-        `INSERT INTO ${TB}
-           (goal_year, goal_month, seller_id, goal_value, goal_count, goal_leads, notes,
-            created_by, created_by_name)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         ON CONFLICT (goal_year, goal_month, seller_id) DO UPDATE SET
-           goal_value = EXCLUDED.goal_value,
-           goal_count = EXCLUDED.goal_count,
-           goal_leads = EXCLUDED.goal_leads,
-           notes      = EXCLUDED.notes,
-           updated_at = NOW()`,
-        [period.year, period.month, g.seller_id, g.goal_value, g.goal_count, g.goal_leads, g.notes,
-          positiveId(user?.user_id ?? user?.id), user?.name || null]
-      );
-    }
-    await client.query('COMMIT');
-  } catch (error) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw error;
-  } finally {
-    client.release();
-  }
-
+  await upsertGoals({ table: TB, keyCol: 'seller_id', period, goals: clean, metrics: SELLER_METRICS, user });
   return getMonth(period);
 }
 
@@ -267,62 +309,137 @@ export async function getHistory({ year, month, months = 12, seller_id } = {}) {
   const n = Math.min(24, Math.max(1, Math.trunc(Number(months) || 12)));
   const sellerId = positiveId(seller_id);
 
-  const params = [period.from, n, SALE_STATUS, LEAD_OUTCOMES];
+  // $1 início do 1º mês · $2 fim do mês informado · $3 desfechos · $4 nº de meses
+  const first = new Date(Date.UTC(period.year, period.month - n, 1)).toISOString().slice(0, 10);
+  const params = [first, period.to, LEAD_OUTCOMES, n];
   let goalSeller = '';
-  let saleSeller = '';
-  let leadSeller = '';
+  let factSeller = '';
   if (sellerId) {
     params.push(sellerId);
     goalSeller = `AND g.seller_id = $${params.length}`;
-    saleSeller = `AND p.seller_id = $${params.length}`;
-    leadSeller = `AND d.seller_id = $${params.length}`;
+    factSeller = `AND f.seller_id = $${params.length}`;
   }
 
   const { rows } = await pool.query(
     `
     WITH months AS (
-      SELECT (date_trunc('month', $1::date) - make_interval(months => s.i))::date AS month_start
-        FROM generate_series(0, $2::int - 1) AS s(i)
+      SELECT ($1::date + make_interval(months => s.i))::date AS month_start
+        FROM generate_series(0, $4::int - 1) AS s(i)
+    ),
+    facts AS (${factsSql(1, 2, 3)}),
+    done AS (
+      SELECT date_trunc('month', f.fact_date)::date AS month_start,
+             ${doneColumns(SELLER_METRICS)}
+        FROM facts f
+       WHERE TRUE ${factSeller}
+       GROUP BY 1
+    ),
+    goals AS (
+      SELECT make_date(g.goal_year, g.goal_month, 1) AS month_start,
+             ${SELLER_METRICS.map((m) => `SUM(g.goal_${m}) AS goal_${m}`).join(', ')}
+        FROM ${TB} g
+       WHERE TRUE ${goalSeller}
+       GROUP BY 1
     )
     SELECT EXTRACT(YEAR FROM m.month_start)::int  AS year,
            EXTRACT(MONTH FROM m.month_start)::int AS month,
-           COALESCE((SELECT SUM(g.goal_value) FROM ${TB} g
-                      WHERE g.goal_year = EXTRACT(YEAR FROM m.month_start)
-                        AND g.goal_month = EXTRACT(MONTH FROM m.month_start) ${goalSeller}), 0) AS goal_value,
-           COALESCE((SELECT SUM(g.goal_count) FROM ${TB} g
-                      WHERE g.goal_year = EXTRACT(YEAR FROM m.month_start)
-                        AND g.goal_month = EXTRACT(MONTH FROM m.month_start) ${goalSeller}), 0) AS goal_count,
-           COALESCE((SELECT SUM(p.total) FROM ${TB_PROPOSALS} p
-                      WHERE p.status = $3
-                        AND p.issue_date >= m.month_start
-                        AND p.issue_date < (m.month_start + INTERVAL '1 month') ${saleSeller}), 0) AS done_value,
-           (SELECT COUNT(*) FROM ${TB_PROPOSALS} p
-             WHERE p.status = $3
-               AND p.issue_date >= m.month_start
-               AND p.issue_date < (m.month_start + INTERVAL '1 month') ${saleSeller})::int AS done_count,
-           COALESCE((SELECT SUM(g.goal_leads) FROM ${TB} g
-                      WHERE g.goal_year = EXTRACT(YEAR FROM m.month_start)
-                        AND g.goal_month = EXTRACT(MONTH FROM m.month_start) ${goalSeller}), 0) AS goal_leads,
-           (SELECT COUNT(*) FROM ${TB_DEALS} d
-             WHERE ${leadsWhere(4)}
-               AND d.outcome_at >= m.month_start
-               AND d.outcome_at < (m.month_start + INTERVAL '1 month') ${leadSeller})::int AS done_leads
+           ${SELLER_METRICS.map((m) => `COALESCE(g.goal_${m}, 0) AS goal_${m}, COALESCE(x.done_${m}, 0) AS done_${m}`).join(',\n           ')}
       FROM months m
+      LEFT JOIN done x ON x.month_start = m.month_start
+      LEFT JOIN goals g ON g.month_start = m.month_start
      ORDER BY m.month_start
     `,
     params
   );
 
-  return rows.map((r) => ({
-    year: r.year,
-    month: r.month,
-    goal_value: Number(r.goal_value),
-    goal_count: Number(r.goal_count),
-    done_value: Number(r.done_value),
-    done_count: Number(r.done_count),
-    goal_leads: Number(r.goal_leads),
-    done_leads: Number(r.done_leads),
+  return rows.map((r) => {
+    const row = { year: r.year, month: r.month };
+    for (const m of SELLER_METRICS) {
+      row[`goal_${m}`] = Number(r[`goal_${m}`]);
+      row[`done_${m}`] = Number(r[`done_${m}`]);
+    }
+    return row;
+  });
+}
+
+/**
+ * Plano por estado: meta x realizado do mês por UF do cliente
+ * (leads contatados, conversões e valor vendido) + cards abertos no CRM.
+ * Lista as UFs com meta, realizado ou cards abertos.
+ */
+export async function getStatesMonth({ year, month } = {}) {
+  await ensureTables();
+  const period = parsePeriod(year, month);
+  const params = [period.from, period.to, LEAD_OUTCOMES, period.year, period.month];
+
+  const { rows } = await pool.query(
+    `
+    WITH facts AS (${factsSql(1, 2, 3)}),
+    done AS (
+      SELECT UPPER(TRIM(c.state)) AS state,
+             ${doneColumns(STATE_METRICS)}
+        FROM facts f
+        JOIN ${TB_CUSTOMERS} c ON c.customer_id = f.customer_id
+       WHERE COALESCE(TRIM(c.state), '') <> ''
+       GROUP BY 1
+    ),
+    open_leads AS (
+      SELECT UPPER(TRIM(c.state)) AS state, COUNT(*)::int AS open_leads
+        FROM ${TB_DEALS} d
+        JOIN ${TB_CUSTOMERS} c ON c.customer_id = d.customer_id
+       WHERE d.crm_company = 'CONSART'
+         AND NOT COALESCE(d.is_closed, FALSE)
+         AND COALESCE(TRIM(c.state), '') <> ''
+       GROUP BY 1
+    ),
+    goals AS (
+      SELECT * FROM ${TB_STATES} WHERE goal_year = $4 AND goal_month = $5
+    ),
+    states AS (
+      SELECT state FROM done UNION SELECT state FROM open_leads UNION SELECT state FROM goals
+    )
+    SELECT s.state,
+           g.id AS goal_id,
+           g.notes,
+           COALESCE(o.open_leads, 0) AS open_leads,
+           ${STATE_METRICS.map((m) => `COALESCE(g.goal_${m}, 0) AS goal_${m}, COALESCE(x.done_${m}, 0) AS done_${m}`).join(',\n           ')}
+      FROM states s
+      LEFT JOIN done x       ON x.state = s.state
+      LEFT JOIN open_leads o ON o.state = s.state
+      LEFT JOIN goals g      ON g.state = s.state
+     ORDER BY s.state
+    `,
+    params
+  );
+
+  const data = rows.map((r) => ({
+    state: r.state,
+    has_goal: !!r.goal_id,
+    notes: r.notes || '',
+    open_leads: Number(r.open_leads),
+    ...metricRow(r, STATE_METRICS),
   }));
+  data.forEach((r) => {
+    r.conversion_rate = r.done_leads ? round2((r.done_conversions / r.done_leads) * 100) : null;
+  });
+
+  const totals = totalsOf(data, STATE_METRICS);
+  totals.open_leads = data.reduce((acc, r) => acc + r.open_leads, 0);
+  return { year: period.year, month: period.month, rows: data, totals };
+}
+
+/** Grava o plano do mês por estado (uma linha por UF). */
+export async function saveStatesMonth({ year, month }, goals, user) {
+  await ensureTables();
+  const period = parsePeriod(year, month);
+  if (!Array.isArray(goals)) throw validationError('Envie a lista de metas.');
+
+  const clean = goals
+    .map((g) => ({ key: String(g.state || '').trim().toUpperCase(), ...cleanGoal(g, STATE_METRICS) }))
+    .filter((g) => UFS.includes(g.key));
+
+  await upsertGoals({ table: TB_STATES, keyCol: 'state', period, goals: clean, metrics: STATE_METRICS, user });
+  return getStatesMonth(period);
 }
 
 /**

@@ -58,3 +58,21 @@ export async function getLeadsByState(req, res) {
     return fail(res, 'getLeadsByState', error);
   }
 }
+
+export async function getStatesMonth(req, res) {
+  try {
+    const { rows, ...summary } = await repo.getStatesMonth(req.query);
+    return res.json({ ok: true, data: rows, ...summary });
+  } catch (error) {
+    return fail(res, 'getStatesMonth', error);
+  }
+}
+
+export async function saveStatesMonth(req, res) {
+  try {
+    const { rows, ...summary } = await repo.saveStatesMonth(req.params, req.body?.goals, req.user);
+    return res.json({ ok: true, data: rows, ...summary });
+  } catch (error) {
+    return fail(res, 'saveStatesMonth', error);
+  }
+}
