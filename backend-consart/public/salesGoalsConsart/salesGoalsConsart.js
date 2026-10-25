@@ -1,14 +1,16 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ salesGoalsConsart.js — Metas de Vendas (CONSART ERP)                 ║
 // ║ • Cabeçalho no visual do CRM Consart: indicadores do mês + filtros   ║
-// ║ • Painel (Chart.js): atingido da empresa, meta x vendido por         ║
-// ║   vendedor e evolução de 12 meses · alterna Valor/Propostas/Leads    ║
-// ║ • Leads contatados = cards do CRM Consart concluídos no mês; painel  ║
-// ║   por estado (UF do cliente) para o plano por estado                 ║
-// ║ • Um card por vendedor: meta x realizado (valor, propostas e leads)  ║
-// ║ • Realizado = Propostas de Serviços APROVADAS (data da proposta)     ║
-// ║ • Modal "Definir metas" (todos os vendedores do mês, copiar do mês   ║
-// ║   anterior) e modal com as propostas aprovadas do vendedor           ║
+// ║ • Aba "Por vendedor": painel (Chart.js) com atingido, meta x         ║
+// ║   realizado por vendedor e evolução de 12 meses, alternando a        ║
+// ║   métrica; um card por vendedor com todas as metas                   ║
+// ║ • Métricas (METRICS): valor vendido e propostas aprovadas, propostas ║
+// ║   enviadas, leads contatados e conversões (CRM Consart) e            ║
+// ║   mensalidade de contratos assinados                                 ║
+// ║ • Aba "Plano por estado": meta por UF (leads, conversões e valor) x  ║
+// ║   realizado pela UF do cliente + desfechos dos leads por estado      ║
+// ║ • Modais "Definir metas" (vendedor / estado, copiar do mês anterior) ║
+// ║   e propostas aprovadas do vendedor                                  ║
 // ║ API: /api/sales-goals-consart                                        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
@@ -22,21 +24,41 @@ const API = '/api/sales-goals-consart';
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho',
   'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
+const UFS = ['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT',
+  'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'];
+
+// Métricas das metas (chaves iguais às da API: goal_<chave> / done_<chave> / pct_<chave>)
+const METRICS = {
+  value: { label: 'Valor vendido', short: 'Valor (R$)', done: 'Vendido', money: true },
+  count: { label: 'Propostas aprovadas', short: 'Aprovadas', done: 'Aprovadas' },
+  sent: { label: 'Propostas enviadas', short: 'Enviadas', done: 'Enviadas' },
+  leads: { label: 'Leads contatados', short: 'Leads', done: 'Contatados' },
+  conversions: { label: 'Conversões no CRM', short: 'Conversões', done: 'Convertidos' },
+  recurring: { label: 'Mensalidade de contratos', short: 'Mensalidade', done: 'Assinado', money: true },
+};
+const SELLER_KEYS = ['value', 'count', 'sent', 'leads', 'conversions', 'recurring'];
+const STATE_KEYS = ['leads', 'conversions', 'value'];
+
 const $ = (sel) => document.querySelector(sel);
 
 const now = new Date();
 const state = {
   year: now.getFullYear(),
   month: now.getMonth() + 1,
+  view: 'sellers',      // 'sellers' | 'states'
   sellerId: '',
+  allSellers: [],
   rows: [],
   totals: null,
   history: [],
-  measure: 'value', // 'value' | 'count' | 'leads' (gráficos)
-  states: [],
+  measure: 'value',     // métrica dos gráficos por vendedor
+  stateMeasure: 'leads', // métrica do gráfico por estado
+  plan: [],             // plano por estado (GET /states)
+  planTotals: null,
+  outcomes: [],         // desfechos dos leads por UF (GET /leads-by-state)
 };
 
-// Cores dos gráficos (par validado p/ daltonismo): meta = índigo, vendido = verde Consart
+// Cores dos gráficos (par validado p/ daltonismo): meta = índigo, realizado = verde Consart
 const COLORS = { goal: '#6366f1', done: '#0f9d84', track: '#e2e8f0' };
 // Desfechos dos leads (paleta validada): conversão, queda de venda, sem sucesso no contato
 const OUTCOME_COLORS = { converted: '#0f9d84', lost: '#d97706', no_contact: '#6366f1' };
@@ -69,6 +91,13 @@ function moneyInput(n) {
   return Number(n) ? money(n) : '';
 }
 
+const int = (n) => Number(n || 0).toLocaleString('pt-BR');
+
+/** Valor de uma métrica formatado (R$ para dinheiro, inteiro para contagem). */
+function fmt(key, n) {
+  return METRICS[key].money ? `R$ ${money(n)}` : int(n);
+}
+
 function pctText(p) {
   return p === null || p === undefined ? '—' : `${Number(p).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
 }
@@ -80,6 +109,11 @@ function dateBR(iso) {
 
 function periodLabel(year = state.year, month = state.month) {
   return `${MONTHS[month - 1]}/${year}`;
+}
+
+function previousPeriod() {
+  const d = new Date(state.year, state.month - 2, 1);
+  return { year: d.getFullYear(), month: d.getMonth() + 1 };
 }
 
 /** Faixa da barra: atingida (>= 100), no caminho (>= 70) ou abaixo. */
@@ -94,8 +128,10 @@ function notify(variant, title, message) {
   showCenterModal({ variant, title, message });
 }
 
+const hasAnyGoal = (r, keys) => keys.some((k) => Number(r[`goal_${k}`]) > 0);
+
 // ─────────────────────────────────────────────────────────────────────
-// Filtros
+// Filtros / abas
 // ─────────────────────────────────────────────────────────────────────
 
 function fillPeriodSelects() {
@@ -120,7 +156,7 @@ function shiftMonth(delta) {
   state.year = d.getFullYear();
   state.month = d.getMonth() + 1;
   syncPeriodSelects();
-  loadMonth();
+  loadAll();
 }
 
 function fillSellerFilter() {
@@ -131,18 +167,36 @@ function fillSellerFilter() {
   sel.value = current;
 }
 
+function fillMeasureToggles() {
+  const btn = (key, current, attr) =>
+    `<button type="button" class="sg-toggle__btn${key === current ? ' is-active' : ''}" ${attr}="${key}">${METRICS[key].short}</button>`;
+  $('#sg-measures').innerHTML = SELLER_KEYS.map((k) => btn(k, state.measure, 'data-measure')).join('');
+  $('#sg-state-measures').innerHTML = STATE_KEYS.map((k) => btn(k, state.stateMeasure, 'data-state-measure')).join('');
+}
+
+function setView(view) {
+  state.view = view;
+  document.querySelectorAll('.sg-tabs__btn').forEach((b) => b.classList.toggle('is-active', b.dataset.view === view));
+  $('#sg-view-sellers').hidden = view !== 'sellers';
+  $('#sg-view-states').hidden = view !== 'states';
+  $('#sg-btn-goals-text').textContent = view === 'states' ? 'Definir plano por estado' : 'Definir metas do mês';
+  // Gráficos criados com o painel escondido ficam sem tamanho: redesenha ao mostrar
+  if (view === 'states') renderStatesView();
+  else renderCharts();
+}
+
 // ─────────────────────────────────────────────────────────────────────
-// Lista (cards por vendedor)
+// Carga
 // ─────────────────────────────────────────────────────────────────────
 
-async function loadMonth() {
+async function loadAll() {
   try {
-    // Busca sempre o mês inteiro: os indicadores e o filtro de vendedor
-    // usam todos; o filtro só esconde cards.
+    // Busca sempre o mês inteiro: indicadores e filtro usam todos os vendedores
     const [json] = await Promise.all([
       apiFetch(`${API}?year=${state.year}&month=${state.month}`),
       loadHistory(false),
-      loadStates(false),
+      loadPlan(false),
+      loadOutcomes(false),
     ]);
     state.allSellers = json.data || [];
     state.totals = json.totals || null;
@@ -164,38 +218,84 @@ async function loadHistory(redraw = true) {
     console.error('[salesGoalsConsart] histórico:', error);
     state.history = [];
   }
-  if (redraw) renderHistoryChart();
+  if (redraw && state.view === 'sellers') renderHistoryChart();
 }
 
-async function loadStates(redraw = true) {
+async function loadPlan(redraw = true) {
+  try {
+    const json = await apiFetch(`${API}/states?year=${state.year}&month=${state.month}`);
+    state.plan = json.data || [];
+    state.planTotals = json.totals || null;
+  } catch (error) {
+    console.error('[salesGoalsConsart] plano por estado:', error);
+    state.plan = [];
+    state.planTotals = null;
+  }
+  if (redraw && state.view === 'states') renderStatesView();
+}
+
+async function loadOutcomes(redraw = true) {
   const params = new URLSearchParams({ year: state.year, month: state.month });
   if (state.sellerId) params.set('seller_id', state.sellerId);
   try {
     const json = await apiFetch(`${API}/leads-by-state?${params}`);
-    state.states = json.data || [];
+    state.outcomes = json.data || [];
   } catch (error) {
     console.error('[salesGoalsConsart] leads por estado:', error);
-    state.states = [];
+    state.outcomes = [];
   }
-  if (redraw) renderStates();
+  if (redraw && state.view === 'states') renderOutcomesChart();
 }
 
 function render() {
   const sid = Number(state.sellerId || 0);
   state.rows = sid ? state.allSellers.filter((r) => r.seller_id === sid) : state.allSellers;
   renderSummary();
-  renderCharts();
   renderGrid();
+  if (state.view === 'states') renderStatesView();
+  else renderCharts();
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Painel (Chart.js)
+// Indicadores do topo (empresa)
 // ─────────────────────────────────────────────────────────────────────
 
-const isValue = () => state.measure === 'value';
-const doneLabel = () => (state.measure === 'leads' ? 'Contatados' : 'Vendido');
-const fmtMeasure = (n) => (isValue() ? `R$ ${money(n)}` : Number(n || 0).toLocaleString('pt-BR'));
-const fmtAxis = (n) => (isValue()
+function renderSummary() {
+  const t = state.totals || {};
+  const withGoal = state.allSellers.filter((r) => hasAnyGoal(r, SELLER_KEYS));
+  // Na meta = bateu todas as metas que tem
+  const hit = withGoal.filter((r) => SELLER_KEYS.every((k) => !r[`goal_${k}`] || r[`done_${k}`] >= r[`goal_${k}`])).length;
+
+  const metric = (label, value, sub, cls = '') => `
+    <div class="sg-summary__metric ${cls}">
+      <span class="sg-summary__label">${label}</span>
+      <span class="sg-summary__value">${value}</span>
+      <span class="sg-summary__sub">${sub}</span>
+    </div>`;
+  const ratio = (key, sub) => metric(METRICS[key].label, `${fmt(key, t[`done_${key}`])}`,
+    `${sub} · meta ${t[`goal_${key}`] ? fmt(key, t[`goal_${key}`]) : '—'}`,
+    `sg-summary__metric--${level(t[`pct_${key}`])}-soft`);
+
+  $('#sg-summary').innerHTML = `
+    <div class="sg-summary__row">
+      ${metric('Meta de valor', `R$ ${money(t.goal_value)}`, periodLabel())}
+      ${metric('Vendido', `R$ ${money(t.done_value)}`, 'propostas aprovadas', 'sg-summary__metric--done')}
+      ${metric('Atingido', pctText(t.pct_value), t.goal_value > t.done_value
+        ? `faltam R$ ${money(t.goal_value - t.done_value)}` : 'meta de valor batida', `sg-summary__metric--${level(t.pct_value)}`)}
+      ${ratio('count', 'propostas')}
+      ${ratio('sent', 'propostas')}
+      ${ratio('leads', 'CRM')}
+      ${ratio('conversions', 'CRM')}
+      ${ratio('recurring', 'contratos')}
+      ${metric('Na meta', `${hit} / ${withGoal.length}`, 'vendedores com todas as metas')}
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Painel por vendedor (Chart.js)
+// ─────────────────────────────────────────────────────────────────────
+
+const fmtAxis = (key) => (n) => (METRICS[key].money
   ? Number(n).toLocaleString('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })
   : Number(n).toLocaleString('pt-BR'));
 
@@ -205,7 +305,7 @@ function drawChart(key, canvasId, config) {
   charts[key] = new window.Chart(document.getElementById(canvasId), config);
 }
 
-function baseOptions(extra = {}) {
+function baseOptions(key, extra = {}) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -213,7 +313,7 @@ function baseOptions(extra = {}) {
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, color: '#475569', font: { size: 11 } } },
-      tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmtMeasure(ctx.parsed.y)}` } },
+      tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmt(key, ctx.parsed.y)}` } },
     },
     scales: {
       x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
@@ -221,25 +321,41 @@ function baseOptions(extra = {}) {
         beginAtZero: true,
         grid: { color: '#f1f5f9' },
         border: { display: false },
-        ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0, callback: fmtAxis },
+        ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0, callback: fmtAxis(key) },
       },
     },
     ...extra,
   };
 }
 
+/** Meta x realizado em colunas lado a lado (vendedores ou estados). */
+function goalBarsConfig(key, labels, goals, dones) {
+  return {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Meta', data: goals, backgroundColor: COLORS.goal, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 },
+        { label: METRICS[key].done, data: dones, backgroundColor: COLORS.done, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 },
+      ],
+    },
+    options: baseOptions(key, { datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9 } } }),
+  };
+}
+
 function renderCharts() {
+  $('#sg-bars-measure').textContent = METRICS[state.measure].label;
+  $('#sg-history-measure').textContent = METRICS[state.measure].label;
   renderGauge();
   renderSellersChart();
   renderHistoryChart();
-  renderStates();
 }
 
 /** Meia-rosca com o % atingido (empresa, ou do vendedor filtrado). */
 function renderGauge() {
+  const key = state.measure;
   const sid = Number(state.sellerId || 0);
   const src = sid ? (state.rows[0] || {}) : (state.totals || {});
-  const key = state.measure;
   const goal = Number(src[`goal_${key}`] || 0);
   const done = Number(src[`done_${key}`] || 0);
   const pct = goal > 0 ? (done / goal) * 100 : null;
@@ -260,31 +376,20 @@ function renderGauge() {
     },
   });
 
-  $('#sg-gauge-title').textContent = sid ? 'Atingido do vendedor' : 'Atingido da empresa';
+  $('#sg-gauge-title').textContent = `${sid ? 'Atingido do vendedor' : 'Atingido da empresa'} · ${METRICS[key].short}`;
   $('#sg-gauge-pct').textContent = pctText(pct === null ? null : Math.round(pct * 10) / 10);
   $('#sg-gauge-pct').style.color = pct === null ? '#94a3b8' : color;
   $('#sg-gauge-sub').textContent = sid ? (state.rows[0]?.seller_name || '') : periodLabel();
   $('#sg-gauge-legend').innerHTML = `
-    <span><i style="background:${COLORS.done}"></i>${doneLabel()} <strong>${fmtMeasure(done)}</strong></span>
-    <span><i style="background:${COLORS.goal}"></i>Meta <strong>${goal ? fmtMeasure(goal) : '—'}</strong></span>`;
+    <span><i style="background:${COLORS.done}"></i>${METRICS[key].done} <strong>${fmt(key, done)}</strong></span>
+    <span><i style="background:${COLORS.goal}"></i>Meta <strong>${goal ? fmt(key, goal) : '—'}</strong></span>`;
 }
 
 function renderSellersChart() {
   const key = state.measure;
   const rows = state.rows;
-  drawChart('sellers', 'sg-chart-sellers', {
-    type: 'bar',
-    data: {
-      labels: rows.map((r) => r.seller_name),
-      datasets: [
-        { label: 'Meta', data: rows.map((r) => r[`goal_${key}`]), backgroundColor: COLORS.goal,
-          borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 },
-        { label: doneLabel(), data: rows.map((r) => r[`done_${key}`]), backgroundColor: COLORS.done,
-          borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 },
-      ],
-    },
-    options: baseOptions({ datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9 } } }),
-  });
+  drawChart('sellers', 'sg-chart-sellers', goalBarsConfig(key,
+    rows.map((r) => r.seller_name), rows.map((r) => r[`goal_${key}`]), rows.map((r) => r[`done_${key}`])));
 }
 
 function renderHistoryChart() {
@@ -299,120 +404,46 @@ function renderHistoryChart() {
         { type: 'line', label: 'Meta', data: rows.map((r) => r[`goal_${key}`]), borderColor: COLORS.goal,
           backgroundColor: COLORS.goal, borderWidth: 2, borderDash: [6, 4], pointRadius: 4,
           pointBackgroundColor: '#ffffff', pointBorderWidth: 2, tension: 0.25, order: 0 },
-        { type: 'bar', label: doneLabel(), data: rows.map((r) => r[`done_${key}`]),
+        { type: 'bar', label: METRICS[key].done, data: rows.map((r) => r[`done_${key}`]),
           backgroundColor: rows.map((r, i) => (i === rows.length - 1 ? COLORS.done : `${COLORS.done}99`)),
           borderRadius: 4, borderSkipped: 'start', maxBarThickness: 34, order: 1 },
       ],
     },
-    options: baseOptions(),
+    options: baseOptions(key),
   });
-}
-
-/** Leads contatados por UF: barras empilhadas por desfecho + tabela com conversão e em aberto. */
-function renderStates() {
-  const rows = state.states.filter((r) => r.contacted > 0);
-  const ds = (key, label) => ({
-    label, data: rows.map((r) => r[key]), backgroundColor: OUTCOME_COLORS[key],
-    borderColor: '#ffffff', borderWidth: { right: 2 }, borderSkipped: false, maxBarThickness: 22,
-  });
-
-  document.querySelector('.sg-chart--states').style.height = `${Math.max(160, rows.length * 34 + 70)}px`;
-
-  drawChart('states', 'sg-chart-states', {
-    type: 'bar',
-    data: {
-      labels: rows.map((r) => r.state),
-      datasets: [
-        ds('converted', 'Conversão'),
-        ds('lost', 'Queda de venda'),
-        ds('no_contact', 'Sem sucesso no contato'),
-      ],
-    },
-    options: {
-      ...baseOptions(),
-      indexAxis: 'y',
-      interaction: { mode: 'index', intersect: false, axis: 'y' },
-      plugins: {
-        legend: baseOptions().plugins.legend,
-        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.x}` } },
-      },
-      scales: {
-        x: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, border: { display: false },
-          ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0 } },
-        y: { stacked: true, grid: { display: false }, ticks: { color: '#334155', font: { size: 12, weight: '600' } } },
-      },
-    },
-  });
-
-  const all = state.states;
-  $('#sg-states-body').innerHTML = all.map((r) => `
-    <tr>
-      <td class="sg-col-uf">${esc(r.state)}</td>
-      <td>${r.contacted}</td>
-      <td>${r.converted}</td>
-      <td>${pctText(r.conversion_rate)}</td>
-      <td>${r.open_leads}</td>
-    </tr>`).join('');
-  const sum = (k) => all.reduce((acc, r) => acc + r[k], 0);
-  const contacted = sum('contacted');
-  const converted = sum('converted');
-  $('#sg-states-total').innerHTML = all.length ? `
-    <th class="sg-col-uf">Total</th>
-    <th>${contacted}</th>
-    <th>${converted}</th>
-    <th>${pctText(contacted ? Math.round((converted / contacted) * 1000) / 10 : null)}</th>
-    <th>${sum('open_leads')}</th>` : '';
-  $('#sg-states-empty').hidden = all.length > 0;
 }
 
 function setMeasure(measure) {
   state.measure = measure;
-  document.querySelectorAll('.sg-toggle__btn').forEach((b) => b.classList.toggle('is-active', b.dataset.measure === measure));
+  document.querySelectorAll('[data-measure]').forEach((b) => b.classList.toggle('is-active', b.dataset.measure === measure));
   renderCharts();
 }
 
-function renderSummary() {
-  const t = state.totals || {};
-  const withGoal = state.allSellers.filter((r) => r.goal_value > 0);
-  const hit = withGoal.filter((r) => r.done_value >= r.goal_value).length;
+// ─────────────────────────────────────────────────────────────────────
+// Cards por vendedor
+// ─────────────────────────────────────────────────────────────────────
 
-  const metric = (label, value, sub, cls = '') => `
-    <div class="sg-summary__metric ${cls}">
-      <span class="sg-summary__label">${label}</span>
-      <span class="sg-summary__value">${value}</span>
-      <span class="sg-summary__sub">${sub}</span>
-    </div>`;
-
-  $('#sg-summary').innerHTML = `
-    <div class="sg-summary__row">
-      ${metric('Meta do mês', `R$ ${money(t.goal_value)}`, periodLabel())}
-      ${metric('Vendido', `R$ ${money(t.done_value)}`, 'propostas aprovadas', 'sg-summary__metric--done')}
-      ${metric('Atingido', pctText(t.pct_value), t.goal_value > t.done_value
-        ? `faltam R$ ${money(t.goal_value - t.done_value)}` : 'meta batida', `sg-summary__metric--${level(t.pct_value)}`)}
-      ${metric('Propostas', `${t.done_count || 0} / ${t.goal_count || 0}`, 'aprovadas / meta')}
-      ${metric('Leads contatados', `${t.done_leads || 0} / ${t.goal_leads || 0}`, 'concluídos no CRM / meta')}
-      ${metric('Na meta', `${hit} / ${withGoal.length}`, 'vendedores')}
-    </div>`;
-}
-
-function bar(label, doneText, goalText, pct) {
+/** Linha compacta: rótulo · barra · realizado / meta · %. */
+function metricLine(key, r) {
+  const pct = r[`pct_${key}`];
+  const goal = r[`goal_${key}`];
   const width = Math.max(0, Math.min(100, Number(pct || 0)));
   return `
-    <div class="sg-progress">
-      <div class="sg-progress__head">
-        <span class="sg-progress__label">${label}</span>
-        <span class="sg-progress__pct sg-pct--${level(pct)}">${pctText(pct)}</span>
-      </div>
-      <div class="sg-progress__track"><div class="sg-progress__fill sg-fill--${level(pct)}" style="width:${width}%"></div></div>
-      <div class="sg-progress__nums"><strong>${doneText}</strong><span>meta ${goalText}</span></div>
+    <div class="sg-line">
+      <span class="sg-line__label" title="${METRICS[key].label}">${METRICS[key].short}</span>
+      <span class="sg-line__nums"><strong>${fmt(key, r[`done_${key}`])}</strong> / ${goal ? fmt(key, goal) : '—'}</span>
+      <span class="sg-line__pct sg-pct--${level(pct)}">${pctText(pct)}</span>
+      <div class="sg-line__track"><div class="sg-progress__fill sg-fill--${level(pct)}" style="width:${width}%"></div></div>
     </div>`;
 }
 
 function statusPill(r) {
-  if (!r.goal_value && !r.goal_count && !r.goal_leads) return '<span class="sg-pill sg-pill--none">Sem meta</span>';
-  const p = r.goal_value ? r.pct_value : (r.goal_count ? r.pct_count : r.pct_leads);
-  const map = { done: 'Meta atingida', near: 'No caminho', low: 'Abaixo da meta', none: 'Sem meta' };
-  return `<span class="sg-pill sg-pill--${level(p)}">${map[level(p)]}</span>`;
+  const keys = SELLER_KEYS.filter((k) => r[`goal_${k}`] > 0);
+  if (!keys.length) return '<span class="sg-pill sg-pill--none">Sem meta</span>';
+  // Pior meta manda no selo
+  const worst = Math.min(...keys.map((k) => Number(r[`pct_${k}`] || 0)));
+  const map = { done: 'Metas atingidas', near: 'No caminho', low: 'Abaixo da meta', none: 'Sem meta' };
+  return `<span class="sg-pill sg-pill--${level(worst)}">${map[level(worst)]}</span>`;
 }
 
 function renderGrid() {
@@ -426,9 +457,7 @@ function renderGrid() {
         </div>
         ${statusPill(r)}
       </div>
-      ${bar('Valor vendido', `R$ ${money(r.done_value)}`, r.goal_value ? `R$ ${money(r.goal_value)}` : '—', r.pct_value)}
-      ${bar('Propostas aprovadas', String(r.done_count), r.goal_count ? String(r.goal_count) : '—', r.pct_count)}
-      ${bar('Leads contatados', String(r.done_leads), r.goal_leads ? String(r.goal_leads) : '—', r.pct_leads)}
+      <div class="sg-lines">${SELLER_KEYS.map((k) => metricLine(k, r)).join('')}</div>
       <div class="sg-seller__foot">
         <span class="sg-hint" title="${esc(r.notes)}">${esc(r.notes)}</span>
         ${actionIconsHtml([
@@ -450,84 +479,210 @@ function onGridClick(event) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Modal Definir metas
+// Aba Plano por estado
 // ─────────────────────────────────────────────────────────────────────
 
-function goalRowHtml(r) {
+function renderStatesView() {
+  $('#sg-state-measure-label').textContent = METRICS[state.stateMeasure].label;
+  renderStateGoalsChart();
+  renderPlanTable();
+  renderOutcomesChart();
+}
+
+function renderStateGoalsChart() {
+  const key = state.stateMeasure;
+  const rows = state.plan.filter((r) => r[`goal_${key}`] || r[`done_${key}`]);
+  drawChart('stateGoals', 'sg-chart-state-goals', goalBarsConfig(key,
+    rows.map((r) => r.state), rows.map((r) => r[`goal_${key}`]), rows.map((r) => r[`done_${key}`])));
+}
+
+/** Célula meta x realizado com mini barra. */
+function planCell(key, r) {
+  const pct = r[`pct_${key}`];
+  const goal = r[`goal_${key}`];
+  const width = Math.max(0, Math.min(100, Number(pct || 0)));
   return `
-    <tr data-seller="${r.seller_id}">
-      <td class="sg-col-left" title="${esc(r.seller_name)}">${esc(r.seller_name)}${r.seller_active ? '' : ' <small class="sg-hint">(inativo)</small>'}</td>
-      <td><div class="fields fields-h-5 fields-w-full"><input type="text" inputmode="decimal" class="sg-in-value" value="${moneyInput(r.goal_value)}" placeholder="0,00"></div></td>
-      <td><div class="fields fields-h-5 fields-w-full"><input type="number" min="0" step="1" class="sg-in-count" value="${r.goal_count || ''}" placeholder="0"></div></td>
-      <td><div class="fields fields-h-5 fields-w-full"><input type="number" min="0" step="1" class="sg-in-leads" value="${r.goal_leads || ''}" placeholder="0"></div></td>
-      <td><div class="fields fields-h-5 fields-w-full"><input type="text" maxlength="255" class="sg-in-notes" value="${esc(r.notes)}" placeholder="Opcional"></div></td>
+    <td>
+      <div class="sg-cell">
+        <span class="sg-cell__nums"><strong>${fmt(key, r[`done_${key}`])}</strong> / ${goal ? fmt(key, goal) : '—'}</span>
+        <span class="sg-cell__pct sg-pct--${level(pct)}">${pctText(pct)}</span>
+      </div>
+      <div class="sg-line__track"><div class="sg-progress__fill sg-fill--${level(pct)}" style="width:${width}%"></div></div>
+    </td>`;
+}
+
+function renderPlanTable() {
+  const rows = state.plan;
+  $('#sg-plan-body').innerHTML = rows.map((r) => `
+    <tr>
+      <td class="sg-col-uf">${esc(r.state)}</td>
+      ${planCell('leads', r)}
+      ${planCell('conversions', r)}
+      <td class="sg-col-rate">${pctText(r.conversion_rate)}</td>
+      ${planCell('value', r)}
+      <td class="sg-col-open">${int(r.open_leads)}</td>
+      <td class="sg-col-left sg-col-notes" title="${esc(r.notes)}">${esc(r.notes)}</td>
+    </tr>`).join('');
+
+  const t = state.planTotals;
+  $('#sg-plan-total').innerHTML = rows.length && t ? `
+    <th class="sg-col-uf">Total</th>
+    ${['leads', 'conversions'].map((k) => `<th>${fmt(k, t[`done_${k}`])} / ${t[`goal_${k}`] ? fmt(k, t[`goal_${k}`]) : '—'} <span class="sg-pct--${level(t[`pct_${k}`])}">${pctText(t[`pct_${k}`])}</span></th>`).join('')}
+    <th class="sg-col-rate">${pctText(t.done_leads ? Math.round((t.done_conversions / t.done_leads) * 1000) / 10 : null)}</th>
+    <th>${fmt('value', t.done_value)} / ${t.goal_value ? fmt('value', t.goal_value) : '—'} <span class="sg-pct--${level(t.pct_value)}">${pctText(t.pct_value)}</span></th>
+    <th class="sg-col-open">${int(t.open_leads)}</th>
+    <th></th>` : '';
+  $('#sg-plan-empty').hidden = rows.length > 0;
+}
+
+/** Desfechos dos leads por UF: barras horizontais empilhadas. */
+function renderOutcomesChart() {
+  const rows = state.outcomes.filter((r) => r.contacted > 0);
+  const seller = state.allSellers.find((s) => s.seller_id === Number(state.sellerId));
+  $('#sg-outcomes-seller').textContent = seller ? ` · ${seller.seller_name}` : '';
+  const ds = (key, label) => ({
+    label, data: rows.map((r) => r[key]), backgroundColor: OUTCOME_COLORS[key],
+    borderColor: '#ffffff', borderWidth: { right: 2 }, borderSkipped: false, maxBarThickness: 22,
+  });
+
+  document.querySelector('.sg-chart--states').style.height = `${Math.max(160, rows.length * 34 + 70)}px`;
+  $('#sg-states-empty').hidden = rows.length > 0;
+
+  drawChart('outcomes', 'sg-chart-states', {
+    type: 'bar',
+    data: {
+      labels: rows.map((r) => r.state),
+      datasets: [
+        ds('converted', 'Conversão'),
+        ds('lost', 'Queda de venda'),
+        ds('no_contact', 'Sem sucesso no contato'),
+      ],
+    },
+    options: {
+      ...baseOptions('leads'),
+      indexAxis: 'y',
+      interaction: { mode: 'index', intersect: false, axis: 'y' },
+      plugins: {
+        legend: baseOptions('leads').plugins.legend,
+        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.x}` } },
+      },
+      scales: {
+        x: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, border: { display: false },
+          ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0 } },
+        y: { stacked: true, grid: { display: false }, ticks: { color: '#334155', font: { size: 12, weight: '600' } } },
+      },
+    },
+  });
+}
+
+function setStateMeasure(measure) {
+  state.stateMeasure = measure;
+  document.querySelectorAll('[data-state-measure]').forEach((b) => b.classList.toggle('is-active', b.dataset.stateMeasure === measure));
+  $('#sg-state-measure-label').textContent = METRICS[measure].label;
+  renderStateGoalsChart();
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Tabela de metas editável (vendedor e estado usam a mesma montagem)
+// ─────────────────────────────────────────────────────────────────────
+
+function goalInput(key, value) {
+  if (METRICS[key].money) {
+    return `<div class="fields fields-h-5 fields-w-full"><input type="text" inputmode="decimal" class="sg-in sg-in--money" data-key="${key}" value="${moneyInput(value)}" placeholder="0,00"></div>`;
+  }
+  return `<div class="fields fields-h-5 fields-w-full"><input type="number" min="0" step="1" class="sg-in sg-in--int" data-key="${key}" value="${value || ''}" placeholder="0"></div>`;
+}
+
+function goalsHead(firstLabel, keys) {
+  return `<th class="sg-col-left sg-col-name">${firstLabel}</th>`
+    + keys.map((k) => `<th class="${METRICS[k].money ? 'sg-col-value' : 'sg-col-count'}" title="${METRICS[k].label}">${METRICS[k].money ? METRICS[k].short.replace(' (R$)', '') + ' (R$)' : METRICS[k].short}</th>`).join('')
+    + '<th class="sg-col-left">Observação</th>';
+}
+
+function goalsRow(attr, id, nameHtml, r, keys) {
+  return `
+    <tr ${attr}="${esc(id)}">
+      <td class="sg-col-left sg-col-name">${nameHtml}</td>
+      ${keys.map((k) => `<td>${goalInput(k, r[`goal_${k}`])}</td>`).join('')}
+      <td><div class="fields fields-h-5 fields-w-full"><input type="text" maxlength="255" class="sg-in-notes" value="${esc(r.notes || '')}" placeholder="Opcional"></div></td>
     </tr>`;
 }
 
-function updateGoalsTotals() {
-  let value = 0;
-  let count = 0;
-  let leads = 0;
-  document.querySelectorAll('#sg-goals-body tr').forEach((tr) => {
-    value += parseNumber(tr.querySelector('.sg-in-value').value);
-    count += Math.trunc(parseNumber(tr.querySelector('.sg-in-count').value));
-    leads += Math.trunc(parseNumber(tr.querySelector('.sg-in-leads').value));
+function readGoalsRow(tr, keys) {
+  const out = { notes: tr.querySelector('.sg-in-notes').value };
+  keys.forEach((k) => {
+    const n = parseNumber(tr.querySelector(`[data-key="${k}"]`).value);
+    out[`goal_${k}`] = METRICS[k].money ? n : Math.trunc(n);
   });
-  $('#sg-goals-total-leads').textContent = String(leads);
-  $('#sg-goals-total-value').textContent = `R$ ${money(value)}`;
-  $('#sg-goals-total-count').textContent = String(count);
+  return out;
 }
+
+function updateTotals(bodySel, totalSel, keys) {
+  const sums = Object.fromEntries(keys.map((k) => [k, 0]));
+  document.querySelectorAll(`${bodySel} tr`).forEach((tr) => {
+    const g = readGoalsRow(tr, keys);
+    keys.forEach((k) => { sums[k] += g[`goal_${k}`]; });
+  });
+  $(totalSel).innerHTML = '<th class="sg-col-left sg-col-name">Total da empresa</th>'
+    + keys.map((k) => `<th class="${METRICS[k].money ? 'sg-col-value' : 'sg-col-count'}">${fmt(k, sums[k])}</th>`).join('')
+    + '<th></th>';
+}
+
+function fillRowGoals(tr, goal, keys) {
+  keys.forEach((k) => {
+    const input = tr.querySelector(`[data-key="${k}"]`);
+    input.value = METRICS[k].money ? moneyInput(goal[`goal_${k}`]) : (goal[`goal_${k}`] || '');
+  });
+}
+
+function onMoneyBlur(event) {
+  const input = event.target.closest('.sg-in--money');
+  if (input) input.value = moneyInput(parseNumber(input.value));
+}
+
+// ── Metas por vendedor ───────────────────────────────────────────────
+
+const updateSellerTotals = () => updateTotals('#sg-goals-body', '#sg-goals-total', SELLER_KEYS);
 
 function openGoals(focusSellerId = null) {
-  $('#sgGoalsTitle').textContent = `Metas de ${periodLabel()}`;
-  $('#sg-goals-body').innerHTML = state.allSellers.map(goalRowHtml).join('');
-  updateGoalsTotals();
-  const focus = focusSellerId ? `#sg-goals-body tr[data-seller="${focusSellerId}"] .sg-in-value` : '#sg-goals-body .sg-in-value';
-  Modal.open('sg-goals-modal', { focusSelector: focus });
+  $('#sgGoalsTitle').textContent = `Metas de ${periodLabel()} por vendedor`;
+  $('#sg-goals-head').innerHTML = goalsHead('Vendedor', SELLER_KEYS);
+  $('#sg-goals-body').innerHTML = state.allSellers.map((r) => goalsRow('data-seller', r.seller_id,
+    `${esc(r.seller_name)}${r.seller_active ? '' : ' <small class="sg-hint">(inativo)</small>'}`, r, SELLER_KEYS)).join('');
+  updateSellerTotals();
+  const row = focusSellerId ? `tr[data-seller="${focusSellerId}"] ` : '';
+  Modal.open('sg-goals-modal', { focusSelector: `#sg-goals-body ${row}.sg-in` });
 }
 
-async function copyPreviousMonth() {
-  const d = new Date(state.year, state.month - 2, 1);
+async function copyPreviousSellers() {
+  const prev = previousPeriod();
   try {
-    const json = await apiFetch(`${API}?year=${d.getFullYear()}&month=${d.getMonth() + 1}`);
-    const prev = new Map((json.data || []).map((r) => [r.seller_id, r]));
+    const json = await apiFetch(`${API}?year=${prev.year}&month=${prev.month}`);
+    const map = new Map((json.data || []).map((r) => [r.seller_id, r]));
     let copied = 0;
     document.querySelectorAll('#sg-goals-body tr').forEach((tr) => {
-      const p = prev.get(Number(tr.dataset.seller));
-      if (!p || (!p.goal_value && !p.goal_count && !p.goal_leads)) return;
-      tr.querySelector('.sg-in-value').value = moneyInput(p.goal_value);
-      tr.querySelector('.sg-in-count').value = p.goal_count || '';
-      tr.querySelector('.sg-in-leads').value = p.goal_leads || '';
+      const p = map.get(Number(tr.dataset.seller));
+      if (!p || !hasAnyGoal(p, SELLER_KEYS)) return;
+      fillRowGoals(tr, p, SELLER_KEYS);
       copied += 1;
     });
-    updateGoalsTotals();
-    if (!copied) notify('info', 'Copiar metas', `${periodLabel(d.getFullYear(), d.getMonth() + 1)} não tem metas cadastradas.`);
+    updateSellerTotals();
+    if (!copied) notify('info', 'Copiar metas', `${periodLabel(prev.year, prev.month)} não tem metas cadastradas.`);
   } catch (error) {
     notify('error', 'Erro', `Erro ao copiar o mês anterior: ${error.message}`);
   }
 }
 
-function onGoalValueBlur(event) {
-  const input = event.target.closest('.sg-in-value');
-  if (input) input.value = moneyInput(parseNumber(input.value));
-}
-
 async function saveGoals() {
   const goals = [...document.querySelectorAll('#sg-goals-body tr')].map((tr) => ({
     seller_id: Number(tr.dataset.seller),
-    goal_value: parseNumber(tr.querySelector('.sg-in-value').value),
-    goal_count: Math.trunc(parseNumber(tr.querySelector('.sg-in-count').value)),
-    goal_leads: Math.trunc(parseNumber(tr.querySelector('.sg-in-leads').value)),
-    notes: tr.querySelector('.sg-in-notes').value,
+    ...readGoalsRow(tr, SELLER_KEYS),
   }));
 
   const btn = $('#sg-goals-save');
   btn.disabled = true;
   try {
-    const json = await apiFetch(`${API}/${state.year}/${state.month}`, {
-      method: 'PUT',
-      body: JSON.stringify({ goals }),
-    });
+    const json = await apiFetch(`${API}/${state.year}/${state.month}`, { method: 'PUT', body: JSON.stringify({ goals }) });
     state.allSellers = json.data || [];
     state.totals = json.totals || null;
     render();
@@ -536,6 +691,66 @@ async function saveGoals() {
     notify('success', 'Metas salvas', `Metas de ${periodLabel()} salvas.`);
   } catch (error) {
     notify('error', 'Erro', `Erro ao salvar as metas: ${error.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Plano por estado ────────────────────────────────────────────────
+
+const updateStateTotals = () => updateTotals('#sg-states-goals-body', '#sg-states-goals-total', STATE_KEYS);
+
+function openStatesGoals() {
+  $('#sgStatesTitle').textContent = `Plano por estado · ${periodLabel()}`;
+  $('#sg-states-goals-head').innerHTML = goalsHead('UF', STATE_KEYS);
+  // UFs com movimento ou plano primeiro, depois as demais
+  const byUf = new Map(state.plan.map((r) => [r.state, r]));
+  const ordered = [...state.plan.map((r) => r.state).filter((uf) => UFS.includes(uf)), ...UFS.filter((uf) => !byUf.has(uf))];
+  $('#sg-states-goals-body').innerHTML = ordered.map((uf) => {
+    const r = byUf.get(uf) || {};
+    const hint = r.open_leads ? ` <small class="sg-hint">${int(r.open_leads)} em aberto</small>` : '';
+    return goalsRow('data-state', uf, `<strong>${uf}</strong>${hint}`, r, STATE_KEYS);
+  }).join('');
+  updateStateTotals();
+  Modal.open('sg-states-modal', { focusSelector: '#sg-states-goals-body .sg-in' });
+}
+
+async function copyPreviousStates() {
+  const prev = previousPeriod();
+  try {
+    const json = await apiFetch(`${API}/states?year=${prev.year}&month=${prev.month}`);
+    const map = new Map((json.data || []).map((r) => [r.state, r]));
+    let copied = 0;
+    document.querySelectorAll('#sg-states-goals-body tr').forEach((tr) => {
+      const p = map.get(tr.dataset.state);
+      if (!p || !hasAnyGoal(p, STATE_KEYS)) return;
+      fillRowGoals(tr, p, STATE_KEYS);
+      copied += 1;
+    });
+    updateStateTotals();
+    if (!copied) notify('info', 'Copiar plano', `${periodLabel(prev.year, prev.month)} não tem plano por estado.`);
+  } catch (error) {
+    notify('error', 'Erro', `Erro ao copiar o mês anterior: ${error.message}`);
+  }
+}
+
+async function saveStatesGoals() {
+  const goals = [...document.querySelectorAll('#sg-states-goals-body tr')].map((tr) => ({
+    state: tr.dataset.state,
+    ...readGoalsRow(tr, STATE_KEYS),
+  }));
+
+  const btn = $('#sg-states-save');
+  btn.disabled = true;
+  try {
+    const json = await apiFetch(`${API}/states/${state.year}/${state.month}`, { method: 'PUT', body: JSON.stringify({ goals }) });
+    state.plan = json.data || [];
+    state.planTotals = json.totals || null;
+    renderStatesView();
+    Modal.close('sg-states-modal');
+    notify('success', 'Plano salvo', `Plano por estado de ${periodLabel()} salvo.`);
+  } catch (error) {
+    notify('error', 'Erro', `Erro ao salvar o plano: ${error.message}`);
   } finally {
     btn.disabled = false;
   }
@@ -584,37 +799,52 @@ function onSalesClick(event) {
 // ─────────────────────────────────────────────────────────────────────
 
 function bindEvents() {
-  $('#sg-month').addEventListener('change', (e) => { state.month = Number(e.target.value); loadMonth(); });
-  $('#sg-year').addEventListener('change', (e) => { state.year = Number(e.target.value); loadMonth(); });
+  $('#sg-month').addEventListener('change', (e) => { state.month = Number(e.target.value); loadAll(); });
+  $('#sg-year').addEventListener('change', (e) => { state.year = Number(e.target.value); loadAll(); });
   $('#sg-seller').addEventListener('change', (e) => {
     state.sellerId = e.target.value;
     render();
     loadHistory();
-    loadStates();
+    loadOutcomes();
   });
-  document.querySelectorAll('.sg-toggle__btn').forEach((b) => b.addEventListener('click', () => setMeasure(b.dataset.measure)));
+  document.querySelectorAll('.sg-tabs__btn').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+  $('#sg-measures').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-measure]');
+    if (b) setMeasure(b.dataset.measure);
+  });
+  $('#sg-state-measures').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-state-measure]');
+    if (b) setStateMeasure(b.dataset.stateMeasure);
+  });
   $('#sg-prev').addEventListener('click', () => shiftMonth(-1));
   $('#sg-next').addEventListener('click', () => shiftMonth(1));
   $('#sg-today').addEventListener('click', () => {
     state.year = now.getFullYear();
     state.month = now.getMonth() + 1;
     syncPeriodSelects();
-    loadMonth();
+    loadAll();
   });
-  $('#sg-reload').addEventListener('click', loadMonth);
-  $('#sg-btn-goals').addEventListener('click', () => openGoals());
+  $('#sg-reload').addEventListener('click', loadAll);
+  $('#sg-btn-goals').addEventListener('click', () => (state.view === 'states' ? openStatesGoals() : openGoals()));
   $('#sg-grid').addEventListener('click', onGridClick);
 
   const goalsBody = $('#sg-goals-body');
-  goalsBody.addEventListener('input', updateGoalsTotals);
-  goalsBody.addEventListener('focusout', onGoalValueBlur);
-  $('#sg-copy-prev').addEventListener('click', copyPreviousMonth);
+  goalsBody.addEventListener('input', updateSellerTotals);
+  goalsBody.addEventListener('focusout', onMoneyBlur);
+  $('#sg-copy-prev').addEventListener('click', copyPreviousSellers);
   $('#sg-goals-save').addEventListener('click', saveGoals);
+
+  const statesBody = $('#sg-states-goals-body');
+  statesBody.addEventListener('input', updateStateTotals);
+  statesBody.addEventListener('focusout', onMoneyBlur);
+  $('#sg-states-copy-prev').addEventListener('click', copyPreviousStates);
+  $('#sg-states-save').addEventListener('click', saveStatesGoals);
+
   $('#sg-sales-body').addEventListener('click', onSalesClick);
 }
 
-state.allSellers = [];
 Modal.setup();
 fillPeriodSelects();
+fillMeasureToggles();
 bindEvents();
-loadMonth();
+loadAll();
