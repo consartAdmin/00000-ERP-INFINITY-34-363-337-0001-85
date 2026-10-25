@@ -611,6 +611,12 @@ import contractsConsartRoutes from './routes/contractsConsartRoutes.js';
 app.use('/api/contracts-consart', contractsConsartRoutes);
 
 /* ╔══════════════════════════════════════════════════════════╗
+   ║   ROTA: salesGoalsConsart (Metas de vendas)              ║
+   ╚══════════════════════════════════════════════════════════╝ */
+import salesGoalsConsartRoutes from './routes/salesGoalsConsartRoutes.js';
+app.use('/api/sales-goals-consart', salesGoalsConsartRoutes);
+
+/* ╔══════════════════════════════════════════════════════════╗
    ║      ROTA: servicesConsart (Cadastro de serviços)        ║
    ╚══════════════════════════════════════════════════════════╝ */
 import servicesConsartRoutes from './routes/servicesConsartRoutes.js';
