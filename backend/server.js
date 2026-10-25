@@ -14,6 +14,7 @@ import https from 'node:https';
 import dns from "dns"; // (pode ser usado em checks futuros)
 import { AsyncLocalStorage } from "node:async_hooks";
 import { erpCompanyContext } from './utils/erpCompanyContext.js';
+import { runZeroStockLots20261025 } from './services/oneTime/zeroStockLots20261025.js';
 import { queueErrorEmail, sendErrorEmail } from "./errorEmailReporter.js";
 
 import jwt from "jsonwebtoken";
@@ -1679,6 +1680,7 @@ async function runStartupJobs() {
       { name: "initNfeInboxController", fn: () => initNfeInboxController() },
       { name: "initEcommerceOrdersController", fn: () => ecommerceOrdersController.initEcommerceOrdersController() },
       { name: "initOrdersBillingController", fn: () => initOrdersBillingController() },
+      { name: "zeroStockLots20261025", fn: async () => console.log("[boot] zeroStockLots20261025:", JSON.stringify(await runZeroStockLots20261025())) },
    ];
 
    for (const job of jobs) {
