@@ -9,6 +9,7 @@
      ║ ✅ Conclusão do Lead = crmDealsOutcomes                           ║
      ║ ✅ Queda de venda abre modal com crmLossReasons                   ║
      ║ ✅ Clique nos indicadores do topo abre modal de operações         ║
+     ║ ✅ Ícone ✎ no card edita o cliente (customersConsart) num modal   ║
      ╚════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -26,6 +27,7 @@
   <link rel="stylesheet" href="/crmDeals/crmDeals.css?v=5" />
   <link rel="stylesheet" href="/crmDeals/crmOutcomesModal.css" />
   <link rel="stylesheet" href="/crmDeals/crmConclusionSummaryModal/crmConclusionSummaryModal.css" />
+  <link rel="stylesheet" href="crmConsartErp.customerEdit.css" />
 </head>
 <body>
   <div id="menuConsartMount"></div>
@@ -268,6 +270,195 @@
     </div>
   </div>
 
+  <!-- Modal Editar Cliente (customersConsart) — padrão modals.css / modal.js -->
+  <div id="crm-modal-customer-edit" class="modal crm-deal-modal crm-customer-edit-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-8" role="dialog" aria-modal="true" aria-labelledby="crmCustomerEditTitle">
+
+        <header class="modal__header modal-header-color-3">
+          <h2 id="crmCustomerEditTitle" class="modal__title">Editar Cliente</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </header>
+
+        <div class="modal__body">
+          <form id="crm-customer-edit-form" novalidate>
+            <input type="hidden" id="crm-ce-id" value="">
+
+            <div class="modal-section">
+              <h3 class="crm-ce-section-title">Identificação</h3>
+              <div class="modal-form-grid modal-form-grid--6">
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-person-type">Tipo</label>
+                  <select id="crm-ce-person-type">
+                    <option value="J">Jurídica</option>
+                    <option value="F">Física</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                  <label for="crm-ce-tax-id" id="crm-ce-tax-id-label">CNPJ *
+                    <button type="button" id="crm-ce-cnpj-lookup" class="crm-ce-link-btn"
+                      title="Preencher pelos dados públicos do CNPJ">Buscar CNPJ</button>
+                  </label>
+                  <input type="text" id="crm-ce-tax-id" placeholder="12.345.678/0001-00" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6 modal-field--span-3">
+                  <label for="crm-ce-trade-name" id="crm-ce-trade-name-label">Nome fantasia *</label>
+                  <input type="text" id="crm-ce-trade-name" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6 modal-field--span-4" id="crm-ce-legal-name-field">
+                  <label for="crm-ce-legal-name">Razão social *</label>
+                  <input type="text" id="crm-ce-legal-name" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6 crm-ce-pj-only">
+                  <label for="crm-ce-state-registration">Inscrição estadual</label>
+                  <input type="text" id="crm-ce-state-registration" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6 crm-ce-pj-only">
+                  <label for="crm-ce-municipal-registration">Inscrição municipal</label>
+                  <input type="text" id="crm-ce-municipal-registration" autocomplete="off">
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-section">
+              <h3 class="crm-ce-section-title">Contato</h3>
+              <div class="modal-form-grid modal-form-grid--4">
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-contact-name">Contato</label>
+                  <input type="text" id="crm-ce-contact-name" placeholder="Nome do responsável" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-email">E-mail</label>
+                  <input type="email" id="crm-ce-email" placeholder="contato@empresa.com.br" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-phone">Telefone</label>
+                  <input type="text" id="crm-ce-phone" placeholder="(11) 3566-0000" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-mobile">Celular</label>
+                  <input type="text" id="crm-ce-mobile" placeholder="(11) 99999-9999" autocomplete="off">
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-section">
+              <h3 class="crm-ce-section-title">Endereço</h3>
+              <div class="modal-form-grid modal-form-grid--6">
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-postal-code">CEP</label>
+                  <input type="text" id="crm-ce-postal-code" placeholder="00000-000" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-street-type">Tipo</label>
+                  <input type="text" id="crm-ce-street-type" placeholder="Rua, Avenida..." autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6 modal-field--span-3">
+                  <label for="crm-ce-street-name">Logradouro</label>
+                  <input type="text" id="crm-ce-street-name" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-street-number">Número</label>
+                  <input type="text" id="crm-ce-street-number" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                  <label for="crm-ce-complement">Complemento</label>
+                  <input type="text" id="crm-ce-complement" placeholder="Sala, bloco, andar..." autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-neighborhood">Bairro</label>
+                  <input type="text" id="crm-ce-neighborhood" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                  <label for="crm-ce-city">Cidade</label>
+                  <input type="text" id="crm-ce-city" autocomplete="off">
+                </div>
+
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-state">UF</label>
+                  <select id="crm-ce-state">
+                  <option value="">--</option>
+                  <option value="AC">AC</option>
+                  <option value="AL">AL</option>
+                  <option value="AP">AP</option>
+                  <option value="AM">AM</option>
+                  <option value="BA">BA</option>
+                  <option value="CE">CE</option>
+                  <option value="DF">DF</option>
+                  <option value="ES">ES</option>
+                  <option value="GO">GO</option>
+                  <option value="MA">MA</option>
+                  <option value="MT">MT</option>
+                  <option value="MS">MS</option>
+                  <option value="MG">MG</option>
+                  <option value="PA">PA</option>
+                  <option value="PB">PB</option>
+                  <option value="PR">PR</option>
+                  <option value="PE">PE</option>
+                  <option value="PI">PI</option>
+                  <option value="RJ">RJ</option>
+                  <option value="RN">RN</option>
+                  <option value="RS">RS</option>
+                  <option value="RO">RO</option>
+                  <option value="RR">RR</option>
+                  <option value="SC">SC</option>
+                  <option value="SP">SP</option>
+                  <option value="SE">SE</option>
+                  <option value="TO">TO</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-section">
+              <h3 class="crm-ce-section-title">Comercial</h3>
+              <div class="modal-form-grid modal-form-grid--4">
+                <div class="fields fields-w-full fields-h-6 modal-field--span-2">
+                  <label for="crm-ce-segment">Segmento</label>
+                  <select id="crm-ce-segment">
+                    <option value="">Carregando...</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ce-active">Situação</label>
+                  <select id="crm-ce-active">
+                    <option value="true">Ativo</option>
+                    <option value="false">Inativo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3 crm-ce-footer">
+          <a id="crm-ce-open-full" class="btn btn-new btn-sm crm-ce-open-full" href="#" target="_blank" rel="noopener"
+            title="Abrir o cadastro completo em outra aba">Cadastro completo</a>
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+          <button id="crm-ce-save" class="btn btn-save btn-sm" type="submit" form="crm-customer-edit-form">Salvar Cliente</button>
+        </footer>
+
+      </section>
+    </div>
+  </div>
+
   <!-- Separa os cards deste CRM (enviado no header X-CRM-Company) -->
   <script>window.CRM_COMPANY = 'CONSART'; window.ERP_COMPANY = 'CONSART';</script>
   <!-- Busca de clientes usa a tabela customersConsart -->
@@ -275,5 +466,7 @@
   <script type="module" src="/public/includes/js/apiBase.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
   <script type="module" src="/crmDeals/js/index.js?v=5"></script>
+  <!-- Editar o cliente (customersConsart) direto pelo card -->
+  <script type="module" src="crmConsartErp.customerEdit.js"></script>
 </body>
 </html>

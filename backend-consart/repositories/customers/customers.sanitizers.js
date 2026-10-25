@@ -38,9 +38,9 @@ function sanitizeField(k, value) {
     v = onlyDigits(v);
   }
 
-  // Segmento
+  // Segmento (vazio → null; Number(null) daria 0 e quebraria a FK)
   if (k === 'segment_id') {
-    v = toNumOrNull(v);
+    v = v === null || v === undefined || String(v).trim() === '' ? null : (toNumOrNull(v) || null);
   }
 
   // Padrões financeiros (FKs) — vazio/0 → null
