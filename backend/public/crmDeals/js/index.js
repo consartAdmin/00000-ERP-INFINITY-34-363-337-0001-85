@@ -219,6 +219,28 @@ function hideMySellerLabel() {
 /* --------------------------------------------------------------------- */
 /* UI: preencher filtro                                                  */
 /* --------------------------------------------------------------------- */
+// Vendedor travado ("Meu vendedor"): decidido uma vez, na primeira carga
+// (sem filtros). Só trava quando TODOS os cards têm o mesmo vendedor; se
+// existir card sem vendedor, a tela não é de um vendedor só (ex.: admin).
+// Antes isso era recalculado a cada reload e, com cards sem vendedor, o
+// próximo reload (mover/editar) filtrava por um vendedor e escondia o resto.
+let lockedSellerId;
+
+function resolveLockedSellerId() {
+  if (lockedSellerId !== undefined) return lockedSellerId;
+
+  const deals = Array.isArray(state.deals) ? state.deals : [];
+  const scopedSellerIds = getScopedSellerIdsFromDeals();
+  const allHaveSeller = deals.every((d) => Number(d?.seller_id) > 0);
+
+  lockedSellerId =
+    deals.length > 0 && allHaveSeller && scopedSellerIds.length === 1
+      ? String(scopedSellerIds[0])
+      : null;
+
+  return lockedSellerId;
+}
+
 function fillSellerFilter() {
   if (!dom.selectSeller) return;
 
@@ -240,9 +262,9 @@ function fillSellerFilter() {
     dom.selectSeller.appendChild(opt);
   });
 
-  if (scopedSellerIds.length === 1) {
-    const onlyId = String(scopedSellerIds[0]);
+  const onlyId = resolveLockedSellerId();
 
+  if (onlyId) {
     let opt = dom.selectSeller.querySelector(`option[value="${cssEscapeAttr(onlyId)}"]`);
     if (!opt) {
       opt = document.createElement('option');
