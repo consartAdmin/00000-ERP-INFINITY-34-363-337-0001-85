@@ -37,3 +37,78 @@
   height: 20px;
   background: #bfdbfe;
 }
+
+/* Nome do módulo + botão de ícones */
+.ms-name-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+}
+.ms-name-wrap input { flex: 1; min-width: 0; }
+.ms-icon-btn {
+  flex: 0 0 auto;
+  width: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #f8fafc;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ms-icon-btn:hover { background: #e0f2fe; border-color: #93c5fd; }
+
+/* Modal Escolher Ícone */
+.ms-icons-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.ms-icons-top input { flex: 1 1 240px; height: 30px; }
+.ms-icons-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px dashed #93c5fd;
+  border-radius: 4px;
+  background: #eff6ff;
+  font-size: 13px;
+}
+.ms-icons-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.ms-icons-tabs[hidden] { display: none; }
+.ms-icons-tab {
+  padding: 3px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ms-icons-tab.is-active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.ms-icons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.ms-icons-item {
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #f8fafc;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ms-icons-item:hover { background: #e0f2fe; border-color: #93c5fd; }
+.ms-icons-item.is-current { border-color: #1d4ed8; background: #dbeafe; }
+.ms-icons-empty { margin: 12px 0; color: #64748b; font-size: 13px; }
