@@ -1,10 +1,10 @@
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ customersIbge.schema.js — DDL de public."customersIbge"            ║
 // ║ Idempotente (tabela, colunas, defaults, índices, trigger).         ║
-// ║ Depende de: public.customers (FK)                                  ║
+// ║ customer_id de public.customers ou public."customersConsart"      ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import { TB_CUSTOMERS, TB_CUSTOMERS_IBGE } from './customersIbge.constants.js';
+import { TB_CUSTOMERS_IBGE } from './customersIbge.constants.js';
 
 // ----------------------------------------------------------------------
 // DDL / Infra
@@ -12,8 +12,8 @@ import { TB_CUSTOMERS, TB_CUSTOMERS_IBGE } from './customersIbge.constants.js';
 export const DDL = {
   customersIbge: `
     CREATE TABLE IF NOT EXISTS ${TB_CUSTOMERS_IBGE} (
-      customer_id  BIGINT  NOT NULL PRIMARY KEY
-        REFERENCES ${TB_CUSTOMERS}(customer_id) ON DELETE CASCADE,
+      -- sem FK: guarda clientes da customers e da customersConsart
+      customer_id  BIGINT  NOT NULL PRIMARY KEY,
 
       uf           CHAR(2) NOT NULL,
       city         TEXT    NOT NULL,
