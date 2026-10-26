@@ -29,16 +29,32 @@
   <link rel="stylesheet" href="/crmDeals/crmConclusionSummaryModal/crmConclusionSummaryModal.css" />
   <link rel="stylesheet" href="crmConsartErp.customerEdit.css" />
   <link rel="stylesheet" href="crmConsartErp.contacts.css" />
+  <style>
+    /* Novo Card logo abaixo do título/subtítulo */
+    .page-crm-consart .crm-header__add{ margin-top: 18px; }
+    /* Título automático do topGradientBar não aparece dentro do card/modais */
+    .page-crm-consart .c-page-bar,
+    .modal .c-page-bar{ display: none !important; }
+  </style>
 </head>
 <body>
   <div id="menuConsartMount"></div>
 
   <main class="page-crm-consart">
     <section class="section-card">
-      <header class="crm-header">
+      <!-- div (não <header>): o topGradientBar.js põe o título da página
+           depois do 1º <header> e aparecia "CRM CONSART ERP" dentro do card -->
+      <div class="crm-header">
         <div class="crm-header__titles">
           <h1>CRM - Consart ERP</h1>
           <p>Organize negociações, reativações e prospecções de clientes.</p>
+
+          <div class="crm-header__add">
+            <button id="crm-btn-add-card" class="crm-btn-add-card" type="button">
+              <span class="crm-btn-add-card__icon" aria-hidden="true">+</span>
+              <span class="crm-btn-add-card__text">Novo Card</span>
+            </button>
+          </div>
         </div>
 
         <div class="crm-header__center">
@@ -82,14 +98,10 @@
             Dica: dê <strong>duplo clique</strong> no vendedor para buscar.
           </small>
         </div>
-      </header>
+      </div>
 
-<div class="crm-actions">
-  <button id="crm-btn-add-card" class="crm-btn-add-card" type="button">
-    <span class="crm-btn-add-card__icon" aria-hidden="true">+</span>
-    <span class="crm-btn-add-card__text">Novo Card</span>
-  </button>
-</div>
+      <!-- ⚙️ Configurar Kanban (settings.kanban.js monta aqui) -->
+      <div class="crm-actions"></div>
 
       <section class="crm-kanban" id="crm-kanban">
         <div class="crm-kanban__stages" id="crm-kanban-stages"></div>
