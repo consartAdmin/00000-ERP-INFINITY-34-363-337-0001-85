@@ -43,7 +43,7 @@
         <form id="moduleForm" class="ms-form">
           <input type="hidden" id="moduleId" />
 
-          <div class="fields-inline fields-gap-3">
+          <div class="fields-inline fields-inline-wrap fields-gap-3">
             <div class="fields fields-h-6 fields-w-20 fields-font-3">
               <label for="name">Nome do Módulo (texto no menu)</label>
               <div class="ms-name-wrap">
@@ -81,17 +81,18 @@
               <input type="number" id="sortOrder" step="1" placeholder="auto" />
             </div>
 
-            <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <!-- Campos técnicos escondidos: valores existentes continuam salvos ao editar -->
+            <div class="fields fields-h-6 fields-w-10 fields-font-3" hidden>
               <label for="htmlId">HTML id (dropdown)</label>
               <input type="text" id="htmlId" placeholder="Ex.: gestao-erp" autocomplete="off" />
             </div>
 
-            <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <div class="fields fields-h-6 fields-w-10 fields-font-3" hidden>
               <label for="cssClass">Classe CSS</label>
               <input type="text" id="cssClass" placeholder="Ex.: link-inicio" autocomplete="off" />
             </div>
 
-            <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <div class="fields fields-h-6 fields-w-10 fields-font-3" hidden>
               <label for="feature">Feature</label>
               <input type="text" id="feature" placeholder="Ex.: PRODUCT_LOCATIONS" autocomplete="off" />
             </div>

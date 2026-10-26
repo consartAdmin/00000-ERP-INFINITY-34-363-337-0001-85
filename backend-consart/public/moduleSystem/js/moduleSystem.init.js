@@ -4,7 +4,7 @@ import { registrarFormulario, resetForm } from './moduleSystem.form.js';
 import { registrarSeletorIcones } from './moduleSystem.iconPicker.js';
 import { validarElementos } from './moduleSystem.validation.js';
 
-console.log('VERSAO_MODULESYSTEM 1.6');
+console.log('VERSAO_MODULESYSTEM 1.7');
 
 function iniciar() {
   validarElementos(elements);
