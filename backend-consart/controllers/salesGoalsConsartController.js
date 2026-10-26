@@ -7,6 +7,7 @@
 'use strict';
 
 import * as repo from '../repositories/salesGoalsConsart/salesGoalsConsart.repository.js';
+import { getPerformance as repoPerformance } from '../repositories/salesGoalsConsart/salesGoalsConsart.performance.js';
 
 function fail(res, tag, error) {
   const status = error?.status || 500;
@@ -74,5 +75,14 @@ export async function saveStatesMonth(req, res) {
     return res.json({ ok: true, data: rows, ...summary });
   } catch (error) {
     return fail(res, 'saveStatesMonth', error);
+  }
+}
+
+export async function getPerformance(req, res) {
+  try {
+    const { rows, ...summary } = await repoPerformance(req.query);
+    return res.json({ ok: true, data: rows, ...summary });
+  } catch (error) {
+    return fail(res, 'getPerformance', error);
   }
 }

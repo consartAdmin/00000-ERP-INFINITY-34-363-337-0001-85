@@ -45,7 +45,7 @@ const now = new Date();
 const state = {
   year: now.getFullYear(),
   month: now.getMonth() + 1,
-  view: 'sellers',      // 'sellers' | 'states'
+  view: 'sellers',      // 'sellers' | 'states' | 'perf'
   sellerId: '',
   allSellers: [],
   rows: [],
@@ -56,12 +56,19 @@ const state = {
   plan: [],             // plano por estado (GET /states)
   planTotals: null,
   outcomes: [],         // desfechos dos leads por UF (GET /leads-by-state)
+  perf: null,           // funil do CRM + desempenho por vendedor (GET /performance)
 };
 
 // Cores dos gráficos (par validado p/ daltonismo): meta = índigo, realizado = verde Consart
 const COLORS = { goal: '#6366f1', done: '#0f9d84', track: '#e2e8f0' };
 // Desfechos dos leads (paleta validada): conversão, queda de venda, sem sucesso no contato
 const OUTCOME_COLORS = { converted: '#0f9d84', lost: '#d97706', no_contact: '#6366f1' };
+// Contatos do card (mesmas cores dos ícones do CRM): WhatsApp, Ligação, E-mail
+const CONTACT_TYPES = [
+  { key: 'WHATSAPP', label: 'WhatsApp', short: 'WhatsApp', color: '#16a34a', chip: 'wa' },
+  { key: 'LIGACAO', label: 'Ligação', short: 'Ligação', color: '#2563eb', chip: 'call' },
+  { key: 'EMAIL', label: 'E-mail', short: 'E-mail', color: '#ea580c', chip: 'mail' },
+];
 const LEVEL_COLORS = { done: '#16a34a', near: '#f59e0b', low: '#ef4444', none: '#cbd5e1' };
 const charts = {};
 
@@ -179,9 +186,12 @@ function setView(view) {
   document.querySelectorAll('.sg-tabs__btn').forEach((b) => b.classList.toggle('is-active', b.dataset.view === view));
   $('#sg-view-sellers').hidden = view !== 'sellers';
   $('#sg-view-states').hidden = view !== 'states';
+  $('#sg-view-perf').hidden = view !== 'perf';
+  $('#sg-btn-goals').style.display = view === 'perf' ? 'none' : '';
   $('#sg-btn-goals-text').textContent = view === 'states' ? 'Definir plano por estado' : 'Definir metas do mês';
   // Gráficos criados com o painel escondido ficam sem tamanho: redesenha ao mostrar
   if (view === 'states') renderStatesView();
+  else if (view === 'perf') renderPerfView();
   else renderCharts();
 }
 
@@ -197,6 +207,7 @@ async function loadAll() {
       loadHistory(false),
       loadPlan(false),
       loadOutcomes(false),
+      loadPerf(false),
     ]);
     state.allSellers = json.data || [];
     state.totals = json.totals || null;
@@ -247,12 +258,26 @@ async function loadOutcomes(redraw = true) {
   if (redraw && state.view === 'states') renderOutcomesChart();
 }
 
+async function loadPerf(redraw = true) {
+  const params = new URLSearchParams({ year: state.year, month: state.month });
+  if (state.sellerId) params.set('seller_id', state.sellerId);
+  try {
+    const json = await apiFetch(`${API}/performance?${params}`);
+    state.perf = { ...json, rows: json.data || [] };
+  } catch (error) {
+    console.error('[salesGoalsConsart] desempenho:', error);
+    state.perf = null;
+  }
+  if (redraw && state.view === 'perf') renderPerfView();
+}
+
 function render() {
   const sid = Number(state.sellerId || 0);
   state.rows = sid ? state.allSellers.filter((r) => r.seller_id === sid) : state.allSellers;
   renderSummary();
   renderGrid();
   if (state.view === 'states') renderStatesView();
+  else if (state.view === 'perf') renderPerfView();
   else renderCharts();
 }
 
@@ -575,6 +600,171 @@ function renderOutcomesChart() {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Aba: Funil do CRM e desempenho dos vendedores
+// ─────────────────────────────────────────────────────────────────────
+
+const STAGE_FALLBACK = '#94a3b8';
+const num = (n, cls = '') => `<td class="${cls}${Number(n) ? '' : ' is-zero'}">${int(n)}</td>`;
+
+function renderPerfView() {
+  const seller = state.allSellers.find((s) => s.seller_id === Number(state.sellerId));
+  $('#sg-perf-seller').textContent = seller ? ` · ${seller.seller_name}` : '';
+  $('#sg-perf-period').textContent = periodLabel();
+  renderFunnel();
+  renderPerfTable();
+  renderPerfCharts();
+}
+
+/** Uma caixa por etapa do CRM (igual às colunas do kanban) + Conclusão do Lead. */
+function renderFunnel() {
+  const p = state.perf;
+  if (!p) { $('#sg-funnel').innerHTML = ''; return; }
+  const t = p.totals;
+  const max = Math.max(1, ...p.stages.map((s) => t.stages[s.id]?.open || 0));
+
+  const stages = p.stages.map((s) => {
+    const c = t.stages[s.id] || { open: 0, value: 0, entered: 0 };
+    const color = s.color || STAGE_FALLBACK;
+    return `
+      <div class="sg-stage">
+        <div class="sg-stage__name"><i style="background:${esc(color)}"></i>${esc(s.name)}</div>
+        <div class="sg-stage__count">${int(c.open)}<small>abertos</small></div>
+        <div class="sg-stage__value">${fmt('value', c.value)}</div>
+        <div class="sg-stage__meta"><span>+${int(c.entered)} entraram no mês</span></div>
+        <div class="sg-stage__bar"><span style="width:${(c.open / max) * 100}%;background:${esc(color)}"></span></div>
+      </div>`;
+  }).join('');
+
+  const out = (key, label) => `<span><i style="background:${OUTCOME_COLORS[key]}"></i>${label}<strong>${int(t[key])}</strong></span>`;
+  $('#sg-funnel').innerHTML = `${stages}
+    <div class="sg-stage sg-stage--done">
+      <div class="sg-stage__name"><i style="background:#64748b"></i>Conclusão do Lead</div>
+      <div class="sg-stage__count">${int(t.concluded)}<small>no mês</small></div>
+      <div class="sg-stage__outcomes">
+        ${out('converted', 'Conversão')}
+        ${out('lost', 'Queda de venda')}
+        ${out('no_contact', 'Sem contato')}
+      </div>
+    </div>`;
+}
+
+function contactChips(contacts) {
+  return CONTACT_TYPES.map((c) => {
+    const n = contacts[c.key] || 0;
+    return `<span class="sg-chip-count sg-chip-count--${c.chip}${n ? '' : ' is-zero'}" title="${c.label}">${int(n)}</span>`;
+  }).join(' ');
+}
+
+function perfCells(r, stages) {
+  return `
+    ${stages.map((s, i) => num(r.stages[s.id]?.open || 0, i === 0 ? 'sg-group-start' : '')).join('')}
+    ${num(r.open, 'sg-group-start')}
+    <td class="${r.stalled ? 'sg-pct--low' : 'is-zero'}" title="Sem atividade há mais de ${state.perf.stalled_days} dias">${int(r.stalled)}</td>
+    ${num(r.new_cards, 'sg-group-start')}
+    <td>${contactChips(r.contacts)}</td>
+    ${num(r.converted)}
+    ${num(r.lost)}
+    ${num(r.no_contact)}
+    <td>${pctText(r.conversion_rate)}</td>
+    ${num(r.sent, 'sg-group-start')}
+    ${num(r.approved)}
+    <td title="${r.goal_value ? `Meta ${fmt('value', r.goal_value)}` : 'Sem meta de valor'}">${fmt('value', r.value)}${r.goal_value ? `<span class="sg-sub"><span class="sg-pct--${level(r.pct_value)}">${pctText(r.pct_value)}</span> da meta</span>` : ''}</td>`;
+}
+
+function renderPerfTable() {
+  const p = state.perf;
+  const rows = p?.rows || [];
+  $('#sg-perf-empty').hidden = rows.length > 0;
+  if (!p) {
+    $('#sg-perf-head').innerHTML = '';
+    $('#sg-perf-body').innerHTML = '';
+    $('#sg-perf-total').innerHTML = '';
+    return;
+  }
+
+  const stages = p.stages;
+  $('#sg-perf-head').innerHTML = `
+    <tr>
+      <th></th>
+      <th class="sg-group-start" colspan="${stages.length}">Cards abertos por etapa (hoje)</th>
+      <th class="sg-group-start" colspan="2">Carteira</th>
+      <th class="sg-group-start" colspan="6">Atividade no mês</th>
+      <th class="sg-group-start" colspan="3">Vendas no mês</th>
+    </tr>
+    <tr>
+      <th class="sg-col-left sg-col-seller">Vendedor</th>
+      ${stages.map((s, i) => `<th class="sg-col-stage${i === 0 ? ' sg-group-start' : ''}"><span class="sg-stage-head"><i style="background:${esc(s.color || STAGE_FALLBACK)}"></i>${esc(s.name)}</span></th>`).join('')}
+      <th class="sg-group-start">Abertos</th>
+      <th title="Sem atividade há mais de ${p.stalled_days} dias">Parados</th>
+      <th class="sg-group-start">Cards novos</th>
+      <th>Contatos</th>
+      <th>Conversão</th>
+      <th>Queda</th>
+      <th>Sem contato</th>
+      <th>Taxa conv.</th>
+      <th class="sg-group-start">Propostas enviadas</th>
+      <th>Aprovadas</th>
+      <th>Vendido</th>
+    </tr>`;
+
+  $('#sg-perf-body').innerHTML = rows.map((r) => `
+    <tr>
+      <td class="sg-col-left sg-col-seller">${esc(r.seller_name)}</td>
+      ${perfCells(r, stages)}
+    </tr>`).join('');
+
+  $('#sg-perf-total').innerHTML = rows.length
+    ? `<th class="sg-col-left sg-col-seller">Total</th>${perfCells(p.totals, stages).replace(/<td/g, '<th').replace(/<\/td>/g, '</th>')}`
+    : '';
+}
+
+/** Barras horizontais empilhadas por vendedor. */
+function stackedSellerBars(chartKey, canvasId, rows, series) {
+  const box = document.getElementById(canvasId).parentElement;
+  box.style.height = `${Math.max(200, rows.length * 34 + 80)}px`;
+  drawChart(chartKey, canvasId, {
+    type: 'bar',
+    data: {
+      labels: rows.map((r) => r.seller_name),
+      datasets: series.map((s) => ({
+        label: s.label,
+        data: rows.map(s.value),
+        backgroundColor: s.color,
+        borderColor: '#ffffff',
+        borderWidth: { right: 2 },
+        borderSkipped: false,
+        maxBarThickness: 22,
+      })),
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      interaction: { mode: 'index', intersect: false, axis: 'y' },
+      plugins: {
+        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, color: '#475569', font: { size: 11 } } },
+      },
+      scales: {
+        x: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, border: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0 } },
+        y: { stacked: true, grid: { display: false }, ticks: { color: '#475569', font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+function renderPerfCharts() {
+  const rows = state.perf?.rows || [];
+  stackedSellerBars('contacts', 'sg-chart-contacts', rows.filter((r) => r.contacts_total),
+    CONTACT_TYPES.map((c) => ({ label: c.label, color: c.color, value: (r) => r.contacts[c.key] || 0 })));
+  stackedSellerBars('concluded', 'sg-chart-concluded', rows.filter((r) => r.concluded), [
+    { label: 'Conversão', color: OUTCOME_COLORS.converted, value: (r) => r.converted },
+    { label: 'Queda de venda', color: OUTCOME_COLORS.lost, value: (r) => r.lost },
+    { label: 'Sem sucesso no contato', color: OUTCOME_COLORS.no_contact, value: (r) => r.no_contact },
+  ]);
+}
+
 function setStateMeasure(measure) {
   state.stateMeasure = measure;
   document.querySelectorAll('[data-state-measure]').forEach((b) => b.classList.toggle('is-active', b.dataset.stateMeasure === measure));
@@ -806,6 +996,7 @@ function bindEvents() {
     render();
     loadHistory();
     loadOutcomes();
+    loadPerf();
   });
   document.querySelectorAll('.sg-tabs__btn').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
   $('#sg-measures').addEventListener('click', (e) => {

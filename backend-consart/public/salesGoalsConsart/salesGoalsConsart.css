@@ -515,6 +515,84 @@
   border-top: 2px solid #e2e8f0;
 }
 
+/* ── Funil do CRM e desempenho ─────────────────────────────────────── */
+.sg-funnel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sg-stage {
+  position: relative;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 12px 10px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  min-width: 0;
+}
+
+.sg-stage__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  min-height: 2.2em;
+  line-height: 1.15;
+}
+
+.sg-stage__name i { width: 4px; align-self: stretch; border-radius: 4px; flex: 0 0 4px; }
+.sg-stage__count { font-size: 1.7rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin-top: 4px; }
+.sg-stage__count small { font-size: 0.72rem; font-weight: 600; color: #94a3b8; margin-left: 4px; }
+.sg-stage__value { font-size: 0.8rem; color: #0f6b5c; font-weight: 700; }
+.sg-stage__meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 6px; font-size: 0.72rem; color: #64748b; }
+.sg-stage__meta .is-warn { color: #b45309; font-weight: 700; }
+.sg-stage__bar { height: 6px; border-radius: 999px; background: #f1f5f9; margin-top: 8px; overflow: hidden; }
+.sg-stage__bar span { display: block; height: 100%; border-radius: 999px; }
+
+.sg-stage--done { background: #f8fafc; border-style: dashed; }
+.sg-stage__outcomes { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; font-size: 0.78rem; color: #475569; }
+.sg-stage__outcomes span { display: flex; align-items: center; gap: 6px; }
+.sg-stage__outcomes strong { margin-left: auto; color: #0f172a; }
+.sg-stage__outcomes i { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+
+.sg-perf-table { min-width: 100%; }
+.sg-perf-table th,
+.sg-perf-table td { text-align: center; vertical-align: middle; white-space: nowrap; font-size: 0.8rem; padding: 6px 8px; }
+.sg-perf-table thead tr:first-child th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; background: #f8fafc; }
+.sg-perf-table .sg-col-left { text-align: left; }
+.sg-perf-table .sg-col-seller { min-width: 140px; font-weight: 700; color: #0f172a; position: sticky; left: 0; z-index: 1; background: #ffffff; }
+.sg-perf-table .sg-group-start { border-left: 2px solid #e2e8f0; }
+.sg-perf-table .is-zero { color: #cbd5e1; }
+.sg-perf-table thead tr:last-child th { white-space: normal; line-height: 1.15; }
+.sg-perf-table .sg-col-stage { min-width: 76px; max-width: 96px; }
+.sg-perf-table .sg-stage-head { display: inline-flex; align-items: center; gap: 4px; text-align: left; }
+.sg-perf-table .sg-stage-head i { flex: 0 0 8px; }
+.sg-perf-table .sg-stage-head i { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+.sg-perf-table tfoot th { font-weight: 700; color: #0f172a; border-top: 2px solid #e2e8f0; font-size: 0.8rem; }
+.sg-perf-table .sg-sub { display: block; font-size: 0.68rem; color: #94a3b8; font-weight: 500; }
+
+.sg-chip-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.sg-chip-count--wa { color: #16a34a; background: #f0fdf4; }
+.sg-chip-count--call { color: #2563eb; background: #eff6ff; }
+.sg-chip-count--mail { color: #ea580c; background: #fff7ed; }
+.sg-chip-count.is-zero { color: #cbd5e1; background: transparent; }
+
+.sg-dash--perf { grid-template-columns: 1fr 1fr; margin-top: 16px; }
+.sg-chart--perf { height: 240px; }
+
 /* ── Telas médias / celular ────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .sg-header { flex-wrap: wrap; }
