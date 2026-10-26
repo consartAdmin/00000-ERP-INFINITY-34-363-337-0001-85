@@ -4,6 +4,8 @@
 // ║ Todas as funções recebem `db` (pool ou client) como 1º argumento   ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
+import { erpTable } from '../../utils/erpCompanyContext.js';
+
 export async function listActivePriceTables(db) {
   const { rows } = await db.query(`
     SELECT price_id, name, description
@@ -25,7 +27,7 @@ export async function getCustomerPriceTable(db, customerId) {
       cpt.created_at,
       cpt.updated_at
     FROM public."customerPriceTables" AS cpt
-    JOIN public.customers AS c
+    JOIN ${erpTable('public.customers')} AS c
       ON c.customer_id = cpt.customer_id
       AND c.is_active = true
     JOIN public.prices AS p

@@ -7,6 +7,7 @@ import pool from '../../config/db.js';
 import { TB_CREDIT, TB_CUSTOMERS } from './customersCredit.constants.js';
 import { toCustomerId, toMoney, toBool } from './customersCredit.sanitizers.js';
 import { getByCustomerId } from './customersCreditQuery.repository.js';
+import { erpTable } from '../../utils/erpCompanyContext.js';
 
 export async function upsertByCustomerId(customerId, payload = {}) {
   const id = toCustomerId(customerId);
@@ -17,7 +18,7 @@ export async function upsertByCustomerId(customerId, payload = {}) {
   const notes = String(payload.notes ?? '').trim() || null;
 
   const customerResult = await pool.query(
-    `SELECT customer_id FROM ${TB_CUSTOMERS} WHERE customer_id = $1`,
+    `SELECT customer_id FROM ${erpTable(TB_CUSTOMERS)} WHERE customer_id = $1`,
     [id]
   );
   if (!customerResult.rowCount) return null;
