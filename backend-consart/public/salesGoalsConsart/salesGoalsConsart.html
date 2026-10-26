@@ -20,7 +20,7 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/salesGoalsConsart/salesGoalsConsart.css?v=2" />
+  <link rel="stylesheet" href="/public/salesGoalsConsart/salesGoalsConsart.css?v=3" />
 </head>
 <body>
   <div id="menuConsartMount"></div>
@@ -62,6 +62,7 @@
           <div class="sg-tabs" role="tablist" aria-label="Visão das metas">
             <button type="button" class="sg-tabs__btn is-active" role="tab" data-view="sellers">Por vendedor</button>
             <button type="button" class="sg-tabs__btn" role="tab" data-view="states">Plano por estado</button>
+            <button type="button" class="sg-tabs__btn" role="tab" data-view="perf">Funil e desempenho</button>
           </div>
           <button id="sg-btn-goals" class="sg-btn-goals" type="button">
             <span class="sg-btn-goals__icon" aria-hidden="true">+</span>
@@ -151,6 +152,38 @@
             <div class="sg-panel__title">Desfechos dos leads por estado <span class="sg-hint">(cards do CRM Consart concluídos no mês<span id="sg-outcomes-seller"></span>)</span></div>
             <div class="sg-chart sg-chart--states"><canvas id="sg-chart-states" aria-label="Desfechos dos leads por estado"></canvas></div>
             <div id="sg-states-empty" class="sg-empty" hidden>Nenhum lead contatado no mês.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════════════ Aba: Funil do CRM e desempenho dos vendedores ═════════════ -->
+      <div id="sg-view-perf" class="sg-view" hidden>
+        <div class="sg-dash-head">
+          <h2 class="sg-section-title">Funil do CRM Consart <span class="sg-hint">(cards abertos hoje · entradas e conclusões no mês<span id="sg-perf-seller"></span>)</span></h2>
+        </div>
+
+        <div id="sg-funnel" class="sg-funnel"></div>
+
+        <div class="sg-panel sg-panel--wide">
+          <div class="sg-panel__title">Desempenho dos vendedores · <span id="sg-perf-period"></span></div>
+          <div class="table-scroll">
+            <table class="table table-zebra sg-perf-table">
+              <thead id="sg-perf-head"></thead>
+              <tbody id="sg-perf-body"></tbody>
+              <tfoot><tr id="sg-perf-total"></tr></tfoot>
+            </table>
+          </div>
+          <div id="sg-perf-empty" class="sg-empty" hidden>Nenhum card no CRM Consart para o filtro.</div>
+        </div>
+
+        <div class="sg-dash sg-dash--perf">
+          <div class="sg-panel">
+            <div class="sg-panel__title">Contatos registrados no mês <span class="sg-hint">(WhatsApp, Ligação, E-mail)</span></div>
+            <div class="sg-chart sg-chart--perf"><canvas id="sg-chart-contacts" aria-label="Contatos por vendedor"></canvas></div>
+          </div>
+          <div class="sg-panel">
+            <div class="sg-panel__title">Leads concluídos no mês <span class="sg-hint">(por desfecho)</span></div>
+            <div class="sg-chart sg-chart--perf"><canvas id="sg-chart-concluded" aria-label="Leads concluídos por vendedor"></canvas></div>
           </div>
         </div>
       </div>
@@ -262,6 +295,6 @@
   <script src="/public/includes/js/erpCompany.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/salesGoalsConsart/salesGoalsConsart.js?v=2"></script>
+  <script type="module" src="/public/salesGoalsConsart/salesGoalsConsart.js?v=3"></script>
 </body>
 </html>
