@@ -252,6 +252,34 @@ async function syncCardNames(customerId, newName) {
   renderDeals();
 }
 
+function authToken() {
+  for (const k of ['CONSART_TOKEN', 'token', 'access_token', 'auth_token', 'jwt']) {
+    const v = localStorage.getItem(k) || sessionStorage.getItem(k);
+    if (v) return v;
+  }
+  return '';
+}
+
+// PUT direto (o fetchJSON do CRM troca a mensagem do servidor por HTTP_ERROR)
+async function putCustomer(id, payload) {
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+  const token = authToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+    headers['x-access-token'] = token;
+  }
+
+  const r = await fetch(apiUrl(`/customers/${encodeURIComponent(id)}`), {
+    method: 'PUT',
+    headers,
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  });
+  const js = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(js?.error || js?.message || `HTTP ${r.status}`);
+  return js;
+}
+
 async function saveCustomer(e) {
   e?.preventDefault();
   if (saving) return;
@@ -269,11 +297,7 @@ async function saveCustomer(e) {
   btn.disabled = true;
 
   try {
-    const res = await fetchJSON(apiUrl(`/customers/${encodeURIComponent(id)}`), {
-      method: 'PUT',
-      body: payload,
-    });
-    if (!res?.ok) throw new Error(res?.error || res?.message || 'Falha ao salvar');
+    await putCustomer(id, payload);
 
     await syncCardNames(id, payload.trade_name);
 

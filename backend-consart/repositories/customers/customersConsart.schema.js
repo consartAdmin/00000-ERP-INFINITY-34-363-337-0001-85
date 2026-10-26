@@ -77,6 +77,30 @@ export async function ensureCustomersConsartTable(run = (sql) => pool.query(sql)
       END IF;
     END$$;
   `);
+
+  // customersIbge é compartilhada (ids da Consart começam em 1.000.000),
+  // mas nasceu com FK para public.customers: todo UPDATE de cliente Consart
+  // com UF/cidade falhava no upsert do IBGE. Remove essa FK.
+  await run(`
+    DO $$
+    DECLARE
+      fk RECORD;
+    BEGIN
+      IF to_regclass('public."customersIbge"') IS NULL THEN
+        RETURN;
+      END IF;
+
+      FOR fk IN
+        SELECT conname
+          FROM pg_constraint
+         WHERE conrelid = 'public."customersIbge"'::regclass
+           AND confrelid = 'public.customers'::regclass
+           AND contype = 'f'
+      LOOP
+        EXECUTE format('ALTER TABLE public."customersIbge" DROP CONSTRAINT %I', fk.conname);
+      END LOOP;
+    END$$;
+  `);
 }
 
 export default ensureCustomersConsartTable;
