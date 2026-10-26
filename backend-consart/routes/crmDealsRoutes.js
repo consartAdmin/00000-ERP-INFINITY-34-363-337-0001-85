@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import crmDealsController from '../controllers/crmDealsController.js';
+import * as crmDealContacts from '../controllers/crmDealContactsController.js';
 import { erpCompanyContext } from '../utils/erpCompanyContext.js';
 
 const router = Router();
@@ -40,6 +41,15 @@ router.post('/deals/from-customers', crmDealsController.createDealsFromCustomers
 router.patch('/deals/:id', crmDealsController.updateDeal);
 router.patch('/deals/:id/move', crmDealsController.moveDeal);
 router.delete('/deals/:id', crmDealsController.deleteDeal);
+
+/* =========================================================================
+ * CONTATOS DO CARD (WhatsApp / Ligação / E-mail)
+ * ========================================================================= */
+
+router.get('/deal-contacts/summary', crmDealContacts.summary);
+router.get('/deals/:id/contacts', crmDealContacts.list);
+router.post('/deals/:id/contacts', crmDealContacts.create);
+router.delete('/deals/:id/contacts/:contactId', crmDealContacts.remove);
 
 /* =========================================================================
  * CONCLUSÃO DO LEAD

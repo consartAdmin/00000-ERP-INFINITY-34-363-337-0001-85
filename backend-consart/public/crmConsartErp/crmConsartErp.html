@@ -28,6 +28,7 @@
   <link rel="stylesheet" href="/crmDeals/crmOutcomesModal.css" />
   <link rel="stylesheet" href="/crmDeals/crmConclusionSummaryModal/crmConclusionSummaryModal.css" />
   <link rel="stylesheet" href="crmConsartErp.customerEdit.css" />
+  <link rel="stylesheet" href="crmConsartErp.contacts.css" />
 </head>
 <body>
   <div id="menuConsartMount"></div>
@@ -459,6 +460,61 @@
     </div>
   </div>
 
+  <!-- Contatos do card: WhatsApp / Ligação / E-mail (crmConsartErp.contacts.js) -->
+  <div id="crm-modal-contacts" class="modal crm-deal-modal crm-contacts-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="crmContactsTitle">
+
+        <header class="modal__header modal-header-color-3">
+          <h2 id="crmContactsTitle" class="modal__title">Contatos</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </header>
+
+        <div class="modal__body">
+          <form id="crm-contacts-form" novalidate>
+            <div class="modal-section">
+              <h3 class="crm-ct-section-title">Registrar contato</h3>
+
+              <div id="crm-ct-types" class="crm-ct-types" role="group" aria-label="Tipo de contato">
+                <button type="button" class="crm-ct-type crm-contact-btn--whatsapp" data-type="WHATSAPP">WhatsApp</button>
+                <button type="button" class="crm-ct-type crm-contact-btn--ligacao" data-type="LIGACAO">Ligação</button>
+                <button type="button" class="crm-ct-type crm-contact-btn--email" data-type="EMAIL">E-mail</button>
+              </div>
+
+              <div class="modal-form-grid modal-form-grid--4">
+                <div class="fields fields-w-full fields-h-6">
+                  <label for="crm-ct-date">Data e hora</label>
+                  <input id="crm-ct-date" type="datetime-local" />
+                </div>
+                <div class="fields fields-w-full modal-field--span-3">
+                  <label for="crm-ct-note">Observação</label>
+                  <textarea id="crm-ct-note" rows="2" maxlength="2000"
+                    placeholder="Ex.: enviou catálogo, pediu retorno na sexta"></textarea>
+                </div>
+              </div>
+
+              <div class="crm-ct-actions">
+                <button id="crm-ct-save" class="btn btn-save btn-sm" type="submit">Registrar contato</button>
+              </div>
+            </div>
+
+            <div class="modal-section">
+              <h3 class="crm-ct-section-title">Histórico <span id="crm-ct-history-count"></span></h3>
+              <ul id="crm-ct-history" class="crm-ct-history"></ul>
+            </div>
+          </form>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Fechar</button>
+        </footer>
+
+      </section>
+    </div>
+  </div>
+
   <!-- Separa os cards deste CRM (enviado no header X-CRM-Company) -->
   <script>window.CRM_COMPANY = 'CONSART'; window.ERP_COMPANY = 'CONSART';</script>
   <!-- Busca de clientes usa a tabela customersConsart -->
@@ -468,5 +524,7 @@
   <script type="module" src="/crmDeals/js/index.js?v=6"></script>
   <!-- Editar o cliente (customersConsart) direto pelo card -->
   <script type="module" src="crmConsartErp.customerEdit.js"></script>
+  <!-- WhatsApp / Ligação / E-mail feitos com o lead -->
+  <script type="module" src="crmConsartErp.contacts.js"></script>
 </body>
 </html>
