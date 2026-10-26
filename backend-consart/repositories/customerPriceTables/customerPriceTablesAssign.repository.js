@@ -3,6 +3,8 @@
 // ║ Tabela: public."customerPriceTables" (upsert por customer_id)      ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
+import { erpTable } from '../../utils/erpCompanyContext.js';
+
 export async function assignCustomerPriceTable(
   db,
   customerId,
@@ -16,7 +18,7 @@ export async function assignCustomerPriceTable(
     SELECT
       c.customer_id,
       p.price_id
-    FROM public.customers AS c
+    FROM ${erpTable('public.customers')} AS c
     JOIN public.prices AS p
       ON p.price_id = $2
       AND p.active = true

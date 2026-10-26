@@ -78,26 +78,34 @@ export async function ensureCustomersConsartTable(run = (sql) => pool.query(sql)
     END$$;
   `);
 
-  // customersIbge é compartilhada (ids da Consart começam em 1.000.000),
-  // mas nasceu com FK para public.customers: todo UPDATE de cliente Consart
-  // com UF/cidade falhava no upsert do IBGE. Remove essa FK.
+  // Tabelas ligadas por customer_id são compartilhadas (ids da Consart
+  // começam em 1.000.000), mas nasceram com FK para public.customers:
+  // salvar cliente Consart falhava no IBGE, no crédito e na tabela de
+  // preço. Remove essas FKs.
   await run(`
     DO $$
     DECLARE
+      tbl TEXT;
       fk RECORD;
     BEGIN
-      IF to_regclass('public."customersIbge"') IS NULL THEN
-        RETURN;
-      END IF;
+      FOREACH tbl IN ARRAY ARRAY[
+        'public."customersIbge"',
+        'public."customersCredit"',
+        'public."customerPriceTables"'
+      ] LOOP
+        IF to_regclass(tbl) IS NULL THEN
+          CONTINUE;
+        END IF;
 
-      FOR fk IN
-        SELECT conname
-          FROM pg_constraint
-         WHERE conrelid = 'public."customersIbge"'::regclass
-           AND confrelid = 'public.customers'::regclass
-           AND contype = 'f'
-      LOOP
-        EXECUTE format('ALTER TABLE public."customersIbge" DROP CONSTRAINT %I', fk.conname);
+        FOR fk IN
+          SELECT conname
+            FROM pg_constraint
+           WHERE conrelid = to_regclass(tbl)
+             AND confrelid = 'public.customers'::regclass
+             AND contype = 'f'
+        LOOP
+          EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', tbl, fk.conname);
+        END LOOP;
       END LOOP;
     END$$;
   `);
