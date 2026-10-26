@@ -1,0 +1,169 @@
+/* =====================================================================
+   crmConsartErp.contacts.css — CRM Consart ERP
+   Ícones WhatsApp / Ligação / E-mail no card + modal Contatos
+   (estrutura e tamanhos do modal vêm do modals.css)
+===================================================================== */
+
+/* Cores por tipo de contato */
+.crm-contact-btn--whatsapp { --ct-color: #16a34a; --ct-bg: #dcfce7; }
+.crm-contact-btn--ligacao  { --ct-color: #2563eb; --ct-bg: #dbeafe; }
+.crm-contact-btn--email    { --ct-color: #ea580c; --ct-bg: #ffedd5; }
+
+/* Linha de ícones no card (acima da "Última atividade") */
+.crm-card__contacts {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 2px;
+}
+
+.crm-contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+  min-width: 28px;
+  padding: 0 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.crm-contact-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.crm-contact-btn__count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.crm-contact-btn__count:empty {
+  display: none;
+}
+
+.crm-contact-btn:hover {
+  color: var(--ct-color);
+  border-color: var(--ct-color);
+}
+
+.crm-contact-btn.is-done {
+  color: var(--ct-color);
+  border-color: var(--ct-color);
+  background: var(--ct-bg);
+}
+
+/* Modal */
+.crm-contacts-modal .crm-ct-section-title {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.crm-contacts-modal .modal-section + .modal-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.crm-ct-types {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.crm-ct-type {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.crm-ct-type svg {
+  width: 16px;
+  height: 16px;
+}
+
+.crm-ct-type.is-active {
+  color: var(--ct-color);
+  border-color: var(--ct-color);
+  background: var(--ct-bg);
+}
+
+.crm-contacts-modal textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.crm-ct-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.crm-ct-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.crm-ct-history__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.crm-ct-history__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--ct-color);
+  background: var(--ct-bg);
+}
+
+.crm-ct-history__icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.crm-ct-history__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.crm-ct-history__note {
+  margin-top: 2px;
+  color: #64748b;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.crm-ct-history__empty {
+  padding: 10px 4px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
