@@ -121,6 +121,10 @@
             <select id="selOrder" title="Ordenação">
               <option value="description_asc" selected>Descrição (A→Z)</option>
               <option value="description_desc">Descrição (Z→A)</option>
+              <option value="id_asc">ID (Menor→Maior)</option>
+              <option value="id_desc">ID (Maior→Menor)</option>
+              <option value="code_asc">Código (A→Z)</option>
+              <option value="code_desc">Código (Z→A)</option>
               <option value="stock_desc">Estoque (Maior→Menor)</option>
               <option value="stock_asc">Estoque (Menor→Maior)</option>
               <option value="cost_desc">Custo (Maior→Menor)</option>
@@ -170,15 +174,45 @@
 
       <!-- Tabela -->
       <div class="table-scroll table-height-550 table-row-h-28" data-table-settings="reportsproductsstock.tablebody">
-        <table class="table table-zebra table-zebra-hover table-sticky-head">
+        <table id="stockTable" class="table table-zebra table-zebra-hover table-sticky-head" aria-label="Posição de Estoque">
           <thead>
             <tr>
-              <th class="col-id">ID</th>
-              <th class="col-code">Código</th>
-              <th class="col-desc">Descrição</th>
-              <th class="col-money text-right">Custo</th>
-              <th class="col-num text-right">Estoque</th>
-              <th class="col-money text-right">Total (Custo)</th>
+              <th class="col-id table-sortable" data-sort-column="id" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  ID
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-code table-sortable" data-sort-column="code" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Código
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-desc table-sortable" data-sort-column="description" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Descrição
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-money text-right table-sortable" data-sort-column="cost" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Custo
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-num text-right table-sortable" data-sort-column="stock" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Estoque
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-money text-right table-sortable" data-sort-column="total" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Total (Custo)
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>

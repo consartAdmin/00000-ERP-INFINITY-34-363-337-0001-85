@@ -9,10 +9,47 @@
     import { loadRows, downloadPdf, downloadExcel } from './reportsProductsStock.api.js';
     import { loadGroups, loadBrands } from './reportsProductsStock.lookups.js';
     import { bindFilters } from './reportsProductsStock.filters.js';
-    import { mapRow, sortRows, renderTable } from './reportsProductsStock.table.js';
+    import { mapRow, renderTable } from './reportsProductsStock.table.js';
+    import { createSortableTable } from '/public/includes/js/sortableTable.js';
     import { renderPagination, setFooter, bindPagination } from './reportsProductsStock.pagination.js';
     import { setSummary } from './reportsProductsStock.summary.js';
     import { sanitize } from './reportsProductsStock.utils.js';
+
+    // Ordenação pelos cabeçalhos (feita no backend → vale para a lista inteira).
+    // A coluna/direção fica em state.order no formato "<coluna>_<asc|desc>".
+    let sortable = null;
+
+    function parseOrder(order) {
+    const m = /^(.+)_(asc|desc)$/.exec(String(order || ''));
+    return m ? { column: m[1], direction: m[2] } : { column: 'description', direction: 'asc' };
+    }
+
+    function syncSortHeader() {
+    if (!sortable) return;
+    const { column, direction } = parseOrder(state.order);
+    const cur = sortable.getState();
+    if (cur.column === column && cur.direction === direction) return;
+    sortable.setSort(column, direction, { notify: false }).catch(() => {});
+    }
+
+    function bindSortableHeaders() {
+    const els = getEls();
+    const { column, direction } = parseOrder(state.order);
+
+    sortable = createSortableTable({
+        table: '#stockTable',
+        defaultColumn: column,
+        defaultDirection: direction,
+        async onSort({ column: col, direction: dir }) {
+        state.order = `${col}_${dir}`;
+        state.page = 1;
+        if (els.selOrder && [...els.selOrder.options].some(o => o.value === state.order)) {
+            els.selOrder.value = state.order;
+        }
+        await load();
+        },
+    });
+    }
 
     function setStatus(msg, type = 'info') {
     const els = getEls();
@@ -29,13 +66,15 @@ async function load() {
 
   try {
 
+    syncSortHeader();
     setStatus('Carregando...', 'info');
     setFooter({ total: null, page: null, pages: null });
 
     const api = await loadRows();
     const mapped = api.rows.map(mapRow);
 
-    const sorted = sortRows(mapped, state.order);
+    // O backend já devolve a página ordenada (state.order).
+    const sorted = mapped;
 
     renderTable(sorted);
 
@@ -130,6 +169,7 @@ async function load() {
     export async function bootstrapReportsProductsStock() {
     bindFilters(load);
     bindPagination(load);
+    bindSortableHeaders();
     bindExports();
     await bootstrapLookups();
     await load();

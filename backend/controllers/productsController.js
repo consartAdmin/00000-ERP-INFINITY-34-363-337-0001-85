@@ -635,6 +635,8 @@ const STOCK_TOTAL_EXPR = '(COALESCE(p.cost_price,0) * COALESCE(ps.stock_qty,0))'
 const STOCK_POSITION_ORDER = Object.freeze({
   description_asc: 'p.description ASC NULLS LAST',
   description_desc: 'p.description DESC NULLS LAST',
+  id_asc: 'p.product_id ASC',
+  id_desc: 'p.product_id DESC',
   code_asc: 'p.product_code ASC',
   code_desc: 'p.product_code DESC',
   sku_asc: 'p.product_code ASC',
