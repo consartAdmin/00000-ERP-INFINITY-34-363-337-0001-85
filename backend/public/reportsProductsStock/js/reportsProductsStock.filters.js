@@ -5,7 +5,7 @@
 'use strict';
 
 import { getEls } from './reportsProductsStock.dom.js';
-import { debounce, fmtInt, sanitize } from './reportsProductsStock.utils.js';
+import { debounce, sanitize } from './reportsProductsStock.utils.js';
 import { state } from './reportsProductsStock.state.js';
 import {
   loadSuppliersSuggest,
@@ -29,16 +29,11 @@ export function clearFiltersUI() {
   if (els.selAtivo) els.selAtivo.value = '1';
   if (els.numCustoMin) els.numCustoMin.value = '';
   if (els.numCustoMax) els.numCustoMax.value = '';
-  if (els.selOrder) els.selOrder.value = 'description_asc';
-  if (els.selLimit) els.selLimit.value = '50';
   if (els.apRowsPerPage) els.apRowsPerPage.value = '50';
 }
 
 export function bindFilters(loadFn) {
   const els = getEls();
-
-  if (els.selLimit) state.limit = fmtInt(els.selLimit.value, 50);
-  if (els.selOrder) state.order = String(els.selOrder.value || 'description_asc');
 
   if (els.txtBusca) {
     const run = debounce(() => {
@@ -71,19 +66,6 @@ export function bindFilters(loadFn) {
     state.cost_min = '';
     state.cost_max = '';
 
-    loadFn();
-  });
-
-  els.selLimit?.addEventListener('change', () => {
-    state.limit = fmtInt(els.selLimit.value, 50);
-    state.page = 1;
-    if (els.apRowsPerPage) els.apRowsPerPage.value = String(state.limit);
-    loadFn();
-  });
-
-  els.selOrder?.addEventListener('change', () => {
-    state.order = String(els.selOrder.value || 'description_asc');
-    state.page = 1;
     loadFn();
   });
 
