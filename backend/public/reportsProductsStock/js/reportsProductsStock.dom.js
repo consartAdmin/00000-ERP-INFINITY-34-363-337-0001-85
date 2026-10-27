@@ -44,14 +44,7 @@ export function getEls() {
     btnNextPage: qs('#btnNextPage'),
     apRowsPerPage: qs('#apRowsPerPage'),
 
-    // Resumo lateral (registros filtrados)
-    sumItems: qs('#sumItems'),
-    sumWithStock: qs('#sumWithStock'),
-    sumWithoutStock: qs('#sumWithoutStock'),
-    sumStock: qs('#sumStock'),
+    // Custo total (registros filtrados) no rodapé
     sumCost: qs('#sumCost'),
-    sumAvgCost: qs('#sumAvgCost'),
-    sumWithoutCost: qs('#sumWithoutCost'),
-    sumFilters: qs('#sumFilters'),
   };
 }

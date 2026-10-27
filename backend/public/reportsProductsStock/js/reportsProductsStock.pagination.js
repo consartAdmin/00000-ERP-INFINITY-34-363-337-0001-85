@@ -16,7 +16,7 @@ export function setFooter({ total = null, page = null, pages = null } = {}) {
   if (els.apTableInfo) {
     const n = Number(total);
     els.apTableInfo.textContent = hasTotal
-      ? `${n.toLocaleString('pt-BR')} ${n === 1 ? 'registro encontrado' : 'registros encontrados'}`
+      ? `${n.toLocaleString('pt-BR')} ${n === 1 ? 'registro' : 'registros'}`
       : 'Carregando...';
   }
 
