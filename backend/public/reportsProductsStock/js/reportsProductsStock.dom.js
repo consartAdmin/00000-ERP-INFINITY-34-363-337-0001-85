@@ -33,11 +33,22 @@ export function getEls() {
 
     statusArea: qs('#statusArea'),
     tableBody: qs('#tableBody'),
-    paginacao: qs('#paginacao'),
 
-    lblTotalItens: qs('#lblTotalItens'),
-    lblPagina: qs('#lblPagina'),
-    lblTotEstoque: qs('#lblTotEstoque'),
-    lblTotCusto: qs('#lblTotCusto'),
+    // Rodapé da tabela
+    apTableInfo: qs('#apTableInfo'),
+    apPageInfo: qs('#apPageInfo'),
+    btnPreviousPage: qs('#btnPreviousPage'),
+    btnNextPage: qs('#btnNextPage'),
+    apRowsPerPage: qs('#apRowsPerPage'),
+
+    // Resumo lateral (registros filtrados)
+    sumItems: qs('#sumItems'),
+    sumWithStock: qs('#sumWithStock'),
+    sumWithoutStock: qs('#sumWithoutStock'),
+    sumStock: qs('#sumStock'),
+    sumCost: qs('#sumCost'),
+    sumAvgCost: qs('#sumAvgCost'),
+    sumWithoutCost: qs('#sumWithoutCost'),
+    sumFilters: qs('#sumFilters'),
   };
 }

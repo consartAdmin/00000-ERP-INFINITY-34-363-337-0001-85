@@ -31,6 +31,7 @@ export function clearFiltersUI() {
   if (els.numCustoMax) els.numCustoMax.value = '';
   if (els.selOrder) els.selOrder.value = 'description_asc';
   if (els.selLimit) els.selLimit.value = '50';
+  if (els.apRowsPerPage) els.apRowsPerPage.value = '50';
 }
 
 export function bindFilters(loadFn) {
@@ -76,6 +77,7 @@ export function bindFilters(loadFn) {
   els.selLimit?.addEventListener('change', () => {
     state.limit = fmtInt(els.selLimit.value, 50);
     state.page = 1;
+    if (els.apRowsPerPage) els.apRowsPerPage.value = String(state.limit);
     loadFn();
   });
 

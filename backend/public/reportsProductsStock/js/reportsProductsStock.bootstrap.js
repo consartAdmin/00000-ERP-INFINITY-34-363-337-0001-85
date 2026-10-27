@@ -10,7 +10,8 @@
     import { loadGroups, loadBrands } from './reportsProductsStock.lookups.js';
     import { bindFilters } from './reportsProductsStock.filters.js';
     import { mapRow, sortRows, renderTable } from './reportsProductsStock.table.js';
-    import { renderPagination, setFooter } from './reportsProductsStock.pagination.js';
+    import { renderPagination, setFooter, bindPagination } from './reportsProductsStock.pagination.js';
+    import { setSummary } from './reportsProductsStock.summary.js';
     import { sanitize } from './reportsProductsStock.utils.js';
 
     function setStatus(msg, type = 'info') {
@@ -21,54 +22,46 @@
     }
 
 async function load() {
+  if (state.loading) state.aborter?.abort?.();
+  const aborter = new AbortController();
+  state.aborter = aborter;
+  state.loading = true;
+
   try {
-    if (state.loading) state.aborter?.abort?.();
-    state.aborter = new AbortController();
-    state.loading = true;
 
     setStatus('Carregando...', 'info');
-    setFooter({ total: null, page: null, pages: null, sumStock: null, sumCost: null });
+    setFooter({ total: null, page: null, pages: null });
 
     const api = await loadRows();
     const mapped = api.rows.map(mapRow);
 
     const sorted = sortRows(mapped, state.order);
 
-    const sumStockFromApi = Number(api?.summary?.sum_stock);
-    const sumCostFromApi = Number(api?.summary?.sum_cost);
-
-    const pageSumStock = sorted.reduce((acc, r) => acc + (Number(r.stock) || 0), 0);
-    const pageSumCost = sorted.reduce((acc, r) => acc + (Number(r.total) || 0), 0);
-
     renderTable(sorted);
 
-    renderPagination({
-      total: api.total,
-      page: api.page,
-      limit: api.limit,
-      onPageChange: (p) => {
-        state.page = p;
-        load();
-      },
-    });
+    renderPagination({ total: api.total, page: api.page, limit: api.limit });
 
-    const pages = Math.max(Math.ceil((api.total || 0) / (api.limit || 1)), 1);
-
-    setFooter({
+    // Resumo lateral: totais de TODOS os registros filtrados (não só a página).
+    const pageSumStock = sorted.reduce((acc, r) => acc + (Number(r.stock) || 0), 0);
+    const pageSumCost = sorted.reduce((acc, r) => acc + (Number(r.total) || 0), 0);
+    setSummary({
       total: api.total,
-      page: api.page,
-      pages,
-      sumStock: Number.isFinite(sumStockFromApi) ? sumStockFromApi : pageSumStock,
-      sumCost: Number.isFinite(sumCostFromApi) ? sumCostFromApi : pageSumCost,
+      sum_stock: Number.isFinite(Number(api?.summary?.sum_stock)) ? Number(api.summary.sum_stock) : pageSumStock,
+      sum_cost: Number.isFinite(Number(api?.summary?.sum_cost)) ? Number(api.summary.sum_cost) : pageSumCost,
+      with_stock: api?.summary?.with_stock ?? sorted.filter(r => r.stock > 0).length,
+      without_stock: api?.summary?.without_stock ?? sorted.filter(r => r.stock <= 0).length,
+      without_cost: api?.summary?.without_cost ?? sorted.filter(r => r.cost <= 0).length,
     });
 
     setStatus(`${api.total} item(ns) carregado(s).`, 'success');
   } catch (err) {
+    if (err?.name === 'AbortError') return;
     console.error('[reportsProductsStock] load error:', err);
     setStatus(`Erro: ${err.message || err}`, 'error');
-    setFooter({ total: null, page: null, pages: null, sumStock: null, sumCost: null });
+    setFooter({ total: null, page: null, pages: null });
+    setSummary(null);
   } finally {
-    state.loading = false;
+    if (state.aborter === aborter) state.loading = false;
   }
 }
 
@@ -136,6 +129,7 @@ async function load() {
 
     export async function bootstrapReportsProductsStock() {
     bindFilters(load);
+    bindPagination(load);
     bindExports();
     await bootstrapLookups();
     await load();
