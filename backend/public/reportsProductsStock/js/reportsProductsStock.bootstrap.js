@@ -9,6 +9,7 @@
     import { loadRows, downloadPdf, downloadExcel } from './reportsProductsStock.api.js';
     import { loadGroups, loadBrands } from './reportsProductsStock.lookups.js';
     import { bindFilters } from './reportsProductsStock.filters.js';
+    import { bindFiltersModal } from './reportsProductsStock.filtersModal.js';
     import { mapRow, renderTable } from './reportsProductsStock.table.js';
     import { createSortableTable } from '/public/includes/js/sortableTable.js';
     import { renderPagination, setFooter, bindPagination } from './reportsProductsStock.pagination.js';
@@ -76,17 +77,10 @@ async function load() {
 
     renderPagination({ total: api.total, page: api.page, limit: api.limit });
 
-    // Resumo lateral: totais de TODOS os registros filtrados (não só a página).
-    const pageSumStock = sorted.reduce((acc, r) => acc + (Number(r.stock) || 0), 0);
+    // Custo total do rodapé: soma de TODOS os registros filtrados (não só a página).
     const pageSumCost = sorted.reduce((acc, r) => acc + (Number(r.total) || 0), 0);
-    setSummary({
-      total: api.total,
-      sum_stock: Number.isFinite(Number(api?.summary?.sum_stock)) ? Number(api.summary.sum_stock) : pageSumStock,
-      sum_cost: Number.isFinite(Number(api?.summary?.sum_cost)) ? Number(api.summary.sum_cost) : pageSumCost,
-      with_stock: api?.summary?.with_stock ?? sorted.filter(r => r.stock > 0).length,
-      without_stock: api?.summary?.without_stock ?? sorted.filter(r => r.stock <= 0).length,
-      without_cost: api?.summary?.without_cost ?? sorted.filter(r => r.cost <= 0).length,
-    });
+    const sumCost = Number(api?.summary?.sum_cost);
+    setSummary({ sum_cost: Number.isFinite(sumCost) ? sumCost : pageSumCost });
 
     setStatus(`${api.total} item(ns) carregado(s).`, 'success');
   } catch (err) {
@@ -164,6 +158,7 @@ async function load() {
 
     export async function bootstrapReportsProductsStock() {
     bindFilters(load);
+    bindFiltersModal(load);
     bindPagination(load);
     bindSortableHeaders();
     bindExports();

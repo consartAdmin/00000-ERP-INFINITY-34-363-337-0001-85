@@ -15,6 +15,12 @@ export function getEls() {
     btnPdf: qs('#btnPdf'),
     btnExcel: qs('#btnExcel'),
 
+    // Modal de filtros
+    btnFiltros: qs('#btnFiltros'),
+    filtersBadge: qs('#filtersBadge'),
+    btnFiltrosLimpar: qs('#btnFiltrosLimpar'),
+    btnFiltrosAplicar: qs('#btnFiltrosAplicar'),
+
     txtFornecedor: qs('#txtFornecedor'),
     dlFornecedores: qs('#dlFornecedores'),
     hidFornecedorId: qs('#hidFornecedorId'),
@@ -38,14 +44,7 @@ export function getEls() {
     btnNextPage: qs('#btnNextPage'),
     apRowsPerPage: qs('#apRowsPerPage'),
 
-    // Resumo lateral (registros filtrados)
-    sumItems: qs('#sumItems'),
-    sumWithStock: qs('#sumWithStock'),
-    sumWithoutStock: qs('#sumWithoutStock'),
-    sumStock: qs('#sumStock'),
+    // Custo total (registros filtrados) no rodapé
     sumCost: qs('#sumCost'),
-    sumAvgCost: qs('#sumAvgCost'),
-    sumWithoutCost: qs('#sumWithoutCost'),
-    sumFilters: qs('#sumFilters'),
   };
 }
