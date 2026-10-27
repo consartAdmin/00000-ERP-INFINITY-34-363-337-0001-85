@@ -4,6 +4,7 @@
      ║ ✅ Estoque Positivo (>0) com filtro real no backend (only_stock=1)
      ║ ✅ Tabela rolável + footer interno fixo + Paginação + PDF/EXCEL
      ║ ✅ Resumo lateral (direita) com totais dos registros filtrados
+     ║ ✅ Filtros avançados em modal (cabeçalho: Buscar + Somente positivo)
      ╚══════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -51,39 +52,6 @@
             <input type="text" id="txtBusca" placeholder="Código, descrição…" />
           </div>
 
-          <!-- Fornecedor (autocomplete) -->
-          <div class="fields fields-h-6 fields-w-8 fields-font-3">
-            <label for="txtFornecedor"><b>Fornecedor</b></label>
-            <input id="txtFornecedor" type="text" placeholder="Digite para localizar…" list="dlFornecedores"
-              autocomplete="off">
-            <datalist id="dlFornecedores"></datalist>
-            <input type="hidden" id="hidFornecedorId" value="">
-          </div>
-
-          <!-- Grupo -->
-          <div class="fields fields-h-6 fields-w-8 fields-font-3">
-            <label for="selGrupo"><b>Grupo</b></label>
-            <select id="selGrupo">
-              <option value="">Todos</option>
-            </select>
-          </div>
-
-          <!-- Subgrupo -->
-          <div class="fields fields-h-6 fields-w-8 fields-font-3">
-            <label for="selSubgrupo"><b>Subgrupo</b></label>
-            <select id="selSubgrupo" disabled>
-              <option value="">Todos</option>
-            </select>
-          </div>
-
-          <!-- Marca -->
-          <div class="fields fields-h-6 fields-w-8 fields-font-3">
-            <label for="selMarca"><b>Marca</b></label>
-            <select id="selMarca">
-              <option value="">Todas</option>
-            </select>
-          </div>
-
           <!-- ✅ Estoque Positivo > 0 -->
           <div class="fields fields-h-6 fields-w-8 fields-font-3">
             <label><b>Estoque</b></label>
@@ -93,32 +61,17 @@
             </label>
           </div>
 
-          <!-- Ativo -->
-          <div class="fields fields-h-6 fields-w-8 fields-font-3">
-            <label for="selAtivo"><b>Ativo</b></label>
-            <select id="selAtivo">
-              <option value="">Todos</option>
-              <option value="1" selected>Somente ativos</option>
-              <option value="0">Somente inativos</option>
-            </select>
-          </div>
-
-          <!-- Custo min -->
-          <div class="fields fields-h-6 fields-w-8 fields-font-3">
-            <label for="numCustoMin"><b>Custo mín.</b></label>
-            <input id="numCustoMin" type="number" step="0.01" placeholder="0,00">
-          </div>
-
-          <!-- Custo max -->
-          <div class="fields fields-h-6 fields-w-8 fields-font-3">
-            <label for="numCustoMax"><b>Custo máx.</b></label>
-            <input id="numCustoMax" type="number" step="0.01" placeholder="0,00">
-          </div>
-
           <!-- Ações -->
           <div class="button-inline">
             <label><b>Ações</b></label>
             <button id="btnBuscar" class="btn btn-toolbar btn-sm" title="Buscar">Buscar</button>
+
+            <button id="btnFiltros" type="button" class="btn btn-toolbar btn-sm" title="Mais filtros"
+              data-modal-open="filtersModal">
+              <span class="btn-ico">🔎</span>
+              <span class="btn-label">Filtros</span>
+              <span id="filtersBadge" class="rps-filters-badge" hidden>0</span>
+            </button>
 
             <button id="btnPdf" class="btn btn-toolbar btn-sm" title="Gerar PDF">
               <span class="btn-ico">🧾</span>
@@ -270,6 +223,92 @@
     </aside>
     </div>
   </main>
+
+  <!-- ╭──────────────────────────────────────────────────────────────╮
+       │ MODAL — Filtros (Fornecedor, Grupo, Subgrupo, Marca, Ativo,  │
+       │ Custo). Buscar e Somente positivo ficam no cabeçalho.        │
+       ╰──────────────────────────────────────────────────────────────╯ -->
+  <div id="filtersModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true" aria-labelledby="filtersModalTitle">
+
+        <div class="modal__header modal-header-color-3">
+          <h2 id="filtersModalTitle" class="modal__title">🔎 Filtros</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="rps-filters-grid">
+              <!-- Fornecedor (autocomplete) -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="txtFornecedor"><b>Fornecedor</b></label>
+                <input id="txtFornecedor" type="text" placeholder="Digite para localizar…" list="dlFornecedores"
+                  autocomplete="off">
+                <datalist id="dlFornecedores"></datalist>
+                <input type="hidden" id="hidFornecedorId" value="">
+              </div>
+
+              <!-- Grupo -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="selGrupo"><b>Grupo</b></label>
+                <select id="selGrupo">
+                  <option value="">Todos</option>
+                </select>
+              </div>
+
+              <!-- Subgrupo -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="selSubgrupo"><b>Subgrupo</b></label>
+                <select id="selSubgrupo" disabled>
+                  <option value="">Todos</option>
+                </select>
+              </div>
+
+              <!-- Marca -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="selMarca"><b>Marca</b></label>
+                <select id="selMarca">
+                  <option value="">Todas</option>
+                </select>
+              </div>
+
+              <!-- Ativo -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="selAtivo"><b>Ativo</b></label>
+                <select id="selAtivo">
+                  <option value="">Todos</option>
+                  <option value="1" selected>Somente ativos</option>
+                  <option value="0">Somente inativos</option>
+                </select>
+              </div>
+
+              <!-- Custo min -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="numCustoMin"><b>Custo mín.</b></label>
+                <input id="numCustoMin" type="number" step="0.01" placeholder="0,00">
+              </div>
+
+              <!-- Custo max -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="numCustoMax"><b>Custo máx.</b></label>
+                <input id="numCustoMax" type="number" step="0.01" placeholder="0,00">
+              </div>
+
+          </div>
+        </div>
+
+        <div class="modal__footer rps-filters-footer">
+          <button type="button" id="btnFiltrosLimpar" class="btn btn-toolbar btn-sm">🧹 Limpar filtros</button>
+          <span class="rps-filters-footer__spacer"></span>
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="button" id="btnFiltrosAplicar" class="btn btn-save btn-sm">✔ Aplicar</button>
+        </div>
+
+      </section>
+    </div>
+  </div>
 
   <!-- 🔌 Menu carregado dinamicamente (PADRÃO CONSART) -->
   <script>

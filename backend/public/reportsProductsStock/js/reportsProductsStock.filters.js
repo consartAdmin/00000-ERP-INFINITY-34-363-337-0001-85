@@ -69,6 +69,8 @@ export function bindFilters(loadFn) {
     loadFn();
   });
 
+  // Campos do modal de filtros: só preparam a tela; o state muda no "Aplicar"
+  // (ver reportsProductsStock.filtersModal.js).
   if (els.txtFornecedor && els.dlFornecedores && els.hidFornecedorId) {
     const suggest = debounce(async () => {
       const q = (els.txtFornecedor.value || '').trim();
@@ -85,42 +87,15 @@ export function bindFilters(loadFn) {
 
     els.txtFornecedor.addEventListener('input', () => {
       els.hidFornecedorId.value = '';
-      state.supplier_id = '';
       suggest();
     });
 
-    els.txtFornecedor.addEventListener('change', async () => {
-      const q = (els.txtFornecedor.value || '').trim();
-
-      if (!q) {
-        els.hidFornecedorId.value = '';
-        state.supplier_id = '';
-        state.page = 1;
-        loadFn();
-        return;
-      }
-
-      const list = await loadSuppliersSuggest(q);
-      const found = list.find(x => (x.name || '').toLowerCase() === q.toLowerCase()) || null;
-
-      if (found?.id != null) {
-        els.hidFornecedorId.value = String(found.id);
-        state.supplier_id = String(found.id);
-      } else {
-        els.hidFornecedorId.value = '';
-        state.supplier_id = '';
-      }
-
-      state.page = 1;
-      loadFn();
-    });
+    els.txtFornecedor.addEventListener('change', () => { resolveSupplier(); });
   }
 
   if (els.selGrupo && els.selSubgrupo) {
     els.selGrupo.addEventListener('change', async () => {
       const gid = String(els.selGrupo.value || '');
-      state.group_id = gid;
-      state.subgroup_id = '';
 
       els.selSubgrupo.innerHTML = '<option value="">Todos</option>';
       els.selSubgrupo.disabled = true;
@@ -132,45 +107,30 @@ export function bindFilters(loadFn) {
           subs.map(s => `<option value="${sanitize(s.id)}">${sanitize(s.name)}</option>`).join('');
         els.selSubgrupo.disabled = false;
       }
-
-      state.page = 1;
-      loadFn();
-    });
-
-    els.selSubgrupo.addEventListener('change', () => {
-      state.subgroup_id = String(els.selSubgrupo.value || '');
-      state.page = 1;
-      loadFn();
     });
   }
-
-  els.selMarca?.addEventListener('change', () => {
-    state.brand_id = String(els.selMarca.value || '');
-    state.page = 1;
-    loadFn();
-  });
 
   els.chkOnlyStock?.addEventListener('change', () => {
     state.only_stock = !!els.chkOnlyStock.checked;
     state.page = 1;
     loadFn();
   });
+}
 
-  els.selAtivo?.addEventListener('change', () => {
-    state.active = String(els.selAtivo.value ?? '');
-    state.page = 1;
-    loadFn();
-  });
+// Localiza o id do fornecedor digitado (nome exato da lista de sugestões).
+export async function resolveSupplier() {
+  const els = getEls();
+  if (!els.txtFornecedor || !els.hidFornecedorId) return '';
 
-  els.numCustoMin?.addEventListener('change', () => {
-    state.cost_min = els.numCustoMin.value === '' ? '' : Number(els.numCustoMin.value);
-    state.page = 1;
-    loadFn();
-  });
+  const q = (els.txtFornecedor.value || '').trim();
+  if (!q) {
+    els.hidFornecedorId.value = '';
+    return '';
+  }
+  if (els.hidFornecedorId.value) return els.hidFornecedorId.value;
 
-  els.numCustoMax?.addEventListener('change', () => {
-    state.cost_max = els.numCustoMax.value === '' ? '' : Number(els.numCustoMax.value);
-    state.page = 1;
-    loadFn();
-  });
+  const list = await loadSuppliersSuggest(q);
+  const found = list.find(x => (x.name || '').toLowerCase() === q.toLowerCase()) || null;
+  els.hidFornecedorId.value = found?.id != null ? String(found.id) : '';
+  return els.hidFornecedorId.value;
 }

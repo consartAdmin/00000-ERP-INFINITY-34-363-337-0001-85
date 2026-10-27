@@ -15,6 +15,12 @@ export function getEls() {
     btnPdf: qs('#btnPdf'),
     btnExcel: qs('#btnExcel'),
 
+    // Modal de filtros
+    btnFiltros: qs('#btnFiltros'),
+    filtersBadge: qs('#filtersBadge'),
+    btnFiltrosLimpar: qs('#btnFiltrosLimpar'),
+    btnFiltrosAplicar: qs('#btnFiltrosAplicar'),
+
     txtFornecedor: qs('#txtFornecedor'),
     dlFornecedores: qs('#dlFornecedores'),
     hidFornecedorId: qs('#hidFornecedorId'),

@@ -9,6 +9,7 @@
     import { loadRows, downloadPdf, downloadExcel } from './reportsProductsStock.api.js';
     import { loadGroups, loadBrands } from './reportsProductsStock.lookups.js';
     import { bindFilters } from './reportsProductsStock.filters.js';
+    import { bindFiltersModal } from './reportsProductsStock.filtersModal.js';
     import { mapRow, renderTable } from './reportsProductsStock.table.js';
     import { createSortableTable } from '/public/includes/js/sortableTable.js';
     import { renderPagination, setFooter, bindPagination } from './reportsProductsStock.pagination.js';
@@ -164,6 +165,7 @@ async function load() {
 
     export async function bootstrapReportsProductsStock() {
     bindFilters(load);
+    bindFiltersModal(load);
     bindPagination(load);
     bindSortableHeaders();
     bindExports();
