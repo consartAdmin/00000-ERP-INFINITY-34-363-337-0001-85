@@ -4,71 +4,62 @@
 
 'use strict';
 
-import { getEls, qsa } from './reportsProductsStock.dom.js';
-import { fmtNumber, fmtMoney, fmtInt } from './reportsProductsStock.utils.js';
+import { getEls } from './reportsProductsStock.dom.js';
+import { fmtInt } from './reportsProductsStock.utils.js';
 import { state } from './reportsProductsStock.state.js';
 
-export function setFooter({ total = null, page = null, pages = null, sumStock = null, sumCost = null } = {}) {
+export function setFooter({ total = null, page = null, pages = null } = {}) {
   const els = getEls();
+  const hasTotal = total !== null && Number.isFinite(Number(total));
+  const hasPages = page !== null && pages !== null && Number.isFinite(Number(page)) && Number.isFinite(Number(pages));
 
-  if (els.lblTotalItens) {
-    els.lblTotalItens.textContent = Number.isFinite(Number(total)) ? `${Number(total)} item(ns)` : '— item(ns)';
+  if (els.apTableInfo) {
+    const n = Number(total);
+    els.apTableInfo.textContent = hasTotal
+      ? `${n.toLocaleString('pt-BR')} ${n === 1 ? 'registro encontrado' : 'registros encontrados'}`
+      : 'Carregando...';
   }
 
-  if (els.lblPagina) {
-    els.lblPagina.textContent =
-      Number.isFinite(Number(page)) && Number.isFinite(Number(pages))
-        ? `Página ${Number(page)} de ${Number(pages)}`
-        : 'Página — de —';
+  if (els.apPageInfo) {
+    els.apPageInfo.textContent = hasPages
+      ? `Página ${Number(page)} de ${Number(pages)}`
+      : 'Página — de —';
   }
 
-  if (els.lblTotEstoque) {
-    els.lblTotEstoque.textContent = `Total estoque: ${Number.isFinite(Number(sumStock)) ? fmtNumber(sumStock) : '—'}`;
-  }
-
-  if (els.lblTotCusto) {
-    els.lblTotCusto.textContent = `Total (custo): ${Number.isFinite(Number(sumCost)) ? fmtMoney(sumCost) : '—'}`;
-  }
+  if (els.btnPreviousPage) els.btnPreviousPage.disabled = !hasPages || Number(page) <= 1;
+  if (els.btnNextPage) els.btnNextPage.disabled = !hasPages || Number(page) >= Number(pages);
 }
 
-export function renderPagination({ total, page, limit, onPageChange }) {
-  const els = getEls();
-  if (!els.paginacao) return;
-
+export function renderPagination({ total, page, limit }) {
   state.page = page;
   state.limit = limit;
+  state.pages = Math.max(Math.ceil((Number(total) || 0) / (limit || 1)), 1);
 
-  const pages = Math.max(Math.ceil((total || 0) / (limit || 1)), 1);
+  setFooter({ total: Number(total) || 0, page: state.page, pages: state.pages });
+}
 
-  const mk = (p, label = p, disabled = false, current = false) => `
-    <button class="btn btn-toolbar btn-sm pg ${current ? 'is-active' : ''}"
-      data-p="${p}" ${disabled ? 'disabled' : ''} type="button">${label}</button>
-  `;
+// Liga Anterior / Próxima / Mostrar N linhas uma única vez.
+export function bindPagination(loadFn) {
+  const els = getEls();
 
-  let html = '';
-  html += mk(1, '« Primeiro', page === 1);
-  html += mk(Math.max(1, page - 1), '‹ Anterior', page === 1);
-
-  const win = 5;
-  let start = Math.max(1, page - Math.floor(win / 2));
-  let end = Math.min(pages, start + win - 1);
-  start = Math.max(1, end - win + 1);
-
-  for (let p = start; p <= end; p++) html += mk(p, String(p), false, p === page);
-
-  html += mk(Math.min(pages, page + 1), 'Próxima ›', page === pages);
-  html += mk(pages, 'Última »', page === pages);
-
-  els.paginacao.innerHTML = html;
-
-  qsa('button.pg', els.paginacao).forEach(btn => {
-    btn.addEventListener('click', () => {
-      const p = fmtInt(btn.dataset.p, 1);
-      if (p !== state.page && typeof onPageChange === 'function') {
-        onPageChange(p);
-      }
-    });
+  els.btnPreviousPage?.addEventListener('click', () => {
+    if (state.loading || state.page <= 1) return;
+    state.page -= 1;
+    loadFn();
   });
 
-  setFooter({ total: Number(total) || 0, page: state.page, pages });
+  els.btnNextPage?.addEventListener('click', () => {
+    if (state.loading || state.page >= (state.pages || 1)) return;
+    state.page += 1;
+    loadFn();
+  });
+
+  if (els.apRowsPerPage) els.apRowsPerPage.value = String(state.limit);
+
+  els.apRowsPerPage?.addEventListener('change', () => {
+    state.limit = fmtInt(els.apRowsPerPage.value, 50);
+    state.page = 1;
+    if (els.selLimit) els.selLimit.value = String(state.limit);
+    loadFn();
+  });
 }

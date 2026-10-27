@@ -3,6 +3,7 @@
      ║ ✅ Barra de filtros avançados (Fornecedor/Grupo/Subgrupo/Marca/Estoque/Ativo/Custo)
      ║ ✅ Estoque Positivo (>0) com filtro real no backend (only_stock=1)
      ║ ✅ Tabela rolável + footer interno fixo + Paginação + PDF/EXCEL
+     ║ ✅ Resumo lateral (direita) com totais dos registros filtrados
      ╚══════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -21,11 +22,13 @@
 
   <!-- 🎨 CSS — Design System CONSART -->
   <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/reportsProductsStock/reportsProductsStock.summary.css" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr page-sales-report">
   <main class="consart-container consart-container--full consart-container--ultraslim">
 
+    <div class="rps-layout">
     <!-- ===================================================== -->
     <!-- INTEGRATED TABLE                                      -->
     <!-- ===================================================== -->
@@ -133,6 +136,7 @@
             <select id="selLimit" title="Itens por página">
               <option value="10">10</option>
               <option value="20">20</option>
+              <option value="30">30</option>
               <option value="50" selected>50</option>
               <option value="100">100</option>
             </select>
@@ -181,11 +185,11 @@
         </table>
       </div>
 
-      <!-- Rodapé único compartilhado pelas três abas -->
+      <!-- Rodapé: total de registros + paginação -->
       <footer class="table-footer">
         <div class="table-footer__info">
           <div class="summary-pill summary-pill--success summary-width-5 summary-left-space-3">
-            <span id="apTableInfo">0 registros encontrados</span>
+            <span id="apTableInfo">Carregando...</span>
           </div>
         </div>
 
@@ -213,8 +217,55 @@
           </select>
         </div>
       </footer>
-      </div>
     </section>
+
+    <!-- ===================================================== -->
+    <!-- RESUMO (registros filtrados)                          -->
+    <!-- ===================================================== -->
+    <aside class="rps-summary" aria-label="Resumo dos registros filtrados">
+      <div class="rps-summary__head">
+        <h2 class="rps-summary__title">Resumo</h2>
+        <p class="rps-summary__hint">Totais de todos os registros filtrados</p>
+        <div id="sumFilters" class="rps-summary__filters"></div>
+      </div>
+
+      <div class="rps-card rps-card--main">
+        <span class="rps-card__label">Custo total em estoque</span>
+        <strong id="sumCost" class="rps-card__value">—</strong>
+      </div>
+
+      <div class="rps-card">
+        <span class="rps-card__label">Produtos</span>
+        <strong id="sumItems" class="rps-card__value">—</strong>
+      </div>
+
+      <div class="rps-card-row">
+        <div class="rps-card rps-card--ok">
+          <span class="rps-card__label">Com estoque</span>
+          <strong id="sumWithStock" class="rps-card__value">—</strong>
+        </div>
+        <div class="rps-card rps-card--muted">
+          <span class="rps-card__label">Sem estoque</span>
+          <strong id="sumWithoutStock" class="rps-card__value">—</strong>
+        </div>
+      </div>
+
+      <div class="rps-card">
+        <span class="rps-card__label">Quantidade em estoque</span>
+        <strong id="sumStock" class="rps-card__value">—</strong>
+      </div>
+
+      <div class="rps-card">
+        <span class="rps-card__label">Custo médio por unidade</span>
+        <strong id="sumAvgCost" class="rps-card__value">—</strong>
+      </div>
+
+      <div class="rps-card rps-card--warn" title="Produtos com custo R$ 0,00: não entram no custo total">
+        <span class="rps-card__label">Produtos sem custo</span>
+        <strong id="sumWithoutCost" class="rps-card__value">—</strong>
+      </div>
+    </aside>
+    </div>
   </main>
 
   <!-- 🔌 Menu carregado dinamicamente (PADRÃO CONSART) -->

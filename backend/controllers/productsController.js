@@ -717,6 +717,7 @@ export async function stockPositionList(req, res) {
 
     const sqlRows = `
       SELECT
+        p.product_id              AS id,
         p.product_code            AS code,
         p.description             AS description,
         COALESCE(p.cost_price,0)  AS cost,
@@ -734,7 +735,10 @@ export async function stockPositionList(req, res) {
       SELECT
         COUNT(*)::int AS total,
         COALESCE(SUM(COALESCE(ps.stock_qty,0)), 0)::numeric AS sum_stock,
-        COALESCE(SUM(${STOCK_TOTAL_EXPR}), 0)::numeric AS sum_cost
+        COALESCE(SUM(${STOCK_TOTAL_EXPR}), 0)::numeric AS sum_cost,
+        COUNT(*) FILTER (WHERE COALESCE(ps.stock_qty,0) > 0)::int AS with_stock,
+        COUNT(*) FILTER (WHERE COALESCE(ps.stock_qty,0) <= 0)::int AS without_stock,
+        COUNT(*) FILTER (WHERE COALESCE(p.cost_price,0) <= 0)::int AS without_cost
       FROM ${PRODUCTS_TABLE} p
       LEFT JOIN ${TABLE_STOCK} ps
         ON ps.product_stock_id = p.product_stock_id
@@ -758,6 +762,9 @@ export async function stockPositionList(req, res) {
         summary: {
           sum_stock: Number(agg.sum_stock ?? 0),
           sum_cost: Number(agg.sum_cost ?? 0),
+          with_stock: Number(agg.with_stock ?? 0),
+          without_stock: Number(agg.without_stock ?? 0),
+          without_cost: Number(agg.without_cost ?? 0),
         },
       },
     });
