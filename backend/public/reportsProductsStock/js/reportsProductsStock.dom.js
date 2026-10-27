@@ -15,9 +15,6 @@ export function getEls() {
     btnPdf: qs('#btnPdf'),
     btnExcel: qs('#btnExcel'),
 
-    selLimit: qs('#selLimit'),
-    selOrder: qs('#selOrder'),
-
     txtFornecedor: qs('#txtFornecedor'),
     dlFornecedores: qs('#dlFornecedores'),
     hidFornecedorId: qs('#hidFornecedorId'),

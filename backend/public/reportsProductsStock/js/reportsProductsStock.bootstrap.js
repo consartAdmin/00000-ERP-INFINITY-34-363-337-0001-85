@@ -33,7 +33,6 @@
     }
 
     function bindSortableHeaders() {
-    const els = getEls();
     const { column, direction } = parseOrder(state.order);
 
     sortable = createSortableTable({
@@ -43,9 +42,6 @@
         async onSort({ column: col, direction: dir }) {
         state.order = `${col}_${dir}`;
         state.page = 1;
-        if (els.selOrder && [...els.selOrder.options].some(o => o.value === state.order)) {
-            els.selOrder.value = state.order;
-        }
         await load();
         },
     });

@@ -59,7 +59,6 @@ export function bindPagination(loadFn) {
   els.apRowsPerPage?.addEventListener('change', () => {
     state.limit = fmtInt(els.apRowsPerPage.value, 50);
     state.page = 1;
-    if (els.selLimit) els.selLimit.value = String(state.limit);
     loadFn();
   });
 }
