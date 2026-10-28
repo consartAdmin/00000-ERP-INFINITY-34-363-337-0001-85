@@ -26,6 +26,7 @@ import {
 } from './cashMoviments.create.js?v=8';
 
 import { openBatchEditModal } from './cashMoviments.batchEdit.js';
+import { openFiscalDocumentModal } from './cashMoviments.fiscalDocuments.js';
 import { isCmvSubcategory } from './cashMoviments.editModal.js';
 
 import { applyAnoMes } from './cashMoviments.filters.js';
@@ -236,6 +237,19 @@ export function bindEvents(dom) {
   dom.elBtnEditarSelecionados?.addEventListener('click', async (event) => {
     event.preventDefault();
     await openBatchEditModal(dom);
+  });
+
+  dom.elBtnVincularNota?.addEventListener('click', async (event) => {
+    event.preventDefault();
+    await openFiscalDocumentModal(dom);
+  });
+
+  // Chip da nota fiscal na coluna Nº Doc
+  dom.elTabelaBody?.addEventListener('click', async (event) => {
+    const chip = event.target.closest?.('.cx-nota-chip[data-nota-id]');
+    if (!chip) return;
+    event.preventDefault();
+    await openFiscalDocumentModal(dom, { notaId: Number(chip.dataset.notaId) });
   });
 
   // ────────────────────────────────────────────────────────────────────

@@ -8,9 +8,12 @@
 import archiver from 'archiver';
 import { Storage } from '@google-cloud/storage';
 import pool from '../config/db.js';
+import { ensureFiscalDocumentsSchema } from '../repositories/cashFiscalDocuments/cashFiscalDocuments.schema.js';
 
 const TABLE_MOVS = '"cashMoviments"';
 const TABLE_ANEXOS = '"cashMovimentsAttachments"';
+const TABLE_NOTAS = '"cashFiscalDocuments"';
+const TABLE_ANEXOS_NOTAS = '"cashFiscalDocumentsAttachments"';
 
 const storage = new Storage();
 const DEFAULT_BUCKET = process.env.GCS_BUCKET || 'erp-infinity-00000';
@@ -96,7 +99,7 @@ function buildWhereFromQuery(q) {
   }
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  return { whereSql, params };
+  return { whereSql, where, params };
 }
 
 function buildNomeArquivoParaZip(row, idx) {
@@ -107,7 +110,9 @@ function buildNomeArquivoParaZip(row, idx) {
     ? `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`
     : 'sem-data';
 
-  const doc = row.numero_documento || `mov${row.mov_id || ''}`;
+  const doc = row.nota_id
+    ? `${row.nota_tipo || 'nota'}-${row.numero_documento || row.nota_id}`
+    : row.numero_documento || `mov${row.mov_id || ''}`;
   const base = row.filename || `anexo_${idx + 1}`;
   const ext = base.includes('.') ? base.substring(base.lastIndexOf('.')) : '';
 
@@ -131,26 +136,65 @@ export async function headZipPeriodo(req, res, _next) {
 
 export async function downloadZipPeriodo(req, res, next) {
   try {
-    const { whereSql, params } = buildWhereFromQuery(req.query);
+    const { whereSql, where, params } = buildWhereFromQuery(req.query);
 
+    await ensureFiscalDocumentsSchema();
+
+    // Anexos das movimentações + anexos das notas fiscais (NF-e/NFS-e)
+    // vinculadas a alguma movimentação do filtro. A nota entra uma vez só,
+    // mesmo cobrindo vários pagamentos.
     const sql = `
-      SELECT
-        a.id,
-        a.cash_movement_id AS mov_id,
-        a.file_name AS filename,
-        a.mime_type,
-        a.file_size_bytes AS size_bytes,
-        a.storage_bucket AS bucket,
-        a.storage_path AS gcs_path,
+      SELECT * FROM (
+        SELECT
+          a.id,
+          a.cash_movement_id AS mov_id,
+          NULL::bigint AS nota_id,
+          NULL::varchar AS nota_tipo,
+          a.file_name AS filename,
+          a.mime_type,
+          a.file_size_bytes AS size_bytes,
+          a.storage_bucket AS bucket,
+          a.storage_path AS gcs_path,
 
-        m.movement_date AS data_hora,
-        m.document_number AS numero_documento,
-        m.supplier_name AS fornecedor
-      FROM ${TABLE_ANEXOS} a
-      JOIN ${TABLE_MOVS} m
-        ON m.id = a.cash_movement_id
-      ${whereSql}
-      ORDER BY m.movement_date ASC, a.id ASC
+          m.movement_date AS data_hora,
+          m.document_number AS numero_documento,
+          m.supplier_name AS fornecedor
+        FROM ${TABLE_ANEXOS} a
+        JOIN ${TABLE_MOVS} m
+          ON m.id = a.cash_movement_id
+        ${whereSql}
+
+        UNION ALL
+
+        SELECT
+          fa.id,
+          NULL::bigint AS mov_id,
+          fd.id AS nota_id,
+          fd.document_type AS nota_tipo,
+          fa.file_name AS filename,
+          fa.mime_type,
+          fa.file_size_bytes AS size_bytes,
+          fa.storage_bucket AS bucket,
+          fa.storage_path AS gcs_path,
+
+          (
+            SELECT MIN(m.movement_date)
+            FROM ${TABLE_MOVS} m
+            WHERE m.fiscal_document_id = fd.id
+          ) AS data_hora,
+          fd.document_number AS numero_documento,
+          fd.issuer_name AS fornecedor
+        FROM ${TABLE_ANEXOS_NOTAS} fa
+        JOIN ${TABLE_NOTAS} fd
+          ON fd.id = fa.fiscal_document_id
+        WHERE EXISTS (
+          SELECT 1
+          FROM ${TABLE_MOVS} m
+          WHERE m.fiscal_document_id = fd.id
+          ${where.length ? `AND ${where.join(' AND ')}` : ''}
+        )
+      ) anexos
+      ORDER BY data_hora ASC, nota_id ASC NULLS FIRST, id ASC
     `;
 
     const { rows } = await pool.query(sql, params);
@@ -213,7 +257,9 @@ export async function downloadZipPeriodo(req, res, next) {
       }
 
       const nameInZip = buildNomeArquivoParaZip(row, idx);
-      const folderName = `ID_${row.mov_id}`;
+      const folderName = row.nota_id
+        ? `NOTA_${String(row.nota_tipo || 'NF').replace(/[^\w-]+/g, '')}_${String(row.numero_documento || row.nota_id).replace(/[^\w-]+/g, '')}`
+        : `ID_${row.mov_id}`;
       const fullPathInZip = `${folderName}/${nameInZip}`;
 
       const fileStream = file.createReadStream();

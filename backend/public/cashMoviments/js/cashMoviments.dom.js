@@ -19,6 +19,7 @@ export function getDom() {
   const elSelecionarTodas = qs('#selecionarTodasMovimentacoes');
   const elBtnExcluirSelecionados = qs('#btnExcluirSelecionados');
   const elBtnEditarSelecionados = qs('#btnEditarSelecionados');
+  const elBtnVincularNota = qs('#btnVincularNota');
 
   // filtros
   const elFiltroQ = qs('#filtroQ');
@@ -126,6 +127,7 @@ export function getDom() {
     elSelecionarTodas,
     elBtnExcluirSelecionados,
     elBtnEditarSelecionados,
+    elBtnVincularNota,
 
     // filtros
     elFiltroQ,

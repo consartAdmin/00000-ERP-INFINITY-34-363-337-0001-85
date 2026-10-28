@@ -125,6 +125,28 @@
       color: #111827;
     }
 
+    /* Chip da nota fiscal (NF-e/NFS-e) na coluna Nº Doc */
+    .cx-nota-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      max-width: 100%;
+      padding: 1px 8px;
+      border: 1px solid #c4b5fd;
+      border-radius: 999px;
+      color: #5b21b6;
+      background: #ede9fe;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .cx-nota-chip:hover,
+    .cx-nota-chip:focus-visible {
+      background: #ddd6fe;
+    }
+
     /* Divisores das seções do modal de edição */
     #modalEditar .modal-form-section-title {
       display: flex;
@@ -441,9 +463,14 @@
                   📦 Baixar período
                 </button>
 
+                <button type="button" id="btnVincularNota" class="btn btn-secondary btn-sm"
+                  title="Vincular os pagamentos selecionados a uma NF-e/NFS-e" disabled>
+                  🧾 Nota (0)
+                </button>
+
                 <button type="button" id="btnEditarSelecionados" class="btn btn-secondary btn-sm"
                   title="Alterar em lote as movimentações selecionadas" disabled>
-                  ✏️ Editar selecionados (0)
+                  ✏️ Editar (0)
                 </button>
 
                 <button type="button" id="btnExcluirSelecionados" class="btn btn-danger btn-sm"
@@ -1269,7 +1296,7 @@
   </dialog>
 
   <!-- Script da página -->
-  <script type="module" src="/public/cashMoviments/js/cashMoviments.index.js?v=12"></script>
+  <script type="module" src="/public/cashMoviments/js/cashMoviments.index.js?v=13"></script>
   <script type="module" src="/public/cashMoviments/js/cashMoviments.attachTiles.js?v=2"></script>
 </body>
 

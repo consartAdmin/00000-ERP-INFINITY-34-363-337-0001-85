@@ -128,9 +128,16 @@ export async function listForPdf({
       s.dre_type AS dre_tipo,
 
       (
-        SELECT COUNT(*)::int
-        FROM "cashMovimentsAttachments" a
-        WHERE a.cash_movement_id = m.id
+        (
+          SELECT COUNT(*)::int
+          FROM "cashMovimentsAttachments" a
+          WHERE a.cash_movement_id = m.id
+        )
+        + (
+          SELECT COUNT(*)::int
+          FROM "cashFiscalDocumentsAttachments" fa
+          WHERE fa.fiscal_document_id = m.fiscal_document_id
+        )
       ) AS anexos_count
 
     FROM "cashMoviments" m

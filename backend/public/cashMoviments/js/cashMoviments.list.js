@@ -79,12 +79,20 @@ export function atualizarInterfaceSelecao(dom) {
       `🗑️ selecionados (${totalSelecionados})`;
   }
 
+  if (dom.elBtnVincularNota) {
+    const totalSelecionados = selectedMovementIds.size;
+
+    dom.elBtnVincularNota.disabled = totalSelecionados === 0;
+    dom.elBtnVincularNota.textContent =
+      `🧾 Nota (${totalSelecionados})`;
+  }
+
   if (dom.elBtnEditarSelecionados) {
     const totalSelecionados = selectedMovementIds.size;
 
     dom.elBtnEditarSelecionados.disabled = totalSelecionados === 0;
     dom.elBtnEditarSelecionados.textContent =
-      `✏️ Editar selecionados (${totalSelecionados})`;
+      `✏️ Editar (${totalSelecionados})`;
   }
 }
 
@@ -322,6 +330,23 @@ export async function carregarResumo(dom) {
   }
 }
 
+const escapeAttr = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+  .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Chip "NFS-e 123 · 1/3" do pagamento vinculado a uma nota fiscal. */
+function notaChipHtml(raw) {
+  if (!raw?.fiscal_document_id) return '';
+
+  const label = [raw.nota_tipo || 'Nota', raw.nota_numero].filter(Boolean).join(' ');
+  const total = Number(raw.nota_pagamentos || 0);
+  const pos = Number(raw.nota_posicao || 0);
+  const parte = total > 1 ? ` · ${pos}/${total}` : '';
+
+  return `<button type="button" class="cx-nota-chip" data-nota-id="${Number(raw.fiscal_document_id)}"
+    title="${escapeAttr(`${label}: pagamento ${pos} de ${total}. Clique para abrir a nota.`)}">🧾 ${escapeAttr(label)}${parte}</button>`;
+}
+
 export function renderTabela(dom, items) {
   if (!dom.elTabelaBody) return;
 
@@ -370,7 +395,7 @@ export function renderTabela(dom, items) {
       ${selectedMovementIds.has(Number(row.id)) ? 'checked' : ''}
     />
   </td>
-  <td data-label="Nº Doc">${row.numero_doc || ''}</td>
+  <td data-label="Nº Doc">${notaChipHtml(raw) || row.numero_doc || ''}</td>
   <td data-label="Tipo">${row.tipo || ''}</td>
 
   <td
@@ -439,7 +464,17 @@ export function renderTabela(dom, items) {
     // Badge anexos
     const cell = tr.querySelector('.col-anexo');
 
-    if (row.anexos && Array.isArray(row.anexos)) {
+    if (raw.anexos_count != null) {
+      // A API já manda a contagem: anexos da movimentação + da nota fiscal
+      const own = Number(raw.anexos_count || 0);
+      const daNota = Number(raw.nota_anexos_count || 0);
+      cell.innerHTML = own + daNota > 0 ? badgeAnexo('ok', own + daNota) : badgeAnexo('none');
+      if (daNota) {
+        cell.title = own
+          ? `${own} da movimentação + ${daNota} da nota fiscal`
+          : `${daNota} da nota fiscal`;
+      }
+    } else if (row.anexos && Array.isArray(row.anexos)) {
       const c = row.anexos.length;
       cell.innerHTML = c > 0 ? badgeAnexo('ok', c) : badgeAnexo('none');
     } else if (row.id) {

@@ -51,6 +51,19 @@ import {
 } from '../uploadBuckets/uploadBucketsCashMoviments.js';
 
 import {
+  listNotas,
+  getNota,
+  listPagamentos,
+  createNota,
+  updateNota,
+  vincularPagamentos,
+  desvincularPagamentos,
+  deleteNota,
+  uploadAnexoNota,
+  deleteAnexoNota,
+} from '../controllers/cashFiscalDocumentsController.js';
+
+import {
   headZipPeriodo,
   downloadZipPeriodo,
 } from '../controllers/cashMovimentsZipController.js';
@@ -143,6 +156,20 @@ router.get('/relatorio/pdf', relatorioPdf);
 
 // Compatibilidade com frontend antigo
 router.get('/relatorio', relatorioPdf);
+
+/* ========================= NOTAS FISCAIS (NF-e/NFS-e) ================= */
+// Uma nota pode cobrir vários pagamentos (ex.: 3 pagamentos, 1 NFS-e)
+
+router.get('/notas-fiscais', listNotas);
+router.get('/notas-fiscais/pagamentos', listPagamentos);
+router.post('/notas-fiscais/desvincular', desvincularPagamentos);
+router.get('/notas-fiscais/:id', getNota);
+router.post('/notas-fiscais', createNota);
+router.put('/notas-fiscais/:id', updateNota);
+router.delete('/notas-fiscais/:id', deleteNota);
+router.post('/notas-fiscais/:id/vincular', vincularPagamentos);
+router.post('/notas-fiscais/:id/anexos', uploadAnexoNota);
+router.delete('/notas-fiscais/:id/anexos/:anexoId', deleteAnexoNota);
 
 /* ========================= ZIP DE ANEXOS ============================= */
 
