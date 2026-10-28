@@ -89,6 +89,25 @@ export function movementSelectSql({ includeAll = false } = {}) {
       m.deduct_charges_only,
       s.dre_type AS dre_tipo,
 
+      (
+        SELECT COUNT(*)::int
+        FROM "cashMovimentsAttachments" a
+        WHERE a.cash_movement_id = m.id
+      ) AS anexos_count,
+
+      -- Nota fiscal (NF-e/NFS-e) que cobre este pagamento
+      m.fiscal_document_id,
+      fd.document_type AS nota_tipo,
+      fd.document_number AS nota_numero,
+      fd.total_amount AS nota_valor,
+      COALESCE(fdp.posicao, 0) AS nota_posicao,
+      COALESCE(fdp.total, 0) AS nota_pagamentos,
+      (
+        SELECT COUNT(*)::int
+        FROM "cashFiscalDocumentsAttachments" fa
+        WHERE fa.fiscal_document_id = m.fiscal_document_id
+      ) AS nota_anexos_count,
+
       m.created_at,
       m.updated_at,
       m.is_active
@@ -101,7 +120,36 @@ export function movementSelectSql({ includeAll = false } = {}) {
       OR UPPER(TRIM(s.name)) = UPPER(TRIM(m.subcategory::text))
     LEFT JOIN "chartOfAccounts" coa
       ON coa.id = m.chart_account_id
+    LEFT JOIN "cashFiscalDocuments" fd
+      ON fd.id = m.fiscal_document_id
+    LEFT JOIN LATERAL (
+      SELECT
+        COUNT(*) FILTER (
+          WHERE (m2.movement_date, m2.id) <= (m.movement_date, m.id)
+        )::int AS posicao,
+        COUNT(*)::int AS total
+      FROM "cashMoviments" m2
+      WHERE m2.fiscal_document_id = m.fiscal_document_id
+    ) fdp ON m.fiscal_document_id IS NOT NULL
   `;
+}
+
+/**
+ * Anexos da movimentação OU da nota fiscal vinculada a ela.
+ */
+export function movementHasAttachmentSql(alias = 'm') {
+  return `(
+    EXISTS (
+      SELECT 1
+      FROM "cashMovimentsAttachments" a
+      WHERE a.cash_movement_id = ${alias}.id
+    )
+    OR EXISTS (
+      SELECT 1
+      FROM "cashFiscalDocumentsAttachments" fa
+      WHERE fa.fiscal_document_id = ${alias}.fiscal_document_id
+    )
+  )`;
 }
 
 export function buildMovementsWhere({
@@ -186,27 +234,21 @@ export function buildMovementsWhere({
       m.supplier_name ILIKE $${i}
       OR m.notes ILIKE $${i}
       OR m.document_number ILIKE $${i}
+      OR EXISTS (
+        SELECT 1
+        FROM "cashFiscalDocuments" fd2
+        WHERE fd2.id = m.fiscal_document_id
+          AND fd2.document_number ILIKE $${i}
+      )
     )`);
     params.push(`%${search}%`);
     i++;
   }
 
   if (anexos === 'com') {
-    where.push(`
-      EXISTS (
-        SELECT 1
-        FROM "cashMovimentsAttachments" a
-        WHERE a.cash_movement_id = m.id
-      )
-    `);
+    where.push(movementHasAttachmentSql());
   } else if (anexos === 'sem') {
-    where.push(`
-      NOT EXISTS (
-        SELECT 1
-        FROM "cashMovimentsAttachments" a
-        WHERE a.cash_movement_id = m.id
-      )
-    `);
+    where.push(`NOT ${movementHasAttachmentSql()}`);
   }
 
   const sqlWhere = where.length ? ` WHERE ${where.join(' AND ')} ` : '';
