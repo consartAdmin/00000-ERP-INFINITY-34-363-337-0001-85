@@ -8,6 +8,7 @@
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { Modal } from '/public/includes/js/modal.js';
 import { enhanceCompactSelect } from '/public/includes/js/compactSelect.js';
+import { enhanceBrDateTime } from '/public/includes/js/brDateTimeInput.js?v=2';
 
 const DEBT_MODAL_ID = 'debtModal';
 const PAYMENT_MODAL_ID = 'paymentModal';
@@ -453,6 +454,10 @@ function bindModalEvents() {
 export function initializeDebtModals() {
   injectCreateDebtModal();
   injectPaymentModal();
+
+  // Datas em dd/mm/aaaa (independe do idioma do navegador)
+  ['issue_date', 'agreement_closed_at', 'first_installment_due_at', 'payment_date']
+    .forEach((id) => enhanceBrDateTime(document.getElementById(id)));
 
   syncDueDayMode();
   bindModalEvents();

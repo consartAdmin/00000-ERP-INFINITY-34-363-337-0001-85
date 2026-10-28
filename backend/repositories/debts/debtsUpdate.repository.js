@@ -70,6 +70,7 @@ export async function update(id, payload = {}) {
           parent_debt_id = $24,
           installment_number = $25,
           installment_total = $26,
+          due_day = $27,
           updated_at = NOW()
         WHERE id = $1
       `,
@@ -99,7 +100,8 @@ export async function update(id, payload = {}) {
         data.is_installment,
         data.parent_debt_id,
         data.installment_number,
-        data.installment_total
+        data.installment_total,
+        data.due_day
       ]
     );
 

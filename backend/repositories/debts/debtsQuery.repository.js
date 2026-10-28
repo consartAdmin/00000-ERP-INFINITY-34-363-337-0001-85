@@ -210,6 +210,7 @@ export async function getById(id) {
         parent_debt_id,
         installment_number,
         installment_total,
+        due_day,
         created_at,
         updated_at
       FROM ${TB_DEBTS}

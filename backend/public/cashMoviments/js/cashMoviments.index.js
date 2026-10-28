@@ -15,6 +15,7 @@ import { ensureFitMovsHeightGlobal } from './cashMoviments.layout.js';
 import { bindEvents } from './cashMoviments.events.js?v=10';
 
 import { toInputDateTimeLocal } from './cashMoviments.utils.js';
+import { enhanceBrDateTime } from '/public/includes/js/brDateTimeInput.js?v=2';
 import { carregarAnoMes } from './cashMoviments.filters.js';
 import { carregarCategorias, buildAccountsCacheFromSelects } from './cashMoviments.categories.js';
 import { recarregarLista } from './cashMoviments.list.js';
@@ -205,6 +206,10 @@ async function init() {
     setupFornecedorModalEdicao(dom);
     setupChartAccountsModal();
     setupChartAccountsModalEdicao();
+
+    // Data/hora em dd/mm/aaaa hh:mm (independe do idioma do navegador)
+    enhanceBrDateTime(dom.elDataHora);
+    enhanceBrDateTime(dom.elEditDataHora);
 
     // Data/hora padrão
     if (dom.elDataHora && !dom.elDataHora.value) {
