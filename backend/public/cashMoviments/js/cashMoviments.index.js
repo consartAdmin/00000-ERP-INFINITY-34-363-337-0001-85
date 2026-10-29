@@ -12,7 +12,7 @@ import { getDom } from './cashMoviments.dom.js';
 import { state } from './cashMoviments.state.js';
 
 import { ensureFitMovsHeightGlobal } from './cashMoviments.layout.js';
-import { bindEvents } from './cashMoviments.events.js?v=11';
+import { bindEvents } from './cashMoviments.events.js?v=12';
 
 import { toInputDateTimeLocal } from './cashMoviments.utils.js';
 import { enhanceBrDateTime } from '/public/includes/js/brDateTimeInput.js?v=2';

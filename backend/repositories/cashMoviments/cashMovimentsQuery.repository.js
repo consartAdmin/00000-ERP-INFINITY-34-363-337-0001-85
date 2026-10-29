@@ -5,7 +5,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import { q, parseOrder } from './cashMoviments.utils.js';
-import { movementSelectSql, movementTypeSql, buildMovementsWhere } from './cashMoviments.sql.js';
+import { movementSelectSql, movementTypeSql, buildMovementsWhere, movementOrderSql } from './cashMoviments.sql.js';
 
 /* =========================================================================
    MOVIMENTAÇÕES
@@ -22,10 +22,9 @@ export async function listMovements({
   anexos,
   limit = 50,
   offset = 0,
-  orderBy = 'movement_date DESC',
+  orderBy = 'data-hora DESC',
 } = {}) {
-  const allowedOrder = ['movement_date', 'amount', 'movement_type', 'cash_account'];
-  const order = parseOrder(orderBy, allowedOrder);
+  const order = movementOrderSql(orderBy);
 
   const { sqlWhere, params } = buildMovementsWhere({
     date_from,

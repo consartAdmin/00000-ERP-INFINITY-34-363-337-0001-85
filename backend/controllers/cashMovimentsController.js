@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import moment from 'moment';
 
 import * as caixa from '../repositories/cashMoviments/cashMoviments.index.js';
+import { isMovementOrderColumn } from '../repositories/cashMoviments/cashMoviments.sql.js';
 import { generateCaixaPdf } from '../generationPdf/generationCashMovimentsPdf.js';
 
 import {
@@ -93,22 +94,8 @@ function expandDateTo(raw) {
 }
 
 function normalizeOrderBy(orderBy) {
-  const raw = String(orderBy || 'movement_date DESC').trim();
-
-  const map = {
-    data_hora: 'movement_date',
-    tipo_movimentacao: 'movement_type',
-    conta_caixa: 'cash_account',
-    valor: 'amount',
-
-    movement_date: 'movement_date',
-    movement_type: 'movement_type',
-    cash_account: 'cash_account',
-    amount: 'amount',
-  };
-
-  const [colRaw, dirRaw] = raw.split(/\s+/);
-  const col = map[colRaw] || 'movement_date';
+  const [colRaw, dirRaw] = String(orderBy || '').trim().split(/\s+/);
+  const col = isMovementOrderColumn(colRaw) ? colRaw : 'data-hora';
   const dir = /^(asc|desc)$/i.test(dirRaw || '') ? dirRaw.toUpperCase() : 'DESC';
 
   return `${col} ${dir}`;
@@ -147,7 +134,7 @@ function pickQuery(req) {
   const limit = Number(q.limit ?? q.pageSize ?? 20);
   const page = Number(q.page ?? 1);
   const offset = Number(q.offset ?? ((page - 1) * limit));
-  const orderBy = normalizeOrderBy(q.orderBy ?? 'movement_date DESC');
+  const orderBy = normalizeOrderBy(q.orderBy ?? 'data-hora DESC');
 
   return {
     date_from,
