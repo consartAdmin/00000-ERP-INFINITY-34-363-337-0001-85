@@ -230,6 +230,8 @@ export async function generateCaixaPdf(payload = {}, options = {}) {
     res = null,
     filename = `relatorio_caixa_${moment().format('DD-MM-YYYY')}.pdf`,
     dir = path.resolve(__dirname, '../../public/pdfs'),
+    // onProgress({ index, total, row, rowTotal }) a cada linha desenhada
+    onProgress = null,
   } = options;
 
   const enterprise = await enterpriseApi.findForPdf({
@@ -453,6 +455,7 @@ export async function generateCaixaPdf(payload = {}, options = {}) {
   let totalTransferencias = 0;
 
   const totaisPorPlanoContas = {};
+  let rowIndex = 0;
 
   for (const r of rows) {
     const valor = Number(r.valor || 0);
@@ -549,6 +552,13 @@ export async function generateCaixaPdf(payload = {}, options = {}) {
     });
 
     y += rowHeight;
+
+    if (onProgress) {
+      rowIndex += 1;
+      onProgress({ index: rowIndex, total: rows.length, row: r, rowTotal: total });
+      // devolve o event loop para o progresso sair na resposta em stream
+      await new Promise((resolve) => setImmediate(resolve));
+    }
   }
 
   // ================= Rodapé =================

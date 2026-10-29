@@ -1,0 +1,28 @@
+/* Progresso do Relatório PDF — mesmo visual do modal "Sincronizando com o Asaas" (Contas a Receber) */
+.center-modal.cm-report-modal { width: min(900px, calc(100% - 32px)); }
+
+.cm-report-progress { display: flex; flex-direction: column; gap: 10px; font-size: 13px; text-align: left; }
+.cm-report-progress__head { display: flex; justify-content: space-between; gap: 12px; }
+.cm-report-progress__bar { height: 8px; border-radius: 999px; background: #e5e7eb; overflow: hidden; }
+.cm-report-progress__bar span { display: block; height: 100%; width: 0; background: #16a34a; transition: width .25s ease; }
+.cm-report-progress__log {
+  list-style: none; margin: 0; padding: 0;
+  max-height: 40vh; overflow: auto;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+}
+.cm-report-progress__log:empty { display: none; }
+.cm-report-progress__log li {
+  display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: center;
+  padding: 5px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px;
+}
+.cm-report-progress__icon { color: #16a34a; font-weight: 700; }
+.cm-report-progress__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-report-progress__value { white-space: nowrap; }
+.cm-report-progress__log li.is-in .cm-report-progress__value { color: #166534; }
+.cm-report-progress__log li.is-out .cm-report-progress__value { color: #991b1b; }
+.cm-report-progress__log li.is-transfer .cm-report-progress__value { color: #6b7280; }
+.cm-report-progress__hint { color: #6b7280; }
+.cm-report-progress__log li.is-note .cm-report-progress__value { color: #1d4ed8; }
+.cm-report-progress__log li.is-failed { background: #fef2f2; }
+.cm-report-progress__log li.is-failed .cm-report-progress__icon,
+.cm-report-progress__log li.is-failed .cm-report-progress__value { color: #b91c1c; }

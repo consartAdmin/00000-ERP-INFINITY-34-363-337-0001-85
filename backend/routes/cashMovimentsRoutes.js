@@ -73,6 +73,7 @@ import {
 import {
   headZipPeriodo,
   downloadZipPeriodo,
+  downloadZipArquivo,
 } from '../controllers/cashMovimentsZipController.js';
 
 const router = Router();
@@ -189,5 +190,6 @@ router.delete('/notas-fiscais/:id/anexos/:anexoId', deleteAnexoNota);
 
 router.head('/movimentacoes/zip/periodo', headZipPeriodo);
 router.get('/movimentacoes/zip/periodo', downloadZipPeriodo);
+router.get('/movimentacoes/zip/arquivo/:token', downloadZipArquivo);
 
 export default router;

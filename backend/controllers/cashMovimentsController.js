@@ -758,7 +758,24 @@ export async function saldos(_req, res) {
 
 /* ========================= RELATÓRIO PDF ============================ */
 
+// ?stream=1 → NDJSON com o progresso (mesmo formato da sincronização do
+// Asaas em Contas a Receber): { type: 'phase' | 'start' | 'item' } e, no fim,
+// { type: 'done', filename, total, pdf: <base64> } ou { type: 'error', message }.
+function startPdfStream(res) {
+  res.status(200);
+  res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  return (event) => {
+    if (!res.writableEnded) res.write(`${JSON.stringify(event)}\n`);
+  };
+}
+
 export async function relatorioPdf(req, res, next) {
+  const send = String(req.query?.stream) === '1' ? startPdfStream(res) : null;
+
   try {
     const {
       date_from,
@@ -794,6 +811,8 @@ export async function relatorioPdf(req, res, next) {
     } catch (e) {
       console.error('[Caixa][relatorioPdf] erro ao montar labels de categoria/subcategoria:', e);
     }
+
+    send?.({ type: 'phase', message: 'Consultando movimentações…' });
 
     const rows = await caixa.listForPdf({
       date_from,
@@ -870,23 +889,48 @@ export async function relatorioPdf(req, res, next) {
       ? `Filtros: ${filtros.join(' | ')}`
       : 'Filtros: Todos';
 
-    await generateCaixaPdf(
-      {
-        rows,
-        title: 'Relatório de Movimentações de Caixa',
-        company,
-        periodLabel: headerPeriodo,
-        filtersLabel,
-      },
-      {
-        output: 'response',
-        res,
-        filename: `relatorio_caixa_${periodoLabel}.pdf`,
-      }
-    );
+    const pdfPayload = {
+      rows,
+      title: 'Relatório de Movimentações de Caixa',
+      company,
+      periodLabel: headerPeriodo,
+      filtersLabel,
+    };
+    const filename = `relatorio_caixa_${periodoLabel}.pdf`;
+
+    if (!send) {
+      await generateCaixaPdf(pdfPayload, { output: 'response', res, filename });
+      return;
+    }
+
+    send({ type: 'start', total: rows.length });
+
+    const pdf = await generateCaixaPdf(pdfPayload, {
+      output: 'buffer',
+      onProgress: ({ index, total, row, rowTotal }) => send({
+        type: 'item',
+        index,
+        total,
+        item: {
+          id: row.id,
+          data: row.data_hora ? moment(row.data_hora).format('DD/MM/YYYY') : '',
+          tipo: row.tipo_movimentacao || '',
+          documento: row.numero_documento || '',
+          nome: row.fornecedor || '',
+          valor: rowTotal,
+          transferencia: Boolean(row.transfer_id),
+        },
+      }),
+    });
+
+    send({ type: 'done', filename, total: rows.length, pdf: pdf.toString('base64') });
+    return res.end();
   } catch (err) {
     console.error('[Caixa][relatorioPdf] erro:', err);
-    return next(err);
+    if (!send) return next(err);
+
+    send({ type: 'error', message: err?.message || 'Falha ao gerar o relatório PDF.' });
+    return res.end();
   }
 }
 
