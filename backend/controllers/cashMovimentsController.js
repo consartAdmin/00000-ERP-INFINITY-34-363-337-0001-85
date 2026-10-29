@@ -17,6 +17,7 @@ import moment from 'moment';
 
 import * as caixa from '../repositories/cashMoviments/cashMoviments.index.js';
 import { isMovementOrderColumn } from '../repositories/cashMoviments/cashMoviments.sql.js';
+import { transferIdsOfMovements } from '../repositories/cashMoviments/cashTransfers.repository.js';
 import { generateCaixaPdf } from '../generationPdf/generationCashMovimentsPdf.js';
 
 import {
@@ -474,6 +475,16 @@ export async function updateMovimentacao(req, res) {
     const { id } = req.params;
     const body = req.body || {};
     const payload = buildMovementPayloadFromBody(body, { partial: true });
+
+    // Ponta de transferência: data/valor/contas mudam juntos, pela transferência
+    const [transferId] = await transferIdsOfMovements([Number(id)]);
+    if (transferId) {
+      return res.status(409).json({
+        ok: false,
+        error: 'Esta movimentação faz parte de uma transferência entre contas. Edite pela transferência.',
+        transfer_id: transferId,
+      });
+    }
 
     const upd = await caixa.updateMovement(Number(id), payload);
 

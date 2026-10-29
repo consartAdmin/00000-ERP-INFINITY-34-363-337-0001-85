@@ -198,6 +198,8 @@ function applyWatermark(doc, logoPath) {
 }
 
 function getPlanoContas(r = {}) {
+  if (r.transfer_id) return 'Transferência entre contas';
+
   return (
     r.plano_contas ||
     r.plano_de_contas ||
@@ -447,6 +449,8 @@ export async function generateCaixaPdf(payload = {}, options = {}) {
   let totalGeral = 0;
   let totalJuros = 0;
   let totalMulta = 0;
+  // Transferências entre contas: listadas, mas fora dos totais e do dashboard
+  let totalTransferencias = 0;
 
   const totaisPorPlanoContas = {};
 
@@ -456,13 +460,16 @@ export async function generateCaixaPdf(payload = {}, options = {}) {
     const juros = Number(r.juros || 0);
     const encargos = Number(r.encargos || 0);
     const total = valor + multa + juros + encargos;
-
-    totalGeral += total;
-    totalJuros += juros;
-    totalMulta += multa;
-
     const planoContas = getPlanoContas(r);
-    totaisPorPlanoContas[planoContas] = (totaisPorPlanoContas[planoContas] || 0) + total;
+
+    if (r.transfer_id) {
+      if (String(r.tipo_movimentacao || '').toUpperCase().startsWith('SAI')) totalTransferencias += total;
+    } else {
+      totalGeral += total;
+      totalJuros += juros;
+      totalMulta += multa;
+      totaisPorPlanoContas[planoContas] = (totaisPorPlanoContas[planoContas] || 0) + total;
+    }
 
     if (y + rowHeight > doc.page.height - doc.page.margins.bottom) {
       doc.addPage({ size: 'A4', layout: 'landscape' });
@@ -558,7 +565,16 @@ export async function generateCaixaPdf(payload = {}, options = {}) {
     const padX = 8;
     const padY = 6;
 
-    const totalStackH = (boxH * 3) + (gapY * 2);
+    const boxes = [
+      { label: 'Total De Movimentações:', value: totalGeral },
+      { label: 'Total Juros:', value: totalJuros },
+      { label: 'Total Multa:', value: totalMulta },
+    ];
+    if (totalTransferencias > 0) {
+      boxes.push({ label: 'Transferências (fora):', value: totalTransferencias });
+    }
+
+    const totalStackH = (boxH * boxes.length) + (gapY * (boxes.length - 1));
 
     let yStart = y + 10;
 
@@ -569,12 +585,6 @@ export async function generateCaixaPdf(payload = {}, options = {}) {
     }
 
     const xBox = pageW - marginR - boxW;
-
-    const boxes = [
-      { label: 'Total De Movimentações:', value: totalGeral },
-      { label: 'Total Juros:', value: totalJuros },
-      { label: 'Total Multa:', value: totalMulta },
-    ];
 
     boxes.forEach((item, idx) => {
       const yBox = yStart + (idx * (boxH + gapY));

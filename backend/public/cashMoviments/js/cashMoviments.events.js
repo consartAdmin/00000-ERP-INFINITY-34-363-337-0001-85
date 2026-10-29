@@ -27,6 +27,7 @@ import {
 } from './cashMoviments.create.js?v=9';
 
 import { openBatchCreateModal } from './cashMoviments.batchCreate.js';
+import { openTransferModal } from './cashMoviments.transfers.js';
 
 import { openBatchEditModal } from './cashMoviments.batchEdit.js';
 import { openFiscalDocumentModal } from './cashMoviments.fiscalDocuments.js';
@@ -137,6 +138,11 @@ export function bindEvents(dom) {
   // Lançar em lote: mesmos dados do formulário, várias datas/valores
   document.getElementById('btnLancarLote')?.addEventListener('click', () => {
     openBatchCreateModal(dom);
+  });
+
+  // Transferência entre contas (SAIDA na origem + ENTRADA no destino)
+  document.getElementById('btnTransferirContas')?.addEventListener('click', () => {
+    openTransferModal(dom);
   });
 
   dom.elBtnNova?.addEventListener('click', () => {
@@ -250,6 +256,14 @@ export function bindEvents(dom) {
   dom.elBtnVincularNota?.addEventListener('click', async (event) => {
     event.preventDefault();
     await openFiscalDocumentModal(dom);
+  });
+
+  // Chip "⇄ TRF-n" da transferência na coluna Nº Doc
+  dom.elTabelaBody?.addEventListener('click', async (event) => {
+    const chip = event.target.closest?.('.cx-trf-chip[data-transfer-id]');
+    if (!chip) return;
+    event.preventDefault();
+    await openTransferModal(dom, { transferId: Number(chip.dataset.transferId) });
   });
 
   // Chip da nota fiscal na coluna Nº Doc

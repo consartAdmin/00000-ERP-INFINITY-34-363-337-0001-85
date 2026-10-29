@@ -339,7 +339,10 @@ export async function openBatchEditModal(dom) {
       showCenterModal({
         variant: 'success',
         title: 'Alteração em lote concluída',
-        message: `${body.updated} movimentação(ões) alterada(s).`,
+        message: `${body.updated} movimentação(ões) alterada(s).`
+          + (body.skipped_transfers > 0
+            ? `<br><small>${body.skipped_transfers} ponta(s) de transferência entre contas ficaram de fora (edite pela transferência).</small>`
+            : ''),
       });
     } catch (err) {
       LE('[LOTE] aplicar', err);

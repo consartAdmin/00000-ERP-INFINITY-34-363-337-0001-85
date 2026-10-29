@@ -108,6 +108,11 @@ export function movementSelectSql({ includeAll = false } = {}) {
         WHERE fa.fiscal_document_id = m.fiscal_document_id
       ) AS nota_anexos_count,
 
+      -- Transferência entre contas (as duas pontas têm o mesmo transfer_id)
+      m.transfer_id,
+      tr.from_account AS transf_origem,
+      tr.to_account AS transf_destino,
+
       m.created_at,
       m.updated_at,
       m.is_active
@@ -122,6 +127,8 @@ export function movementSelectSql({ includeAll = false } = {}) {
       ON coa.id = m.chart_account_id
     LEFT JOIN "cashFiscalDocuments" fd
       ON fd.id = m.fiscal_document_id
+    LEFT JOIN "cashTransfers" tr
+      ON tr.id = m.transfer_id
     LEFT JOIN LATERAL (
       SELECT
         COUNT(*) FILTER (
@@ -178,7 +185,11 @@ export function buildMovementsWhere({
 
   const tipoNorm = normalizeTipoMovimentacao(tipo);
 
-  if (tipoNorm) {
+  if (tipoNorm === 'TRANSFERENCIA') {
+    where.push('m.transfer_id IS NOT NULL');
+  } else if (tipoNorm === 'SEM_TRANSFERENCIA') {
+    where.push('m.transfer_id IS NULL');
+  } else if (tipoNorm) {
     where.push(`(${movementTypeSql()}) = $${i++}`);
     params.push(tipoNorm);
   }

@@ -64,11 +64,25 @@ import {
 } from '../controllers/cashFiscalDocumentsController.js';
 
 import {
+  createTransferencia,
+  getTransferencia,
+  updateTransferencia,
+  deleteTransferencia,
+} from '../controllers/cashTransfersController.js';
+
+import {
   headZipPeriodo,
   downloadZipPeriodo,
 } from '../controllers/cashMovimentsZipController.js';
 
 const router = Router();
+
+/* ================ TRANSFERÊNCIAS ENTRE CONTAS ======================= */
+
+router.post('/transferencias', createTransferencia);
+router.get('/transferencias/:id', getTransferencia);
+router.put('/transferencias/:id', updateTransferencia);
+router.delete('/transferencias/:id', deleteTransferencia);
 
 /* ========================= MOVIMENTAÇÕES ============================ */
 

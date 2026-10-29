@@ -322,6 +322,21 @@ export async function carregarResumo(dom) {
       dom.elTotalMovimentacoesFiltradas.textContent = fmtBRL(totalFiltrado);
     }
 
+    // Transferências entre contas ficam fora do total (não são receita/despesa)
+    const pill = document.getElementById('transferenciasPill');
+    if (pill) {
+      const tIn = Number(sum.transf_entradas || 0);
+      const tOut = Number(sum.transf_saidas || 0);
+      const valor = document.getElementById('transferenciasFiltradas');
+      pill.hidden = !(tIn || tOut);
+      if (valor) {
+        // Com uma conta filtrada, mostra o que entrou e saiu dela; senão o total movido
+        valor.textContent = dom.elFiltroConta?.value
+          ? `+${fmtBRL(tIn)} / −${fmtBRL(tOut)}`
+          : fmtBRL(Math.max(tIn, tOut));
+      }
+    }
+
   } catch (e) {
     L('Resumo indisponível:', e.message);
     if (dom.elTotalMovimentacoesFiltradas) {
@@ -333,6 +348,24 @@ export async function carregarResumo(dom) {
 const escapeAttr = (value) => String(value ?? '')
   .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
   .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* Transferência entre contas: chip "⇄ TRF-12" no Nº Doc e tipo SAÍDA/ENTRADA */
+const transferAttrs = (raw) => (raw?.transfer_id ? { 'data-transfer-id': raw.transfer_id } : {});
+
+function transferDocHtml(raw) {
+  if (!raw?.transfer_id) return '';
+  const rota = `${raw.transf_origem || '?'} → ${raw.transf_destino || '?'}`;
+  return `<button type="button" class="cx-trf-chip" data-transfer-id="${Number(raw.transfer_id)}"
+    title="${escapeAttr(`Transferência ${rota}. Clique para abrir.`)}">⇄ TRF-${Number(raw.transfer_id)}</button>`;
+}
+
+function transferTipoHtml(raw, tipo) {
+  if (!raw?.transfer_id) return '';
+  const saida = String(tipo || raw.tipo_movimentacao || '').toUpperCase().startsWith('SAI');
+  return saida
+    ? '<span class="cx-trf-tipo is-out">⇄ TRANSF. SAÍDA</span>'
+    : '<span class="cx-trf-tipo is-in">⇄ TRANSF. ENTRADA</span>';
+}
 
 /** Chip "NFS-e 123 · 1/3" do pagamento vinculado a uma nota fiscal. */
 function notaChipHtml(raw) {
@@ -395,8 +428,8 @@ export function renderTabela(dom, items) {
       ${selectedMovementIds.has(Number(row.id)) ? 'checked' : ''}
     />
   </td>
-  <td data-label="Nº Doc">${notaChipHtml(raw) || row.numero_doc || ''}</td>
-  <td data-label="Tipo">${row.tipo || ''}</td>
+  <td data-label="Nº Doc">${transferDocHtml(raw) || notaChipHtml(raw) || row.numero_doc || ''}</td>
+  <td data-label="Tipo">${transferTipoHtml(raw, row.tipo) || row.tipo || ''}</td>
 
   <td
   data-label="Nome"
@@ -423,7 +456,7 @@ export function renderTabela(dom, items) {
   data-label="Plano de Contas"
   title="${String(chartAccountLabel || '').replace(/"/g, '&quot;')}"
 >
-  ${chartAccountLabel || ''}
+  ${raw.transfer_id ? '<span class="cx-trf-muted">— transferência —</span>' : (chartAccountLabel || '')}
 </td>
 
 <td data-label="Categoria">
@@ -453,8 +486,8 @@ export function renderTabela(dom, items) {
   <td data-label="Anexos" class="col-anexo">${badgeAnexo('loading')}</td>
 <td data-label="Ações" class="col-acoes">
   ${actionIconsHtml([
-    { action: 'edit', title: 'Editar movimentação', attrs: { 'data-act': 'edit', 'data-id': row.id } },
-    { action: 'delete', title: 'Excluir movimentação', attrs: { 'data-act': 'del', 'data-id': row.id } },
+    { action: 'edit', title: raw.transfer_id ? 'Editar transferência' : 'Editar movimentação', attrs: { 'data-act': 'edit', 'data-id': row.id, ...transferAttrs(raw) } },
+    { action: 'delete', title: raw.transfer_id ? 'Excluir transferência (as duas pontas)' : 'Excluir movimentação', attrs: { 'data-act': 'del', 'data-id': row.id, ...transferAttrs(raw) } },
   ])}
 </td>
 `;
