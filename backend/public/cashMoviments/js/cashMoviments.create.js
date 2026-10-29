@@ -203,7 +203,7 @@ async function uploadAnexoCadastro(movId, arquivo) {
    LIMPEZA DO FORMULÁRIO
 ============================================================================ */
 
-function limparFormularioCadastro(dom, form) {
+export function limparFormularioCadastro(dom, form) {
   form?.reset?.();
 
   if (dom.elDataHora) {

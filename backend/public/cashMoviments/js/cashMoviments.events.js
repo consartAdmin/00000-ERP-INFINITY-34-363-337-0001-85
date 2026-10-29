@@ -23,7 +23,9 @@ import {
 
 import {
   onCreateSubmit,
-} from './cashMoviments.create.js?v=8';
+} from './cashMoviments.create.js?v=9';
+
+import { openBatchCreateModal } from './cashMoviments.batchCreate.js';
 
 import { openBatchEditModal } from './cashMoviments.batchEdit.js';
 import { openFiscalDocumentModal } from './cashMoviments.fiscalDocuments.js';
@@ -129,6 +131,11 @@ export function bindEvents(dom) {
   // ────────────────────────────────────────────────────────────────────
   dom.elFormCreate?.addEventListener('submit', async (event) => {
     await onCreateSubmit(dom, event);
+  });
+
+  // Lançar em lote: mesmos dados do formulário, várias datas/valores
+  document.getElementById('btnLancarLote')?.addEventListener('click', () => {
+    openBatchCreateModal(dom);
   });
 
   dom.elBtnNova?.addEventListener('click', () => {
