@@ -11,6 +11,8 @@ import debtsApi from '../repositories/debts/debts.index.js';
 
 import installmentPlansApi from '../repositories/debtInstallmentPlans/debtInstallmentPlans.index.js';
 
+import { syncDebtPayablesSafe } from '../repositories/debtsPayables/debtsPayables.index.js';
+
 function sendError(res, error, fallbackMessage = 'Erro interno do servidor.') {
   const message = error?.message || fallbackMessage;
 
@@ -82,6 +84,7 @@ export async function getDebtById(req, res) {
 export async function createDebt(req, res) {
   try {
     const row = await debtsApi.create(req.body);
+    await syncDebtPayablesSafe(row?.id);
 
     return res.status(201).json({
       ok: true,
@@ -105,6 +108,7 @@ export async function updateDebt(req, res) {
     }
 
     const row = await debtsApi.update(id, req.body);
+    await syncDebtPayablesSafe(id);
 
     return res.status(200).json({
       ok: true,
@@ -128,6 +132,7 @@ export async function deleteDebt(req, res) {
     }
 
     const result = await debtsApi.remove(id);
+    await syncDebtPayablesSafe(id);
 
     return res.status(200).json({
       ok: true,
@@ -155,6 +160,7 @@ export async function getDebtsSummary(req, res) {
 export async function createDebtInstallments(req, res) {
   try {
     const result = await debtsApi.createInstallments(req.body);
+    await syncDebtPayablesSafe((result?.rows || []).map((row) => row.id));
 
     return res.status(201).json({
       ok: true,
@@ -203,6 +209,7 @@ export async function saveDebtInstallmentPlans(req, res) {
       debtId,
       req.body?.rows || []
     );
+    await syncDebtPayablesSafe(debtId);
 
     return res.status(200).json({
       ok: true,
@@ -234,6 +241,7 @@ export async function deleteDebtInstallmentPlan(req, res) {
     }
 
     const result = await installmentPlansApi.removePlan(debtId, planId);
+    await syncDebtPayablesSafe(debtId);
 
     return res.status(200).json({
       ok: true,

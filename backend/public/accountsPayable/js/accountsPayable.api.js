@@ -90,6 +90,10 @@ export const createCashMovement = (payload) =>
 export const registerPayment = (id, payload) =>
   request(API.pay(id), { method: 'POST', body: JSON.stringify(payload) });
 
+/** Título de Compromisso: o pagamento vai para a parcela (e o caixa sai de lá) */
+export const registerDebtPayment = (id, payload) =>
+  request(API.payDebt(id), { method: 'POST', body: JSON.stringify(payload) });
+
 export async function listAttachments(id) {
   const data = await request(API.attachments(id));
   return Array.isArray(data) ? data : extractRows(data);

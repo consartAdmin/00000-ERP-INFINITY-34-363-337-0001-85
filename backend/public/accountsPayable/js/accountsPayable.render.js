@@ -16,6 +16,14 @@ export function renderStatusTag(status) {
   return `<span class="ap-tag ${cssClass}">${label}</span>`;
 }
 
+function renderInvoiceCell(item) {
+  if (!item.debt_id) return item.invoice_number ?? '';
+  const parcela = /^\d{3}\/\d{3}$/.test(String(item.invoice_number || ''))
+    ? ` · ${item.invoice_number}` : '';
+  return `<a class="ap-debt-tag" href="/debts/debts.html" target="_blank" rel="noopener"
+    title="Gerado por Compromissos Financeiros — valor, vencimento e exclusão são feitos lá">🔗 Compromisso #${Number(item.debt_id)}${parcela}</a>`;
+}
+
 export function renderTable(rows) {
   const body = qs('#apTableBody');
   if (!body) return;
@@ -48,7 +56,7 @@ export function renderTable(rows) {
       <td>${item.supplier_id ?? ''}</td>
       <td>${item.supplier_name ?? ''}</td>
       <td>${renderGroupTag(item.payable_group)}</td>
-      <td>${item.invoice_number ?? ''}</td>
+      <td>${renderInvoiceCell(item)}</td>
       <td>${formatDate(item.issue_date)}</td>
       <td>${formatDate(item.due_date)}</td>
       <td>${renderStatusTag(item.status)}</td>
@@ -58,7 +66,9 @@ export function renderTable(rows) {
       <td class="ap-col-actions"><div class="ap-actions">
         ${canPay ? '<button type="button" class="ap-btn-pay" data-action="pay" title="Pagar">💰</button>' : ''}
         <button type="button" class="btn btn-sm btn-secondary" data-action="edit" title="Editar">✏️</button>
-        <button type="button" class="btn btn-sm btn-danger" data-action="delete" title="Excluir">🗑️</button>
+        ${item.debt_id
+    ? '<button type="button" class="btn btn-sm btn-danger" disabled title="Exclua pelo Compromisso Financeiro">🗑️</button>'
+    : '<button type="button" class="btn btn-sm btn-danger" data-action="delete" title="Excluir">🗑️</button>'}
       </div></td>`;
   });
 
