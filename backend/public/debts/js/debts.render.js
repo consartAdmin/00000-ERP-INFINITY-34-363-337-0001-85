@@ -17,6 +17,13 @@ import { getFilters } from './debts.filters.js';
 import { getDebtTypeName } from './debts.types.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
+// "pagas/total", ex.: 1/3
+function formatInstallments(row) {
+  const total = Math.max(Number(row.installments_count || row.installment_total || 1), 1);
+  const paid = Math.max(Number(row.installments_paid || 0), 0);
+  return `${paid}/${total}`;
+}
+
 export function renderTable() {
   const rows = Array.isArray(state.rows) ? state.rows : [];
   const currentPage = Math.max(Number(state.page || 1), 1);
@@ -31,7 +38,7 @@ export function renderTable() {
   if (!rows.length) {
     els.tableBody.innerHTML = `
       <tr>
-        <td colspan="10" class="empty-row">
+        <td colspan="12" class="empty-row">
           Nenhuma dívida encontrada.
         </td>
       </tr>
@@ -63,6 +70,14 @@ export function renderTable() {
 
           <td>
             ${escapeHtml(formatDate(row.due_date))}
+          </td>
+
+          <td>
+            ${escapeHtml(formatInstallments(row))}
+          </td>
+
+          <td>
+            ${escapeHtml(formatMoney(row.installment_avg_amount))}
           </td>
 
           <td>
@@ -134,7 +149,7 @@ export async function loadDebts() {
 
     els.tableBody.innerHTML = `
       <tr>
-        <td colspan="10" class="empty-row">
+        <td colspan="12" class="empty-row">
           Carregando dívidas...
         </td>
       </tr>
@@ -171,7 +186,7 @@ export async function loadDebts() {
 
     els.tableBody.innerHTML = `
       <tr>
-        <td colspan="10" class="empty-row">
+        <td colspan="12" class="empty-row">
           Erro ao carregar dívidas.
         </td>
       </tr>

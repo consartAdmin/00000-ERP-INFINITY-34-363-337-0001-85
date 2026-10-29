@@ -4,3 +4,4 @@
 
 export const TB_DEBTS = 'public.debts';
 export const TB_PAYMENTS = 'public.debt_payments';
+export const TB_PLANS = 'public.debt_installment_plans';
