@@ -6,24 +6,41 @@
 
 import { API, PATH_MOV } from './cashMoviments.config.js';
 import { buildQueryFromFilters, getPeriodo } from './cashMoviments.filters.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { fetchPdfReportStream, finishPdfReport, openPdfProgressModal } from './cashMoviments.reportProgress.js';
+
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+}[c]));
 
 export async function onAbrirRelatorioPdf(dom) {
+  const button = dom.elBtnRelatorio;
+  if (button?.disabled) return;
+
+  const oldHtml = button?.innerHTML;
   try {
+    if (button) { button.disabled = true; button.textContent = '⏳ Gerando…'; }
+
     const params = buildQueryFromFilters(dom);
+    params.set('stream', '1');
 
-    let url = `${API}/relatorio/pdf?${params.toString()}`;
-    let head = await fetch(url, { method: 'HEAD' });
+    const progress = openPdfProgressModal();
+    const result = await fetchPdfReportStream(`${API}/relatorio/pdf?${params.toString()}`, (event) => {
+      if (event.type === 'phase') progress.phase(event.message);
+      if (event.type === 'start') progress.start(event.total);
+      if (event.type === 'item') progress.item(event);
+    });
 
-    if (!head.ok) {
-      url = `${API}/relatorio?${params.toString()}`;
-      head = await fetch(url, { method: 'HEAD' });
-    }
-
-    if (!head.ok) throw new Error('Rota de relatório não encontrada.');
-    window.open(url, '_blank');
-
-  } catch {
-    alert('Relatório PDF ainda não disponível no backend.');
+    finishPdfReport(result);
+  } catch (error) {
+    console.error('[CAIXA][PDF]', error);
+    showCenterModal({
+      variant: 'error',
+      title: 'Erro ao gerar o Relatório PDF',
+      message: escapeHtml(error.message || 'Falha na comunicação com a API.'),
+    });
+  } finally {
+    if (button) { button.disabled = false; button.innerHTML = oldHtml; }
   }
 }
 
