@@ -8,6 +8,7 @@ import path from 'node:path';
 import pool from '../../config/db.js';
 import { CAIXA_PREFIX } from './cashMoviments.constants.js';
 import { ensureFiscalDocumentsSchema } from '../cashFiscalDocuments/cashFiscalDocuments.schema.js';
+import { ensureTransfersSchema } from './cashTransfers.schema.js';
 
 // "Dedutível no PIS/COFINS" (crédito na apuração do Lucro Real).
 // NULL = sem escolha: a apuração usa a subcategoria C.M.V como padrão.
@@ -29,6 +30,7 @@ export function ensureCashTaxColumns() {
 export async function q(text, params = []) {
   await ensureCashTaxColumns();
   await ensureFiscalDocumentsSchema();
+  await ensureTransfersSchema();
   return pool.query(text, params);
 }
 

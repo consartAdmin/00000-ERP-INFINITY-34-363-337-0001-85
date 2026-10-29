@@ -8,6 +8,7 @@
 
 'use strict';
 
+import { openTransferModal, confirmDeleteTransfer, deleteTransferAndReload } from './cashMoviments.transfers.js';
 import { Modal } from '/public/includes/js/modal.js';
 import { API, PATH_MOV } from './cashMoviments.config.js';
 import { state } from './cashMoviments.state.js';
@@ -323,6 +324,17 @@ export async function onTabelaClick(dom, event) {
     );
 
     window.alert('Não foi possível identificar a movimentação.');
+    return;
+  }
+
+  // Ponta de transferência entre contas: edita/exclui a transferência inteira
+  const transferId = Number(button.dataset.transferId);
+  if (Number.isInteger(transferId) && transferId > 0) {
+    if (action === 'edit') {
+      await openTransferModal(dom, { transferId });
+    } else if (action === 'del' && await confirmDeleteTransfer({ document_number: `TRF-${transferId}` })) {
+      await deleteTransferAndReload(dom, transferId);
+    }
     return;
   }
 

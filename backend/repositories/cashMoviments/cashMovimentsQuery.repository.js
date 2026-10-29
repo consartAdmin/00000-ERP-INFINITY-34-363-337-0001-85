@@ -118,6 +118,7 @@ export async function listForPdf({
       m.penalty_amount AS multa,
       m.interest_amount AS juros,
       m.fee_amount AS encargos,
+      m.transfer_id,
 
       m.is_deductible,
       s.is_deductible AS subcategoria_is_deductible,
@@ -197,39 +198,37 @@ export async function summary({
 
   const typeSql = movementTypeSql();
 
+  // Transferências entre contas não são receita/despesa: ficam em totais próprios
+  const totalSql = `(
+    m.amount
+    + COALESCE(m.penalty_amount, 0)
+    + COALESCE(m.interest_amount, 0)
+    + COALESCE(m.fee_amount, 0)
+  )`;
+
   const sql = `
     SELECT
-      COALESCE(SUM(
-        CASE
-          WHEN (${typeSql}) = 'ENTRADA'
-          THEN (
-            m.amount
-            + COALESCE(m.penalty_amount, 0)
-            + COALESCE(m.interest_amount, 0)
-            + COALESCE(m.fee_amount, 0)
-          )
-          ELSE 0
-        END
+      COALESCE(SUM(${totalSql}) FILTER (
+        WHERE (${typeSql}) = 'ENTRADA' AND m.transfer_id IS NULL
       ), 0) AS total_entradas,
 
-      COALESCE(SUM(
-        CASE
-          WHEN (${typeSql}) = 'SAIDA'
-          THEN (
-            m.amount
-            + COALESCE(m.penalty_amount, 0)
-            + COALESCE(m.interest_amount, 0)
-            + COALESCE(m.fee_amount, 0)
-          )
-          ELSE 0
-        END
-      ), 0) AS total_saidas
+      COALESCE(SUM(${totalSql}) FILTER (
+        WHERE (${typeSql}) = 'SAIDA' AND m.transfer_id IS NULL
+      ), 0) AS total_saidas,
+
+      COALESCE(SUM(${totalSql}) FILTER (
+        WHERE (${typeSql}) = 'ENTRADA' AND m.transfer_id IS NOT NULL
+      ), 0) AS transf_entradas,
+
+      COALESCE(SUM(${totalSql}) FILTER (
+        WHERE (${typeSql}) = 'SAIDA' AND m.transfer_id IS NOT NULL
+      ), 0) AS transf_saidas
     FROM "cashMoviments" m
     ${sqlWhere}
   `;
 
   const res = await q(sql, params);
-  const row = res.rows[0] || { total_entradas: 0, total_saidas: 0 };
+  const row = res.rows[0] || { total_entradas: 0, total_saidas: 0, transf_entradas: 0, transf_saidas: 0 };
   const saldo = Number(row.total_entradas || 0) - Number(row.total_saidas || 0);
 
   return { ...row, saldo };

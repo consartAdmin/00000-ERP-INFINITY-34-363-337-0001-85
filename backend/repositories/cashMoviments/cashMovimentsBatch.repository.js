@@ -6,6 +6,8 @@
 import pool from '../../config/db.js';
 import { normalizeTipoMovimentacao } from './cashMoviments.sanitizers.js';
 import { ensureCashTaxColumns } from './cashMoviments.utils.js';
+import { ensureTransfersSchema } from './cashTransfers.schema.js';
+import { deleteTransfers } from './cashTransfers.repository.js';
 
 /**
  * Alteração em lote das movimentações selecionadas.
@@ -19,6 +21,7 @@ import { ensureCashTaxColumns } from './cashMoviments.utils.js';
  *   is_deductible      true | false | null (null = segue a subcategoria)
  *   is_pis_cofins_creditable  true | false
  *   deduct_charges_only true | false (dedutível: só juros, multas e encargos)
+ * Pontas de transferência entre contas ficam de fora (edita-se pela transferência).
  */
 export async function updateMovementsBatch(ids = [], changes = {}) {
   const badRequest = (message) => Object.assign(new Error(message), { statusCode: 400 });
@@ -42,6 +45,7 @@ export async function updateMovementsBatch(ids = [], changes = {}) {
   }
 
   await ensureCashTaxColumns();
+  await ensureTransfersSchema();
   const client = await pool.connect();
 
   try {
@@ -147,6 +151,7 @@ export async function updateMovementsBatch(ids = [], changes = {}) {
         UPDATE "cashMoviments"
         SET ${sets.join(', ')}, updated_at = now()
         WHERE id = ANY($${params.length}::bigint[])
+          AND transfer_id IS NULL
         RETURNING id
       `,
       params
@@ -157,6 +162,7 @@ export async function updateMovementsBatch(ids = [], changes = {}) {
     return {
       requested: normalizedIds.length,
       updated: result.rowCount,
+      skipped_transfers: normalizedIds.length - result.rowCount,
       ids: result.rows.map((row) => Number(row.id)),
     };
   } catch (error) {
@@ -190,10 +196,22 @@ export async function deleteMovementsBatch(ids = []) {
     );
   }
 
+  await ensureTransfersSchema();
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
+
+    // Ponta de transferência: apaga a transferência inteira (as duas pontas + tarifa)
+    const { rows: transferRows } = await client.query(
+      `SELECT DISTINCT transfer_id FROM "cashMoviments"
+        WHERE id = ANY($1::bigint[]) AND transfer_id IS NOT NULL`,
+      [normalizedIds]
+    );
+    const removedByTransfer = (await deleteTransfers(
+      transferRows.map((row) => row.transfer_id),
+      client
+    )).movement_ids;
 
     await client.query(
       `
@@ -214,10 +232,14 @@ export async function deleteMovementsBatch(ids = []) {
 
     await client.query('COMMIT');
 
+    const deletedIds = [
+      ...new Set([...removedByTransfer, ...result.rows.map((row) => Number(row.id))]),
+    ];
+
     return {
       requested: normalizedIds.length,
-      deleted: result.rowCount,
-      ids: result.rows.map((row) => Number(row.id)),
+      deleted: deletedIds.length,
+      ids: deletedIds,
     };
   } catch (error) {
     await client.query('ROLLBACK');

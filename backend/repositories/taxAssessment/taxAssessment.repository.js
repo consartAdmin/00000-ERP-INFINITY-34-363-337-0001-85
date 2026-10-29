@@ -195,6 +195,8 @@ async function loadCashDeductions(filters, columnsByTable) {
         ? `(CASE WHEN COALESCE(m.deduct_charges_only, FALSE) THEN ${chargesValue} ELSE ${fullValue} END)`
         : fullValue;
     const active = cols.has('is_active') ? 'AND COALESCE(m.is_active, TRUE)' : '';
+    // Transferência entre contas (Caixa) só move dinheiro: não é despesa.
+    const notTransfer = cols.has('transfer_id') ? 'AND m.transfer_id IS NULL' : '';
     const subJoin = hasSub
         ? `LEFT JOIN public."cashSubcategories" s
               ON s.id::text = m.subcategory::text
@@ -218,6 +220,7 @@ async function loadCashDeductions(filters, columnsByTable) {
               AND m.movement_date::date <= $2::date
               AND translate(upper(COALESCE(m.movement_type, '')), 'ÍÌÎÏ', 'IIII') LIKE 'SAID%'
               ${active}
+              ${notTransfer}
             ORDER BY m.id
         )
         SELECT

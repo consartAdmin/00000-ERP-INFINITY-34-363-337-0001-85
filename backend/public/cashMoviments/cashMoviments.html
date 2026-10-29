@@ -147,6 +147,42 @@
       background: #ddd6fe;
     }
 
+    /* Transferência entre contas: chip "⇄ TRF-n" (Nº Doc) e tipo (SAÍDA/ENTRADA) */
+    .cx-trf-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 1px 8px;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      color: #3730a3;
+      background: #eef2ff;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .cx-trf-chip:hover,
+    .cx-trf-chip:focus-visible {
+      background: #e0e7ff;
+    }
+    .cx-trf-tipo {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 8px;
+      border: 1px solid #c7d2fe;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .cx-trf-tipo.is-out { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+    .cx-trf-tipo.is-in { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+    .cx-trf-muted { color: #64748b; white-space: nowrap; }
+    #transferenciasPill { color: #3730a3; background: #eef2ff; border-color: #c7d2fe; }
+    #transferenciasPill[hidden] { display: none !important; }
+
     /* Divisores das seções do modal de edição */
     #modalEditar .modal-form-section-title {
       display: flex;
@@ -374,6 +410,9 @@
                       <button type="button" id="btnLancarLote" class="btn btn-flat btn-sm"
                         title="Várias movimentações para o mesmo fornecedor/cliente, com datas e valores diferentes">📅 Lançar em lote</button>
 
+                      <button type="button" id="btnTransferirContas" class="btn btn-flat btn-sm"
+                        title="Mover dinheiro de uma conta para outra (não conta como receita/despesa)">⇄ Transferir entre contas</button>
+
                       <button type="submit" class="btn btn-flat btn-sm">Registrar Movimentação</button>
                     </div>
                   </div>
@@ -430,6 +469,8 @@
                   <option value="">Todos</option>
                   <option value="ENTRADA">ENTRADA</option>
                   <option value="SAIDA">SAIDA</option>
+                  <option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
+                  <option value="SEM_TRANSFERENCIA">SEM TRANSFERÊNCIAS</option>
                 </select>
               </div>
 
@@ -548,6 +589,12 @@
                 <div class="summary-pill summary-pill--primary">
                   <span>Total filtrado:</span>
                   <strong id="totalMovimentacoesFiltradas">R$ 0,00</strong>
+                </div>
+
+                <div class="summary-pill" id="transferenciasPill" hidden
+                  title="Transferências entre contas não entram em receitas/despesas nem no total filtrado">
+                  <span>⇄ Transferências:</span>
+                  <strong id="transferenciasFiltradas">R$ 0,00</strong>
                 </div>
 
               </div>
@@ -1314,7 +1361,7 @@
   </dialog>
 
   <!-- Script da página -->
-  <script type="module" src="/public/cashMoviments/js/cashMoviments.index.js?v=16"></script>
+  <script type="module" src="/public/cashMoviments/js/cashMoviments.index.js?v=17"></script>
   <script type="module" src="/public/cashMoviments/js/cashMoviments.attachTiles.js?v=2"></script>
 </body>
 
