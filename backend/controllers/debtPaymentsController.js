@@ -9,6 +9,8 @@
 
 import debtPaymentsApi from '../repositories/debtPayments/debtPayments.index.js';
 
+import { syncDebtPayablesSafe } from '../repositories/debtsPayables/debtsPayables.index.js';
+
 function sendError(res, error, fallbackMessage = 'Erro interno do servidor.') {
   const message = error?.message || fallbackMessage;
 
@@ -105,6 +107,7 @@ export async function createDebtPayment(req, res) {
     };
 
     const result = await debtPaymentsApi.createPayment(payload);
+    await syncDebtPayablesSafe(result?.debt?.id);
 
     return res.status(201).json({
       ok: true,
@@ -154,6 +157,7 @@ export async function updateDebtPayment(req, res) {
     }
 
     const result = await debtPaymentsApi.updatePayment(id, req.body || {});
+    await syncDebtPayablesSafe(result?.debt?.id);
 
     return res.status(200).json({
       ok: true,
@@ -196,6 +200,7 @@ export async function deleteDebtPayment(req, res) {
     }
 
     const result = await debtPaymentsApi.deletePayment(id);
+    await syncDebtPayablesSafe(result?.debt?.id);
 
     return res.status(200).json({
       ok: true,

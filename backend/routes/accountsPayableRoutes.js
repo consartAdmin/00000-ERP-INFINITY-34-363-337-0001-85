@@ -14,6 +14,7 @@ import {
   updateAccountsPayable,
   deleteAccountsPayable,
   payAccountsPayable,
+  payDebtAccountsPayable,
   getAccountsPayableAttachments,
   createAccountsPayableFromNfeEntry,
   signAccountsPayableAttachmentUpload,
@@ -46,6 +47,7 @@ router.get('/accounts-payable/:id', getAccountsPayable);
 router.put('/accounts-payable/:id', updateAccountsPayable);
 router.delete('/accounts-payable/:id', deleteAccountsPayable);
 router.post('/accounts-payable/:id/pay', payAccountsPayable);
+router.post('/accounts-payable/:id/pay-debt', payDebtAccountsPayable);
 
 // Os dois nomes permanecem por compatibilidade.
 router.get('/accounts-payable/:id/attachments', getAccountsPayableAttachments);

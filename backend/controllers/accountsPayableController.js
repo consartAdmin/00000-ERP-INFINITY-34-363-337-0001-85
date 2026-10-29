@@ -20,6 +20,15 @@ import {
   createFromSource
 } from '../repositories/accountsPayable/accountsPayable.index.js';
 
+import debtPaymentsApi from '../repositories/debtPayments/debtPayments.index.js';
+import {
+  ensureDebtPayableColumns,
+  syncDebtPayables,
+  syncAllDebtPayables
+} from '../repositories/debtsPayables/debtsPayables.index.js';
+import { hasSchedule } from '../repositories/debtsPayables/debtsPayables.schedule.js';
+import pool from '../config/db.js';
+
 import { generateAccountsPayablePdf }
   from '../generationPdf/generationAccountsPayablePdf.js';
 
@@ -29,6 +38,10 @@ import { generateAccountsPayableExcel }
 ensureTable()
   .then(() => {
     console.log('[accountsPayableController] Tabelas accountsPayable/accessories verificadas.');
+    // Parcelas de Compromissos Financeiros sempre presentes em Contas a Pagar
+    return syncAllDebtPayables().then(({ total, synced }) => {
+      console.log(`[accountsPayableController] Compromissos sincronizados: ${synced}/${total}.`);
+    });
   })
   .catch((err) => {
     console.error('[accountsPayableController] Erro ao garantir tabelas:', err);
@@ -184,13 +197,42 @@ export async function createAccountsPayable(req, res) {
   }
 }
 
+const DEBT_LOCKED_MESSAGE =
+  'Título gerado por Compromissos Financeiros: altere valor, vencimento ou exclua pelo Compromisso.';
+
+// Campos que Contas a Pagar ainda pode mudar num título de Compromisso
+const DEBT_EDITABLE_FIELDS = [
+  'category_id',
+  'subcategory_id',
+  'chart_account_id',
+  'payment_method_id',
+  'notes',
+  'attachment_url'
+];
+
+async function getLinkedDebtRow(id) {
+  await ensureDebtPayableColumns();
+  const row = await getById(id);
+  return row?.debt_id ? row : null;
+}
+
 /** PUT /api/accounts-payable/:id */
 export async function updateAccountsPayable(req, res) {
   try {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ ok: false, error: 'Invalid id' });
 
-    const updated = await update(id, req.body || {});
+    let payload = req.body || {};
+    const linked = await getLinkedDebtRow(id);
+    if (linked) {
+      payload = { ...linked };
+      const editable = linked.supplier_id ? DEBT_EDITABLE_FIELDS : [...DEBT_EDITABLE_FIELDS, 'supplier_id'];
+      for (const field of editable) {
+        if (Object.prototype.hasOwnProperty.call(req.body || {}, field)) payload[field] = req.body[field];
+      }
+    }
+
+    const updated = await update(id, payload);
     if (!updated) return res.status(404).json({ ok: false, error: 'Accounts payable not found' });
 
     res.json({ ok: true, data: updated });
@@ -205,6 +247,10 @@ export async function deleteAccountsPayable(req, res) {
   try {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ ok: false, error: 'Invalid id' });
+
+    if (await getLinkedDebtRow(id)) {
+      return res.status(409).json({ ok: false, error: DEBT_LOCKED_MESSAGE, message: DEBT_LOCKED_MESSAGE });
+    }
 
     const ok = await remove(id);
     if (!ok) return res.status(404).json({ ok: false, error: 'Accounts payable not found' });
@@ -222,6 +268,12 @@ export async function payAccountsPayable(req, res) {
     const id = toInt(req.params.id);
     if (!id) return res.status(400).json({ ok: false, error: 'Invalid id' });
 
+    // Título de Compromisso paga pela parcela (/pay-debt), senão o caixa duplica
+    if (await getLinkedDebtRow(id)) {
+      const message = 'Título de Compromisso Financeiro: use o pagamento da parcela.';
+      return res.status(409).json({ ok: false, error: message, message });
+    }
+
     const body = req.body || {};
     const updated = await pay(id, {
       payment_date: body.payment_date,
@@ -237,6 +289,67 @@ export async function payAccountsPayable(req, res) {
   } catch (err) {
     console.error('[accountsPayableController] payAccountsPayable erro:', err);
     res.status(500).json({ ok: false, error: 'Failed to pay accounts payable' });
+  }
+}
+
+function toMoney(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * POST /api/accounts-payable/:id/pay-debt
+ * Pagamento de um título de Compromisso: grava o pagamento na parcela
+ * (debt_payments + SAÍDA no caixa) e ressincroniza o título.
+ */
+export async function payDebtAccountsPayable(req, res) {
+  try {
+    const id = toInt(req.params.id);
+    if (!id) return res.status(400).json({ ok: false, error: 'Invalid id' });
+
+    const linked = await getLinkedDebtRow(id);
+    if (!linked) {
+      return res.status(400).json({ ok: false, error: 'Título não vinculado a um Compromisso Financeiro.' });
+    }
+
+    const { rows } = await pool.query('SELECT * FROM public.debts WHERE id = $1', [linked.debt_id]);
+    const debt = rows[0];
+    if (!debt) return res.status(404).json({ ok: false, error: 'Compromisso não encontrado.' });
+
+    const body = req.body || {};
+    const result = await debtPaymentsApi.createPayment({
+      debt_id: debt.id,
+      installment_number: hasSchedule(debt) ? linked.debt_installment_number : null,
+      installment_due_date: linked.due_date,
+      payment_date: body.payment_date,
+      amount: toMoney(body.paid_increment),
+      fine_amount: toMoney(body.multa),
+      interest_amount: toMoney(body.juros) + toMoney(body.encargos),
+      payment_method: body.document_type || null,
+      receipt_number: body.document_number || null,
+      notes: body.observacao || null,
+      cash: {
+        bank_account_id: body.bank_account_id ?? '',
+        category_id: body.category_id ?? '',
+        subcategory_id: body.subcategory_id ?? '',
+        chart_account_id: body.chart_account_id ?? '',
+        document_type: body.document_type ?? ''
+      }
+    });
+
+    await syncDebtPayables(debt.id);
+    const updated = await getById(id);
+
+    res.json({
+      ok: true,
+      data: updated,
+      debt_payment: result.payment,
+      cash_movement_id: result.cash_movement_id
+    });
+  } catch (err) {
+    console.error('[accountsPayableController] payDebtAccountsPayable erro:', err);
+    const message = err?.message || 'Failed to pay debt installment';
+    res.status(400).json({ ok: false, error: message, message });
   }
 }
 

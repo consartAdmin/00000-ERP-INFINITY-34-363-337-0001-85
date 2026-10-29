@@ -1726,6 +1726,39 @@ export function openDocumentTypesModal() {
   openCashDocumentTypesModal({ onChange: () => loadCashDocumentTypes() });
 }
 
+// Título de Compromisso: valor, vencimento, fornecedor e pagamento vêm de lá
+const DEBT_LOCKED_FIELDS = [
+  'invoice_number', 'due_date', 'payment_date',
+  'total_value', 'amount_paid', 'status', 'document_number', 'description',
+];
+
+function lockDebtFields(record) {
+  const root = document.getElementById('new-accounts-payable-modal-consart');
+  if (!root || !record?.debt_id) return;
+  DEBT_LOCKED_FIELDS.forEach((name) => {
+    const field = root.querySelector(`[name="${name}"]`);
+    if (!field) return;
+    field.disabled = true;
+    field.title = 'Altere pelo Compromisso Financeiro';
+  });
+  // Credor sem fornecedor cadastrado: deixa escolher aqui (a sincronização mantém)
+  if (record.supplier_id) {
+    const display = root.querySelector('[name="supplier_display"]');
+    if (display) display.disabled = true;
+    root.querySelector('[data-action="pick-supplier"]')?.setAttribute('disabled', '');
+  }
+  const body = root.querySelector('.modal__body');
+  if (body && !root.querySelector('.apm-debt-notice')) {
+    const notice = document.createElement('div');
+    notice.className = 'apm-debt-notice';
+    notice.innerHTML = `🔗 Título gerado pelo <strong>Compromisso Financeiro #${Number(record.debt_id)}</strong>.
+      Valor, vencimento e exclusão são alterados em
+      <a href="/debts/debts.html" target="_blank" rel="noopener">Compromissos Financeiros</a>;
+      aqui você ainda pode ajustar a classificação (categoria, plano de contas), observações e anexos.`;
+    body.prepend(notice);
+  }
+}
+
 export function openAccountForm(record, onSaved) {
   const editing = Boolean(record?.id);
   openNewAccountsPayableModal({
@@ -1743,6 +1776,7 @@ export function openAccountForm(record, onSaved) {
       await onSaved();
     },
   });
+  lockDebtFields(record);
 }
 
 export function openBatchForm(onSaved) {

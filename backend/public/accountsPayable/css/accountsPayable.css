@@ -250,6 +250,31 @@
     border-radius: 12px;
 }
 
+/* título gerado por Compromissos Financeiros */
+.ap-debt-tag {
+    display: inline-block;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1d4ed8;
+    white-space: nowrap;
+    text-decoration: none;
+    background: #e8f0ff;
+    border-radius: 10px;
+}
+.ap-debt-tag:hover { text-decoration: underline; }
+
+.apm-debt-notice {
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #1e3a8a;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+}
+
 .ap-group-tag {
     display: inline-block;
     padding: 1px 8px;

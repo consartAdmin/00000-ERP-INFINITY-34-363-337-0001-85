@@ -69,7 +69,7 @@ export async function deleteAccount(id) {
   try { await api.removeAccount(id); await loadList(); }
   catch (error) {
     console.error('[accountsPayable] delete:', error);
-    alert('Erro ao excluir registro.');
+    alert(error?.message || 'Erro ao excluir registro.');
   }
 }
 
@@ -116,35 +116,52 @@ export async function submitPayment(event) {
     : record.document_type || 'DUPLICATA';
 
   try {
-    await api.createCashMovement({
-      data_hora: paidAt,
-      tipo_movimentacao: 'SAÍDA',
-      conta_caixa: cashAccount,
-      bank_account_id: bankAccountId,
-      valor: amount,
-      tipo_documento: documentType,
-      document_type_id: toInt(documentTypeSelect?.value),
-      numero_documento: qs('#pay_documento')?.value?.trim() ||
-        record.nfe_number || record.numero_nfe || record.invoice_number || String(record.id),
-      fornecedor: record.supplier_name || '',
-      observacao: observation,
-      multa: fine,
-      juros: interest,
-      encargos: charges,
-      chart_account_id: toInt(qs('#pay_chart_account_id')?.value),
-      categoria: qs('#pay_categoria')?.value || null,
-      subcategoria: qs('#pay_subcategoria')?.value || null,
-      is_active: true,
-    });
-    await api.registerPayment(accountId, {
-      payment_date: String(paidAt).slice(0, 10),
-      paid_increment: amount,
-      multa: fine,
-      juros: interest,
-      encargos: charges,
-      chart_account_id: toInt(qs('#pay_chart_account_id')?.value),
-      observacao: observation,
-    });
+    if (record.debt_id) {
+      await api.registerDebtPayment(accountId, {
+        payment_date: String(paidAt).slice(0, 10),
+        paid_increment: amount,
+        multa: fine,
+        juros: interest,
+        encargos: charges,
+        observacao: observation,
+        bank_account_id: bankAccountId,
+        document_type: documentType,
+        document_number: qs('#pay_documento')?.value?.trim() || null,
+        chart_account_id: toInt(qs('#pay_chart_account_id')?.value),
+        category_id: toInt(qs('#pay_categoria')?.value),
+        subcategory_id: toInt(qs('#pay_subcategoria')?.value),
+      });
+    } else {
+      await api.createCashMovement({
+        data_hora: paidAt,
+        tipo_movimentacao: 'SAÍDA',
+        conta_caixa: cashAccount,
+        bank_account_id: bankAccountId,
+        valor: amount,
+        tipo_documento: documentType,
+        document_type_id: toInt(documentTypeSelect?.value),
+        numero_documento: qs('#pay_documento')?.value?.trim() ||
+          record.nfe_number || record.numero_nfe || record.invoice_number || String(record.id),
+        fornecedor: record.supplier_name || '',
+        observacao: observation,
+        multa: fine,
+        juros: interest,
+        encargos: charges,
+        chart_account_id: toInt(qs('#pay_chart_account_id')?.value),
+        categoria: qs('#pay_categoria')?.value || null,
+        subcategoria: qs('#pay_subcategoria')?.value || null,
+        is_active: true,
+      });
+      await api.registerPayment(accountId, {
+        payment_date: String(paidAt).slice(0, 10),
+        paid_increment: amount,
+        multa: fine,
+        juros: interest,
+        encargos: charges,
+        chart_account_id: toInt(qs('#pay_chart_account_id')?.value),
+        observacao: observation,
+      });
+    }
 
     const file = qs('#pay_anexoFile')?.files?.[0] || state.payDroppedFile;
     const progress = qs('#pay_anexoProgress');
