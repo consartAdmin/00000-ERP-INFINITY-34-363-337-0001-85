@@ -24,6 +24,14 @@ function formatInstallments(row) {
   return `${paid}/${total}`;
 }
 
+// Valores distintos das parcelas, um por linha (parcelas variáveis); sem lista, usa a média
+function formatInstallmentAmounts(row) {
+  const amounts = Array.isArray(row.installment_amounts) && row.installment_amounts.length
+    ? row.installment_amounts
+    : [row.installment_avg_amount];
+  return amounts.map((value) => escapeHtml(formatMoney(value))).join('<br>');
+}
+
 export function renderTable() {
   const rows = Array.isArray(state.rows) ? state.rows : [];
   const currentPage = Math.max(Number(state.page || 1), 1);
@@ -77,7 +85,7 @@ export function renderTable() {
           </td>
 
           <td>
-            ${escapeHtml(formatMoney(row.installment_avg_amount))}
+            ${formatInstallmentAmounts(row)}
           </td>
 
           <td>

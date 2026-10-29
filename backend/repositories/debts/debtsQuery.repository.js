@@ -24,8 +24,9 @@ const SORT_COLUMNS = Object.freeze({
 });
 
 // Parcelas pagas = nº de parcelas distintas com pagamento; total = installment_total (mín. 1).
-// Valor médio = média das parcelas previstas: valor da faixa (debt_installment_plans)
-// quando a parcela está numa faixa, senão original_amount / total.
+// Valor da parcela: valor da faixa (debt_installment_plans) quando a parcela está numa faixa,
+// senão original_amount / total. installment_amounts = valores distintos na ordem das parcelas
+// (a tela mostra um por linha); installment_avg_amount = média, usada só na ordenação.
 const INSTALLMENT_COLUMNS_SQL = `
         COALESCE(NULLIF(d.installment_total, 0), 1)::int AS installments_count,
         (
@@ -34,19 +35,34 @@ const INSTALLMENT_COLUMNS_SQL = `
           WHERE p.debt_id = d.id
             AND p.installment_number IS NOT NULL
         )::int AS installments_paid,
-        (
-          SELECT ROUND(AVG(COALESCE(pl.installment_amount,
-            d.original_amount / COALESCE(NULLIF(d.installment_total, 0), 1)))::numeric, 2)
-          FROM generate_series(1, COALESCE(NULLIF(d.installment_total, 0), 1)) AS gs(n)
-          LEFT JOIN LATERAL (
-            SELECT ip.installment_amount
-            FROM ${TB_PLANS} ip
-            WHERE ip.debt_id = d.id
-              AND gs.n BETWEEN ip.start_installment AND ip.end_installment
-            ORDER BY ip.start_installment, ip.id
-            LIMIT 1
-          ) pl ON true
-        ) AS installment_avg_amount`;
+        inst.installment_avg_amount,
+        inst.installment_amounts`;
+
+const INSTALLMENT_JOIN_SQL = `
+        LEFT JOIN LATERAL (
+          SELECT
+            ROUND((SUM(g.amount * g.qty) / SUM(g.qty))::numeric, 2) AS installment_avg_amount,
+            ARRAY_AGG(g.amount ORDER BY g.first_n) AS installment_amounts
+          FROM (
+            SELECT v.amount, MIN(v.n) AS first_n, COUNT(*) AS qty
+            FROM (
+              SELECT
+                gs.n,
+                ROUND(COALESCE(pl.installment_amount,
+                  d.original_amount / COALESCE(NULLIF(d.installment_total, 0), 1))::numeric, 2) AS amount
+              FROM generate_series(1, COALESCE(NULLIF(d.installment_total, 0), 1)) AS gs(n)
+              LEFT JOIN LATERAL (
+                SELECT ip.installment_amount
+                FROM ${TB_PLANS} ip
+                WHERE ip.debt_id = d.id
+                  AND gs.n BETWEEN ip.start_installment AND ip.end_installment
+                ORDER BY ip.start_installment, ip.id
+                LIMIT 1
+              ) pl ON true
+            ) v
+            GROUP BY v.amount
+          ) g
+        ) inst ON true`;
 
 function buildOrderBy(sortBy, sortDir) {
   const expr = SORT_COLUMNS[String(sortBy || '').trim()];
@@ -188,11 +204,13 @@ export async function list(filters = {}) {
         installments_count,
         installments_paid,
         installment_avg_amount,
+        installment_amounts,
         created_at,
         updated_at
       FROM (
         SELECT d.*, ${INSTALLMENT_COLUMNS_SQL}
         FROM ${TB_DEBTS} d
+        ${INSTALLMENT_JOIN_SQL}
       ) AS debts_list
       ${whereSql}
       ORDER BY ${buildOrderBy(sort_by, sort_dir)}
