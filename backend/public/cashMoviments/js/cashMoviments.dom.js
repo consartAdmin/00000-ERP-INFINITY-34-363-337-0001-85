@@ -111,8 +111,6 @@ export function getDom() {
   const elEditIsPisCofinsCreditable = qs('#edit_isPisCofinsCreditable');
   const elListaAnexosEdicao = qs('#listaAnexosEdicao');
 
-  // th sort
-  const thSort = qsa('th[data-sort]');
 
   cached = {
     // base
@@ -216,8 +214,6 @@ export function getDom() {
     elEditIsPisCofinsCreditable,
     elListaAnexosEdicao,
 
-    // sorting
-    thSort,
   };
 
   return cached;

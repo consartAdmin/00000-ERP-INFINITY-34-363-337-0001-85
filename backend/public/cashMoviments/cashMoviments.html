@@ -489,7 +489,7 @@
         <section class="table-layout">
           <div class="table-scroll table-height-570 table-row-h-20"
             data-table-settings="cashmoviments.corpotabelamovimentacoes">
-            <table class="table table-zebra table-zebra-hover table-sticky-head">
+            <table id="tabelaMovimentacoes" class="table table-zebra table-zebra-hover table-sticky-head">
               <thead>
                 <tr>
 
@@ -499,21 +499,36 @@
                       title="Selecionar todas desta página" />
                   </th>
 
-                  <th class="table-col-w-2">Nº Doc</th>
-                  <th class="table-col-w-2">Tipo</th>
-                  <th class="table-col-w-6">Nome</th>
-                  <th class="table-col-w-3">Data/Hora</th>
-                  <th class="table-col-w-2">Total</th>
-                  <th class="table-col-w-2">Multa</th>
-                  <th class="table-col-w-2">Juros</th>
-                  <th class="table-col-w-2">Encargos</th>
-                  <th class="table-col-w-2">Valor</th>
-                  <th class="table-col-w-2">Conta</th>
-                  <th class="table-col-w-6">Plano de Contas</th>
-                  <th class="table-col-w-5">Categoria</th>
-                  <th class="table-col-w-5">Subcategoria</th>
-                  <th class="table-col-w-5">Observação</th>
-                  <th class="table-col-w-3">Anexos</th>
+                  <th class="table-col-w-2 table-sortable" data-sort-column="n-doc" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Nº Doc <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-2 table-sortable" data-sort-column="tipo" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Tipo <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-6 table-sortable" data-sort-column="nome" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Nome <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-3 table-sortable" data-sort-column="data-hora" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Data/Hora <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-2 table-sortable" data-sort-column="total" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Total <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-2 table-sortable" data-sort-column="multa" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Multa <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-2 table-sortable" data-sort-column="juros" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Juros <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-2 table-sortable" data-sort-column="encargos" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Encargos <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-2 table-sortable" data-sort-column="valor" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Valor <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-2 table-sortable" data-sort-column="conta" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Conta <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-6 table-sortable" data-sort-column="plano-de-contas" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Plano de Contas <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-5 table-sortable" data-sort-column="categoria" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Categoria <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-5 table-sortable" data-sort-column="subcategoria" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Subcategoria <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-5 table-sortable" data-sort-column="observacao" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Observação <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-col-w-3 table-sortable" data-sort-column="anexos" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Anexos <span data-sort-icon aria-hidden="true">↕</span></button></th>
                   <th class="table-col-w-4">Ações</th>
                 </tr>
               </thead>
@@ -1299,7 +1314,7 @@
   </dialog>
 
   <!-- Script da página -->
-  <script type="module" src="/public/cashMoviments/js/cashMoviments.index.js?v=15"></script>
+  <script type="module" src="/public/cashMoviments/js/cashMoviments.index.js?v=16"></script>
   <script type="module" src="/public/cashMoviments/js/cashMoviments.attachTiles.js?v=2"></script>
 </body>
 

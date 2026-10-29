@@ -254,3 +254,58 @@ export function buildMovementsWhere({
   const sqlWhere = where.length ? ` WHERE ${where.join(' AND ')} ` : '';
   return { sqlWhere, params };
 }
+
+/**
+ * Colunas ordenáveis da listagem (cabeçalhos da tela Movimentações).
+ * Chave = data-sort-column do <th> (mesmo slug que a ⚙️ usa para a coluna);
+ * valor = expressão SQL sobre o SELECT de movementSelectSql().
+ */
+const MOVEMENT_ORDER_SQL = {
+  'n-doc': 'm.document_number',
+  tipo: movementTypeSql(),
+  nome: 'm.supplier_name',
+  'data-hora': 'm.movement_date',
+  total: `(COALESCE(m.amount, 0) + COALESCE(m.penalty_amount, 0)
+    + COALESCE(m.interest_amount, 0) + COALESCE(m.fee_amount, 0))`,
+  multa: 'm.penalty_amount',
+  juros: 'm.interest_amount',
+  encargos: 'm.fee_amount',
+  valor: 'm.amount',
+  conta: 'm.cash_account',
+  'plano-de-contas': 'coa.code',
+  categoria: 'c.name',
+  subcategoria: 's.name',
+  observacao: 'm.notes',
+  anexos: `(
+    (SELECT COUNT(*) FROM "cashMovimentsAttachments" a WHERE a.cash_movement_id = m.id)
+    + (SELECT COUNT(*) FROM "cashFiscalDocumentsAttachments" fa
+       WHERE fa.fiscal_document_id = m.fiscal_document_id)
+  )`,
+
+  // nomes antigos
+  data_hora: 'm.movement_date',
+  movement_date: 'm.movement_date',
+  tipo_movimentacao: 'm.movement_type',
+  movement_type: 'm.movement_type',
+  conta_caixa: 'm.cash_account',
+  cash_account: 'm.cash_account',
+  amount: 'm.amount',
+};
+
+export function isMovementOrderColumn(column) {
+  return Object.prototype.hasOwnProperty.call(MOVEMENT_ORDER_SQL, column);
+}
+
+/** ORDER BY seguro da listagem; o id desempata para a paginação ficar estável. */
+export function movementOrderSql(orderBy) {
+  const [rawCol, dirRaw] = String(orderBy || '').trim().split(/\s+/);
+  const col = isMovementOrderColumn(rawCol) ? rawCol : 'data-hora';
+  const dir = /^asc$/i.test(dirRaw || '') ? 'ASC' : 'DESC';
+  const text = ['n-doc', 'nome', 'conta', 'plano-de-contas', 'categoria', 'subcategoria', 'observacao']
+    .includes(col);
+  const expr = text
+    ? `NULLIF(TRIM(${MOVEMENT_ORDER_SQL[col]}::text), '')`
+    : MOVEMENT_ORDER_SQL[col];
+
+  return ` ORDER BY ${expr} ${dir} NULLS LAST, m.id ${dir} `;
+}

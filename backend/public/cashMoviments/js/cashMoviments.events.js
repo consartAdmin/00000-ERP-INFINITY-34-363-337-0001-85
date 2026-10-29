@@ -11,6 +11,7 @@
 'use strict';
 
 import { state } from './cashMoviments.state.js';
+import createSortableTable from '/public/includes/js/sortableTable.js';
 
 import {
   recarregarLista,
@@ -447,28 +448,21 @@ export function bindEvents(dom) {
   // ────────────────────────────────────────────────────────────────────
   // ORDENAÇÃO
   // ────────────────────────────────────────────────────────────────────
-  dom.thSort?.forEach((th) => {
-    th.style.cursor = 'pointer';
+  // Todas as colunas; a ordenação é feita no backend (orderBy) por causa
+  // da paginação. Padrão: Data/Hora mais recente primeiro.
+  const tabelaMovs = document.getElementById('tabelaMovimentacoes');
 
-    th.addEventListener('click', async () => {
-      const column = th.getAttribute('data-sort');
+  if (tabelaMovs) {
+    createSortableTable({
+      table: tabelaMovs,
+      defaultColumn: 'data-hora',
+      defaultDirection: 'desc',
+      onSort: async ({ column, direction }) => {
+        state.orderBy = `${column} ${direction.toUpperCase()}`;
+        state.paginaAtual = 1;
 
-      if (!column) return;
-
-      const [currentColumn, currentDirection] = String(
-        state.orderBy || ''
-      ).split(/\s+/);
-
-      const newDirection =
-        currentColumn === column &&
-          String(currentDirection).toUpperCase() === 'DESC'
-          ? 'ASC'
-          : 'DESC';
-
-      state.orderBy = `${column} ${newDirection}`;
-      state.paginaAtual = 1;
-
-      await recarregarLista(dom);
+        await recarregarLista(dom);
+      },
     });
-  });
+  }
 }
