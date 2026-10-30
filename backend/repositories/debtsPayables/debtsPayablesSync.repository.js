@@ -22,7 +22,10 @@ import {
 } from './debtsPayables.schedule.js';
 import { ensureDebtPayableColumns } from './debtsPayablesSchema.repository.js';
 
-/** Fornecedor do credor: pelo CNPJ/CPF, senão pelo nome */
+/**
+ * Fornecedor do credor: pelo CNPJ/CPF, senão pelo nome.
+ * Credor sem cadastro → cria o fornecedor (Contas a Pagar exige supplier_id).
+ */
 async function resolveSupplierId(client, debt) {
   const doc = String(debt.creditor_document || '').replace(/\D/g, '');
   if (doc) {
@@ -46,7 +49,17 @@ async function resolveSupplierId(client, debt) {
     if (rows[0]) return rows[0].supplier_id;
   }
 
-  return null;
+  const { rows } = await client.query(
+    `INSERT INTO ${TB_SUPPLIERS} (name, tax_id, observations)
+     VALUES ($1, $2, $3)
+     RETURNING supplier_id`,
+    [
+      (name || `CREDOR DO COMPROMISSO #${debt.id}`).slice(0, 200),
+      String(debt.creditor_document || '').trim().slice(0, 20) || null,
+      `Cadastrado automaticamente pelo Compromisso Financeiro #${debt.id}.`
+    ]
+  );
+  return rows[0].supplier_id;
 }
 
 /** Pagamentos por parcela: { [n]: { paid, last_date } } (null = sem parcela) */
@@ -148,11 +161,12 @@ async function syncWithClient(client, debtId) {
        WHERE (${TB_PAYABLE}.supplier_id, ${TB_PAYABLE}.invoice_number, ${TB_PAYABLE}.issue_date,
               ${TB_PAYABLE}.due_date, ${TB_PAYABLE}.payment_date, ${TB_PAYABLE}.description,
               ${TB_PAYABLE}.document_number, ${TB_PAYABLE}.total_value, ${TB_PAYABLE}.amount_paid,
-              ${TB_PAYABLE}.status)
+              ${TB_PAYABLE}.status, ${TB_PAYABLE}.source_type, ${TB_PAYABLE}.source_id)
          IS DISTINCT FROM
              (COALESCE(EXCLUDED.supplier_id, ${TB_PAYABLE}.supplier_id), EXCLUDED.invoice_number,
               EXCLUDED.issue_date, EXCLUDED.due_date, EXCLUDED.payment_date, EXCLUDED.description,
-              EXCLUDED.document_number, EXCLUDED.total_value, EXCLUDED.amount_paid, EXCLUDED.status)`,
+              EXCLUDED.document_number, EXCLUDED.total_value, EXCLUDED.amount_paid, EXCLUDED.status,
+              EXCLUDED.source_type, EXCLUDED.source_id)`,
       [
         supplierId,
         invoiceNumber,
@@ -165,7 +179,9 @@ async function syncWithClient(client, debtId) {
         paid,
         isPaid ? 'PAID' : 'PENDING',
         SOURCE_TYPE,
-        debt.id,
+        // source_id nulo: uq_accountspayable_source só aceita 1 título por origem;
+        // o vínculo com a parcela é debt_id + debt_installment_number
+        null,
         debt.id,
         item.number
       ]
