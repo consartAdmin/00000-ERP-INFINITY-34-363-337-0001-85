@@ -8,6 +8,8 @@ import { renderGroupFilter } from './accountsPayable.groups.js';
 import { state, patchState } from './accountsPayable.state.js';
 import { qs, toFloat, toInt } from './accountsPayable.utils.js';
 import { validatePayment } from './accountsPayable.validation.js';
+import { clearSelection, getSelectedIds } from './accountsPayable.selection.js';
+import { openBatchPayModal } from './accountsPayable.batchPay.js';
 
 export async function loadList() {
   try {
@@ -70,6 +72,32 @@ export async function deleteAccount(id) {
   catch (error) {
     console.error('[accountsPayable] delete:', error);
     alert(error?.message || 'Erro ao excluir registro.');
+  }
+}
+
+export function paySelectedAccounts() {
+  return openBatchPayModal(getSelectedIds(), async () => {
+    clearSelection();
+    await loadList();
+  });
+}
+
+export async function deleteSelectedAccounts() {
+  const ids = getSelectedIds();
+  if (!ids.length) return;
+  if (!confirm(`Deseja realmente excluir ${ids.length} conta(s) a pagar selecionada(s)?`)) return;
+  try {
+    const { deleted = 0, skipped = [] } = await api.removeAccounts(ids);
+    clearSelection();
+    await loadList();
+    const skippedDebt = skipped.filter((item) => item.reason === 'DEBT').length;
+    alert(
+      `${deleted} conta(s) excluída(s).` +
+      (skippedDebt ? `\n${skippedDebt} título(s) de Compromisso Financeiro não foram excluídos (exclua pelo Compromisso).` : '')
+    );
+  } catch (error) {
+    console.error('[accountsPayable] delete batch:', error);
+    alert(error?.message || 'Erro ao excluir os registros selecionados.');
   }
 }
 

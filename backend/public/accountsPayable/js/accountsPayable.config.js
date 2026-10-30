@@ -6,6 +6,7 @@ export const API = Object.freeze({
   exportExcel: '/api/accounts-payable/export/excel',
   pay: (id) => `/api/accounts-payable/${id}/pay`,
   payDebt: (id) => `/api/accounts-payable/${id}/pay-debt`,
+  deleteBatch: '/api/accounts-payable/delete-batch',
   attachments: (id) => `/api/accounts-payable/${id}/anexos`,
   cash: '/api/caixa/movimentacoes',
   cashCategories: '/api/caixa/categorias',

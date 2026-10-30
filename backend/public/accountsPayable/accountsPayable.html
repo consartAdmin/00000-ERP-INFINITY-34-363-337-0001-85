@@ -101,6 +101,16 @@
 
               <div class="ap-filter-actions">
 
+                <button type="button" id="btnPaySelected" class="btn btn-new btn-sm"
+                  title="Baixar (pagar) os títulos selecionados" disabled>
+                  💸 Baixar (0)
+                </button>
+
+                <button type="button" id="btnDeleteSelected" class="btn btn-danger btn-sm"
+                  title="Excluir os títulos selecionados" disabled>
+                  🗑️ Selecionados (0)
+                </button>
+
                 <button type="button" id="btnBatch" class="btn btn-new btn-sm">
                   Gerar Lote
                 </button>
@@ -135,6 +145,11 @@
         <table id="accountsPayableTable" class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
+              <th class="table-col-select">
+                <input type="checkbox" id="apSelectAll"
+                  aria-label="Selecionar todos os títulos desta página"
+                  title="Selecionar todos desta página" />
+              </th>
               <th class="table-col-w-1 table-sortable" data-sort-column="id" aria-sort="none"><button type="button"
                   class="table-sort-button" data-sort-button>ID <span data-sort-icon
                     aria-hidden="true">↕</span></button></th>

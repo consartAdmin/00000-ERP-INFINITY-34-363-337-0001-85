@@ -84,6 +84,9 @@ export const updateAccount = (id, payload) =>
 export const removeAccount = (id) =>
   request(`${API.base}/${id}`, { method: 'DELETE' });
 
+export const removeAccounts = (ids) =>
+  request(API.deleteBatch, { method: 'POST', body: JSON.stringify({ ids }) });
+
 export const createCashMovement = (payload) =>
   request(API.cash, { method: 'POST', body: JSON.stringify(payload) });
 
