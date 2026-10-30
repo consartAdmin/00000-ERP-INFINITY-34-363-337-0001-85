@@ -38,14 +38,46 @@ import { generateAccountsPayableExcel }
 ensureTable()
   .then(() => {
     console.log('[accountsPayableController] Tabelas accountsPayable/accessories verificadas.');
-    // Parcelas de Compromissos Financeiros sempre presentes em Contas a Pagar
-    return syncAllDebtPayables().then(({ total, synced }) => {
-      console.log(`[accountsPayableController] Compromissos sincronizados: ${synced}/${total}.`);
-    });
   })
   .catch((err) => {
     console.error('[accountsPayableController] Erro ao garantir tabelas:', err);
   });
+
+// Parcelas de Compromissos Financeiros sempre presentes em Contas a Pagar.
+// Independe do ensureTable (uma falha lá não pode impedir a carga) e é
+// aguardada na 1ª listagem de cada instância.
+let debtsSyncPromise = null;
+
+function ensureDebtsSynced() {
+  debtsSyncPromise ??= syncAllDebtPayables()
+    .then((result) => {
+      console.log(
+        `[accountsPayableController] Compromissos sincronizados: ${result.synced}/${result.total}.`
+      );
+      return result;
+    })
+    .catch((err) => {
+      debtsSyncPromise = null;
+      throw err;
+    });
+  return debtsSyncPromise;
+}
+
+ensureDebtsSynced().catch((err) => {
+  console.error('[accountsPayableController] Erro ao sincronizar Compromissos:', err);
+});
+
+/** GET /api/accounts-payable/sync-debts — refaz a carga e mostra o resultado */
+export async function syncDebtsAccountsPayable(req, res) {
+  try {
+    debtsSyncPromise = null;
+    const result = await ensureDebtsSynced();
+    res.json({ ok: result.errors.length === 0, ...result });
+  } catch (err) {
+    console.error('[accountsPayableController] syncDebtsAccountsPayable erro:', err);
+    res.status(500).json({ ok: false, error: err?.message || 'Failed to sync debts' });
+  }
+}
 
 function toInt(v, def = undefined) {
   if (v === undefined || v === null || v === '') return def;
@@ -82,6 +114,12 @@ function getExportFilters(query = {}) {
 /** GET /api/accounts-payable */
 export async function listAccountsPayable(req, res) {
   try {
+    try {
+      await ensureDebtsSynced();
+    } catch (err) {
+      console.error('[accountsPayableController] Compromissos não sincronizados:', err);
+    }
+
     const {
       page,
       pageSize,

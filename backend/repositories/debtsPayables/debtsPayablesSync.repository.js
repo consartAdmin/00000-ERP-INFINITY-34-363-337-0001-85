@@ -224,13 +224,15 @@ export async function syncAllDebtPayables() {
   await ensureDebtPayableColumns();
   const { rows } = await pool.query(`SELECT id FROM ${TB_DEBTS} ORDER BY id`);
   let synced = 0;
+  const errors = [];
   for (const row of rows) {
     try {
       await syncDebtPayables(row.id);
       synced += 1;
     } catch (error) {
       console.error(`[debtsPayables] Falha ao sincronizar o Compromisso #${row.id}:`, error);
+      errors.push({ debt_id: Number(row.id), error: error?.message || String(error) });
     }
   }
-  return { total: rows.length, synced };
+  return { total: rows.length, synced, errors };
 }
