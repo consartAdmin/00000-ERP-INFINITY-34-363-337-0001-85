@@ -198,7 +198,7 @@ export async function adjust(productStockId, delta, options = {}) {
     );
   }
 
-  return simpleStock.adjust(productStockId, delta);
+  return simpleStock.adjust(productStockId, delta, options.client);
 }
 
 export const remove = (productStockId) => simpleStock.remove(productStockId);
@@ -286,7 +286,7 @@ export async function unreserveLot(payload, options = {}) {
 
 export async function consumeLot(payload, options = {}) {
   await requireLotMode(options);
-  return lotStock.consumeLot(payload);
+  return lotStock.consumeLot(payload, options.client);
 }
 
 export async function listAvailableLotsByProduct(

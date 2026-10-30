@@ -261,8 +261,8 @@ export async function listPurchaseSuggestion(filters = {}) {
   return rows.map(rowToModel);
 }
 
-export async function getById(product_stock_id) {
-  const { rows } = await pool.query(
+export async function getById(product_stock_id, db = pool) {
+  const { rows } = await db.query(
     `
     ${baseSelect()}
     WHERE ps.product_stock_id = $1
@@ -427,11 +427,12 @@ export async function update(product_stock_id, payload = {}) {
   return rows[0] ? getById(product_stock_id) : null;
 }
 
-export async function adjust(product_stock_id, delta) {
+// db: pool ou client de uma transação já aberta (baixa de estoque da NF-e).
+export async function adjust(product_stock_id, delta, db = pool) {
   const d = Number(delta);
   if (!Number.isFinite(d)) throw new Error('delta inválido');
 
-  const { rows } = await pool.query(
+  const { rows } = await db.query(
     `
     UPDATE ${TB_STOCK}
     SET stock_qty = COALESCE(stock_qty, 0) + $1,
@@ -442,7 +443,7 @@ export async function adjust(product_stock_id, delta) {
     [d, product_stock_id]
   );
 
-  return rows[0] ? getById(product_stock_id) : null;
+  return rows[0] ? getById(product_stock_id, db) : null;
 }
 
 export async function remove(product_stock_id) {

@@ -1031,10 +1031,11 @@ export async function unreserveLot({ lot_id, qty }) {
   return res.rows[0];
 }
 
+// db: pool ou client de uma transação já aberta (baixa de estoque da NF-e).
 export async function consumeLot({
   lot_id,
   qty,
-}) {
+}, db = pool) {
   const q = Number(qty);
 
   if (!lot_id) {
@@ -1057,10 +1058,10 @@ export async function consumeLot({
   const product_stock_id =
     await getProductStockIdByLotId(
       lot_id,
-      pool,
+      db,
     );
 
-  const res = await pool.query(
+  const res = await db.query(
     `
       UPDATE ${TB_LOTS}
       SET
@@ -1104,7 +1105,7 @@ export async function consumeLot({
      * manda quem está depurando procurar a coisa errada, então buscamos o
      * estado real do lote antes de montar o erro.
      */
-    const { rows: statusRows } = await pool.query(
+    const { rows: statusRows } = await db.query(
       `
         SELECT
           lot_id,

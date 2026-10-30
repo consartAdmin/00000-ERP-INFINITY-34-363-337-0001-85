@@ -382,7 +382,7 @@ async function restoreConsumedLot({
   productStockId,
   lotId,
   qty,
-}) {
+}, db = pool) {
   const stockId = Number(productStockId);
   const normalizedLotId = Number(lotId);
   const normalizedQty = Number(qty);
@@ -431,7 +431,7 @@ async function restoreConsumedLot({
     );
   }
 
-  const { rows } = await pool.query(
+  const { rows } = await db.query(
     `
     UPDATE public."productsStockLots"
     SET
@@ -487,11 +487,19 @@ export async function debitBudgetStock(
   {
     scopeType = 'GLOBAL',
     scopeId = 1,
+    client = undefined,
   } = {},
 ) {
   const scopeOptions = {
     scopeType,
     scopeId,
+  };
+
+  // Com client, a movimentação entra na mesma transação que marca a
+  // tentativa como baixada/estornada: se algo falhar, tudo é desfeito.
+  const moveOptions = {
+    ...scopeOptions,
+    client,
   };
 
   const stockMode =
@@ -547,7 +555,7 @@ export async function debitBudgetStock(
         await productsStockManager.adjust(
           productStockId,
           -qty,
-          scopeOptions,
+          moveOptions,
         );
 
       results.push({
@@ -583,7 +591,7 @@ export async function debitBudgetStock(
           lot_id: lotId,
           qty,
         },
-        scopeOptions,
+        moveOptions,
       );
 
     results.push({
@@ -620,11 +628,19 @@ export async function rollbackBudgetStock(
   {
     scopeType = 'GLOBAL',
     scopeId = 1,
+    client = undefined,
   } = {},
 ) {
   const scopeOptions = {
     scopeType,
     scopeId,
+  };
+
+  // Com client, a movimentação entra na mesma transação que marca a
+  // tentativa como baixada/estornada: se algo falhar, tudo é desfeito.
+  const moveOptions = {
+    ...scopeOptions,
+    client,
   };
 
   const stockMode =
@@ -680,7 +696,7 @@ export async function rollbackBudgetStock(
         await productsStockManager.adjust(
           productStockId,
           qty,
-          scopeOptions,
+          moveOptions,
         );
 
       results.push({
@@ -715,7 +731,7 @@ export async function rollbackBudgetStock(
         productStockId,
         lotId,
         qty,
-      });
+      }, client);
 
     results.push({
       product_stock_id:
@@ -824,6 +840,47 @@ export async function applyStockFromBudget(
       };
     }
 
+    // Outra tentativa do mesmo orçamento já baixou o estoque e não foi
+    // estornada (ex.: reemissão que também saiu autorizada). Não baixa de
+    // novo: só marca esta tentativa para as próximas consultas pararem aqui.
+    const previous = await client.query(
+      `SELECT attempt_id
+         FROM public."budgetsNfeAttempts"
+        WHERE budget_id = $1
+          AND attempt_id <> $2
+          AND stock_applied_at IS NOT NULL
+          AND stock_reversed_at IS NULL
+          AND EXISTS (
+            SELECT 1
+              FROM public."budgetsNfeAttemptItems" i
+             WHERE i.attempt_id = "budgetsNfeAttempts".attempt_id
+               AND i.stock_applied_at IS NOT NULL
+          )
+        ORDER BY attempt_id DESC
+        LIMIT 1`,
+      [attempt.budget_id, id],
+    );
+    if (previous.rowCount) {
+      await client.query(
+        `UPDATE public."budgetsNfeAttempts"
+            SET stock_applied_at = NOW(), updated_at = NOW()
+          WHERE attempt_id = $1`,
+        [id],
+      );
+      await client.query('COMMIT');
+      return {
+        ok: true,
+        applied: false,
+        alreadyApplied: true,
+        skipped: true,
+        reason: 'BUDGET_STOCK_ALREADY_APPLIED_BY_OTHER_ATTEMPT',
+        attemptId: id,
+        otherAttemptId: Number(previous.rows[0].attempt_id),
+        moved: 0,
+        movements: [],
+      };
+    }
+
     const operation = await client.query(
       `SELECT moves_stock
          FROM public."nfeOperationTypes"
@@ -900,7 +957,7 @@ export async function applyStockFromBudget(
 
       const result = await debitBudgetStock(
         [sourceItem],
-        { scopeType, scopeId },
+        { scopeType, scopeId, client },
       );
       const appliedQuantity = result.movements.reduce(
         (total, movement) => total + Number(movement.qty || 0),
@@ -1188,6 +1245,7 @@ export async function rollbackStockFromBudget(
         {
           scopeType,
           scopeId,
+          client,
         },
       );
 
