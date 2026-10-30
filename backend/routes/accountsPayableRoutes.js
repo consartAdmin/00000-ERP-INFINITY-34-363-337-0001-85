@@ -15,6 +15,7 @@ import {
   deleteAccountsPayable,
   payAccountsPayable,
   payDebtAccountsPayable,
+  syncDebtsAccountsPayable,
   getAccountsPayableAttachments,
   createAccountsPayableFromNfeEntry,
   signAccountsPayableAttachmentUpload,
@@ -32,6 +33,7 @@ const router = Router();
 router.get('/accounts-payable/export/pdf', exportAccountsPayablePdf);
 router.get('/accounts-payable/export/excel', exportAccountsPayableExcel);
 router.post('/accounts-payable/from-nfe-entry', createAccountsPayableFromNfeEntry);
+router.get('/accounts-payable/sync-debts', syncDebtsAccountsPayable);
 
 router.get('/accounts-payable', listAccountsPayable);
 router.post('/accounts-payable', createAccountsPayable);
