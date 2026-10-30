@@ -19,7 +19,7 @@ function bankAccountLabel(account = {}) {
     .join(' — ');
 }
 
-async function populateBankAccountSelect(select, selectedId = null) {
+export async function populateBankAccountSelect(select, selectedId = null) {
   if (!select) return [];
   const wanted = selectedId == null || selectedId === '' ? '' : String(selectedId);
   select.disabled = true;

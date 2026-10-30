@@ -20,6 +20,8 @@ export const state = {
   cashCategories: [],
   cashSubcategoriesByCategory: Object.create(null),
   payDroppedFile: null,
+  // ids marcados (mantidos ao trocar de página/filtro)
+  selectedIds: new Set(),
 };
 
 export function patchState(values) {

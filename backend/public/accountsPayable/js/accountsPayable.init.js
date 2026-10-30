@@ -31,7 +31,11 @@ import {
   nextPage,
   previousPage,
   submitPayment,
+  deleteSelectedAccounts,
+  paySelectedAccounts,
 } from './accountsPayable.actions.js';
+
+import { initSelection } from './accountsPayable.selection.js';
 
 import {
   ensurePageSizeControl,
@@ -333,6 +337,20 @@ function bindEvents(pageSize) {
     ?.addEventListener(
       'click',
       handleTableAction
+    );
+
+  initSelection();
+
+  qs('#btnPaySelected')
+    ?.addEventListener(
+      'click',
+      paySelectedAccounts
+    );
+
+  qs('#btnDeleteSelected')
+    ?.addEventListener(
+      'click',
+      deleteSelectedAccounts
     );
 
 

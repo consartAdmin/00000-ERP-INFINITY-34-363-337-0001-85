@@ -4,6 +4,7 @@ import { state } from './accountsPayable.state.js';
 import { formatDate, formatMoney, qs } from './accountsPayable.utils.js';
 import { getAttachmentDownloadUrl } from './accountsPayable.api.js';
 import { renderGroupTag } from './accountsPayable.groups.js';
+import { refreshSelectionUi } from './accountsPayable.selection.js';
 
 export function renderStatusTag(status) {
   const map = {
@@ -35,7 +36,7 @@ export function renderTable(rows) {
   if (!rows.length) {
     const row = body.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = 12;
+    cell.colSpan = 13;
     cell.className = 'table-empty';
     cell.textContent = 'Nenhum registro encontrado.';
   }
@@ -52,6 +53,9 @@ export function renderTable(rows) {
     const canPay = !['PAID', 'CANCELLED']
       .includes(String(item.status || 'PENDING').toUpperCase());
     row.innerHTML = `
+      <td class="table-cell-select"><input type="checkbox" class="ap-row-checkbox"
+        data-id="${Number(item.id)}" aria-label="Selecionar título ${Number(item.id)}"
+        title="Selecionar este título" /></td>
       <td>${item.id}</td>
       <td>${item.supplier_id ?? ''}</td>
       <td>${item.supplier_name ?? ''}</td>
@@ -71,6 +75,8 @@ export function renderTable(rows) {
     : '<button type="button" class="btn btn-sm btn-danger" data-action="delete" title="Excluir">🗑️</button>'}
       </div></td>`;
   });
+
+  refreshSelectionUi();
 
   const label = qs('#apTotalLabel');
   const totalEl = qs('#apTotalTitulos');

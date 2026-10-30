@@ -300,6 +300,34 @@ export async function deleteAccountsPayable(req, res) {
   }
 }
 
+/**
+ * POST /api/accounts-payable/delete-batch  { ids: [] }
+ * Exclui os títulos selecionados; os de Compromisso Financeiro ficam de fora.
+ */
+export async function deleteAccountsPayableBatch(req, res) {
+  try {
+    const ids = [...new Set((req.body?.ids || []).map((v) => toInt(v)).filter((n) => n > 0))];
+    if (!ids.length) return res.status(400).json({ ok: false, error: 'Nenhum título selecionado.' });
+    if (ids.length > 1000) return res.status(400).json({ ok: false, error: 'Selecione no máximo 1000 títulos.' });
+
+    await ensureDebtPayableColumns();
+    let deleted = 0;
+    const skipped = [];
+
+    for (const id of ids) {
+      const row = await getById(id);
+      if (!row) { skipped.push({ id, reason: 'NOT_FOUND' }); continue; }
+      if (row.debt_id) { skipped.push({ id, reason: 'DEBT' }); continue; }
+      if (await remove(id)) deleted += 1;
+    }
+
+    res.json({ ok: true, deleted, skipped });
+  } catch (err) {
+    console.error('[accountsPayableController] deleteAccountsPayableBatch erro:', err);
+    res.status(500).json({ ok: false, error: 'Failed to delete accounts payable' });
+  }
+}
+
 /** POST /api/accounts-payable/:id/pay */
 export async function payAccountsPayable(req, res) {
   try {
