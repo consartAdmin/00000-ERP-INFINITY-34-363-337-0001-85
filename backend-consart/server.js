@@ -1315,6 +1315,10 @@ import { configureAppFeaturesDb } from './repositories/appFeatures/appFeatures.i
 configureAppFeaturesDb(pool);
 app.use('/api/app-features', appFeaturesRoutes);
 
+// Telas de cadastro (Funcionalidades / Opções / Atribuições)
+import appFeaturesAdminRoutes from './routes/appFeaturesAdminRoutes.js';
+app.use('/api/app-features-admin', appFeaturesAdminRoutes);
+
 /* ╔══════════════════════════════════════════════════════════╗
    ║ ROTA: "ordersNfeAttemptsRoutes"                          ║
    ╚══════════════════════════════════════════════════════════╝ */
