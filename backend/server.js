@@ -477,6 +477,10 @@ app.use('/api/gcs/images', gcsImagesRoutes);
 import pdvLoginsRoutes from './routes/pdv_loginsRoutes.js';
 app.use('/api/pdv-logins', pdvLoginsRoutes);
 
+// Caixa Windows Consart Starter (frente de caixa)
+import pdvStarterRoutes from './routes/pdvStarterRoutes.js';
+app.use('/api/pdv', pdvStarterRoutes);
+
 import customerPriceTablesRoutes from './routes/customerPriceTablesRoutes.js';
 
 app.use(
