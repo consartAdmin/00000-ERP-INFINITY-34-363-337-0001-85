@@ -1,0 +1,293 @@
+<!-- ╔════════════════════════════════════════════════════════════════════╗
+     ║ appFeatures.html — Funcionalidades do sistema (CONSART ERP)        ║
+     ║ Abas: Funcionalidades (appFeatures) / Opções (appFeatureOptions)   ║
+     ║       / Atribuições (appFeatureAssignments)                        ║
+     ║ Lista + modais de edição. API: /api/app-features-admin             ║
+     ╚════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png" />
+  <title>FUNCIONALIDADES | CONSART ERP</title>
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <!-- mesmo visual das telas de Colaboradores/Cargos (toolbar, pills, modal) -->
+  <link rel="stylesheet" href="/public/employees/employees.css?v=esm-11" />
+  <link rel="stylesheet" href="/public/appFeatures/appFeatures.css?v=1" />
+</head>
+
+<body class="consart-theme page-employees page-app-features p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="table-layout-integrated table-max-height-700">
+      <div class="table-layout-integrated__filter">
+        <div class="emp-toolbar">
+          <div class="emp-toolbar__title">
+            <span class="emp-toolbar__icon" aria-hidden="true">🧩</span>
+            <div>
+              <h1>Funcionalidades</h1>
+              <p>Funcionalidades do sistema, opções e onde cada uma vale</p>
+            </div>
+          </div>
+
+          <div class="fields-inline fields-inline-wrap fields-gap-3">
+            <div class="fields fields-w-20 fields-h-6">
+              <input type="search" id="afSearch" placeholder="Buscar por código, nome ou descrição..."
+                autocomplete="off" aria-label="Buscar" />
+            </div>
+
+            <div class="fields fields-w-20 fields-h-6" id="afFeatureFilterWrap" hidden>
+              <select id="afFeatureFilter" aria-label="Filtrar por funcionalidade">
+                <option value="">Todas as funcionalidades</option>
+              </select>
+            </div>
+
+            <label class="emp-toggle" id="afInactiveWrap">
+              <input type="checkbox" id="afShowInactive" />
+              <span>Incluir inativos</span>
+            </label>
+          </div>
+
+          <div class="btn-inline btn-gap-4 emp-toolbar__actions">
+            <button id="btnReload" class="btn btn-load btn-sm" type="button">↻ Recarregar</button>
+            <button id="btnNew" class="btn btn-new btn-sm" type="button">➕ Nova Funcionalidade</button>
+          </div>
+        </div>
+
+        <div class="tab-list af-tabs" role="tablist" aria-label="Tabelas">
+          <button type="button" class="tab is-active" role="tab" aria-selected="true" data-tab="features">🧩 Funcionalidades</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="options">🔘 Opções</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="assignments">🎯 Atribuições</button>
+        </div>
+      </div>
+
+      <div class="table-scroll table-scroll--flex table-row-h-20">
+        <table id="afTable" class="table table-fixed table-zebra table-zebra-hover table-sticky-head" aria-label="Funcionalidades">
+          <thead id="afHead"></thead>
+          <tbody id="afBody"></tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="afInfo">Carregando...</span>
+          </div>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ═══ Modal Funcionalidade (appFeatures) ═══ -->
+  <div id="featureModal" class="modal emp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="featureModalTitle">
+        <!-- div (e não <header>): a barra de título global (topGradientBar) se ancora no 1º <header> da página -->
+        <div class="modal__header modal-header-color-3">
+          <h2 id="featureModalTitle" class="modal__title">Nova funcionalidade</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <form id="featureForm" class="emp-section" autocomplete="off" novalidate>
+            <input type="hidden" id="ff-id" />
+            <div class="emp-section__grid">
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="ff-code">Código *</label>
+                <input type="text" id="ff-code" maxlength="100" class="af-code" placeholder="Ex.: PRODUCT_STOCK_MODE" required />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="ff-name">Nome *</label>
+                <input type="text" id="ff-name" maxlength="150" placeholder="Ex.: Modo de estoque do produto" required />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="ff-type">Tipo de valor</label>
+                <select id="ff-type">
+                  <option value="OPTION">Opção (lista)</option>
+                  <option value="BOOLEAN">Sim / Não</option>
+                  <option value="NUMBER">Número</option>
+                  <option value="TEXT">Texto</option>
+                  <option value="JSON">JSON</option>
+                </select>
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="ff-active">Status</label>
+                <select id="ff-active">
+                  <option value="true">Ativo</option>
+                  <option value="false">Inativo</option>
+                </select>
+              </div>
+
+              <!-- Valor padrão: OPTION usa a lista de opções; os outros tipos, campo próprio -->
+              <div class="fields fields-h-6 fields-font-3 emp-span-full" data-default="OPTION">
+                <label for="ff-default-option">Opção padrão</label>
+                <select id="ff-default-option">
+                  <option value="">— Nenhuma —</option>
+                </select>
+              </div>
+              <div class="fields fields-h-6 fields-font-3 emp-span-full" data-default="BOOLEAN" hidden>
+                <label for="ff-default-bool">Valor padrão</label>
+                <select id="ff-default-bool">
+                  <option value="">— Nenhum —</option>
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
+              <div class="fields fields-h-6 fields-font-3 emp-span-full" data-default="NUMBER" hidden>
+                <label for="ff-default-number">Valor padrão</label>
+                <input type="number" id="ff-default-number" step="any" placeholder="Opcional" />
+              </div>
+              <div class="fields fields-h-6 fields-font-3 emp-span-full" data-default="TEXT" hidden>
+                <label for="ff-default-text">Valor padrão</label>
+                <input type="text" id="ff-default-text" placeholder="Opcional" />
+              </div>
+              <div class="fields fields-font-3 emp-span-full" data-default="JSON" hidden>
+                <label for="ff-default-json">Valor padrão (JSON)</label>
+                <textarea id="ff-default-json" rows="3" class="af-json" placeholder='Ex.: {"limite": 10}'></textarea>
+              </div>
+
+              <div class="fields fields-font-3 emp-span-full">
+                <label for="ff-description">Descrição</label>
+                <textarea id="ff-description" rows="3" placeholder="Para que serve esta funcionalidade"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="submit" class="btn btn-save btn-sm" form="featureForm">💾 Salvar</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ═══ Modal Opção (appFeatureOptions) ═══ -->
+  <div id="optionModal" class="modal emp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="optionModalTitle">
+        <div class="modal__header modal-header-color-3">
+          <h2 id="optionModalTitle" class="modal__title">Nova opção</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <form id="optionForm" class="emp-section" autocomplete="off" novalidate>
+            <input type="hidden" id="of-id" />
+            <div class="emp-section__grid">
+              <div class="fields fields-h-6 fields-font-3 emp-span-full">
+                <label for="of-feature">Funcionalidade *</label>
+                <select id="of-feature" required></select>
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="of-code">Código *</label>
+                <input type="text" id="of-code" maxlength="100" class="af-code" placeholder="Ex.: LOTE" required />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="of-name">Nome *</label>
+                <input type="text" id="of-name" maxlength="150" placeholder="Ex.: Controle por lote" required />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="of-order">Ordem</label>
+                <input type="number" id="of-order" step="1" value="0" />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="of-active">Status</label>
+                <select id="of-active">
+                  <option value="true">Ativo</option>
+                  <option value="false">Inativo</option>
+                </select>
+              </div>
+              <div class="fields fields-font-3 emp-span-full">
+                <label for="of-config">Configuração (JSON)</label>
+                <textarea id="of-config" rows="4" class="af-json" placeholder='Ex.: {"controlsLot": true}'></textarea>
+              </div>
+              <div class="fields fields-font-3 emp-span-full">
+                <label for="of-description">Descrição</label>
+                <textarea id="of-description" rows="2" placeholder="Opcional"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="submit" class="btn btn-save btn-sm" form="optionForm">💾 Salvar</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ═══ Modal Atribuição (appFeatureAssignments) ═══ -->
+  <div id="assignmentModal" class="modal emp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="assignmentModalTitle">
+        <div class="modal__header modal-header-color-3">
+          <h2 id="assignmentModalTitle" class="modal__title">Nova atribuição</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <form id="assignmentForm" class="emp-section" autocomplete="off" novalidate>
+            <input type="hidden" id="asf-id" />
+            <div class="emp-section__grid">
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="asf-feature">Funcionalidade *</label>
+                <select id="asf-feature" required></select>
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="asf-option">Opção</label>
+                <select id="asf-option">
+                  <option value="">— Nenhuma —</option>
+                </select>
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="asf-scope-type">Escopo *</label>
+                <input type="text" id="asf-scope-type" maxlength="30" class="af-code" list="asf-scope-list" value="GLOBAL" required />
+                <datalist id="asf-scope-list">
+                  <option value="GLOBAL"></option>
+                  <option value="COMPANY"></option>
+                  <option value="USER"></option>
+                </datalist>
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="asf-scope-id">ID do escopo *</label>
+                <input type="number" id="asf-scope-id" min="1" step="1" value="1" required />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="asf-starts">Início</label>
+                <input type="datetime-local" id="asf-starts" />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="asf-ends">Fim</label>
+                <input type="datetime-local" id="asf-ends" />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="asf-enabled">Situação</label>
+                <select id="asf-enabled">
+                  <option value="true">Ligada</option>
+                  <option value="false">Desligada</option>
+                </select>
+              </div>
+              <div class="fields fields-font-3 emp-span-full">
+                <label for="asf-custom">Valor personalizado (JSON)</label>
+                <textarea id="asf-custom" rows="3" class="af-json" placeholder='Opcional. Ex.: 10, "texto" ou {"chave": "valor"}'></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="submit" class="btn btn-save btn-sm" form="assignmentForm">💾 Salvar</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/appFeatures/js/appFeatures.js?v=1"></script>
+</body>
+
+</html>
