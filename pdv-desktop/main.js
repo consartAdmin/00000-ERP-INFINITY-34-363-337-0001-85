@@ -46,7 +46,7 @@ function createWindow() {
     autoHideMenuBar: true,
     backgroundColor: '#07160e',
     title: 'Consart Starter — Frente de Caixa',
-    icon: path.join(__dirname, 'build', 'icon.ico'),
+    icon: path.join(__dirname, 'assets', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
