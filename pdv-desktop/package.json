@@ -1,0 +1,42 @@
+{
+  "name": "consart-starter-pdv",
+  "version": "1.0.0",
+  "description": "Consart Starter — Frente de Caixa (PDV) conectado ao Consart ERP",
+  "main": "main.js",
+  "author": "CONSART",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "br.com.consart.starter.pdv",
+    "productName": "Consart Starter",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "assets/**",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Consart Starter"
+    }
+  }
+}
