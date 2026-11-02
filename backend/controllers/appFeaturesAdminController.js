@@ -56,6 +56,10 @@ export const createFeature = handler((req) => repo.createFeature(req.body));
 export const updateFeature = handler((req) => repo.updateFeature(req.params.id, req.body));
 export const deleteFeature = handler((req) => repo.deleteFeature(req.params.id));
 
+// Modal único (funcionalidade + opções + atribuições)
+export const createFeatureFull = handler((req) => repo.saveFeatureFull(null, req.body));
+export const updateFeatureFull = handler((req) => repo.saveFeatureFull(req.params.id, req.body));
+
 // Opções
 export const listOptions = handler((req) => repo.listOptionsAdmin({
     featureId: req.query.featureId || null,

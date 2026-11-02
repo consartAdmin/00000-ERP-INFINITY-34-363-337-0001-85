@@ -1,6 +1,7 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ appFeaturesAdminRoutes.js — /api/app-features-admin (requireAuth)    ║
 // ║   GET/POST        /features        PUT/DELETE /features/:id          ║
+// ║   POST /features-full   PUT /features-full/:id  (modal único)        ║
 // ║   GET/POST        /options         PUT/DELETE /options/:id           ║
 // ║   GET/POST        /assignments     PUT/DELETE /assignments/:id       ║
 // ║ Tela: /public/appFeatures/appFeatures.html                           ║
@@ -18,6 +19,10 @@ router.get('/features', ctrl.listFeatures);
 router.post('/features', ctrl.createFeature);
 router.put('/features/:id', ctrl.updateFeature);
 router.delete('/features/:id', ctrl.deleteFeature);
+
+// modal único: salva funcionalidade + opções + atribuições de uma vez
+router.post('/features-full', ctrl.createFeatureFull);
+router.put('/features-full/:id', ctrl.updateFeatureFull);
 
 router.get('/options', ctrl.listOptions);
 router.post('/options', ctrl.createOption);

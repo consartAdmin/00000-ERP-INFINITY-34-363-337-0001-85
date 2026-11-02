@@ -1,8 +1,8 @@
 <!-- ╔════════════════════════════════════════════════════════════════════╗
      ║ appFeatures.html — Funcionalidades do sistema (CONSART ERP)        ║
-     ║ Abas: Funcionalidades (appFeatures) / Opções (appFeatureOptions)   ║
-     ║       / Atribuições (appFeatureAssignments)                        ║
-     ║ Lista + modais de edição. API: /api/app-features-admin             ║
+     ║ Lista de funcionalidades (appFeatures) + modal único que edita a   ║
+     ║ funcionalidade, as opções (appFeatureOptions) e as atribuições     ║
+     ║ (appFeatureAssignments) juntas. API: /api/app-features-admin       ║
      ╚════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/public/includes/css/style.css" />
   <!-- mesmo visual das telas de Colaboradores/Cargos (toolbar, pills, modal) -->
   <link rel="stylesheet" href="/public/employees/employees.css?v=esm-11" />
-  <link rel="stylesheet" href="/public/appFeatures/appFeatures.css?v=1" />
+  <link rel="stylesheet" href="/public/appFeatures/appFeatures.css?v=2" />
 </head>
 
 <body class="consart-theme page-employees page-app-features p-page pw-page--full ph-page--xr">
@@ -30,7 +30,7 @@
             <span class="emp-toolbar__icon" aria-hidden="true">🧩</span>
             <div>
               <h1>Funcionalidades</h1>
-              <p>Funcionalidades do sistema, opções e onde cada uma vale</p>
+              <p>Clique numa funcionalidade para editar os dados, as opções e qual opção vale</p>
             </div>
           </div>
 
@@ -38,12 +38,6 @@
             <div class="fields fields-w-20 fields-h-6">
               <input type="search" id="afSearch" placeholder="Buscar por código, nome ou descrição..."
                 autocomplete="off" aria-label="Buscar" />
-            </div>
-
-            <div class="fields fields-w-20 fields-h-6" id="afFeatureFilterWrap" hidden>
-              <select id="afFeatureFilter" aria-label="Filtrar por funcionalidade">
-                <option value="">Todas as funcionalidades</option>
-              </select>
             </div>
 
             <label class="emp-toggle" id="afInactiveWrap">
@@ -58,11 +52,6 @@
           </div>
         </div>
 
-        <div class="tab-list af-tabs" role="tablist" aria-label="Tabelas">
-          <button type="button" class="tab is-active" role="tab" aria-selected="true" data-tab="features">🧩 Funcionalidades</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="options">🔘 Opções</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="assignments">🎯 Atribuições</button>
-        </div>
       </div>
 
       <div class="table-scroll table-scroll--flex table-row-h-20">
@@ -82,212 +71,148 @@
     </section>
   </main>
 
-  <!-- ═══ Modal Funcionalidade (appFeatures) ═══ -->
+  <!-- ═══ Modal único: Funcionalidade + Opções + Atribuições ═══ -->
   <div id="featureModal" class="modal emp-modal" aria-hidden="true">
     <div class="modal__backdrop" data-modal-close></div>
     <div class="modal__dialog">
-      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="featureModalTitle">
+      <section class="modal__panel modal-width-10 af-modal" role="dialog" aria-modal="true" aria-labelledby="featureModalTitle">
         <!-- div (e não <header>): a barra de título global (topGradientBar) se ancora no 1º <header> da página -->
         <div class="modal__header modal-header-color-3">
           <h2 id="featureModalTitle" class="modal__title">Nova funcionalidade</h2>
           <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
         </div>
         <div class="modal__body">
-          <form id="featureForm" class="emp-section" autocomplete="off" novalidate>
+          <form id="featureForm" autocomplete="off" novalidate>
             <input type="hidden" id="ff-id" />
-            <div class="emp-section__grid">
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="ff-code">Código *</label>
-                <input type="text" id="ff-code" maxlength="100" class="af-code" placeholder="Ex.: PRODUCT_STOCK_MODE" required />
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="ff-name">Nome *</label>
-                <input type="text" id="ff-name" maxlength="150" placeholder="Ex.: Modo de estoque do produto" required />
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="ff-type">Tipo de valor</label>
-                <select id="ff-type">
-                  <option value="OPTION">Opção (lista)</option>
-                  <option value="BOOLEAN">Sim / Não</option>
-                  <option value="NUMBER">Número</option>
-                  <option value="TEXT">Texto</option>
-                  <option value="JSON">JSON</option>
-                </select>
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="ff-active">Status</label>
-                <select id="ff-active">
-                  <option value="true">Ativo</option>
-                  <option value="false">Inativo</option>
-                </select>
-              </div>
 
-              <!-- Valor padrão: OPTION usa a lista de opções; os outros tipos, campo próprio -->
-              <div class="fields fields-h-6 fields-font-3 emp-span-full" data-default="OPTION">
-                <label for="ff-default-option">Opção padrão</label>
-                <select id="ff-default-option">
-                  <option value="">— Nenhuma —</option>
-                </select>
-              </div>
-              <div class="fields fields-h-6 fields-font-3 emp-span-full" data-default="BOOLEAN" hidden>
-                <label for="ff-default-bool">Valor padrão</label>
-                <select id="ff-default-bool">
-                  <option value="">— Nenhum —</option>
-                  <option value="true">Sim</option>
-                  <option value="false">Não</option>
-                </select>
-              </div>
-              <div class="fields fields-h-6 fields-font-3 emp-span-full" data-default="NUMBER" hidden>
-                <label for="ff-default-number">Valor padrão</label>
-                <input type="number" id="ff-default-number" step="any" placeholder="Opcional" />
-              </div>
-              <div class="fields fields-h-6 fields-font-3 emp-span-full" data-default="TEXT" hidden>
-                <label for="ff-default-text">Valor padrão</label>
-                <input type="text" id="ff-default-text" placeholder="Opcional" />
-              </div>
-              <div class="fields fields-font-3 emp-span-full" data-default="JSON" hidden>
-                <label for="ff-default-json">Valor padrão (JSON)</label>
-                <textarea id="ff-default-json" rows="3" class="af-json" placeholder='Ex.: {"limite": 10}'></textarea>
-              </div>
+            <!-- 1. Funcionalidade (appFeatures) -->
+            <div class="emp-section">
+              <div class="emp-section__title">🧩 Funcionalidade</div>
+              <div class="emp-section__grid af-grid-4">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="ff-code">Código *</label>
+                  <input type="text" id="ff-code" maxlength="100" class="af-code" placeholder="Ex.: PRODUCT_STOCK_MODE" required />
+                </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="ff-name">Nome *</label>
+                  <input type="text" id="ff-name" maxlength="150" placeholder="Ex.: Modo de controle de estoque" required />
+                </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="ff-type">Tipo de valor</label>
+                  <select id="ff-type">
+                    <option value="OPTION">Opção (lista)</option>
+                    <option value="BOOLEAN">Sim / Não</option>
+                    <option value="NUMBER">Número</option>
+                    <option value="TEXT">Texto</option>
+                    <option value="JSON">JSON</option>
+                  </select>
+                </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="ff-active">Status</label>
+                  <select id="ff-active">
+                    <option value="true">Ativo</option>
+                    <option value="false">Inativo</option>
+                  </select>
+                </div>
 
-              <div class="fields fields-font-3 emp-span-full">
-                <label for="ff-description">Descrição</label>
-                <textarea id="ff-description" rows="3" placeholder="Para que serve esta funcionalidade"></textarea>
+                <!-- Valor padrão: OPTION usa as opções abaixo; os outros tipos, campo próprio -->
+                <div class="fields fields-h-6 fields-font-3" data-default="OPTION">
+                  <label for="ff-default-option">Opção padrão</label>
+                  <select id="ff-default-option"></select>
+                </div>
+                <div class="fields fields-h-6 fields-font-3" data-default="BOOLEAN" hidden>
+                  <label for="ff-default-bool">Valor padrão</label>
+                  <select id="ff-default-bool">
+                    <option value="">— Nenhum —</option>
+                    <option value="true">Sim</option>
+                    <option value="false">Não</option>
+                  </select>
+                </div>
+                <div class="fields fields-h-6 fields-font-3" data-default="NUMBER" hidden>
+                  <label for="ff-default-number">Valor padrão</label>
+                  <input type="number" id="ff-default-number" step="any" placeholder="Opcional" />
+                </div>
+                <div class="fields fields-h-6 fields-font-3" data-default="TEXT" hidden>
+                  <label for="ff-default-text">Valor padrão</label>
+                  <input type="text" id="ff-default-text" placeholder="Opcional" />
+                </div>
+                <div class="fields fields-h-6 fields-font-3" data-default="JSON" hidden>
+                  <label for="ff-default-json">Valor padrão (JSON)</label>
+                  <input type="text" id="ff-default-json" class="af-json" placeholder='Ex.: {"limite": 10}' />
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3 af-span-3">
+                  <label for="ff-description">Descrição</label>
+                  <input type="text" id="ff-description" placeholder="Para que serve esta funcionalidade" />
+                </div>
               </div>
+            </div>
+
+            <!-- 2. Opções (appFeatureOptions) -->
+            <div class="emp-section">
+              <div class="emp-section__title af-section-title">
+                <span>🔘 Opções</span>
+                <button type="button" id="btnAddOption" class="btn btn-new btn-sm">➕ Adicionar opção</button>
+              </div>
+              <div class="af-grid-table-wrap" data-table-settings="off">
+                <table class="table table-zebra af-edit-table" aria-label="Opções">
+                  <thead>
+                    <tr>
+                      <th class="af-e-code">Código *</th>
+                      <th class="af-e-name">Nome *</th>
+                      <th>Descrição</th>
+                      <th class="af-e-json">Configuração (JSON)</th>
+                      <th class="af-e-order">Ordem</th>
+                      <th class="af-e-check">Ativa</th>
+                      <th class="af-e-del"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="optionsBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 3. Atribuições (appFeatureAssignments) -->
+            <div class="emp-section">
+              <div class="emp-section__title af-section-title">
+                <span>🎯 Atribuições: qual opção vale</span>
+                <button type="button" id="btnAddAssignment" class="btn btn-new btn-sm">➕ Adicionar atribuição</button>
+              </div>
+              <div class="af-grid-table-wrap" data-table-settings="off">
+                <table class="table table-zebra af-edit-table" aria-label="Atribuições">
+                  <thead>
+                    <tr>
+                      <th class="af-e-scope">Escopo *</th>
+                      <th class="af-e-order">ID *</th>
+                      <th class="af-e-opt">Opção</th>
+                      <th class="af-e-check">Ligada</th>
+                      <th class="af-e-date">Início</th>
+                      <th class="af-e-date">Fim</th>
+                      <th title="JSON opcional">Valor personalizado</th>
+                      <th class="af-e-del"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="assignmentsBody"></tbody>
+                </table>
+              </div>
+              <datalist id="asf-scope-list">
+                <option value="GLOBAL"></option>
+                <option value="COMPANY"></option>
+                <option value="USER"></option>
+              </datalist>
             </div>
           </form>
         </div>
         <div class="modal__footer">
           <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
-          <button type="submit" class="btn btn-save btn-sm" form="featureForm">💾 Salvar</button>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <!-- ═══ Modal Opção (appFeatureOptions) ═══ -->
-  <div id="optionModal" class="modal emp-modal" aria-hidden="true">
-    <div class="modal__backdrop" data-modal-close></div>
-    <div class="modal__dialog">
-      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="optionModalTitle">
-        <div class="modal__header modal-header-color-3">
-          <h2 id="optionModalTitle" class="modal__title">Nova opção</h2>
-          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
-        </div>
-        <div class="modal__body">
-          <form id="optionForm" class="emp-section" autocomplete="off" novalidate>
-            <input type="hidden" id="of-id" />
-            <div class="emp-section__grid">
-              <div class="fields fields-h-6 fields-font-3 emp-span-full">
-                <label for="of-feature">Funcionalidade *</label>
-                <select id="of-feature" required></select>
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="of-code">Código *</label>
-                <input type="text" id="of-code" maxlength="100" class="af-code" placeholder="Ex.: LOTE" required />
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="of-name">Nome *</label>
-                <input type="text" id="of-name" maxlength="150" placeholder="Ex.: Controle por lote" required />
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="of-order">Ordem</label>
-                <input type="number" id="of-order" step="1" value="0" />
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="of-active">Status</label>
-                <select id="of-active">
-                  <option value="true">Ativo</option>
-                  <option value="false">Inativo</option>
-                </select>
-              </div>
-              <div class="fields fields-font-3 emp-span-full">
-                <label for="of-config">Configuração (JSON)</label>
-                <textarea id="of-config" rows="4" class="af-json" placeholder='Ex.: {"controlsLot": true}'></textarea>
-              </div>
-              <div class="fields fields-font-3 emp-span-full">
-                <label for="of-description">Descrição</label>
-                <textarea id="of-description" rows="2" placeholder="Opcional"></textarea>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal__footer">
-          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
-          <button type="submit" class="btn btn-save btn-sm" form="optionForm">💾 Salvar</button>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <!-- ═══ Modal Atribuição (appFeatureAssignments) ═══ -->
-  <div id="assignmentModal" class="modal emp-modal" aria-hidden="true">
-    <div class="modal__backdrop" data-modal-close></div>
-    <div class="modal__dialog">
-      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="assignmentModalTitle">
-        <div class="modal__header modal-header-color-3">
-          <h2 id="assignmentModalTitle" class="modal__title">Nova atribuição</h2>
-          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
-        </div>
-        <div class="modal__body">
-          <form id="assignmentForm" class="emp-section" autocomplete="off" novalidate>
-            <input type="hidden" id="asf-id" />
-            <div class="emp-section__grid">
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="asf-feature">Funcionalidade *</label>
-                <select id="asf-feature" required></select>
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="asf-option">Opção</label>
-                <select id="asf-option">
-                  <option value="">— Nenhuma —</option>
-                </select>
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="asf-scope-type">Escopo *</label>
-                <input type="text" id="asf-scope-type" maxlength="30" class="af-code" list="asf-scope-list" value="GLOBAL" required />
-                <datalist id="asf-scope-list">
-                  <option value="GLOBAL"></option>
-                  <option value="COMPANY"></option>
-                  <option value="USER"></option>
-                </datalist>
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="asf-scope-id">ID do escopo *</label>
-                <input type="number" id="asf-scope-id" min="1" step="1" value="1" required />
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="asf-starts">Início</label>
-                <input type="datetime-local" id="asf-starts" />
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="asf-ends">Fim</label>
-                <input type="datetime-local" id="asf-ends" />
-              </div>
-              <div class="fields fields-h-6 fields-font-3">
-                <label for="asf-enabled">Situação</label>
-                <select id="asf-enabled">
-                  <option value="true">Ligada</option>
-                  <option value="false">Desligada</option>
-                </select>
-              </div>
-              <div class="fields fields-font-3 emp-span-full">
-                <label for="asf-custom">Valor personalizado (JSON)</label>
-                <textarea id="asf-custom" rows="3" class="af-json" placeholder='Opcional. Ex.: 10, "texto" ou {"chave": "valor"}'></textarea>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal__footer">
-          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
-          <button type="submit" class="btn btn-save btn-sm" form="assignmentForm">💾 Salvar</button>
+          <button type="submit" class="btn btn-save btn-sm" form="featureForm">💾 Salvar tudo</button>
         </div>
       </section>
     </div>
   </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/appFeatures/js/appFeatures.js?v=1"></script>
+  <script type="module" src="/public/appFeatures/js/appFeatures.js?v=2"></script>
 </body>
 
 </html>
