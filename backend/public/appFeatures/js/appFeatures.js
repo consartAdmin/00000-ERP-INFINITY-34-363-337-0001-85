@@ -417,6 +417,28 @@ function bindEvents() {
 
   $('ff-type').addEventListener('change', (e) => showDefaultField(e.target.value));
 
+  // Trocar a opção padrão leva a mesma opção para todas as atribuições:
+  // os módulos leem a atribuição (GLOBAL #1 etc.), então o sistema todo
+  // passa a funcionar com a nova opção ao salvar.
+  $('ff-default-option').addEventListener('change', (e) => {
+    const code = e.target.value;
+    let rows = document.querySelectorAll('#assignmentsBody .af-assignment-row');
+    if (!code) return;
+    if (!rows.length) {
+      // sem atribuição: cria a GLOBAL #1 para a opção valer de fato
+      addAssignmentRow({ scope_type: 'GLOBAL', scope_id: 1, option_code: code });
+      syncEmptyRows();
+      refreshOptionSelects();
+      rows = document.querySelectorAll('#assignmentsBody .af-assignment-row');
+    }
+    rows.forEach((tr) => {
+      const sel = tr.querySelector('[data-f="option_code"]');
+      sel.value = code;
+      tr.classList.add('af-row-synced');
+      setTimeout(() => tr.classList.remove('af-row-synced'), 1200);
+    });
+  });
+
   $('btnAddOption').addEventListener('click', () => {
     $('optionsBody').insertAdjacentHTML('beforeend', optionRowHtml({
       sort_order: (document.querySelectorAll('#optionsBody .af-option-row').length + 1) * 10,

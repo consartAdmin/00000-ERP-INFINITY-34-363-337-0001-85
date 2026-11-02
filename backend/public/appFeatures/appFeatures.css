@@ -135,3 +135,6 @@
   .af-grid-4 > .af-span-3 { grid-column: 1 / -1; }
   .af-edit-table { min-width: 900px; }
 }
+
+/* destaque rápido quando a opção padrão é copiada para as atribuições */
+.af-edit-table tr.af-row-synced td { background: #fef9c3 !important; transition: background .3s; }
