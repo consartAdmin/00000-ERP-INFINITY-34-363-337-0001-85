@@ -10,6 +10,7 @@
     "email-outbounds-import": "node emailOutboundsImportBootstrap.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.4.0",
     "@google-analytics/data": "^5.2.1",
     "@google-cloud/secret-manager": "^6.1.0",
     "@google-cloud/storage": "^7.17.2",

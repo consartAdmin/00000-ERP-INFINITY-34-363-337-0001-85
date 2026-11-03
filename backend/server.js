@@ -664,6 +664,10 @@ app.use("/api", loginRoutes);
 import productsMobileRoutes from './routes/productsMobileRoutes.js';
 app.use('/api/products-mobile', productsMobileRoutes);
 
+// Orçamento por voz (app CONSART Orçamentos + Claude)
+import voiceBudgetsRoutes from './routes/voiceBudgetsRoutes.js';
+app.use('/api/voice-budgets', voiceBudgetsRoutes);
+
 /* ╔══════════════════════════════════════════════════════════╗
    ║                ROTA: "cancelarNfeRoutes"                 ║
    ╚══════════════════════════════════════════════════════════╝ */
