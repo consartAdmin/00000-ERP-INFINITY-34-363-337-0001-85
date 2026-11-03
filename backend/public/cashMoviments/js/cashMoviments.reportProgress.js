@@ -13,7 +13,17 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
 }[c]));
 
-/** Lê o NDJSON de GET ...?stream=1 (PDF ou ZIP) e devolve o evento 'done'. */
+/** Até onde o stream chegou, para a mensagem de erro e o console. */
+function describeProgress(progress) {
+  if (progress.total != null) return `parou em ${progress.index} de ${progress.total}${progress.pdfParts ? `, ${progress.pdfParts} parte(s) do arquivo` : ''}`;
+  return progress.last ? `última etapa: ${progress.last}` : 'nenhuma resposta do servidor';
+}
+
+/**
+ * Lê o NDJSON de GET ...?stream=1 (PDF ou ZIP) e devolve o evento 'done'.
+ * O PDF chega em linhas { type: 'pdf', part } e volta em result.pdf.
+ * Se a conexão cair antes do 'done', o erro tem incomplete = true.
+ */
 export async function fetchProgressStream(url, onEvent) {
   const response = await fetch(url, {
     headers: { Accept: 'application/x-ndjson' },
@@ -27,30 +37,67 @@ export async function fetchProgressStream(url, onEvent) {
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
+  const pdfParts = [];
+  const progress = { last: null, index: 0, total: null, pdfParts: 0 };
   let buffer = '';
   let result = null;
 
   const handleLine = (line) => {
     if (!line.trim()) return;
     const event = JSON.parse(line);
+    if (event.type === 'ping') return;
     if (event.type === 'error') throw new Error(event.message || 'Falha ao gerar o arquivo.');
+    if (event.type === 'pdf') {
+      pdfParts.push(event.part || '');
+      progress.pdfParts = pdfParts.length;
+      return;
+    }
+    progress.last = event.type === 'phase' ? event.message : event.type;
+    if (event.type === 'start') progress.total = event.total;
+    if (event.type === 'item') { progress.index = event.index; progress.total = event.total; }
     if (event.type === 'done') result = event;
     onEvent?.(event);
   };
 
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
+  const incomplete = (cause) => {
+    const error = new Error(`A geração foi interrompida antes de terminar (${describeProgress(progress)}).`);
+    error.incomplete = true;
+    error.progress = progress;
+    if (cause) error.cause = cause;
+    console.warn('[CAIXA][STREAM] interrompido', { url, progress, cause });
+    return error;
+  };
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop();
-    lines.forEach(handleLine);
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      lines.forEach(handleLine);
+    }
+  } catch (error) {
+    // queda de rede no meio do stream (erros do servidor já vêm como Error comum)
+    if (error instanceof TypeError) throw incomplete(error);
+    throw error;
   }
 
-  handleLine(buffer + decoder.decode());
+  const rest = buffer + decoder.decode();
+  try {
+    handleLine(rest);
+  } catch (error) {
+    if (error instanceof SyntaxError) throw incomplete(error); // última linha cortada
+    throw error;
+  }
 
-  if (!result) throw new Error('A geração foi interrompida antes de terminar.');
+  if (!result) throw incomplete();
+
+  if (result.parts != null) {
+    if (pdfParts.length !== result.parts) throw incomplete();
+    result.pdf = pdfParts.join('');
+  }
   return result;
 }
 

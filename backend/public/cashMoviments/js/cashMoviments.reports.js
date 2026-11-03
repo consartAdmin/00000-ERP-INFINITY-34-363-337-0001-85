@@ -19,19 +19,29 @@ const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
 }[c]));
 
+function triggerDirectDownload(href) {
+  const a = document.createElement('a');
+  a.href = href;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 1000);
+}
+
 export async function onAbrirRelatorioPdf(dom) {
   const button = dom.elBtnRelatorio;
   if (button?.disabled) return;
 
   const oldHtml = button?.innerHTML;
+  const params = buildQueryFromFilters(dom);
   try {
     if (button) { button.disabled = true; button.textContent = '⏳ Gerando…'; }
 
-    const params = buildQueryFromFilters(dom);
-    params.set('stream', '1');
+    const streamParams = new URLSearchParams(params);
+    streamParams.set('stream', '1');
 
     const progress = openPdfProgressModal();
-    const result = await fetchProgressStream(`${API}/relatorio/pdf?${params.toString()}`, (event) => {
+    const result = await fetchProgressStream(`${API}/relatorio/pdf?${streamParams.toString()}`, (event) => {
       if (event.type === 'phase') progress.phase(event.message);
       if (event.type === 'start') progress.start(event.total);
       if (event.type === 'item') progress.item(event);
@@ -40,6 +50,19 @@ export async function onAbrirRelatorioPdf(dom) {
     finishPdfReport(result);
   } catch (error) {
     console.error('[CAIXA][PDF]', error);
+
+    // O progresso caiu no caminho: baixa do jeito antigo (sem progresso)
+    if (error.incomplete) {
+      triggerDirectDownload(`${API}/relatorio/pdf?${params.toString()}`);
+      showCenterModal({
+        variant: 'warning',
+        title: 'Relatório PDF',
+        timeoutMs: null,
+        message: `${escapeHtml(error.message)}<br><br>O relatório está sendo baixado pelo modo direto, sem a barra de progresso. Aguarde o download começar.`,
+      });
+      return;
+    }
+
     showCenterModal({
       variant: 'error',
       title: 'Erro ao gerar o Relatório PDF',
