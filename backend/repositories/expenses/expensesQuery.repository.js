@@ -11,7 +11,7 @@ import { safeOrderBy, buildWhere } from './expenses.sql.js';
 export async function listExpenses(query = {}) {
   const limit  = Math.min(Math.max(toInt(query.limit, 20), 1), 200);
   const offset = Math.max(toInt(query.offset, 0), 0);
-  const orderBy = safeOrderBy(query.order_by);
+  const orderBy = safeOrderBy(query.order_by, query.sort, query.dir);
 
   const { sql: whereSql, params } = buildWhere(query);
 
@@ -115,4 +115,41 @@ export async function getExpenseById(id) {
   `;
   const { rows } = await pool.query(q, [id]);
   return rows[0] || null;
+}
+
+/**
+ * Lista para exportação (Excel): mesmos filtros e ordem da tela, sem
+ * paginação, com limite de segurança.
+ */
+export async function listExpensesForExport(query = {}, maxRows = 5000) {
+  const orderBy = safeOrderBy(query.order_by, query.sort, query.dir);
+  const { sql: whereSql, params } = buildWhere(query);
+
+  const q = `
+    SELECT
+      "id",
+      "expense_id",
+      "name",
+      "description",
+      "value",
+      "due_date",
+      "competence_month",
+      "competence_year",
+      "category",
+      "cost_center",
+      "vendor",
+      "recurrence_type",
+      "status",
+      "paid_date",
+      "payment_method",
+      "created_at",
+      "updated_at"
+    FROM ${TB}
+    ${whereSql}
+    ORDER BY ${orderBy}
+    LIMIT $${params.length + 1};
+  `;
+
+  const { rows } = await pool.query(q, [...params, maxRows]);
+  return rows || [];
 }

@@ -13,6 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
 import pool from '../config/db.js';
+import { sortOrderBy } from '../repositories/expenses/expenses.sql.js';
 
 const TB = 'public."Expenses"'; // ajuste se seu schema/tabela for diferente
 
@@ -151,13 +152,16 @@ async function fetchExpensesForPdf({
   q, name, status, category, vendor,
   date_from, date_to,
   order_by = 'created_at_desc',
+  sort = '',
+  dir = '',
   limit = 2000, // limite de segurança (pdf não deve explodir)
 } = {}) {
   const { whereSql, params } = buildWhereAndParams({
     q, name, status, category, vendor, date_from, date_to,
   });
 
-  const orderSql = mapOrderBy(order_by);
+  // Ordem do cabeçalho da tabela (sort/dir) tem prioridade
+  const orderSql = sortOrderBy(sort, dir) || mapOrderBy(order_by);
 
   // total + soma (mesmos filtros)
   const sqlAgg = `
@@ -401,6 +405,8 @@ export async function generateExpensesPdf({ filters = {}, baseUrl = '' } = {}) {
     date_from: filters.date_from,
     date_to: filters.date_to,
     order_by: filters.order_by || 'created_at_desc',
+    sort: filters.sort,
+    dir: filters.dir,
     limit: filters.limit || 2000,
   });
 
