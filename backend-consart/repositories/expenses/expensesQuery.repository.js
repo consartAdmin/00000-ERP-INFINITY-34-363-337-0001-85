@@ -19,7 +19,9 @@ function cashColumnsSql({ columns, subcategories } = {}) {
       NULL::text AS "cash_subcategory_name",`;
   }
   const subName = subcategories
-    ? `(SELECT s.nome FROM "cashSubcategories" s WHERE s.id = ${TB}."cash_subcategory_id")`
+    // a coluna do nome é "name" no banco (alguns ambientes antigos usam "nome")
+    ? `(SELECT COALESCE(to_jsonb(s)->>'name', to_jsonb(s)->>'nome')
+          FROM "cashSubcategories" s WHERE s.id = ${TB}."cash_subcategory_id")`
     : 'NULL::text';
   return `
       "cash_category_id",
