@@ -225,12 +225,6 @@ function toDateOnly(value) {
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
 }
 
-function competenceLabel(month, year) {
-  const mm = month ? String(month).padStart(2, '0') : '';
-  if (mm && year) return `${mm}/${year}`;
-  return mm || (year ? String(year) : '');
-}
-
 export async function getExpensesExcel(req, res) {
   try {
     const { limit, offset, ...filters } = req.query;
@@ -251,7 +245,6 @@ export async function getExpensesExcel(req, res) {
       { header: 'Fornecedor', key: 'vendor', width: 34 },
       { header: 'Valor', key: 'value', width: 14, style: { numFmt: '"R$" #,##0.00' } },
       { header: 'Vencimento', key: 'due_date', width: 12, style: { numFmt: 'dd/mm/yyyy' } },
-      { header: 'Competência', key: 'competence', width: 12 },
       { header: 'Recorrência', key: 'recurrence', width: 14 },
       { header: 'Criado em', key: 'created_at', width: 18, style: { numFmt: 'dd/mm/yyyy hh:mm' } },
       { header: 'Atualizado em', key: 'updated_at', width: 18, style: { numFmt: 'dd/mm/yyyy hh:mm' } },
@@ -271,7 +264,6 @@ export async function getExpensesExcel(req, res) {
         vendor: r.vendor || '',
         value,
         due_date: toDateOnly(r.due_date),
-        competence: competenceLabel(r.competence_month, r.competence_year),
         recurrence: EXPENSE_RECURRENCE_LABEL[r.recurrence_type] || r.recurrence_type || '',
         created_at: r.created_at ? new Date(r.created_at) : null,
         updated_at: r.updated_at ? new Date(r.updated_at) : null,

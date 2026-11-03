@@ -269,9 +269,9 @@
                 </div>
               </div>
 
-              <!-- Vencimento e competência -->
+              <!-- Vencimento -->
               <div class="exp-section">
-                <div class="exp-section__title">📅 Vencimento e competência</div>
+                <div class="exp-section__title">📅 Vencimento</div>
                 <div class="exp-section__grid">
                   <div class="fields fields-h-6 fields-font-3">
                     <label for="due_date">Vencimento *</label>
@@ -288,29 +288,9 @@
                     </select>
                   </div>
 
-                  <div class="fields fields-h-6 fields-font-3">
-                    <label for="competence_month">Competência (mês)</label>
-                    <select id="competence_month">
-                      <option value="">—</option>
-                      <option value="1">01 - Janeiro</option>
-                      <option value="2">02 - Fevereiro</option>
-                      <option value="3">03 - Março</option>
-                      <option value="4">04 - Abril</option>
-                      <option value="5">05 - Maio</option>
-                      <option value="6">06 - Junho</option>
-                      <option value="7">07 - Julho</option>
-                      <option value="8">08 - Agosto</option>
-                      <option value="9">09 - Setembro</option>
-                      <option value="10">10 - Outubro</option>
-                      <option value="11">11 - Novembro</option>
-                      <option value="12">12 - Dezembro</option>
-                    </select>
-                  </div>
-
-                  <div class="fields fields-h-6 fields-font-3">
-                    <label for="competence_year">Competência (ano)</label>
-                    <input id="competence_year" inputmode="numeric" maxlength="4" placeholder="ex: 2026" />
-                  </div>
+<!-- Competência saiu da tela (a despesa gera parcelas mês a mês); colunas ficam no banco -->
+                  <input id="competence_month" type="hidden" />
+                  <input id="competence_year" type="hidden" />
 
                   <div class="fields fields-h-6 fields-font-3 exp-span-full">
                     <label for="expVendor">Fornecedor</label>

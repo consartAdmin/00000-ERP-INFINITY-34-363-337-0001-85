@@ -140,6 +140,8 @@ export function createExpenseCreateModal({
     el.status.value = 'PENDING';
     el.paid_date.value = '';
     el.payment_method.value = '';
+    el.competence_month.value = '';
+    el.competence_year.value = '';
     el.recurrence_type.value = 'MONTHLY';
     el.payload.value = '';
 
