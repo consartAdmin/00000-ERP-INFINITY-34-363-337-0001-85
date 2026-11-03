@@ -3,8 +3,8 @@
 // ║ Path: public/expenses/expenseCreateModal.js                          ║
 // ║ CONSART ERP | Frontend (ESM)                                         ║
 // ║                                                                      ║
-// ║ ✔ Compatível com id="fornBusca" no HTML                             ║
-// ║ ✔ Não gera mais erro el.vendor is null                               ║
+// ║ ✔ Abre/fecha pelo modal.js global (modals.css)                       ║
+// ║ ✔ Fornecedor do modal: #expVendor (o filtro da tela usa #fornBusca)  ║
 // ║ ✔ Busca fornecedor via modal                                         ║
 // ║ ✔ Seguro contra null                                                 ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -12,6 +12,9 @@
 'use strict';
 
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
+import { Modal } from '/public/includes/js/modal.js';
+
+const MODAL_ID = 'expenseModal';
 
 /* =========================================================
    Helpers
@@ -58,7 +61,7 @@ export function createExpenseCreateModal({
   ========================================================= */
 
   const el = {
-    modalLayer: document.getElementById('modalLayer'),
+    modalLayer: document.getElementById(MODAL_ID),
     modalTitle: document.getElementById('modalTitle'),
     modalSub: document.getElementById('modalSub'),
     btnClose: document.getElementById('btnClose'),
@@ -78,9 +81,9 @@ export function createExpenseCreateModal({
     category: document.getElementById('category'),
     cost_center: document.getElementById('cost_center'),
 
-    // ⚠️ AGORA USANDO fornBusca
-    vendor: document.getElementById('fornBusca'),
-    btnVendorPick: document.getElementById('btnFornBusca'),
+    // Fornecedor do modal (ids próprios; #fornBusca é o filtro da tela)
+    vendor: document.getElementById('expVendor'),
+    btnVendorPick: document.getElementById('btnExpVendor'),
 
     recurrence_type: document.getElementById('recurrence_type'),
     status: document.getElementById('status'),
@@ -101,14 +104,18 @@ export function createExpenseCreateModal({
      Core
   ========================================================= */
 
-  function open() {
-    el.modalLayer.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+  Modal.setup();
+
+  function open(focusSelector) {
+    Modal.open(MODAL_ID, focusSelector ? { focusSelector } : {});
   }
 
   function close() {
-    el.modalLayer.classList.add('hidden');
-    document.body.style.overflow = '';
+    Modal.close(MODAL_ID);
+  }
+
+  function setDeleteVisible(visible) {
+    if (el.btnDelete) el.btnDelete.style.display = visible ? '' : 'none';
   }
 
   function resetDefaults() {
@@ -125,23 +132,22 @@ export function createExpenseCreateModal({
 
   function openCreate() {
     mode = 'create';
-    el.modalTitle.textContent = 'Nova Despesa';
+    el.modalTitle.textContent = '🧾 Nova Despesa';
     el.modalSub.textContent = 'Preencha os campos e salve.';
-    el.btnDelete.classList.add('hidden');
+    setDeleteVisible(false);
     resetDefaults();
-    open();
-    setTimeout(() => el.name?.focus?.(), 0);
+    open('#name');
   }
 
   function openEdit(row = {}) {
     mode = 'edit';
-    el.btnDelete.classList.remove('hidden');
+    setDeleteVisible(true);
 
-    el.modalTitle.textContent = `Editar Despesa #${row.id ?? ''}`;
+    el.modalTitle.textContent = `✏️ Editar Despesa #${row.id ?? ''}`;
     el.modalSub.textContent = 'Altere os campos e salve.';
 
     fillForm(row);
-    open();
+    open('#name');
   }
 
   function fillForm(row = {}) {
@@ -151,7 +157,7 @@ export function createExpenseCreateModal({
     el.description.value = row.description ?? '';
     el.value.value = row.value ?? '';
     el.due_date.value = row.due_date ? String(row.due_date).slice(0,10) : '';
-    el.competence_month.value = row.competence_month ?? '';
+    el.competence_month.value = row.competence_month != null ? String(row.competence_month) : '';
     el.competence_year.value = row.competence_year ?? '';
     el.category.value = row.category ?? '';
     el.cost_center.value = row.cost_center ?? '';
@@ -201,15 +207,16 @@ export function createExpenseCreateModal({
   ========================================================= */
 
   function bind() {
-    el.btnClose?.addEventListener('click', close);
-    el.btnCancel?.addEventListener('click', close);
-    el.modalLayer?.addEventListener('click', e => {
-      if (e.target === el.modalLayer) close();
-    });
+    // Fechar (✕, Cancelar, fundo) e ESC: data-modal-close + modal.js
 
     el.form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      const payload = readFormPayload();
+      let payload;
+      try {
+        payload = readFormPayload();
+      } catch {
+        return alert('Dados extras: JSON inválido.');
+      }
 
       if (!payload.name) return alert('Informe o nome.');
       if (!payload.value) return alert('Informe valor válido.');
@@ -259,11 +266,6 @@ export function createExpenseCreateModal({
       if (e.key !== 'Enter') return;
       e.preventDefault();
       pickSupplier();
-    });
-
-    // ESC fecha
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !el.modalLayer.classList.contains('hidden')) close();
     });
   }
 

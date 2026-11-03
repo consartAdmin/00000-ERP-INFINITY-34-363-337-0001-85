@@ -1,118 +1,153 @@
 /* ╔══════════════════════════════════════════════════════════════════════╗
-   ║ expenseCreateModal.css — Modal Criar/Editar Despesa (CENTER FIX)     ║
+   ║ expenseCreateModal.css — Modal Criar/Editar Despesa                  ║
    ║ Path: public/expenses/expenseCreateModal.css                         ║
+   ║ Estrutura/abertura: includes/css/modals.css + includes/js/modal.js   ║
+   ║ Aqui ficam só os cards internos (exp-*).                             ║
    ╚══════════════════════════════════════════════════════════════════════╝ */
 
-/* ✅ Overlay: hard-center using GRID (beats most global CSS) */
-#modalLayer.modal-layer{
-  position:fixed !important;
-  inset:0 !important;
-  width:100vw !important;
-  height:100vh !important;
-
-  display:grid !important;
-  place-items:center !important;
-
-  padding:18px !important;
-  background:rgba(2,6,23,.45) !important;
-  z-index:9999 !important;
-
-  margin:0 !important;
-  left:0 !important;
-  top:0 !important;
-  transform:none !important;
+.exp-modal {
+  --exp-soft-line: #dbe1e8;
+  --exp-title-bg: #f8fafc;
+  --exp-radius: var(--table-radius-top, 10px);
+  --fields-border-color: #c7d0db;
 }
 
-#modalLayer.hidden{ display:none !important; }
-
-/* ✅ Modal box: always centered, no external “float/left” */
-#modalLayer .modal{
-  width:min(980px, calc(100vw - 36px)) !important;
-  max-height:calc(100vh - 36px) !important;
-
-  background:#fff !important;
-  border-radius:18px !important;
-  box-shadow:0 30px 80px rgba(2,6,23,.35) !important;
-  border:1px solid rgba(255,255,255,.35) !important;
-
-  margin:0 !important;
-  position:relative !important;
-  left:auto !important;
-  right:auto !important;
-  top:auto !important;
-  bottom:auto !important;
-  transform:none !important;
-
-  /* Better internal layout */
-  overflow:hidden !important;
-  display:flex !important;
-  flex-direction:column !important;
+.exp-modal .modal__panel {
+  max-height: calc(100vh - (var(--modal-space, 16px) * 2));
 }
 
-/* ✅ Header full width */
-#modalLayer .modal-h{
-  display:flex !important;
-  justify-content:space-between !important;
-  align-items:center !important;
-  gap:12px !important;
-
-  padding:14px 16px !important;
-  border-bottom:1px solid var(--line) !important;
-  background:#fbfbfd !important;
-
-  width:100% !important;
+.exp-modal__subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
 }
 
-/* ✅ Body scrolls (not the entire modal) */
-#modalLayer .modal-b{
-  padding:14px 16px 16px !important;
-  overflow:auto !important;
-  flex:1 1 auto !important;
+/* Cards em 3 colunas */
+.exp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
 }
 
-/* ✅ Footer stays visible */
-#modalLayer .modal-f{
-  display:flex !important;
-  justify-content:space-between !important;
-  align-items:center !important;
-  gap:10px !important;
-
-  padding:12px 16px !important;
-  border-top:1px solid var(--line) !important;
-  background:#fbfbfd !important;
-
-  width:100% !important;
+.exp-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--exp-soft-line);
+  border-radius: var(--exp-radius);
+  padding: 10px 12px 12px;
 }
 
-/* Grid */
-/* ✅ 5 columns grid (desktop) */
-#modalLayer .grid{
-  display:grid !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  gap:12px !important;
-  align-items:start !important;
+.exp-section--full {
+  grid-column: 1 / -1;
 }
 
-/* Spans */
-#modalLayer .col-span-2{ grid-column: span 2 !important; }
-#modalLayer .col-span-3{ grid-column: span 3 !important; }
-#modalLayer .col-span-4{ grid-column: span 4 !important; }
-#modalLayer .col-span-5{ grid-column: 1 / -1 !important; } /* full row */
-
-/* Buttons alignment */
-#modalLayer .right{
-  display:flex !important;
-  gap:8px !important;
-  align-items:center !important;
+.exp-section__title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin: -10px -12px 10px;
+  padding: 7px 12px;
+  background: var(--exp-title-bg);
+  border-bottom: 1px solid var(--exp-soft-line);
+  border-radius: var(--exp-radius) var(--exp-radius) 0 0;
 }
 
-/* Responsive */
-@media (max-width: 1200px){
-  #modalLayer .grid{ grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.exp-section__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: end;
 }
-@media (max-width: 900px){
-  #modalLayer .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+.exp-section__grid > .fields {
+  width: auto;
 }
-@media (max-width: 720px){
-  #modalLayer .grid{ grid-template-columns: 1fr !important; }
+
+.exp-span-full {
+  grid-column: 1 / -1;
+}
+
+.exp-section__fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: auto;
+}
+
+.exp-section__fill textarea {
+  min-height: 60px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+/* Campo + botão (fornecedor) */
+.exp-input-btn {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.exp-input-btn input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.exp-modal .exp-readonly {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.exp-modal .exp-money {
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Rodapé: Excluir à esquerda, Cancelar/Salvar à direita */
+.exp-modal__footer {
+  justify-content: space-between;
+}
+
+.exp-modal__footer-right {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.exp-modal .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .exp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 2 colunas: Dados extras ocupa o espaço ao lado de Valor e pagamento */
+  .exp-section--full {
+    grid-column: auto;
+  }
+
+  .exp-section--full .exp-section__fill textarea {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .exp-section--full {
+    grid-column: 1 / -1;
+  }
+
+  .exp-grid,
+  .exp-section__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
