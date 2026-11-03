@@ -35,11 +35,6 @@
 
         <!-- Filters -->
         <div class="fields-inline fields-gap-3">
-          <div class="fields fields-h-6 fields-w-20 fields-font-3">
-            <span class="dot"></span>
-            Filtros
-          </div>
-
           <div class="btn-inline bnt-gap-3 btn-position-right">
 
             <button id="btnNew" type="button" class="btn btn-new btn-sm">
@@ -89,7 +84,9 @@
 
           <div class="fields fields-h-6 fields-w-10 fields-font-3">
             <label>Categoria</label>
-            <input id="fCategory" class="input" placeholder="ex: Aluguel, Energia..." />
+            <select id="fCategory" class="select" title="Categorias do Caixa">
+              <option value="">Todas</option>
+            </select>
           </div>
 
           <!-- Fornecedor -->
@@ -280,7 +277,9 @@
 
                   <div class="fields fields-h-6 fields-font-3">
                     <label for="category">Categoria</label>
-                    <input id="category" placeholder="ex: Energia" />
+                    <select id="category" title="Categorias do Caixa (as mesmas do Financeiro)">
+                      <option value="">Selecione...</option>
+                    </select>
                   </div>
 
                   <div class="fields fields-h-6 fields-font-3">
@@ -466,7 +465,9 @@
 
                 <div class="fields fields-h-6 fields-font-3">
                   <label for="batch_category">Categoria</label>
-                  <input id="batch_category" placeholder="— não alterar —" />
+                  <select id="batch_category">
+                    <option value="">— não alterar —</option>
+                  </select>
                 </div>
 
                 <div class="fields fields-h-6 fields-font-3">

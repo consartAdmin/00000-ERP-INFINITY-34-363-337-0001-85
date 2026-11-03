@@ -13,6 +13,7 @@
 
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { Modal } from '/public/includes/js/modal.js';
+import { fillCategorySelect, setCategoryValue } from './expensesCategories.js';
 
 const MODAL_ID = 'expenseModal';
 
@@ -120,6 +121,7 @@ export function createExpenseCreateModal({
 
   function resetDefaults() {
     el.form.reset();
+    setCategoryValue(el.category, '');
     el.id.value = '';
     el.expense_id.value = '';
     el.is_active.value = 'true';
@@ -159,7 +161,7 @@ export function createExpenseCreateModal({
     el.due_date.value = row.due_date ? String(row.due_date).slice(0,10) : '';
     el.competence_month.value = row.competence_month != null ? String(row.competence_month) : '';
     el.competence_year.value = row.competence_year ?? '';
-    el.category.value = row.category ?? '';
+    setCategoryValue(el.category, row.category);
     el.cost_center.value = row.cost_center ?? '';
     if (el.vendor) el.vendor.value = row.vendor ?? '';
     el.recurrence_type.value = row.recurrence_type || 'MONTHLY';
@@ -271,6 +273,7 @@ export function createExpenseCreateModal({
   }
 
   bind();
+  fillCategorySelect(el.category);
 
   return {
     openCreate,
