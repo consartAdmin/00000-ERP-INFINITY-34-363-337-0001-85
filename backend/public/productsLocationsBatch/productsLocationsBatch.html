@@ -15,7 +15,7 @@
 
   <link rel="stylesheet" href="/public/includes/css/style.css" />
   <link rel="stylesheet" href="/public/includes/css/modals.css?v=2" />
-  <link rel="stylesheet" href="/public/productsLocationsBatch/productsLocationsBatch.css?v=1" />
+  <link rel="stylesheet" href="/public/productsLocationsBatch/productsLocationsBatch.css?v=2" />
 </head>
 
 <body class="consart-theme page-locations-batch p-page pw-page--full ph-page--xr">
@@ -50,6 +50,11 @@
             <span>Só sem localização</span>
           </label>
 
+          <label class="plb-check" for="plbPositiveStock">
+            <input id="plbPositiveStock" type="checkbox" />
+            <span>Só com estoque positivo</span>
+          </label>
+
           <button id="plbBtnSearch" class="btn btn-filter btn-sm" type="button">🔍 Buscar</button>
           <button id="plbBtnClear" class="btn btn-clean btn-sm" type="button">Limpar</button>
 
@@ -66,15 +71,24 @@
           <thead>
             <tr>
               <th class="table-col-select"><input id="plbSelectPage" type="checkbox" title="Marcar a página" /></th>
-              <th class="plb-col-sku">SKU</th>
-              <th class="plb-col-desc">Descrição</th>
-              <th class="plb-col-local">Local</th>
-              <th class="plb-col-small">Corredor</th>
-              <th class="plb-col-small">Gôndola</th>
-              <th class="plb-col-small">Bandeja</th>
-              <th class="plb-col-small">Posição</th>
-              <th class="plb-col-qty">Estoque</th>
-              <th class="plb-col-other" title="Outras localizações ativas do produto">Outras</th>
+              <th class="plb-col-sku table-sortable" data-sort-column="sku" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>SKU <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="plb-col-desc table-sortable" data-sort-column="descricao" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Descrição <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="plb-col-local table-sortable" data-sort-column="local" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Local <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="plb-col-small table-sortable" data-sort-column="corredor" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Corredor <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="plb-col-small table-sortable" data-sort-column="gondola" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Gôndola <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="plb-col-small table-sortable" data-sort-column="bandeja" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Bandeja <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="plb-col-small table-sortable" data-sort-column="posicao" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Posição <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="plb-col-qty table-sortable" data-sort-column="estoque" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Estoque <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="plb-col-other table-sortable" data-sort-column="outras" aria-sort="none" title="Outras localizações ativas do produto"><button type="button"
+                  class="table-sort-button" data-sort-button>Outras <span data-sort-icon aria-hidden="true">↕</span></button></th>
             </tr>
           </thead>
           <tbody id="plbTbody">
@@ -211,7 +225,7 @@
   <script type="module" src="/public/includes/js/core.js"></script>
   <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → página bloqueada com aviso -->
   <script type="module">import { guardProductLocationsPage } from "/public/includes/js/productLocationsFeature.js"; guardProductLocationsPage();</script>
-  <script type="module" src="/public/productsLocationsBatch/productsLocationsBatch.js?v=1"></script>
+  <script type="module" src="/public/productsLocationsBatch/productsLocationsBatch.js?v=2"></script>
 </body>
 
 </html>
