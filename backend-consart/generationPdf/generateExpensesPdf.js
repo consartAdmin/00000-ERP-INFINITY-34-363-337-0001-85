@@ -444,10 +444,9 @@ export async function generateExpensesPdf({ filters = {}, baseUrl = '' } = {}) {
     { key: 'id',      label: 'ID',          w: 50,  align: 'left' },
     { key: 'name',    label: 'Nome',        w: 180, align: 'left' },
     { key: 'category',label: 'Categoria',   w: 200, align: 'left' },
-    { key: 'vendor',  label: 'Fornecedor',  w: 150, align: 'left' },
+    { key: 'vendor',  label: 'Fornecedor',  w: 240, align: 'left' },
     { key: 'value',   label: 'Valor',       w: 95,  align: 'left' },
     { key: 'due',     label: 'Venc.',       w: 85,  align: 'left' },
-    { key: 'status',  label: 'Status',      w: 90,  align: 'left' },
     { key: 'created', label: 'Criado em',   w: 150, align: 'left' },
   ];
 

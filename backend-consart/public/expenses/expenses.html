@@ -46,16 +46,6 @@
           </div>
 
           <div class="fields fields-h-6 fields-w-10 fields-font-3">
-            <label>Status</label>
-            <select id="fStatus" class="select">
-              <option value="">Todos</option>
-              <option value="PENDING">Pendente</option>
-              <option value="PAID">Pago</option>
-              <option value="CANCELLED">Cancelado</option>
-            </select>
-          </div>
-
-          <div class="fields fields-h-6 fields-w-10 fields-font-3">
             <label>Categoria</label>
             <select id="fCategory" class="select" title="Categorias do Caixa">
               <option value="">Todas</option>
@@ -89,6 +79,9 @@
 
             <button id="btnBatchDelete" type="button" class="btn btn-cancel btn-sm"
               title="Excluir as despesas marcadas" disabled>🗑️ Excluir (0)</button>
+
+            <button id="btnBatchPayable" type="button" class="btn btn-new btn-sm"
+              title="Enviar as despesas marcadas ao Contas a Pagar (um título por despesa)" disabled>📤 Contas a Pagar (0)</button>
 
             <button id="btnPdfGenrate" type="button" class="btn btn-toolbar btn-sm" title="Exportar PDF">
               <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
@@ -142,11 +135,6 @@
               <th class="col-date table-sortable" data-sort-column="due_date" aria-sort="none">
                 <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Vencimento">
                   Venc. <span data-sort-icon aria-hidden="true">↕</span>
-                </button>
-              </th>
-              <th class="col-status table-sortable" data-sort-column="status" aria-sort="none">
-                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Status">
-                  Status <span data-sort-icon aria-hidden="true">↕</span>
                 </button>
               </th>
               <th class="col-date table-sortable" data-sort-column="created_at" aria-sort="none">
@@ -281,9 +269,9 @@
                 </div>
               </div>
 
-              <!-- Vencimento e competência -->
+              <!-- Vencimento -->
               <div class="exp-section">
-                <div class="exp-section__title">📅 Vencimento e competência</div>
+                <div class="exp-section__title">📅 Vencimento</div>
                 <div class="exp-section__grid">
                   <div class="fields fields-h-6 fields-font-3">
                     <label for="due_date">Vencimento *</label>
@@ -300,29 +288,9 @@
                     </select>
                   </div>
 
-                  <div class="fields fields-h-6 fields-font-3">
-                    <label for="competence_month">Competência (mês)</label>
-                    <select id="competence_month">
-                      <option value="">—</option>
-                      <option value="1">01 - Janeiro</option>
-                      <option value="2">02 - Fevereiro</option>
-                      <option value="3">03 - Março</option>
-                      <option value="4">04 - Abril</option>
-                      <option value="5">05 - Maio</option>
-                      <option value="6">06 - Junho</option>
-                      <option value="7">07 - Julho</option>
-                      <option value="8">08 - Agosto</option>
-                      <option value="9">09 - Setembro</option>
-                      <option value="10">10 - Outubro</option>
-                      <option value="11">11 - Novembro</option>
-                      <option value="12">12 - Dezembro</option>
-                    </select>
-                  </div>
-
-                  <div class="fields fields-h-6 fields-font-3">
-                    <label for="competence_year">Competência (ano)</label>
-                    <input id="competence_year" inputmode="numeric" maxlength="4" placeholder="ex: 2026" />
-                  </div>
+<!-- Competência saiu da tela (a despesa gera parcelas mês a mês); colunas ficam no banco -->
+                  <input id="competence_month" type="hidden" />
+                  <input id="competence_year" type="hidden" />
 
                   <div class="fields fields-h-6 fields-font-3 exp-span-full">
                     <label for="expVendor">Fornecedor</label>
@@ -345,24 +313,11 @@
                     <input id="value" required inputmode="decimal" placeholder="ex: 5500,00" class="exp-money" />
                   </div>
 
-                  <div class="fields fields-h-6 fields-font-3">
-                    <label for="status">Status</label>
-                    <select id="status">
-                      <option value="PENDING">Pendente</option>
-                      <option value="PAID">Pago</option>
-                      <option value="CANCELLED">Cancelado</option>
-                    </select>
-                  </div>
-
-                  <div class="fields fields-h-6 fields-font-3">
-                    <label for="paid_date">Pago em</label>
-                    <input id="paid_date" type="date" />
-                  </div>
-
-                  <div class="fields fields-h-6 fields-font-3">
-                    <label for="payment_method">Método de pagamento</label>
-                    <input id="payment_method" placeholder="ex: PIX, Boleto, Dinheiro" />
-                  </div>
+                  <!-- Despesa = parâmetro (modelo), não pagamento: status/pagamento
+                       ficam guardados no banco, mas não aparecem na tela -->
+                  <input id="status" type="hidden" value="PENDING" />
+                  <input id="paid_date" type="hidden" />
+                  <input id="payment_method" type="hidden" />
 
                   <div class="fields fields-h-6 fields-font-3">
                     <label for="account_payable_id">Conta a pagar (ID)</label>
@@ -376,6 +331,20 @@
                       <option value="false">Não</option>
                     </select>
                   </div>
+                </div>
+              </div>
+
+              <!-- Contratos e documentos (bucket expenses/expense-{id}/) -->
+              <div class="exp-section exp-section--full">
+                <div class="exp-section__title">📎 Contratos e documentos</div>
+                <div id="expFilesBox" class="exp-files">
+                  <div class="exp-files__bar">
+                    <button type="button" id="expFilesBtn" class="btn btn-flat btn-sm">📎 Anexar</button>
+                    <span class="exp-files__hint">ou arraste aqui (até 50 MB por arquivo). Os arquivos sobem ao salvar.</span>
+                  </div>
+                  <ul id="expFilesList" class="exp-files__list" aria-live="polite"></ul>
+                  <input type="file" id="expFilesInput" multiple
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.odt,.ods,.txt,.xml,.zip" />
                 </div>
               </div>
 
@@ -425,26 +394,6 @@
               <div class="exp-section__title">📋 <span id="batchSummary">0 despesas • R$ 0,00</span></div>
               <div class="exp-section__grid">
                 <div class="fields fields-h-6 fields-font-3">
-                  <label for="batch_status">Status</label>
-                  <select id="batch_status">
-                    <option value="">— não alterar —</option>
-                    <option value="PENDING">Pendente</option>
-                    <option value="PAID">Pago</option>
-                    <option value="CANCELLED">Cancelado</option>
-                  </select>
-                </div>
-
-                <div class="fields fields-h-6 fields-font-3">
-                  <label for="batch_paid_date">Pago em</label>
-                  <input id="batch_paid_date" type="date" />
-                </div>
-
-                <div class="fields fields-h-6 fields-font-3">
-                  <label for="batch_payment_method">Método de pagamento</label>
-                  <input id="batch_payment_method" placeholder="— não alterar —" />
-                </div>
-
-                <div class="fields fields-h-6 fields-font-3">
                   <label for="batch_recurrence_type">Recorrência</label>
                   <select id="batch_recurrence_type">
                     <option value="">— não alterar —</option>
@@ -490,6 +439,52 @@
         <div class="modal__footer">
           <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
           <button id="btnBatchSave" type="submit" form="formBatch" class="btn btn-save btn-sm">💾 Aplicar nas marcadas</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===================== Enviar ao Contas a Pagar (parcelas) ===================== -->
+  <div id="expensePayableModal" class="modal exp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="payableTitle">
+
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="payableTitle" class="modal__title">📤 Enviar ao Contas a Pagar</h2>
+            <p class="exp-modal__subtitle">Um título por parcela. A 1ª vence no vencimento da despesa; as outras, mês a mês.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="formPayable" class="exp-form" autocomplete="off">
+            <div class="exp-section">
+              <div class="exp-section__title">📋 <span id="payableSummary">0 despesas • R$ 0,00</span></div>
+              <div class="exp-section__grid">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payable_parcels">Quantidade de parcelas *</label>
+                  <input id="payable_parcels" type="number" min="1" max="60" step="1" value="1" required />
+                </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label>Total a gerar</label>
+                  <input id="payable_total" type="text" readonly tabindex="-1" />
+                </div>
+              </div>
+            </div>
+
+            <div class="exp-section">
+              <div class="exp-section__title">📅 Vencimentos</div>
+              <div id="payablePreview" class="exp-payable-preview"></div>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button id="btnPayableSend" type="submit" form="formPayable" class="btn btn-save btn-sm">📤 Gerar títulos</button>
         </div>
       </section>
     </div>

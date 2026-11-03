@@ -20,6 +20,14 @@ import {
   deleteExpensesBatch,
   updateExpensesBatch,
 } from '../repositories/expenses/expensesBatch.repository.js';
+import { sendExpensesToPayable } from '../repositories/expenses/expensesToPayable.repository.js';
+import {
+  listAttachments,
+  addAttachment,
+  signAttachmentDownload,
+  deactivateAttachment,
+  countAttachmentsByExpense,
+} from '../repositories/expenses/expensesAttachments.repository.js';
 import ExcelJS from 'exceljs';
 import { generateExpensesPdf } from '../generationPdf/generateExpensesPdf.js'; // ✅ ajuste path se preciso
 
@@ -47,6 +55,9 @@ function requireFields(body, fields = []) {
 export async function getExpenses(req, res) {
   try {
     const data = await listExpenses(req.query);
+    // 📎 quantidade de anexos por despesa (contratos e documentos)
+    const counts = await countAttachmentsByExpense((data.rows || []).map((r) => r.id));
+    (data.rows || []).forEach((r) => { r.attachments_count = counts[Number(r.id)] || 0; });
     return res.json({
       ok: true,
       total: data.total,
@@ -205,7 +216,6 @@ export async function getExpensesPdf(req, res) {
 /* ──────────────────────────────────────────────────────────────
    GET /api/expenses/excel  → .xlsx com os mesmos filtros/ordem da tela
 ────────────────────────────────────────────────────────────── */
-const EXPENSE_STATUS_LABEL = { PENDING: 'Pendente', PAID: 'Pago', CANCELLED: 'Cancelado' };
 const EXPENSE_RECURRENCE_LABEL = { MONTHLY: 'Mensal', WEEKLY: 'Semanal', YEARLY: 'Anual', NONE: 'Sem recorrência' };
 
 function toDateOnly(value) {
@@ -213,12 +223,6 @@ function toDateOnly(value) {
   if (value instanceof Date) return value;
   const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
-}
-
-function competenceLabel(month, year) {
-  const mm = month ? String(month).padStart(2, '0') : '';
-  if (mm && year) return `${mm}/${year}`;
-  return mm || (year ? String(year) : '');
 }
 
 export async function getExpensesExcel(req, res) {
@@ -241,11 +245,7 @@ export async function getExpensesExcel(req, res) {
       { header: 'Fornecedor', key: 'vendor', width: 34 },
       { header: 'Valor', key: 'value', width: 14, style: { numFmt: '"R$" #,##0.00' } },
       { header: 'Vencimento', key: 'due_date', width: 12, style: { numFmt: 'dd/mm/yyyy' } },
-      { header: 'Competência', key: 'competence', width: 12 },
       { header: 'Recorrência', key: 'recurrence', width: 14 },
-      { header: 'Status', key: 'status', width: 12 },
-      { header: 'Pago em', key: 'paid_date', width: 12, style: { numFmt: 'dd/mm/yyyy' } },
-      { header: 'Método de pagamento', key: 'payment_method', width: 20 },
       { header: 'Criado em', key: 'created_at', width: 18, style: { numFmt: 'dd/mm/yyyy hh:mm' } },
       { header: 'Atualizado em', key: 'updated_at', width: 18, style: { numFmt: 'dd/mm/yyyy hh:mm' } },
     ];
@@ -264,11 +264,7 @@ export async function getExpensesExcel(req, res) {
         vendor: r.vendor || '',
         value,
         due_date: toDateOnly(r.due_date),
-        competence: competenceLabel(r.competence_month, r.competence_year),
         recurrence: EXPENSE_RECURRENCE_LABEL[r.recurrence_type] || r.recurrence_type || '',
-        status: EXPENSE_STATUS_LABEL[String(r.status || '').toUpperCase()] || r.status || '',
-        paid_date: toDateOnly(r.paid_date),
-        payment_method: r.payment_method || '',
         created_at: r.created_at ? new Date(r.created_at) : null,
         updated_at: r.updated_at ? new Date(r.updated_at) : null,
       });
@@ -329,5 +325,66 @@ export async function updateExpensesBatchHandler(req, res) {
     return res.json({ ok: true, updated: updated.length, ids: updated });
   } catch (err) {
     return serverError(res, err, 'updateExpensesBatch');
+  }
+}
+
+/* POST /api/expenses/to-accounts-payable  { ids: [], parcels: N }
+   Envia as despesas marcadas ao Contas a Pagar (1 título por despesa). */
+export async function sendExpensesToPayableHandler(req, res) {
+  try {
+    const ids = normalizeIds(req.body?.ids);
+    if (!ids.length) return badRequest(res, 'Nenhuma despesa selecionada.');
+    const user = { name: req.user?.name || req.user?.username || null };
+    const result = await sendExpensesToPayable(ids, req.body?.parcels ?? 1, user);
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    if (err?.status === 400) return badRequest(res, err.message);
+    return serverError(res, err, 'sendExpensesToPayable');
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Anexos (contratos e documentos) — bucket expenses/expense-{id}/
+────────────────────────────────────────────────────────────── */
+function attachmentError(res, err, where) {
+  if (err?.code === 'VALIDATION') return badRequest(res, err.message);
+  if (err?.code === 'NOT_FOUND') return res.status(404).json({ ok: false, message: err.message });
+  return serverError(res, err, where);
+}
+
+// GET /api/expenses/:id/attachments
+export async function listExpenseAttachmentsHandler(req, res) {
+  try {
+    return res.json({ ok: true, data: await listAttachments(req.params.id) });
+  } catch (err) {
+    return attachmentError(res, err, 'listExpenseAttachments');
+  }
+}
+
+// POST /api/expenses/:id/attachments (multipart, campo "arquivo")
+export async function addExpenseAttachmentHandler(req, res) {
+  try {
+    return res.status(201).json({ ok: true, data: await addAttachment(req.params.id, req.file) });
+  } catch (err) {
+    return attachmentError(res, err, 'addExpenseAttachment');
+  }
+}
+
+// GET /api/expenses/:id/attachments/:attachmentId/download → URL assinada
+export async function downloadExpenseAttachmentHandler(req, res) {
+  try {
+    return res.redirect(302, await signAttachmentDownload(req.params.id, req.params.attachmentId));
+  } catch (err) {
+    return attachmentError(res, err, 'downloadExpenseAttachment');
+  }
+}
+
+// DELETE /api/expenses/:id/attachments/:attachmentId (exclusão lógica)
+export async function deleteExpenseAttachmentHandler(req, res) {
+  try {
+    await deactivateAttachment(req.params.id, req.params.attachmentId);
+    return res.json({ ok: true });
+  } catch (err) {
+    return attachmentError(res, err, 'deleteExpenseAttachment');
   }
 }
