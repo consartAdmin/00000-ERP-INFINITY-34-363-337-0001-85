@@ -5,11 +5,16 @@
 
 import pool from '../../config/db.js';
 import { ensureCashCategoryColumns } from '../cashCategories/cashCategoryLink.repository.js';
+
+// Categoria/Subcategoria do Caixa: NULL se as colunas ainda não existirem
+const cashColumnsSql = ({ columns } = {}) => (columns
+  ? 'cash_category_id,\n        cash_subcategory_id,'
+  : 'NULL::integer AS cash_category_id,\n        NULL::integer AS cash_subcategory_id,');
 import { TB_DEBTS, TB_PAYMENTS } from './debts.constants.js';
 import { normalizeDate, normalizePaging } from './debts.utils.js';
 
 export async function list(filters = {}) {
-  await ensureCashCategoryColumns(TB_DEBTS);
+  const cashColumns = cashColumnsSql(await ensureCashCategoryColumns(TB_DEBTS));
   const {
     page = 1,
     limit = 20,
@@ -106,8 +111,7 @@ export async function list(filters = {}) {
         creditor_document,
         debt_type,
         category,
-        cash_category_id,
-        cash_subcategory_id,
+        ${cashColumns}
         cost_center,
         company_name,
         document_number,
@@ -154,7 +158,7 @@ export async function list(filters = {}) {
 }
 
 export async function getById(id) {
-  await ensureCashCategoryColumns(TB_DEBTS);
+  const cashColumns = cashColumnsSql(await ensureCashCategoryColumns(TB_DEBTS));
   const res = await pool.query(
     `
       SELECT
@@ -165,8 +169,7 @@ export async function getById(id) {
         creditor_document,
         debt_type,
         category,
-        cash_category_id,
-        cash_subcategory_id,
+        ${cashColumns}
         cost_center,
         company_name,
         document_number,
