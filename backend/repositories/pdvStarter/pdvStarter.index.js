@@ -13,5 +13,6 @@ export {
   getSummary,
   closeSession,
 } from './pdvStarterCash.repository.js';
-export { createSale, listSales } from './pdvStarterSales.repository.js';
+export { createSale, listSales, findSaleByUuid } from './pdvStarterSales.repository.js';
+export { isNfceEnabled, emitSaleNfce, nfceView, getIssuerForReceipt } from './pdvStarterNfce.repository.js';
 export { PAYMENT_METHODS } from './pdvStarter.constants.js';

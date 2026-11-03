@@ -64,8 +64,8 @@ function toast(message, kind = '') {
   toastTimer = setTimeout(() => { el.innerHTML = ''; }, 3500);
 }
 
-async function api(method, url, body) {
-  const res = await window.pdv.api({ method, url, body, token: state.token });
+async function api(method, url, body, timeoutMs) {
+  const res = await window.pdv.api({ method, url, body, token: state.token, ...(timeoutMs ? { timeoutMs } : {}) });
   state.online = !res.offline;
   if (res.status === 401 && state.token) {
     state.token = null;
@@ -194,12 +194,15 @@ async function persistQueue() {
 }
 
 async function syncQueue() {
-  if (state.syncing || !state.token) return;
-  state.syncing = true;
+  if (!state.token) return;
+  // Já sincronizando: espera terminar e roda de novo (a venda recém-feita pode ter entrado depois)
+  if (state.syncing) { await state.syncing; return syncQueue(); }
+  let done;
+  state.syncing = new Promise((r) => { done = r; });
   try {
     while (state.queue.length) {
       const sale = state.queue[0];
-      const res = await api('POST', '/api/pdv/vendas', sale.payload);
+      const res = await api('POST', '/api/pdv/vendas', sale.payload, 70000);
       if (res.offline || res.status === 401) break;
       if (!res.ok && res.status >= 500) break;
       const hist = state.history.find((h) => h.pdv_uuid === sale.payload.pdv_uuid);
@@ -208,6 +211,7 @@ async function syncQueue() {
         hist.sale_id = res.data?.sale?.sale_id ?? null;
         hist.error = res.ok ? null : res.data?.message;
         hist.stock_status = res.data?.sale?.stock_status ?? null;
+        if (res.data?.nfce) hist.nfce = res.data.nfce;
       }
       state.queue.shift();
       await persistQueue();
@@ -215,7 +219,8 @@ async function syncQueue() {
     if (!state.queue.length) state.lastSync = new Date().toISOString();
     await window.pdv.write('history', state.history.slice(0, 500));
   } finally {
-    state.syncing = false;
+    state.syncing = null;
+    done();
     renderHeaderOnly();
   }
 }
@@ -236,6 +241,7 @@ async function afterLogin() {
   const cachedSession = await window.pdv.read('session', null);
   if (state.token) {
     refreshCatalog().then((ok) => { if (ok) render(); });
+    loadServerConfig();
     const res = await api('GET', `/api/pdv/caixa/atual?terminal=${encodeURIComponent(state.config.terminal)}`);
     if (res.ok) {
       state.session = res.data.data.session;
@@ -252,6 +258,17 @@ async function afterLogin() {
   if (!state.session) showOpenCash();
   syncQueue();
 }
+
+// NFC-e ligada no ERP e dados do emitente (guardados para imprimir sem internet)
+async function loadServerConfig() {
+  const res = await api('GET', '/api/pdv/config');
+  if (!res.ok || !res.data?.data) return;
+  const nfce = res.data.data.nfce || { enabled: false };
+  state.config = { ...state.config, nfce };
+  await window.pdv.write('config', state.config);
+}
+
+const nfceOn = () => Boolean(state.config.nfce?.enabled);
 
 /* ── Telas ─────────────────────────────────────────────────────────── */
 function render() {
@@ -380,11 +397,22 @@ function viewProducts() {
 function viewHistory() {
   const list = state.history.filter((h) => !state.session || h.session_id === state.session.session_id);
   const pill = (h) => (h.status === 'SINCRONIZADA' ? '<span class="pill g">No ERP</span>' : h.status === 'ERRO' ? `<span class="pill r" title="${esc(h.error)}">Erro</span>` : '<span class="pill y">Na fila</span>');
+  const nfcePill = (h) => {
+    if (!nfceOn()) return '';
+    const st = h.nfce?.status;
+    if (st === 'AUTORIZADA') return `<span class="pill g" title="Chave ${esc(h.nfce.key)}">NFC-e ${esc(h.nfce.number)}</span>`;
+    if (st === 'REJEITADA' || st === 'ERRO' || st === 'DENEGADA') return `<span class="pill r" title="${esc(h.nfce.message)}">NFC-e ${st === 'ERRO' ? 'com erro' : st.toLowerCase()}</span>`;
+    if (h.status !== 'SINCRONIZADA') return '<span class="pill y">NFC-e após sincronizar</span>';
+    return `<span class="pill y" title="${esc(h.nfce?.message || '')}">NFC-e pendente</span>`;
+  };
+  const nfceBtn = (h) => (nfceOn() && h.status === 'SINCRONIZADA' && h.nfce?.status !== 'AUTORIZADA'
+    ? `<span class="btn" data-nfce="${esc(h.pdv_uuid)}">${icon('cloud', 14)} Emitir NFC-e</span> ` : '');
   return `<main class="fx"><div class="sec fill"><div class="sh"><b>Vendas</b><span class="sp"></span><div class="btn" data-act="sync">${icon('cloud', 16)} Sincronizar agora</div></div>
-    <div class="scroll"><table class="tbl"><thead><tr><th>Nº</th><th>Hora</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th class="r">Total</th><th>ERP</th><th></th></tr></thead><tbody>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Nº</th><th>Hora</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th class="r">Total</th><th>ERP</th><th>${nfceOn() ? 'NFC-e' : ''}</th><th></th></tr></thead><tbody>
     ${list.map((h) => `<tr><td>${esc(h.number)}${h.sale_id ? ` <span class="mut">(#${esc(h.sale_id)})</span>` : ''}</td><td>${hhmm(h.sold_at)}</td><td>${esc(h.customer_doc || 'Consumidor final')}</td><td>${h.items.length}</td>
       <td>${h.payments.map((p) => esc(p.label)).join(', ')}</td><td class="r"><b>${money(h.total)}</b></td><td>${pill(h)}${h.stock_status === 'PARCIAL' ? ' <span class="pill y" title="Parte dos itens sem lote com saldo">Estoque parcial</span>' : ''}</td>
-      <td class="r"><span class="btn" data-reprint="${esc(h.pdv_uuid)}">${icon('printer', 14)} Reimprimir</span></td></tr>`).join('') || '<tr><td colspan="8" class="mut">Nenhuma venda neste caixa.</td></tr>'}
+      <td>${nfcePill(h)}</td>
+      <td class="r" style="white-space:nowrap">${nfceBtn(h)}<span class="btn" data-reprint="${esc(h.pdv_uuid)}">${icon('printer', 14)} Reimprimir</span></td></tr>`).join('') || '<tr><td colspan="9" class="mut">Nenhuma venda neste caixa.</td></tr>'}
     </tbody></table></div></div></main>`;
 }
 
@@ -548,7 +576,31 @@ document.addEventListener('click', (e) => {
     const sale = state.history.find((h) => h.pdv_uuid === rp.dataset.reprint);
     if (sale) printReceipt(sale);
   }
+  const nf = e.target.closest('[data-nfce]');
+  if (nf) retryNfce(nf.dataset.nfce);
 });
+
+async function retryNfce(pdvUuid) {
+  const hist = state.history.find((h) => h.pdv_uuid === pdvUuid);
+  if (!hist) return;
+  showBusy('Emitindo NFC-e…', 'Aguardando a autorização da SEFAZ');
+  const res = await api('POST', `/api/pdv/vendas/${encodeURIComponent(pdvUuid)}/nfce`, undefined, 70000);
+  closeModal();
+  if (!res.ok) return toast(res.data?.message || 'Não foi possível emitir a NFC-e.', 'err');
+  hist.nfce = res.data.nfce;
+  await window.pdv.write('history', state.history.slice(0, 500));
+  render();
+  if (hist.nfce?.status === 'AUTORIZADA') {
+    toast(`NFC-e ${hist.nfce.number} autorizada.`, 'ok');
+    printReceipt(hist);
+  } else {
+    toast(`NFC-e não autorizada: ${hist.nfce?.message || hist.nfce?.status}`, 'err');
+  }
+}
+
+function showBusy(title, sub) {
+  openModal(`<div class="busy"><div class="spin"></div><b>${esc(title)}</b><span>${esc(sub || '')}</span></div>`, { width: 420, lock: true });
+}
 
 document.addEventListener('keydown', (e) => {
   if (!state.user) return;
@@ -886,7 +938,23 @@ async function concludeSale() {
     clearSale();
     closeModal();
     render();
-    toast(change > 0 ? `Venda concluída · TROCO ${money(change)}` : 'Venda concluída.', 'ok');
+    const trocoMsg = change > 0 ? ` · TROCO ${money(change)}` : '';
+
+    // NFC-e: com o ERP no ar, envia a venda agora e imprime o DANFE NFC-e autorizado
+    if (nfceOn() && state.token && state.online !== false) {
+      showBusy('Emitindo NFC-e…', change > 0 ? `TROCO ${money(change)}` : 'Aguardando a autorização da SEFAZ');
+      await syncQueue();
+      closeModal();
+      render();
+      const st = record.nfce?.status;
+      if (st === 'AUTORIZADA') toast(`NFC-e ${record.nfce.number} autorizada${trocoMsg}`, 'ok');
+      else if (record.status !== 'SINCRONIZADA') toast(`Sem conexão: venda na fila, NFC-e sai ao sincronizar${trocoMsg}`, 'err');
+      else toast(`Venda gravada, NFC-e não autorizada: ${record.nfce?.message || st}${trocoMsg}`, 'err');
+      if (shouldPrint) printReceipt(record);
+      return;
+    }
+
+    toast(`Venda concluída${trocoMsg}`, 'ok');
     if (shouldPrint) printReceipt(record);
     syncQueue();
   } finally {
@@ -895,7 +963,11 @@ async function concludeSale() {
 }
 
 async function printReceipt(record) {
-  const res = await window.pdv.printHtml({ html: buildReceiptHtml(record, state.config), printer: state.config.printer || null });
+  const authorized = record.nfce?.status === 'AUTORIZADA';
+  const html = authorized
+    ? buildDanfceHtml(record, record.nfce, state.config.nfce?.issuer || {}, state.config)
+    : buildReceiptHtml(record, state.config, nfceOn());
+  const res = await window.pdv.printHtml({ html, printer: state.config.printer || null });
   if (!res?.ok && res?.reason && res.reason !== 'cancelled') toast(`Não foi possível imprimir: ${res.reason}`, 'err');
 }
 

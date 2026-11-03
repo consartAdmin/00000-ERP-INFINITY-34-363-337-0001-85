@@ -82,6 +82,10 @@ async function findByUuid(db, pdvUuid) {
   return rows[0] || null;
 }
 
+export async function findSaleByUuid(pdvUuid) {
+  return findByUuid(pool, cleanText(pdvUuid, 64));
+}
+
 async function insertSaleRow(client, sale, user) {
   const strategy = await resolveSaleIdStrategy();
   const cols = [
@@ -171,7 +175,7 @@ export async function listSales({ sessionId, limit = 50 } = {}) {
   params.push(Math.min(Number(limit) || 50, 500));
   const { rows } = await pool.query(
     `SELECT sale_id, pdv_uuid, sold_at, created_at, customer_name, total, recebido, troco, status,
-            nfce_status, nfce_number, stock_status, operator_name, terminal
+            nfce_status, nfce_number, nfce_message, stock_status, operator_name, terminal
        FROM ${TB_SALES}
       WHERE ${where.join(' AND ')}
       ORDER BY created_at DESC

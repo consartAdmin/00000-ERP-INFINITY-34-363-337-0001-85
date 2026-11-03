@@ -44,6 +44,15 @@ const SALES_COLUMNS = [
   ['stock_details', 'JSONB'],
   ['canceled_at', 'TIMESTAMP WITHOUT TIME ZONE'],
   ['cancel_reason', 'TEXT'],
+  // NFC-e emitida pela api-consart-fiscal
+  ['nfce_series', 'TEXT'],
+  ['nfce_message', 'TEXT'],
+  ['nfce_environment', 'VARCHAR(20)'],
+  ['nfce_issued_at', 'TEXT'],
+  ['nfce_authorized_at', 'TEXT'],
+  ['nfce_qrcode', 'TEXT'],
+  ['nfce_url_chave', 'TEXT'],
+  ['nfce_attempts', 'INTEGER DEFAULT 0'],
 ];
 
 const ITEMS_COLUMNS = [
