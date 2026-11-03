@@ -759,22 +759,52 @@ export async function saldos(_req, res) {
 /* ========================= RELATÓRIO PDF ============================ */
 
 // ?stream=1 → NDJSON com o progresso (mesmo formato da sincronização do
-// Asaas em Contas a Receber): { type: 'phase' | 'start' | 'item' } e, no fim,
-// { type: 'done', filename, total, pdf: <base64> } ou { type: 'error', message }.
-function startPdfStream(res) {
+// Asaas em Contas a Receber): { type: 'phase' | 'start' | 'item' | 'ping' },
+// o PDF em partes { type: 'pdf', part: <base64> } e, no fim,
+// { type: 'done', filename, total, parts } ou { type: 'error', message }.
+const PDF_STREAM_PART_SIZE = 256 * 1024; // caracteres de base64 por linha
+const PDF_STREAM_PING_MS = 10_000;       // mantém a conexão viva em etapas longas
+
+function startPdfStream(req, res) {
   res.status(200);
   res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
 
-  return (event) => {
-    if (!res.writableEnded) res.write(`${JSON.stringify(event)}\n`);
+  const startedAt = Date.now();
+  const state = { finished: false, last: null };
+
+  const send = (event) => {
+    if (res.writableEnded || res.destroyed) return;
+    if (event.type !== 'ping') state.last = event.type === 'item' ? `item ${event.index}/${event.total}` : event.type;
+    res.write(`${JSON.stringify(event)}\n`);
   };
+
+  const ping = setInterval(() => send({ type: 'ping' }), PDF_STREAM_PING_MS);
+
+  res.on('close', () => {
+    clearInterval(ping);
+    if (!state.finished) {
+      console.warn('[Caixa][relatorioPdf][stream] conexão fechada antes do fim', {
+        ultimoEvento: state.last,
+        ms: Date.now() - startedAt,
+        query: req.originalUrl,
+      });
+    }
+  });
+
+  send.finish = () => {
+    state.finished = true;
+    clearInterval(ping);
+    console.log('[Caixa][relatorioPdf][stream] concluído', { ms: Date.now() - startedAt });
+  };
+
+  return send;
 }
 
 export async function relatorioPdf(req, res, next) {
-  const send = String(req.query?.stream) === '1' ? startPdfStream(res) : null;
+  const send = String(req.query?.stream) === '1' ? startPdfStream(req, res) : null;
 
   try {
     const {
@@ -923,13 +953,23 @@ export async function relatorioPdf(req, res, next) {
       }),
     });
 
-    send({ type: 'done', filename, total: rows.length, pdf: pdf.toString('base64') });
+    // PDF em várias linhas menores: uma linha só de vários MB podia ser cortada no caminho
+    const base64 = pdf.toString('base64');
+    let parts = 0;
+    for (let i = 0; i < base64.length; i += PDF_STREAM_PART_SIZE) {
+      send({ type: 'pdf', part: base64.slice(i, i + PDF_STREAM_PART_SIZE) });
+      parts += 1;
+    }
+
+    send({ type: 'done', filename, total: rows.length, parts, bytes: pdf.length });
+    send.finish();
     return res.end();
   } catch (err) {
     console.error('[Caixa][relatorioPdf] erro:', err);
     if (!send) return next(err);
 
     send({ type: 'error', message: err?.message || 'Falha ao gerar o relatório PDF.' });
+    send.finish();
     return res.end();
   }
 }
