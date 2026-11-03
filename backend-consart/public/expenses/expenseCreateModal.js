@@ -243,9 +243,10 @@ export function createExpenseCreateModal({
       if (!el.id.value) return;
       if (!confirm('Confirma excluir?')) return;
 
-      await onDelete(Number(el.id.value));
+      const deletedId = Number(el.id.value);
+      await onDelete(deletedId);
       close();
-      await onAfterDelete();
+      await onAfterDelete(deletedId);
     });
 
     // 🔎 botão fornecedor

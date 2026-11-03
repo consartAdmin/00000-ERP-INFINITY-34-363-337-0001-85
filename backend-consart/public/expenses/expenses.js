@@ -11,6 +11,7 @@ import { createExpenseCreateModal } from './expenseCreateModal.js';
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { createSortableTable } from '/public/includes/js/sortableTable.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { createExpensesSelection } from './expensesSelection.js';
 
 /* ──────────────────────────────────────────────────────────────
    API BASE (compatível com seu padrão)
@@ -113,7 +114,7 @@ function fmtDateTimeBR(dateStr) {
 }
 
 function setLoadingRow(msg = 'Carregando…') {
-  el.tbBody.innerHTML = `<tr><td colspan="10" class="muted center">${escapeHtml(msg)}</td></tr>`;
+  el.tbBody.innerHTML = `<tr><td colspan="11" class="muted center">${escapeHtml(msg)}</td></tr>`;
 }
 
 function badgeStatus(status) {
@@ -227,7 +228,7 @@ async function load() {
     if (el.btnNext) el.btnNext.disabled = page >= pages;
 
     if (!rows.length) {
-      el.tbBody.innerHTML = `<tr><td colspan="10" class="muted center">Nenhum registro encontrado.</td></tr>`;
+      el.tbBody.innerHTML = `<tr><td colspan="11" class="muted center">Nenhum registro encontrado.</td></tr>`;
       return;
     }
 
@@ -235,6 +236,10 @@ async function load() {
       const idShort = String(r.id ?? '').slice(0, 10);
       return `
         <tr>
+          <td class="table-cell-select">
+            <input type="checkbox" class="exp-row-checkbox" data-id="${escapeHtml(r.id)}"
+              data-value="${escapeHtml(Number(r.value || 0))}" aria-label="Marcar despesa ${escapeHtml(r.id)}" />
+          </td>
           <td class="col-id" title="${escapeHtml(r.id)}">${escapeHtml(idShort)}${String(r.id).length > 10 ? '…' : ''}</td>
           <td>${escapeHtml(r.name || '')}</td>
           <td>${escapeHtml(r.category || '')}</td>
@@ -253,6 +258,8 @@ async function load() {
         </tr>
       `;
     }).join('');
+
+    selection?.refresh();
 
   } catch (err) {
     console.error(err);
@@ -285,9 +292,19 @@ const expenseModal = createExpenseCreateModal({
     offset = 0;
     await load();
   },
-  onAfterDelete: async () => {
+  onAfterDelete: async (id) => {
+    selection.forget([id]);
     await load();
   },
+});
+
+/* ──────────────────────────────────────────────────────────────
+   Despesas marcadas (checkbox) + Excluir / Alterar em lote
+────────────────────────────────────────────────────────────── */
+const selection = createExpensesSelection({
+  api: API,
+  apiFetch,
+  onChanged: async () => { await load(); },
 });
 
 /* ──────────────────────────────────────────────────────────────
@@ -402,6 +419,7 @@ async function onDeleteQuick(id) {
 
   try {
     await apiFetch(`${API}/${id}`, { method: 'DELETE' });
+    selection.forget([id]);
     await load();
   } catch (err) {
     alert(err.message || String(err));

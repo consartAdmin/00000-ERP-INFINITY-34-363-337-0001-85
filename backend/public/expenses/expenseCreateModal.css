@@ -151,3 +151,23 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ── Página: Buscar/Limpar ao lado do Período + total das marcadas ── */
+.exp-filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  align-self: flex-end;
+}
+
+.exp-selected-pill {
+  margin-left: 8px;
+  color: #64748b;
+}
+
+.exp-selected-pill.is-active {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #93c5fd;
+  font-weight: 700;
+}
