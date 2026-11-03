@@ -4,7 +4,7 @@
 // ║ CONSART ERP | Frontend (ESM)                                         ║
 // ║                                                                      ║
 // ║ ✔ Abre/fecha pelo modal.js global (modals.css)                       ║
-// ║ ✔ Fornecedor do modal: #expVendor (o filtro da tela usa #fornBusca)  ║
+// ║ ✔ Fornecedor do modal: #expVendor (a Busca da tela já procura fornecedor)  ║
 // ║ ✔ Busca fornecedor via modal                                         ║
 // ║ ✔ Seguro contra null                                                 ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -83,7 +83,7 @@ export function createExpenseCreateModal({
     subcategory: document.getElementById('cash_subcategory'),
     cost_center: document.getElementById('cost_center'),
 
-    // Fornecedor do modal (ids próprios; #fornBusca é o filtro da tela)
+    // Fornecedor do modal (ids próprios)
     vendor: document.getElementById('expVendor'),
     btnVendorPick: document.getElementById('btnExpVendor'),
 

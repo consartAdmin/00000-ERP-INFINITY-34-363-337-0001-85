@@ -202,7 +202,7 @@
   white-space: nowrap;
 }
 /* telas menores: volta a quebrar linha para não cortar nada */
-@media (max-width: 1650px) {
+@media (max-width: 1480px) {
   .table-layout-integrated__filter > .fields-inline:has(.exp-toolbar-actions) {
     flex-wrap: wrap;
   }

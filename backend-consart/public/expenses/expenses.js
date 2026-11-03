@@ -8,7 +8,6 @@
 'use strict';
 
 import { createExpenseCreateModal } from './expenseCreateModal.js';
-import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { createSortableTable } from '/public/includes/js/sortableTable.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { createExpensesSelection } from './expensesSelection.js';
@@ -34,9 +33,6 @@ const el = {
   fStatus:   document.getElementById('fStatus'),
   fCategory: document.getElementById('fCategory'),
 
-  // ✅ Fornecedor no HTML: #fornBusca + botão #btnFornBusca
-  fVendor:   document.querySelector('.table-layout-integrated__filter #fornBusca'),
-  btnVendor: document.querySelector('.table-layout-integrated__filter #btnFornBusca'),
 
   // Período (vencimento): <date-range-field> → hidden #fFrom / #fTo
   fDateRange: document.getElementById('fDateRange'),
@@ -186,7 +182,6 @@ function buildQuery({ includePaging = true } = {}) {
   if (v(el.fName?.value))     q.set('name', v(el.fName.value));
   if (v(el.fStatus?.value))   q.set('status', v(el.fStatus.value));
   if (v(el.fCategory?.value)) q.set('category', v(el.fCategory.value));
-  if (v(el.fVendor?.value))   q.set('vendor', v(el.fVendor.value));
 
   syncDateRange();
   if (v(el.fFrom?.value))     q.set('date_from', v(el.fFrom.value));
@@ -429,37 +424,9 @@ async function onDeleteQuick(id) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   Suppliers modal → set vendor filter
-────────────────────────────────────────────────────────────── */
-async function pickSupplierToFilter() {
-  const supplier = await openSuppliersModalSearch();
-  if (!supplier) return;
-  el.fVendor.value = supplier.name || supplier.nome || '';
-  offset = 0;
-  await load();
-}
-
-/* ──────────────────────────────────────────────────────────────
    Events
 ────────────────────────────────────────────────────────────── */
 function bindEvents() {
-  // ✅ Fornecedor: botão 🔎 / dblclick / Enter
-  el.btnVendor?.addEventListener('click', (e) => {
-    e.preventDefault();
-    pickSupplierToFilter();
-  });
-
-  el.fVendor?.addEventListener('dblclick', (e) => {
-    e.preventDefault();
-    pickSupplierToFilter();
-  });
-
-  el.fVendor?.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    pickSupplierToFilter();
-  });
-
   el.btnNew?.addEventListener('click', () => expenseModal.openCreate());
 
   el.btnFilter?.addEventListener('click', () => { offset = 0; load(); });
@@ -469,7 +436,6 @@ function bindEvents() {
     el.fName.value = '';
     el.fStatus.value = '';
     el.fCategory.value = '';
-    el.fVendor.value = '';
     if (el.fDateRange && typeof el.fDateRange.clear === 'function') el.fDateRange.clear();
     el.fFrom.value = '';
     el.fTo.value = '';

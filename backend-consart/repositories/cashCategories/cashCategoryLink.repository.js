@@ -9,16 +9,50 @@ import pool from '../../config/db.js';
 
 const ready = new Map();
 
-/** Cria as colunas (uma vez por processo) — ADD COLUMN IF NOT EXISTS */
+/**
+ * Cria as colunas (uma vez por processo) — ADD COLUMN IF NOT EXISTS.
+ * Nunca derruba a tela: se o ALTER falhar (ex.: usuário do banco não é dono
+ * da tabela), registra o erro e verifica se as colunas já existem.
+ * Resolve { columns: boolean, subcategories: boolean }.
+ */
 export function ensureCashCategoryColumns(table) {
   if (!ready.has(table)) {
-    const p = pool.query(`
-      ALTER TABLE ${table}
-        ADD COLUMN IF NOT EXISTS cash_category_id integer,
-        ADD COLUMN IF NOT EXISTS cash_subcategory_id integer
-    `).catch((error) => {
+    const p = (async () => {
+      try {
+        await pool.query(`
+          ALTER TABLE ${table}
+            ADD COLUMN IF NOT EXISTS cash_category_id integer,
+            ADD COLUMN IF NOT EXISTS cash_subcategory_id integer
+        `);
+      } catch (error) {
+        console.error(`[cashCategoryLink] ALTER TABLE ${table} falhou:`, error?.message || error);
+      }
+
+      const { rows } = await pool.query(
+        `
+          SELECT
+            (SELECT COUNT(*)::int FROM pg_attribute
+              WHERE attrelid = to_regclass($1)
+                AND attname IN ('cash_category_id', 'cash_subcategory_id')
+                AND NOT attisdropped) = 2 AS columns,
+            to_regclass('"cashSubcategories"') IS NOT NULL AS subcategories
+        `,
+        [table]
+      );
+      const status = {
+        columns: Boolean(rows[0]?.columns),
+        subcategories: Boolean(rows[0]?.subcategories),
+      };
+      if (!status.columns) {
+        // tenta de novo na próxima chamada
+        ready.delete(table);
+        console.error(`[cashCategoryLink] ${table} sem as colunas cash_category_id/cash_subcategory_id`);
+      }
+      return status;
+    })().catch((error) => {
       ready.delete(table);
-      throw error;
+      console.error('[cashCategoryLink] ensure', table, error?.message || error);
+      return { columns: false, subcategories: false };
     });
     ready.set(table, p);
   }
@@ -43,7 +77,7 @@ export function hasCashCategoryFields(body = {}) {
  */
 export async function setCashCategoryLink(table, id, body = {}, client = pool) {
   if (!hasCashCategoryFields(body)) return;
-  await ensureCashCategoryColumns(table);
+  if (!(await ensureCashCategoryColumns(table)).columns) return;
 
   const has = (k) => Object.prototype.hasOwnProperty.call(body, k);
   const set = [];
@@ -74,7 +108,7 @@ export async function setCashCategoryLink(table, id, body = {}, client = pool) {
 /** Mesmo que setCashCategoryLink, para vários ids (Alterar em lote) */
 export async function setCashCategoryLinkBatch(table, ids = [], body = {}) {
   if (!hasCashCategoryFields(body) || !ids.length) return;
-  await ensureCashCategoryColumns(table);
+  if (!(await ensureCashCategoryColumns(table)).columns) return;
 
   const has = (k) => Object.prototype.hasOwnProperty.call(body, k);
   const set = [];
