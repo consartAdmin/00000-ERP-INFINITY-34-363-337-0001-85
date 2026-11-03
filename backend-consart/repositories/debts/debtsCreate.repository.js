@@ -4,10 +4,12 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { ensureCashCategoryColumns, setCashCategoryLink } from '../cashCategories/cashCategoryLink.repository.js';
 import { TB_DEBTS } from './debts.constants.js';
 import { mapDebtPayload } from './debts.sanitizers.js';
 
 export async function create(payload = {}) {
+  await ensureCashCategoryColumns(TB_DEBTS);
   const data = mapDebtPayload(payload);
 
   if (!data.description) {
@@ -101,5 +103,12 @@ export async function create(payload = {}) {
     ]
   );
 
-  return res.rows[0];
+  // Categoria/Subcategoria do Caixa por ID
+  const row = res.rows[0];
+  if (row) {
+    await setCashCategoryLink(TB_DEBTS, row.id, payload);
+    row.cash_category_id = payload.cash_category_id ?? null;
+    row.cash_subcategory_id = payload.cash_subcategory_id ?? null;
+  }
+  return row;
 }

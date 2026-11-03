@@ -6,6 +6,7 @@
 import pool from '../../config/db.js';
 import { TB } from './expenses.constants.js';
 import { sanitizeExpensePayload } from './expenses.sanitizers.js';
+import { ensureCashCategoryColumns, setCashCategoryLink } from '../cashCategories/cashCategoryLink.repository.js';
 
 async function generateExpenseId(client) {
   // Format: EXP-YYYYMM-000001
@@ -20,6 +21,7 @@ async function generateExpenseId(client) {
 }
 
 export async function createExpense(body) {
+  await ensureCashCategoryColumns(TB);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -83,6 +85,9 @@ export async function createExpense(body) {
     ];
 
     const { rows } = await client.query(q, params);
+
+    // Categoria/Subcategoria do Caixa por ID
+    await setCashCategoryLink(TB, rows[0].id, body, client);
 
     await client.query('COMMIT');
     return rows[0];

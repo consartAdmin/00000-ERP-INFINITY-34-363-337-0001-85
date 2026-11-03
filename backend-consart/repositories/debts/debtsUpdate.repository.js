@@ -4,12 +4,14 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { ensureCashCategoryColumns, setCashCategoryLink } from '../cashCategories/cashCategoryLink.repository.js';
 import { TB_DEBTS } from './debts.constants.js';
 import { mapDebtPayload } from './debts.sanitizers.js';
 import { getById } from './debtsQuery.repository.js';
 import { recalcDebtById } from './debtsRecalc.repository.js';
 
 export async function update(id, payload = {}) {
+  await ensureCashCategoryColumns(TB_DEBTS);
   const current = await getById(id);
   if (!current) throw new Error('Dívida não encontrada.');
 
@@ -102,6 +104,9 @@ export async function update(id, payload = {}) {
         data.installment_total
       ]
     );
+
+    // Categoria/Subcategoria do Caixa por ID
+    await setCashCategoryLink(TB_DEBTS, id, payload, client);
 
     const debt = await recalcDebtById(id, client);
 

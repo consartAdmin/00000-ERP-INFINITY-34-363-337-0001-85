@@ -16,6 +16,22 @@ import {
   openCreateDebtsModal,
   closeCreateDebtsModal
 } from './debts.modal.js';
+import { createCashCategoryPair } from '/public/includes/js/cashCategorySelects.js';
+
+// Categoria + Subcategoria do Caixa (IDs) — mesma língua do Financeiro.
+// Criado na primeira vez que o modal é usado (o HTML é injetado por JS).
+let cashCategory = null;
+let cashCategoryEl = null;
+function cashCategoryPair() {
+  if (els.category && els.category !== cashCategoryEl) {
+    cashCategoryEl = els.category;
+    cashCategory = createCashCategoryPair({
+      categorySelect: els.category,
+      subcategorySelect: document.getElementById('cash_subcategory'),
+    });
+  }
+  return cashCategory;
+}
 
 let installmentPlans = [];
 
@@ -148,6 +164,7 @@ export function resetDebtForm() {
   if (!els.debtForm) return;
 
   els.debtForm.reset();
+  cashCategoryPair()?.reset();
 
   installmentPlans = [];
   renderInstallmentPlans();
@@ -179,7 +196,11 @@ export function fillDebtForm(row = {}) {
   els.creditor_name_form.value = row.creditor_name ?? '';
   els.creditor_document.value = row.creditor_document ?? '';
   els.company_name.value = row.company_name ?? '';
-  els.category.value = row.category ?? '';
+  cashCategoryPair()?.setValue({
+    categoryId: row.cash_category_id,
+    subcategoryId: row.cash_subcategory_id,
+    categoryName: row.category,
+  });
   els.cost_center.value = row.cost_center ?? '';
   els.document_number.value = row.document_number ?? '';
   els.reference_number.value = row.reference_number ?? '';
@@ -218,7 +239,7 @@ export function collectDebtPayload() {
     creditor_name: els.creditor_name_form.value.trim() || null,
     creditor_document: els.creditor_document.value.trim() || null,
     company_name: els.company_name.value.trim() || null,
-    category: els.category.value.trim() || null,
+    ...(cashCategoryPair()?.getPayload() || { category: null }), // cash_category_id, cash_subcategory_id, category (nome)
     cost_center: els.cost_center.value.trim() || null,
     document_number: els.document_number.value.trim() || null,
     reference_number: els.reference_number.value.trim() || null,

@@ -13,7 +13,7 @@
 
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { Modal } from '/public/includes/js/modal.js';
-import { fillCategorySelect, setCategoryValue } from './expensesCategories.js';
+import { createCashCategoryPair } from '/public/includes/js/cashCategorySelects.js';
 
 const MODAL_ID = 'expenseModal';
 
@@ -80,6 +80,7 @@ export function createExpenseCreateModal({
     competence_month: document.getElementById('competence_month'),
     competence_year: document.getElementById('competence_year'),
     category: document.getElementById('category'),
+    subcategory: document.getElementById('cash_subcategory'),
     cost_center: document.getElementById('cost_center'),
 
     // Fornecedor do modal (ids próprios; #fornBusca é o filtro da tela)
@@ -101,6 +102,12 @@ export function createExpenseCreateModal({
 
   let mode = 'create';
 
+  // Categoria + Subcategoria do Caixa (IDs) — mesma língua do Financeiro
+  const cashCategory = createCashCategoryPair({
+    categorySelect: el.category,
+    subcategorySelect: el.subcategory,
+  });
+
   /* =========================================================
      Core
   ========================================================= */
@@ -121,7 +128,7 @@ export function createExpenseCreateModal({
 
   function resetDefaults() {
     el.form.reset();
-    setCategoryValue(el.category, '');
+    cashCategory.reset();
     el.id.value = '';
     el.expense_id.value = '';
     el.is_active.value = 'true';
@@ -161,7 +168,11 @@ export function createExpenseCreateModal({
     el.due_date.value = row.due_date ? String(row.due_date).slice(0,10) : '';
     el.competence_month.value = row.competence_month != null ? String(row.competence_month) : '';
     el.competence_year.value = row.competence_year ?? '';
-    setCategoryValue(el.category, row.category);
+    cashCategory.setValue({
+      categoryId: row.cash_category_id,
+      subcategoryId: row.cash_subcategory_id,
+      categoryName: row.category,
+    });
     el.cost_center.value = row.cost_center ?? '';
     if (el.vendor) el.vendor.value = row.vendor ?? '';
     el.recurrence_type.value = row.recurrence_type || 'MONTHLY';
@@ -181,7 +192,7 @@ export function createExpenseCreateModal({
       due_date: el.due_date.value || null,
       competence_month: parseIntOrNull(el.competence_month.value),
       competence_year: parseIntOrNull(el.competence_year.value),
-      category: el.category.value.trim() || null,
+      ...cashCategory.getPayload(), // cash_category_id, cash_subcategory_id, category (nome)
       cost_center: el.cost_center.value.trim() || null,
       vendor: el.vendor?.value?.trim() || null,
       recurrence_type: el.recurrence_type.value,
@@ -273,7 +284,6 @@ export function createExpenseCreateModal({
   }
 
   bind();
-  fillCategorySelect(el.category);
 
   return {
     openCreate,

@@ -6,6 +6,7 @@
 
 import pool from '../../config/db.js';
 import { TB } from './expenses.constants.js';
+import { hasCashCategoryFields, setCashCategoryLinkBatch } from '../cashCategories/cashCategoryLink.repository.js';
 
 const MAX_BATCH = 1000;
 
@@ -77,12 +78,15 @@ export async function updateExpensesBatch(ids, changes = {}) {
   if (!list.length) return [];
 
   const { set, params } = buildBatchChanges(changes);
-  if (!set.length) throw new Error('Nenhum campo para alterar.');
+  const hasCash = hasCashCategoryFields(changes);
+  if (!set.length && !hasCash) throw new Error('Nenhum campo para alterar.');
+
+  await setCashCategoryLinkBatch(TB, list, changes);
 
   params.push(list);
   const q = `
     UPDATE ${TB}
-    SET ${set.join(', ')}, "updated_at" = NOW()
+    SET ${[...set, '"updated_at" = NOW()'].join(', ')}
     WHERE "id" = ANY($${params.length}::int[])
     RETURNING "id";
   `;
