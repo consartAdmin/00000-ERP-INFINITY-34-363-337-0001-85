@@ -30,7 +30,6 @@ const el = {
   // Filters
   fQ:        document.getElementById('fQ'),
   fName:     document.getElementById('fName'),
-  fStatus:   document.getElementById('fStatus'),
   fCategory: document.getElementById('fCategory'),
 
 
@@ -111,14 +110,7 @@ function fmtDateTimeBR(dateStr) {
 }
 
 function setLoadingRow(msg = 'Carregando…') {
-  el.tbBody.innerHTML = `<tr><td colspan="11" class="muted center">${escapeHtml(msg)}</td></tr>`;
-}
-
-function badgeStatus(status) {
-  const s = String(status || '').toUpperCase();
-  if (s === 'PAID') return `<span class="badge paid">✅ PAGO</span>`;
-  if (s === 'CANCELLED') return `<span class="badge cancelled">⛔ CANCEL</span>`;
-  return `<span class="badge pending">⏳ PEND</span>`;
+  el.tbBody.innerHTML = `<tr><td colspan="10" class="muted center">${escapeHtml(msg)}</td></tr>`;
 }
 
 function todayStamp() {
@@ -180,7 +172,6 @@ function buildQuery({ includePaging = true } = {}) {
 
   if (v(el.fQ?.value))        q.set('q', v(el.fQ.value));
   if (v(el.fName?.value))     q.set('name', v(el.fName.value));
-  if (v(el.fStatus?.value))   q.set('status', v(el.fStatus.value));
   if (v(el.fCategory?.value)) q.set('category', v(el.fCategory.value));
 
   syncDateRange();
@@ -224,7 +215,7 @@ async function load() {
     if (el.btnNext) el.btnNext.disabled = page >= pages;
 
     if (!rows.length) {
-      el.tbBody.innerHTML = `<tr><td colspan="11" class="muted center">Nenhum registro encontrado.</td></tr>`;
+      el.tbBody.innerHTML = `<tr><td colspan="10" class="muted center">Nenhum registro encontrado.</td></tr>`;
       return;
     }
 
@@ -234,16 +225,17 @@ async function load() {
         <tr>
           <td class="table-cell-select">
             <input type="checkbox" class="exp-row-checkbox" data-id="${escapeHtml(r.id)}"
-              data-value="${escapeHtml(Number(r.value || 0))}" aria-label="Marcar despesa ${escapeHtml(r.id)}" />
+              data-value="${escapeHtml(Number(r.value || 0))}" data-name="${escapeHtml(r.name || '')}"
+              data-due="${escapeHtml(r.due_date ? String(r.due_date).slice(0, 10) : '')}" aria-label="Marcar despesa ${escapeHtml(r.id)}" />
           </td>
           <td class="col-id" title="${escapeHtml(r.id)}">${escapeHtml(idShort)}${String(r.id).length > 10 ? '…' : ''}</td>
-          <td>${escapeHtml(r.name || '')}</td>
+          <td>${escapeHtml(r.name || '')}${r.account_payable_id
+            ? `<div class="exp-payable-link" title="Último título gerado no Contas a Pagar">📤 CP nº ${escapeHtml(r.account_payable_id)}</div>` : ''}</td>
           <td>${escapeHtml(r.category || '')}${r.cash_subcategory_name
             ? `<div class="exp-subcategory">${escapeHtml(r.cash_subcategory_name)}</div>` : ''}</td>
           <td>${escapeHtml(r.vendor || '')}</td>
           <td class="col-money">${moneyBR(r.value)}</td>
           <td class="col-date">${fmtDateBR(r.due_date)}</td>
-          <td class="col-status">${badgeStatus(r.status)}</td>
           <td class="col-date">${fmtDateTimeBR(r.created_at)}</td>
           <td class="col-date">${fmtDateTimeBR(r.updated_at)}</td>
           <td class="col-actions">
@@ -434,7 +426,6 @@ function bindEvents() {
   el.btnClear?.addEventListener('click', () => {
     el.fQ.value = '';
     el.fName.value = '';
-    el.fStatus.value = '';
     el.fCategory.value = '';
     if (el.fDateRange && typeof el.fDateRange.clear === 'function') el.fDateRange.clear();
     el.fFrom.value = '';
@@ -494,7 +485,7 @@ function bindSortableTable() {
     table: el.table,
     defaultColumn: DEFAULT_SORT.column,
     defaultDirection: DEFAULT_SORT.direction,
-    allowedColumns: ['id', 'name', 'category', 'vendor', 'value', 'due_date', 'status', 'created_at', 'updated_at'],
+    allowedColumns: ['id', 'name', 'category', 'vendor', 'value', 'due_date', 'created_at', 'updated_at'],
     onSort: async ({ column, direction }) => {
       sortState = { column, direction };
       offset = 0;

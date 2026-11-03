@@ -16,6 +16,7 @@ import {
   getExpensesExcel,
   deleteExpensesBatchHandler,
   updateExpensesBatchHandler,
+  sendExpensesToPayableHandler,
 } from '../controllers/expensesController.js';
 
 const router = Router();
@@ -25,6 +26,7 @@ router.get('/pdf', getExpensesPdf);
 router.get('/excel', getExpensesExcel);
 router.post('/batch-delete', deleteExpensesBatchHandler);
 router.post('/batch-update', updateExpensesBatchHandler);
+router.post('/to-accounts-payable', sendExpensesToPayableHandler);
 
 router.get('/', getExpenses);
 router.get('/:id', getExpense);
