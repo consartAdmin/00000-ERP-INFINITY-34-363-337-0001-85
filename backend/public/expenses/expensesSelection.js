@@ -11,6 +11,7 @@
 'use strict';
 
 import { Modal } from '/public/includes/js/modal.js';
+import { fillCategorySelect } from './expensesCategories.js';
 
 const BATCH_MODAL_ID = 'expenseBatchModal';
 
@@ -181,6 +182,7 @@ export function createExpensesSelection({ api, apiFetch, onChanged = async () =>
   }
 
   bind();
+  fillCategorySelect(el.category, { placeholder: '— não alterar —' });
   refresh();
 
   return {

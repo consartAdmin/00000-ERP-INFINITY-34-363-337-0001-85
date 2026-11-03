@@ -12,6 +12,7 @@ import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSea
 import { createSortableTable } from '/public/includes/js/sortableTable.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { createExpensesSelection } from './expensesSelection.js';
+import { fillCategorySelect } from './expensesCategories.js';
 
 /* ──────────────────────────────────────────────────────────────
    API BASE (compatível com seu padrão)
@@ -540,4 +541,8 @@ function bindSortableTable() {
 ────────────────────────────────────────────────────────────── */
 bindEvents();
 bindSortableTable();
+
+// Categoria = categorias do Caixa (mesma língua em todo o Financeiro)
+fillCategorySelect(el.fCategory, { placeholder: 'Todas' });
+el.fCategory?.addEventListener('change', () => { offset = 0; load(); });
 load();
