@@ -5,6 +5,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { ensureCashCategoryColumns } from '../cashCategories/cashCategoryLink.repository.js';
 import { TB_DEBTS, TB_PAYMENTS, TB_PLANS } from './debts.constants.js';
 import { normalizeDate, normalizePaging } from './debts.utils.js';
 
@@ -80,6 +81,7 @@ function buildOrderBy(sortBy, sortDir) {
 }
 
 export async function list(filters = {}) {
+  await ensureCashCategoryColumns(TB_DEBTS);
   const {
     page = 1,
     limit = 20,
@@ -178,6 +180,8 @@ export async function list(filters = {}) {
         creditor_document,
         debt_type,
         category,
+        cash_category_id,
+        cash_subcategory_id,
         cost_center,
         company_name,
         document_number,
@@ -229,6 +233,7 @@ export async function list(filters = {}) {
 }
 
 export async function getById(id) {
+  await ensureCashCategoryColumns(TB_DEBTS);
   const res = await pool.query(
     `
       SELECT
@@ -239,6 +244,8 @@ export async function getById(id) {
         creditor_document,
         debt_type,
         category,
+        cash_category_id,
+        cash_subcategory_id,
         cost_center,
         company_name,
         document_number,

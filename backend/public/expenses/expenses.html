@@ -33,34 +33,7 @@
     <section class="table-layout-integrated">
       <div class="table-layout-integrated__filter table-max-height-500">
 
-        <!-- Filters -->
-        <div class="fields-inline fields-gap-3">
-          <div class="btn-inline bnt-gap-3 btn-position-right">
-
-            <button id="btnNew" type="button" class="btn btn-new btn-sm">
-              <span class="btn-ico">＋</span>Novo</button>
-
-            <button id="btnBatchEdit" type="button" class="btn btn-new btn-sm"
-              title="Alterar as despesas marcadas" disabled>✏️ Alterar (0)</button>
-
-            <button id="btnBatchDelete" type="button" class="btn btn-cancel btn-sm"
-              title="Excluir as despesas marcadas" disabled>🗑️ Excluir (0)</button>
-
-            <button id="btnPdfGenrate" type="button" class="btn btn-toolbar btn-sm" title="Exportar PDF">
-              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
-              <span>Exportar PDF</span>
-            </button>
-
-            <button id="btnExcelGenerate" type="button" class="btn btn-toolbar btn-sm" title="Exportar Excel">
-              <img src="/iconsImagens/excelIcons.png" alt="" width="20" height="20" aria-hidden="true" />
-              <span>Exportar Excel</span>
-            </button>
-
-          </div>
-        </div>
-        <!----------------------
-                   --------------------------------------------------
-                              --------------------------------------------------------------------------------->
+        <!-- Filters + ações na mesma linha -->
         <div class="fields-inline fields-gap-3">
           <div class="fields fields-h-6 fields-w-20 fields-font-3">
             <label>Busca</label>
@@ -115,6 +88,30 @@
             <button id="btnFilter" type="button" class="btn btn-new btn-sm" title="Buscar (aplicar filtros)"
               aria-label="Buscar">🔎</button>
             <button id="btnClear" type="button" class="btn btn-new btn-sm" title="Limpar filtros">Limpar</button>
+          </div>
+
+          <!-- Ações (mesma altura dos filtros, à direita) -->
+          <div class="btn-inline bnt-gap-3 btn-position-right exp-toolbar-actions">
+
+            <button id="btnNew" type="button" class="btn btn-new btn-sm">
+              <span class="btn-ico">＋</span>Novo</button>
+
+            <button id="btnBatchEdit" type="button" class="btn btn-new btn-sm"
+              title="Alterar as despesas marcadas" disabled>✏️ Alterar (0)</button>
+
+            <button id="btnBatchDelete" type="button" class="btn btn-cancel btn-sm"
+              title="Excluir as despesas marcadas" disabled>🗑️ Excluir (0)</button>
+
+            <button id="btnPdfGenrate" type="button" class="btn btn-toolbar btn-sm" title="Exportar PDF">
+              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar PDF</span>
+            </button>
+
+            <button id="btnExcelGenerate" type="button" class="btn btn-toolbar btn-sm" title="Exportar Excel">
+              <img src="/iconsImagens/excelIcons.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar Excel</span>
+            </button>
+
           </div>
         </div>
       </div>
@@ -279,6 +276,13 @@
                     <label for="category">Categoria</label>
                     <select id="category" title="Categorias do Caixa (as mesmas do Financeiro)">
                       <option value="">Selecione...</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="cash_subcategory">Subcategoria</label>
+                    <select id="cash_subcategory" title="Subcategorias do Caixa" disabled>
+                      <option value="">— escolha a categoria —</option>
                     </select>
                   </div>
 
@@ -467,6 +471,13 @@
                   <label for="batch_category">Categoria</label>
                   <select id="batch_category">
                     <option value="">— não alterar —</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_subcategory">Subcategoria</label>
+                  <select id="batch_subcategory" disabled>
+                    <option value="">— escolha a categoria —</option>
                   </select>
                 </div>
 

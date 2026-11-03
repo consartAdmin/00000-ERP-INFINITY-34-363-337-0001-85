@@ -114,7 +114,16 @@ function injectCreateDebtModal() {
 
                 <div class="fields fields-h-6 fields-font-3">
                   <label for="category">Categoria</label>
-                  <input id="category" name="category" maxlength="100">
+                  <select id="category" name="category" title="Categorias do Caixa (as mesmas do Financeiro)">
+                    <option value="">Selecione...</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="cash_subcategory">Subcategoria</label>
+                  <select id="cash_subcategory" name="cash_subcategory" title="Subcategorias do Caixa" disabled>
+                    <option value="">— escolha a categoria —</option>
+                  </select>
                 </div>
 
                 <div class="fields fields-h-6 fields-font-3">

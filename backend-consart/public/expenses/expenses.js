@@ -12,7 +12,7 @@ import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSea
 import { createSortableTable } from '/public/includes/js/sortableTable.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { createExpensesSelection } from './expensesSelection.js';
-import { fillCategorySelect } from './expensesCategories.js';
+import { fillCategoryNameSelect } from '/public/includes/js/cashCategorySelects.js';
 
 /* ──────────────────────────────────────────────────────────────
    API BASE (compatível com seu padrão)
@@ -243,7 +243,8 @@ async function load() {
           </td>
           <td class="col-id" title="${escapeHtml(r.id)}">${escapeHtml(idShort)}${String(r.id).length > 10 ? '…' : ''}</td>
           <td>${escapeHtml(r.name || '')}</td>
-          <td>${escapeHtml(r.category || '')}</td>
+          <td>${escapeHtml(r.category || '')}${r.cash_subcategory_name
+            ? `<div class="exp-subcategory">${escapeHtml(r.cash_subcategory_name)}</div>` : ''}</td>
           <td>${escapeHtml(r.vendor || '')}</td>
           <td class="col-money">${moneyBR(r.value)}</td>
           <td class="col-date">${fmtDateBR(r.due_date)}</td>
@@ -543,6 +544,6 @@ bindEvents();
 bindSortableTable();
 
 // Categoria = categorias do Caixa (mesma língua em todo o Financeiro)
-fillCategorySelect(el.fCategory, { placeholder: 'Todas' });
+fillCategoryNameSelect(el.fCategory, { placeholder: 'Todas' });
 el.fCategory?.addEventListener('change', () => { offset = 0; load(); });
 load();

@@ -6,6 +6,7 @@
 import pool from '../../config/db.js';
 import { TB } from './expenses.constants.js';
 import { sanitizeExpensePayload } from './expenses.sanitizers.js';
+import { ensureCashCategoryColumns, setCashCategoryLink } from '../cashCategories/cashCategoryLink.repository.js';
 
 export async function updateExpense(id, body) {
   const d = sanitizeExpensePayload(body);
@@ -56,6 +57,7 @@ export async function updateExpense(id, body) {
   ];
 
   const { rows } = await pool.query(q, params);
+  if (rows[0]) await setCashCategoryLink(TB, id, body);
   return rows[0] || null;
 }
 

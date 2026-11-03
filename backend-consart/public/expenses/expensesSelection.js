@@ -11,7 +11,7 @@
 'use strict';
 
 import { Modal } from '/public/includes/js/modal.js';
-import { fillCategorySelect } from './expensesCategories.js';
+import { createCashCategoryPair } from '/public/includes/js/cashCategorySelects.js';
 
 const BATCH_MODAL_ID = 'expenseBatchModal';
 
@@ -38,6 +38,7 @@ export function createExpensesSelection({ api, apiFetch, onChanged = async () =>
     payment_method: document.getElementById('batch_payment_method'),
     recurrence_type: document.getElementById('batch_recurrence_type'),
     category: document.getElementById('batch_category'),
+    subcategory: document.getElementById('batch_subcategory'),
     cost_center: document.getElementById('batch_cost_center'),
     is_active: document.getElementById('batch_is_active'),
   };
@@ -125,6 +126,7 @@ export function createExpensesSelection({ api, apiFetch, onChanged = async () =>
   function openBatchEdit() {
     if (!selected.size) return;
     el.form?.reset();
+    cashCategory.reset();
     if (el.summary) el.summary.textContent = `${selected.size} ${selected.size === 1 ? 'despesa' : 'despesas'} • ${moneyBR(totalSelected())}`;
     Modal.open(BATCH_MODAL_ID, { focusSelector: '#batch_status' });
   }
@@ -136,7 +138,7 @@ export function createExpensesSelection({ api, apiFetch, onChanged = async () =>
     if (val(el.paid_date)) changes.paid_date = val(el.paid_date);
     if (val(el.payment_method)) changes.payment_method = val(el.payment_method);
     if (val(el.recurrence_type)) changes.recurrence_type = val(el.recurrence_type);
-    if (val(el.category)) changes.category = val(el.category);
+    if (cashCategory.hasValue()) Object.assign(changes, cashCategory.getPayload());
     if (val(el.cost_center)) changes.cost_center = val(el.cost_center);
     if (val(el.is_active)) changes.is_active = val(el.is_active);
     return changes;
@@ -181,8 +183,13 @@ export function createExpensesSelection({ api, apiFetch, onChanged = async () =>
     el.form?.addEventListener('submit', saveBatchEdit);
   }
 
+  const cashCategory = createCashCategoryPair({
+    categorySelect: el.category,
+    subcategorySelect: el.subcategory,
+    categoryPlaceholder: '— não alterar —',
+  });
+
   bind();
-  fillCategorySelect(el.category, { placeholder: '— não alterar —' });
   refresh();
 
   return {
