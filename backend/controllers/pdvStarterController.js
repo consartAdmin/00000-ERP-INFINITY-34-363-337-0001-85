@@ -16,6 +16,11 @@ import {
   closeSession,
   createSale,
   listSales,
+  findSaleByUuid,
+  isNfceEnabled,
+  emitSaleNfce,
+  nfceView,
+  getIssuerForReceipt,
   PAYMENT_METHODS,
 } from '../repositories/pdvStarter/pdvStarter.index.js';
 import { verifyCredentials } from '../repositories/pdv_logins/pdv_logins.index.js';
@@ -59,14 +64,31 @@ export async function login(req, res) {
 
 // GET /api/pdv/config
 export async function getConfig(req, res) {
+  const enabled = isNfceEnabled();
+  let issuer = null;
+  if (enabled) issuer = await getIssuerForReceipt().catch(() => null);
   return res.json({
     success: true,
     data: {
       company: process.env.PDV_COMPANY_NAME || process.env.DB_NAME || 'BH3',
       payment_methods: PAYMENT_METHODS,
       server_time: new Date().toISOString(),
+      nfce: { enabled, issuer },
     },
   });
+}
+
+// Espera a NFC-e até este limite; depois responde e a emissão segue no servidor
+const NFCE_WAIT_MS = Number(process.env.PDV_NFCE_WAIT_MS || 40000);
+
+async function emitWithLimit(sale) {
+  if (!isNfceEnabled() || !sale || ['AUTORIZADA', 'CANCELADA'].includes(sale.nfce_status)) return sale;
+  const emission = emitSaleNfce(sale.sale_id).catch((error) => {
+    console.error('[pdvStarterController] NFC-e:', error);
+    return sale;
+  });
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(null), NFCE_WAIT_MS));
+  return (await Promise.race([emission, timeout])) || { ...sale, nfce_status: 'PROCESSANDO', nfce_message: 'SEFAZ demorando a responder. Consulte a NFC-e em instantes.' };
 }
 
 // GET /api/pdv/catalogo?limit=&offset=
@@ -146,7 +168,13 @@ export async function closeCash(req, res) {
 export async function postSale(req, res) {
   try {
     const result = await createSale(req.body ?? {}, req.pdvUser);
-    return res.status(result.duplicated ? 200 : 201).json({ success: true, ...result });
+    const sale = await emitWithLimit(result.sale);
+    return res.status(result.duplicated ? 200 : 201).json({
+      success: true,
+      duplicated: result.duplicated,
+      sale,
+      nfce: isNfceEnabled() ? nfceView(sale) : null,
+    });
   } catch (error) {
     return sendError(res, error);
   }
@@ -157,6 +185,30 @@ export async function getSales(req, res) {
   try {
     const data = await listSales({ sessionId: req.query.session_id, limit: req.query.limit });
     return res.json({ success: true, data });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+// GET /api/pdv/vendas/:uuid/nfce — situação da NFC-e (com QR Code para imprimir)
+export async function getSaleNfce(req, res) {
+  try {
+    const sale = await findSaleByUuid(req.params.uuid);
+    if (!sale) return res.status(404).json({ success: false, message: 'Venda não encontrada.' });
+    return res.json({ success: true, nfce: nfceView(sale) });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+// POST /api/pdv/vendas/:uuid/nfce — emite (ou consulta de novo) a NFC-e da venda
+export async function postSaleNfce(req, res) {
+  try {
+    if (!isNfceEnabled()) return res.status(409).json({ success: false, message: 'NFC-e desligada neste ERP.' });
+    const sale = await findSaleByUuid(req.params.uuid);
+    if (!sale) return res.status(404).json({ success: false, message: 'Venda não encontrada.' });
+    const updated = await emitWithLimit(sale);
+    return res.json({ success: true, nfce: nfceView(updated) });
   } catch (error) {
     return sendError(res, error);
   }

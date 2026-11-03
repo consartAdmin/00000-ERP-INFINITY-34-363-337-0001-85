@@ -18,6 +18,8 @@ import {
   closeCash,
   postSale,
   getSales,
+  getSaleNfce,
+  postSaleNfce,
 } from '../controllers/pdvStarterController.js';
 
 const router = Router();
@@ -56,5 +58,11 @@ router.post('/vendas', postSale);
 
 // GET /api/pdv/vendas?session_id=&limit=
 router.get('/vendas', getSales);
+
+// GET /api/pdv/vendas/:uuid/nfce  — situação da NFC-e (com QR Code)
+router.get('/vendas/:uuid/nfce', getSaleNfce);
+
+// POST /api/pdv/vendas/:uuid/nfce — emite ou consulta de novo a NFC-e da venda
+router.post('/vendas/:uuid/nfce', postSaleNfce);
 
 export default router;

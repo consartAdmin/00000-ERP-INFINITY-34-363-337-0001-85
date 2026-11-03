@@ -42,8 +42,18 @@ npm start
 
 Os dados locais ficam em `%APPDATA%/consart-starter-pdv/dados` (config, catálogo, fila de vendas e histórico).
 
+## NFC-e
+
+- O ERP emite a NFC-e (modelo 65) pela **api-consart-fiscal** assim que a venda chega (`POST /api/pdv/vendas`).
+  Fica ligada quando o ERP tem `NFE_API_KEY` e `EMPRESA_CNPJ`; desligue com `PDV_NFCE=off`.
+- Com o ERP no ar, o caixa espera a autorização e imprime o **DANFE NFC-e** com o QR Code.
+  Sem internet, ou se a SEFAZ recusar, sai o cupom não fiscal e a nota é emitida depois.
+  A tela **Vendas** mostra a situação e tem o botão **Emitir NFC-e** para tentar de novo.
+- Dados fiscais dos itens: Perfil Fiscal V2 do produto (NCM, CFOP de saída, CST de ICMS/PIS/COFINS), os mesmos da NF-e.
+- O CSC e o certificado ficam cadastrados na api-consart-fiscal (empresa → NFC-e).
+
 ## Próximas etapas
 
-- Emissão de NFC-e (PlugNotas) a partir da venda.
+- NFC-e em contingência offline (tpEmis 9) e cancelamento de NFC-e pelo caixa.
 - Cancelamento de venda com estorno de estoque.
 - TEF/maquininha integrada, balança e gaveta.

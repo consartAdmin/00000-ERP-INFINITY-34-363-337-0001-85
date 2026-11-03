@@ -152,3 +152,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);border
 .cb{cursor:pointer}.cb.off{background:#fff;border:1.5px solid #cbd5e1}
 .opt .dis{color:var(--mut)}
 .sec.fill{flex:1;display:flex;flex-direction:column;min-height:0}
+.busy{display:flex;flex-direction:column;align-items:center;gap:10px;padding:34px 24px;text-align:center}
+.busy b{font-size:18px}.busy span{color:#64748b;font-size:14px}
+.spin{width:44px;height:44px;border-radius:50%;border:4px solid #dcfce7;border-top-color:#16a34a;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
