@@ -15,6 +15,7 @@ import pool from '../../config/db.js';
 import { TB, TB_PRODUCTS, TB_BARCODES, BARCODE_COL, PRODUCT_DESC_COL } from './productsLocations.constants.js';
 
 const TB_STOCK = 'public."productsStock"';
+const TB_LOCALS = 'public."locationLocals"';
 
 export const BATCH_MAX_PRODUCTS = 2000;
 export const BATCH_MODES = Object.freeze({ MOVE: 'MOVER', ADD: 'ADICIONAR' });
@@ -34,7 +35,30 @@ const CURRENT_LOCATION_JOIN = `
   ) cur ON TRUE
 `;
 
-function buildProductsWhere({ q, store_id, corredor, withoutLocation }) {
+/* ────────────────────────────────────────────────────────────────────
+   Ordenação pelo cabeçalho (sortableTable). Chaves = data-sort-column
+   do HTML; nada do usuário entra no SQL além desse mapa.
+──────────────────────────────────────────────────────────────────── */
+export const BATCH_ORDER_SQL = Object.freeze({
+  sku: 'p.product_code',
+  descricao: `p."${PRODUCT_DESC_COL}"`,
+  local: 'll.name',
+  corredor: 'cur.corredor',
+  gondola: 'cur.prateleira',
+  bandeja: 'cur.bandeja',
+  posicao: 'cur.box',
+  estoque: 'COALESCE(ps.stock_qty, 0)',
+  outras: 'other_locations',
+});
+
+function orderSql(sortColumn, sortDir) {
+  const expr = Object.hasOwn(BATCH_ORDER_SQL, sortColumn) ? BATCH_ORDER_SQL[sortColumn] : null;
+  if (!expr) return `p."${PRODUCT_DESC_COL}" ASC NULLS LAST, p.product_code ASC`;
+  const dir = String(sortDir).toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+  return `${expr} ${dir} NULLS LAST, p.product_code ASC`;
+}
+
+function buildProductsWhere({ q, store_id, corredor, withoutLocation, positiveStock }) {
   const where = ['p.is_active IS NOT FALSE'];
   const params = [];
 
@@ -53,6 +77,10 @@ function buildProductsWhere({ q, store_id, corredor, withoutLocation }) {
            AND (pb."${BARCODE_COL}" = ${exact} OR LOWER(COALESCE(pb."${BARCODE_COL}", '')) LIKE ${like})
       )
     )`);
+  }
+
+  if (positiveStock) {
+    where.push('COALESCE(ps.stock_qty, 0) > 0');
   }
 
   if (withoutLocation) {
@@ -81,15 +109,19 @@ export async function listProducts({
   store_id = null,
   corredor = null,
   withoutLocation = false,
+  positiveStock = false,
+  sortColumn = '',
+  sortDir = 'asc',
   limit = 50,
   offset = 0,
   codesOnly = false,
 } = {}) {
-  const { whereSql, params } = buildProductsWhere({ q, store_id, corredor, withoutLocation });
+  const { whereSql, params } = buildProductsWhere({ q, store_id, corredor, withoutLocation, positiveStock });
 
   const from = `
     FROM ${TB_PRODUCTS} p
     ${CURRENT_LOCATION_JOIN}
+    LEFT JOIN ${TB_STOCK} ps ON ps.product_stock_id = p.product_stock_id
     ${whereSql}
   `;
 
@@ -119,8 +151,9 @@ export async function listProducts({
     FROM ${TB_PRODUCTS} p
     ${CURRENT_LOCATION_JOIN}
     LEFT JOIN ${TB_STOCK} ps ON ps.product_stock_id = p.product_stock_id
+    LEFT JOIN ${TB_LOCALS} ll ON ll.id = cur.store_id
     ${whereSql}
-    ORDER BY p."${PRODUCT_DESC_COL}" ASC NULLS LAST, p.product_code ASC
+    ORDER BY ${orderSql(sortColumn, sortDir)}
     LIMIT $${params.length + 1} OFFSET $${params.length + 2};
   `;
 

@@ -10,6 +10,7 @@
 
 import { Modal } from '/public/includes/js/modal.js';
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
 
 const API_BASE = String(window.API_BASE || window.location.origin).replace(/\/$/, '');
 const BATCH_API = `${API_BASE}/api/products-locations/batch`;
@@ -29,7 +30,8 @@ const state = {
   selected: new Map(), // product_code → row
   locals: [],
   localNames: new Map(), // id → name
-  filters: { q: '', store_id: '', corredor: '', withoutLocation: false },
+  filters: { q: '', store_id: '', corredor: '', withoutLocation: false, positiveStock: false },
+  sort: { column: 'descricao', direction: 'asc' },
   saving: false,
 };
 
@@ -146,6 +148,7 @@ function readFilters() {
     store_id: without ? '' : $('#plbFilterLocal').value,
     corredor: without ? '' : $('#plbFilterCorridor').value,
     withoutLocation: without,
+    positiveStock: $('#plbPositiveStock').checked,
   };
 }
 
@@ -156,6 +159,7 @@ function filterParams() {
   if (f.store_id) p.set('store_id', f.store_id);
   if (f.corredor) p.set('corredor', f.corredor);
   if (f.withoutLocation) p.set('withoutLocation', 'true');
+  if (f.positiveStock) p.set('positiveStock', 'true');
   return p;
 }
 
@@ -164,6 +168,10 @@ function filterParams() {
 /* --------------------------------------------------------------------- */
 async function loadProducts() {
   const params = filterParams();
+  if (state.sort.column) {
+    params.set('sortColumn', state.sort.column);
+    params.set('sortDir', state.sort.direction);
+  }
   params.set('limit', String(state.pageSize));
   params.set('offset', String((state.page - 1) * state.pageSize));
 
@@ -508,8 +516,11 @@ function bindEvents() {
     search();
   });
 
+  $('#plbPositiveStock').addEventListener('change', search);
+
   $('#plbBtnClear').addEventListener('click', async () => {
     $('#plbSearch').value = '';
+    $('#plbPositiveStock').checked = false;
     $('#plbFilterLocal').value = '';
     $('#plbFilterLocal').disabled = false;
     $('#plbWithoutLocation').checked = false;
@@ -559,6 +570,18 @@ function bindEvents() {
   });
 
   bindDestinationCascade();
+
+  // Ordenação pelo cabeçalho — feita no backend (a lista é paginada)
+  createSortableTable({
+    table: '#plbTable',
+    defaultColumn: state.sort.column,
+    defaultDirection: state.sort.direction,
+    onSort: async ({ column, direction }) => {
+      state.sort = { column, direction };
+      state.page = 1;
+      await loadProducts();
+    },
+  });
 }
 
 /* --------------------------------------------------------------------- */

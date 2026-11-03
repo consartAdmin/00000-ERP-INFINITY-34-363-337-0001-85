@@ -325,7 +325,9 @@ export async function remove(req, res) {
 /* ============================================================
    LOCALIZAÇÕES EM LOTE
    GET  /api/products-locations/batch/products
-        ?q=&store_id=&corredor=&withoutLocation=true&limit=&offset=&codesOnly=true
+        ?q=&store_id=&corredor=&withoutLocation=true&positiveStock=true
+        &sortColumn=sku|descricao|local|corredor|gondola|bandeja|posicao|estoque|outras
+        &sortDir=asc|desc&limit=&offset=&codesOnly=true
    POST /api/products-locations/batch
         { product_codes: [], mode: 'MOVER'|'ADICIONAR',
           destination: { store_id, corredor, prateleira, bandeja, box },
@@ -338,6 +340,9 @@ export async function listBatchProducts(req, res) {
       store_id: toStoreIdOrNull(req.query.store_id ?? req.query.storeId) ?? null,
       corredor: toVarcharOrNull(req.query.corredor, 50) ?? null,
       withoutLocation: sanitizeBoolean(req.query.withoutLocation, false),
+      positiveStock: sanitizeBoolean(req.query.positiveStock, false),
+      sortColumn: String(req.query.sortColumn || '').trim(),
+      sortDir: String(req.query.sortDir || '').trim(),
       limit: toInt(req.query.limit, 50),
       offset: toInt(req.query.offset, 0),
       codesOnly: sanitizeBoolean(req.query.codesOnly, false),
