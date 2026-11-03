@@ -7,8 +7,16 @@ import pool from '../../config/db.js';
 import { TB } from './expenses.constants.js';
 import { toInt } from './expenses.utils.js';
 import { safeOrderBy, buildWhere } from './expenses.sql.js';
+import { ensureCashCategoryColumns } from '../cashCategories/cashCategoryLink.repository.js';
+
+// Categoria/Subcategoria do Caixa (IDs + nome da subcategoria)
+const CASH_COLUMNS_SQL = `
+      "cash_category_id",
+      "cash_subcategory_id",
+      (SELECT s.nome FROM "cashSubcategories" s WHERE s.id = ${TB}."cash_subcategory_id") AS "cash_subcategory_name",`;
 
 export async function listExpenses(query = {}) {
+  await ensureCashCategoryColumns(TB);
   const limit  = Math.min(Math.max(toInt(query.limit, 20), 1), 200);
   const offset = Math.max(toInt(query.offset, 0), 0);
   const orderBy = safeOrderBy(query.order_by, query.sort, query.dir);
@@ -27,6 +35,7 @@ export async function listExpenses(query = {}) {
       "competence_month",
       "competence_year",
       "category",
+      ${CASH_COLUMNS_SQL}
       "cost_center",
       "vendor",
       "recurrence_type",
@@ -88,6 +97,7 @@ export async function countExpenses(query = {}) {
 }
 
 export async function getExpenseById(id) {
+  await ensureCashCategoryColumns(TB);
   const q = `
     SELECT
       "id",
@@ -99,6 +109,7 @@ export async function getExpenseById(id) {
       "competence_month",
       "competence_year",
       "category",
+      ${CASH_COLUMNS_SQL}
       "cost_center",
       "vendor",
       "recurrence_type",
@@ -122,6 +133,7 @@ export async function getExpenseById(id) {
  * paginação, com limite de segurança.
  */
 export async function listExpensesForExport(query = {}, maxRows = 5000) {
+  await ensureCashCategoryColumns(TB);
   const orderBy = safeOrderBy(query.order_by, query.sort, query.dir);
   const { sql: whereSql, params } = buildWhere(query);
 
@@ -136,6 +148,7 @@ export async function listExpensesForExport(query = {}, maxRows = 5000) {
       "competence_month",
       "competence_year",
       "category",
+      ${CASH_COLUMNS_SQL}
       "cost_center",
       "vendor",
       "recurrence_type",

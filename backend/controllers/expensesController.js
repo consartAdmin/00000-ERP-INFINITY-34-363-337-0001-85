@@ -321,7 +321,8 @@ export async function updateExpensesBatchHandler(req, res) {
   } catch (err) {
     return badRequest(res, err.message);
   }
-  if (!built.set.length) return badRequest(res, 'Nenhum campo para alterar.');
+  const hasCash = ['cash_category_id', 'cash_subcategory_id'].some((k) => k in changes);
+  if (!built.set.length && !hasCash) return badRequest(res, 'Nenhum campo para alterar.');
 
   try {
     const updated = await updateExpensesBatch(ids, changes);
