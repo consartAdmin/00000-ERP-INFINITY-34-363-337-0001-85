@@ -133,6 +133,8 @@ export function createExpenseCreateModal({
     el.expense_id.value = '';
     el.is_active.value = 'true';
     el.status.value = 'PENDING';
+    el.paid_date.value = '';
+    el.payment_method.value = '';
     el.recurrence_type.value = 'MONTHLY';
     el.payload.value = '';
 

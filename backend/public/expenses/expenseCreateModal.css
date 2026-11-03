@@ -202,8 +202,28 @@
   white-space: nowrap;
 }
 /* telas menores: volta a quebrar linha para não cortar nada */
-@media (max-width: 1480px) {
+@media (max-width: 1650px) {
   .table-layout-integrated__filter > .fields-inline:has(.exp-toolbar-actions) {
     flex-wrap: wrap;
   }
+}
+
+/* Despesa já enviada ao Contas a Pagar (embaixo do Status) */
+.exp-payable-link {
+  font-size: 0.78em;
+  opacity: 0.7;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Enviar ao Contas a Pagar: prévia dos vencimentos */
+.exp-payable-preview ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+.exp-payable-preview__hint {
+  margin: 8px 0 0;
+  font-size: 0.85em;
+  opacity: 0.7;
 }

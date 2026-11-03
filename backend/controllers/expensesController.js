@@ -20,6 +20,7 @@ import {
   deleteExpensesBatch,
   updateExpensesBatch,
 } from '../repositories/expenses/expensesBatch.repository.js';
+import { sendExpensesToPayable } from '../repositories/expenses/expensesToPayable.repository.js';
 import ExcelJS from 'exceljs';
 import { generateExpensesPdf } from '../generationPdf/generateExpensesPdf.js'; // ✅ ajuste path se preciso
 
@@ -205,7 +206,6 @@ export async function getExpensesPdf(req, res) {
 /* ──────────────────────────────────────────────────────────────
    GET /api/expenses/excel  → .xlsx com os mesmos filtros/ordem da tela
 ────────────────────────────────────────────────────────────── */
-const EXPENSE_STATUS_LABEL = { PENDING: 'Pendente', PAID: 'Pago', CANCELLED: 'Cancelado' };
 const EXPENSE_RECURRENCE_LABEL = { MONTHLY: 'Mensal', WEEKLY: 'Semanal', YEARLY: 'Anual', NONE: 'Sem recorrência' };
 
 function toDateOnly(value) {
@@ -243,9 +243,6 @@ export async function getExpensesExcel(req, res) {
       { header: 'Vencimento', key: 'due_date', width: 12, style: { numFmt: 'dd/mm/yyyy' } },
       { header: 'Competência', key: 'competence', width: 12 },
       { header: 'Recorrência', key: 'recurrence', width: 14 },
-      { header: 'Status', key: 'status', width: 12 },
-      { header: 'Pago em', key: 'paid_date', width: 12, style: { numFmt: 'dd/mm/yyyy' } },
-      { header: 'Método de pagamento', key: 'payment_method', width: 20 },
       { header: 'Criado em', key: 'created_at', width: 18, style: { numFmt: 'dd/mm/yyyy hh:mm' } },
       { header: 'Atualizado em', key: 'updated_at', width: 18, style: { numFmt: 'dd/mm/yyyy hh:mm' } },
     ];
@@ -266,9 +263,6 @@ export async function getExpensesExcel(req, res) {
         due_date: toDateOnly(r.due_date),
         competence: competenceLabel(r.competence_month, r.competence_year),
         recurrence: EXPENSE_RECURRENCE_LABEL[r.recurrence_type] || r.recurrence_type || '',
-        status: EXPENSE_STATUS_LABEL[String(r.status || '').toUpperCase()] || r.status || '',
-        paid_date: toDateOnly(r.paid_date),
-        payment_method: r.payment_method || '',
         created_at: r.created_at ? new Date(r.created_at) : null,
         updated_at: r.updated_at ? new Date(r.updated_at) : null,
       });
@@ -329,5 +323,20 @@ export async function updateExpensesBatchHandler(req, res) {
     return res.json({ ok: true, updated: updated.length, ids: updated });
   } catch (err) {
     return serverError(res, err, 'updateExpensesBatch');
+  }
+}
+
+/* POST /api/expenses/to-accounts-payable  { ids: [], parcels: N }
+   Envia as despesas marcadas ao Contas a Pagar (1 título por despesa). */
+export async function sendExpensesToPayableHandler(req, res) {
+  try {
+    const ids = normalizeIds(req.body?.ids);
+    if (!ids.length) return badRequest(res, 'Nenhuma despesa selecionada.');
+    const user = { name: req.user?.name || req.user?.username || null };
+    const result = await sendExpensesToPayable(ids, req.body?.parcels ?? 1, user);
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    if (err?.status === 400) return badRequest(res, err.message);
+    return serverError(res, err, 'sendExpensesToPayable');
   }
 }
