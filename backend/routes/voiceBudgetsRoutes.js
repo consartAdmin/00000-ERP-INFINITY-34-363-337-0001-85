@@ -1,6 +1,7 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ voiceBudgetsRoutes.js — Orçamento por voz (app CONSART Orçamentos)   ║
-// ║ POST /api/voice-budgets/interpret { text } → rascunho do orçamento   ║
+// ║ POST /api/voice-budgets/interpret { text, history?, draft? }         ║
+// ║   → rascunho do orçamento + resposta falada (conversa)              ║
 // ║ Exige login (JWT): cada chamada usa a API paga do Claude.            ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
@@ -13,7 +14,11 @@ const router = Router();
 router.post('/interpret', requireAuth, async (req, res) => {
   const started = Date.now();
   try {
-    const result = await interpretVoiceBudget({ text: req.body?.text });
+    const result = await interpretVoiceBudget({
+      text: req.body?.text,
+      history: req.body?.history,
+      draft: req.body?.draft,
+    });
     console.log(
       `[voice-budgets] user=${req.user?.user_id ?? '?'} items=${result.items.length} ` +
       `in=${result.usage.input_tokens} out=${result.usage.output_tokens} ms=${Date.now() - started}`,

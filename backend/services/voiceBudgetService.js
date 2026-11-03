@@ -162,10 +162,21 @@ const TOOLS = [
           items: { type: 'string' },
           description: 'Dúvidas curtas para o vendedor confirmar (vazio se nenhuma).',
         },
+        fala: {
+          type: 'string',
+          description:
+            'Resposta curta que o celular vai falar em voz alta para o vendedor (1 a 3 frases, ' +
+            'português do Brasil, sem códigos nem listas longas): o que mudou e a dúvida mais importante.',
+        },
+        concluido: {
+          type: 'boolean',
+          description: 'true só quando o vendedor disse que terminou (ex.: "pode abrir", "é só isso", "fecha").',
+        },
       },
       required: [
         'cliente_id', 'cliente_falado', 'clientes_alternativos', 'itens',
         'forma_pagamento_id', 'forma_pagamento_falada', 'observacoes', 'perguntas',
+        'fala', 'concluido',
       ],
       additionalProperties: false,
     },
@@ -182,7 +193,10 @@ Passos:
 4. Use listar_formas_pagamento e escolha a que corresponde ao que foi falado ("trinta sessenta" = 30/60, "à vista", "pix", "boleto 28 dias").
 5. Termine chamando entregar_rascunho uma única vez. Use somente ids e códigos que vieram das buscas. Nunca invente.
 
-Quantidade não falada = 1. Se algo ficou ambíguo, escreva uma pergunta curta em perguntas. Não escreva texto fora das ferramentas.`;
+Quantidade não falada = 1. Se algo ficou ambíguo, escreva uma pergunta curta em perguntas. Não escreva texto fora das ferramentas.
+
+Conversa: o vendedor pode responder às suas perguntas e corrigir o rascunho falando ("o inox", "aumenta para vinte", "tira a porca", "troca o cliente para..."). Quando houver "Rascunho atual", parta dele: mantenha o que não foi mudado (mesmos ids e códigos), aplique só as mudanças pedidas e busque de novo apenas o que for novo ou trocado.
+Em fala, responda como um colega no balcão: curto e natural, confirmando o que entendeu e fazendo no máximo uma pergunta por vez. Não leia códigos nem a lista inteira.`;
 
 function summarizeCustomer(r) {
   return compact({
@@ -208,7 +222,7 @@ function summarizeProduct(r) {
  * Interpreta o texto falado e devolve o rascunho com os registros completos
  * (cliente, produtos e forma de pagamento) que o app usa para abrir o editor.
  */
-export async function interpretVoiceBudget({ text }) {
+export async function interpretVoiceBudget({ text, history = [], draft: appDraft = null }) {
   const spoken = String(text ?? '').trim();
   if (!spoken) throw new VoiceBudgetError('Fale ou digite o orçamento.');
   if (spoken.length > MAX_TEXT) {
@@ -264,7 +278,16 @@ export async function interpretVoiceBudget({ text }) {
     throw new Error(`Ferramenta desconhecida: ${name}`);
   }
 
-  const messages = [{ role: 'user', content: `Fala do vendedor:\n"""${spoken}"""` }];
+  const current = await loadDraft(appDraft, { seenCustomers, seenProducts, loadPaymentMethods });
+  const messages = [
+    ...normalizeHistory(history),
+    {
+      role: 'user',
+      content:
+        (current ? `Rascunho atual (JSON):\n${JSON.stringify(current)}\n\n` : '') +
+        `Fala do vendedor:\n"""${spoken}"""`,
+    },
+  ];
   const usage = { input_tokens: 0, output_tokens: 0 };
   let draft = null;
 
@@ -363,7 +386,79 @@ export async function interpretVoiceBudget({ text }) {
     payment_spoken: draft.forma_pagamento_falada ?? '',
     notes: draft.observacoes ?? '',
     questions: draft.perguntas ?? [],
+    reply: String(draft.fala ?? '').trim(),
+    done: draft.concluido === true,
     model,
     usage,
   };
+}
+
+// ----------------------------------------------------------------------
+// Conversa: histórico de falas e o rascunho que o app já mostra
+// ----------------------------------------------------------------------
+const MAX_HISTORY = 20;
+
+/** Histórico do app ([{role:'user'|'assistant', text}]) → mensagens alternadas. */
+function normalizeHistory(history) {
+  const out = [];
+  const list = Array.isArray(history) ? history.slice(-MAX_HISTORY) : [];
+  for (const h of list) {
+    const role = h?.role === 'assistant' ? 'assistant' : 'user';
+    const text = String(h?.text ?? '').trim().slice(0, MAX_TEXT);
+    if (!text) continue;
+    const last = out[out.length - 1];
+    if (last && last.role === role) last.content += `\n${text}`;
+    else out.push({ role, content: text });
+  }
+  // A API começa com user e a nova fala (user) vem depois: sobra só pares.
+  while (out.length && out[0].role !== 'user') out.shift();
+  if (out.length && out[out.length - 1].role === 'user') out.pop();
+  return out;
+}
+
+/**
+ * Recarrega do ERP o rascunho que o app mandou ({customer_id, items:[{product_code,
+ * quantity, spoken}], payment_method_id, notes}) e registra os registros como "vistos",
+ * para o Claude poder mantê-los sem buscar de novo. Devolve um resumo para o prompt.
+ */
+async function loadDraft(draft, { seenCustomers, seenProducts, loadPaymentMethods }) {
+  if (!draft || typeof draft !== 'object') return null;
+  const summary = { cliente: null, itens: [], forma_pagamento: null, observacoes: String(draft.notes ?? '') };
+
+  if (draft.customer_id) {
+    try {
+      const c = await customersApi.getById(String(draft.customer_id));
+      if (c) {
+        seenCustomers.set(String(c.customer_id ?? draft.customer_id), c);
+        summary.cliente = summarizeCustomer({ ...c, customer_id: c.customer_id ?? draft.customer_id });
+      }
+    } catch { /* cliente sumiu: o Claude busca de novo */ }
+  }
+
+  const items = Array.isArray(draft.items) ? draft.items.slice(0, 100) : [];
+  for (const it of items) {
+    const code = String(it?.product_code ?? '').trim();
+    const qty = Number(it?.quantity) > 0 ? Number(it.quantity) : 1;
+    let row = null;
+    if (code) {
+      try {
+        const res = await productsApi.search({ q: code, limit: 20 });
+        row = (res?.rows ?? []).find((r) => String(r.product_code) === code) ?? null;
+      } catch { /* sem produto */ }
+    }
+    if (row) seenProducts.set(code, row);
+    summary.itens.push({
+      falado: String(it?.spoken ?? ''),
+      product_code: row ? code : null,
+      descricao: row?.description ?? null,
+      quantidade: qty,
+    });
+  }
+
+  if (draft.payment_method_id) {
+    const rows = await loadPaymentMethods();
+    const pm = rows.find((r) => String(r.paymentMethods_id) === String(draft.payment_method_id));
+    if (pm) summary.forma_pagamento = { paymentMethods_id: String(pm.paymentMethods_id), nome: pm.name };
+  }
+  return summary;
 }
