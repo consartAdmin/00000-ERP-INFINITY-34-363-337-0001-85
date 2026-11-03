@@ -171,3 +171,39 @@
   border-color: #93c5fd;
   font-weight: 700;
 }
+
+/* ── Tela de Despesas (filtros + tabela) ─────────────────────────────── */
+
+/* Subcategoria do Caixa embaixo da Categoria na tabela */
+.exp-subcategory {
+  font-size: 0.82em;
+  opacity: 0.65;
+  line-height: 1.2;
+}
+
+/* Período: título sem negrito, igual aos outros rótulos dos filtros */
+#fDateRange .date-range-field-label {
+  font-weight: 400;
+}
+
+/* Filtros + ações (Novo, Alterar, Excluir, Exportar) na mesma linha.
+   Busca e Nome encolhem para caber; as ações ficam à direita. */
+.table-layout-integrated__filter > .fields-inline:has(.exp-toolbar-actions) {
+  flex-wrap: nowrap;
+  align-items: flex-end;
+}
+.table-layout-integrated__filter > .fields-inline:has(.exp-toolbar-actions) > .fields-w-20 {
+  flex: 1 1 250px;
+  min-width: 130px;
+}
+.exp-toolbar-actions {
+  margin-left: auto;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+/* telas menores: volta a quebrar linha para não cortar nada */
+@media (max-width: 1650px) {
+  .table-layout-integrated__filter > .fields-inline:has(.exp-toolbar-actions) {
+    flex-wrap: wrap;
+  }
+}

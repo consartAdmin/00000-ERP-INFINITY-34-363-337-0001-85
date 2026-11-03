@@ -334,9 +334,3 @@ kbd{
     min-width: 100%;
   }
 }
-/* Subcategoria do Caixa embaixo da Categoria na tabela */
-.exp-subcategory {
-  font-size: 0.78em;
-  opacity: 0.7;
-  line-height: 1.2;
-}
