@@ -9,7 +9,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Expenses • CONSART ERP</title>
+  <title>DESPESAS • CONSART ERP</title>
 
   <!-- 🟦 Favicons CONSART -->
   <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
@@ -45,9 +45,11 @@
             <button id="btnNew" type="button" class="btn btn-new btn-sm">
               <span class="btn-ico">＋</span>Novo</button>
 
-            <button id="btnFilter" type="button" class="btn btn-new btn-sm">Filtrar</button>
+            <button id="btnBatchEdit" type="button" class="btn btn-new btn-sm"
+              title="Alterar as despesas marcadas" disabled>✏️ Alterar (0)</button>
 
-            <button id="btnClear" type="button" class="btn btn-new btn-sm">Limpar</button>
+            <button id="btnBatchDelete" type="button" class="btn btn-cancel btn-sm"
+              title="Excluir as despesas marcadas" disabled>🗑️ Excluir (0)</button>
 
             <button id="btnPdfGenrate" type="button" class="btn btn-toolbar btn-sm" title="Exportar PDF">
               <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
@@ -110,6 +112,13 @@
 
           <input type="hidden" id="fFrom" />
           <input type="hidden" id="fTo" />
+
+          <!-- Buscar (aplica os filtros) + Limpar, logo depois do Período -->
+          <div class="btn-inline exp-filter-actions">
+            <button id="btnFilter" type="button" class="btn btn-new btn-sm" title="Buscar (aplicar filtros)"
+              aria-label="Buscar">🔎</button>
+            <button id="btnClear" type="button" class="btn btn-new btn-sm" title="Limpar filtros">Limpar</button>
+          </div>
         </div>
       </div>
 
@@ -119,6 +128,10 @@
         <table id="expensesTable" class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
+              <th class="table-col-select">
+                <input type="checkbox" id="expSelectAll" aria-label="Marcar todas as despesas desta página"
+                  title="Marcar todas desta página" />
+              </th>
               <th class="col-id table-sortable" data-sort-column="id" aria-sort="none">
                 <button type="button" class="table-sort-button" data-sort-button title="Ordenar por ID">
                   ID <span data-sort-icon aria-hidden="true">↕</span>
@@ -169,7 +182,7 @@
           </thead>
           <tbody id="tbBody">
             <tr>
-              <td colspan="10" class="muted center">Carregando…</td>
+              <td colspan="11" class="muted center">Carregando…</td>
             </tr>
           </tbody>
         </table>
@@ -185,6 +198,10 @@
             <span id="apTableInfo">
               0 Registros
             </span>
+          </div>
+
+          <div class="summary-pill summary-width-5 exp-selected-pill" id="expSelectedPill">
+            <span id="expSelectedInfo">0 marcadas • R$ 0,00</span>
           </div>
         </div>
 
@@ -395,6 +412,89 @@
       </section>
     </div>
   </div>
+
+  <!-- Modal Alterar despesas marcadas (em lote) -->
+  <div id="expenseBatchModal" class="modal exp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="batchTitle">
+
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="batchTitle" class="modal__title">✏️ Alterar despesas marcadas</h2>
+            <p id="batchSub" class="exp-modal__subtitle">Só os campos preenchidos serão alterados.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="formBatch" class="exp-form" autocomplete="off">
+            <div class="exp-section">
+              <div class="exp-section__title">📋 <span id="batchSummary">0 despesas • R$ 0,00</span></div>
+              <div class="exp-section__grid">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_status">Status</label>
+                  <select id="batch_status">
+                    <option value="">— não alterar —</option>
+                    <option value="PENDING">Pendente</option>
+                    <option value="PAID">Pago</option>
+                    <option value="CANCELLED">Cancelado</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_paid_date">Pago em</label>
+                  <input id="batch_paid_date" type="date" />
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_payment_method">Método de pagamento</label>
+                  <input id="batch_payment_method" placeholder="— não alterar —" />
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_recurrence_type">Recorrência</label>
+                  <select id="batch_recurrence_type">
+                    <option value="">— não alterar —</option>
+                    <option value="MONTHLY">Mensal</option>
+                    <option value="WEEKLY">Semanal</option>
+                    <option value="YEARLY">Anual</option>
+                    <option value="NONE">Sem recorrência</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_category">Categoria</label>
+                  <input id="batch_category" placeholder="— não alterar —" />
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_cost_center">Centro de custo</label>
+                  <input id="batch_cost_center" placeholder="— não alterar —" />
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_is_active">Ativo</label>
+                  <select id="batch_is_active">
+                    <option value="">— não alterar —</option>
+                    <option value="true">Sim</option>
+                    <option value="false">Não</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button id="btnBatchSave" type="submit" form="formBatch" class="btn btn-save btn-sm">💾 Aplicar nas marcadas</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
 
     <script type="module" src="/public/includes/js/core.js"></script>
     <script type="module" src="./expenses.js"></script>

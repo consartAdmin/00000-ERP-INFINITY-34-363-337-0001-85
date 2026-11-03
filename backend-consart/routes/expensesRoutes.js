@@ -14,6 +14,8 @@ import {
   deleteExpenseHandler,
   getExpensesPdf, // ✅ ADD
   getExpensesExcel,
+  deleteExpensesBatchHandler,
+  updateExpensesBatchHandler,
 } from '../controllers/expensesController.js';
 
 const router = Router();
@@ -21,6 +23,8 @@ const router = Router();
 // ✅ MUITO IMPORTANTE: antes de "/:id"
 router.get('/pdf', getExpensesPdf);
 router.get('/excel', getExpensesExcel);
+router.post('/batch-delete', deleteExpensesBatchHandler);
+router.post('/batch-update', updateExpensesBatchHandler);
 
 router.get('/', getExpenses);
 router.get('/:id', getExpense);

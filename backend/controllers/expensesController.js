@@ -14,6 +14,12 @@ import {
   deleteExpense,
 } from '../repositories/expenses/expenses.index.js';
 
+import {
+  normalizeIds,
+  buildBatchChanges,
+  deleteExpensesBatch,
+  updateExpensesBatch,
+} from '../repositories/expenses/expensesBatch.repository.js';
 import ExcelJS from 'exceljs';
 import { generateExpensesPdf } from '../generationPdf/generateExpensesPdf.js'; // ✅ ajuste path se preciso
 
@@ -286,5 +292,41 @@ export async function getExpensesExcel(req, res) {
     return res.send(Buffer.from(buffer));
   } catch (err) {
     return serverError(res, err, 'getExpensesExcel');
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   POST /api/expenses/batch-delete  { ids: [] }
+   POST /api/expenses/batch-update  { ids: [], changes: {...} }
+────────────────────────────────────────────────────────────── */
+export async function deleteExpensesBatchHandler(req, res) {
+  try {
+    const ids = normalizeIds(req.body?.ids);
+    if (!ids.length) return badRequest(res, 'Nenhuma despesa selecionada.');
+    const deleted = await deleteExpensesBatch(ids);
+    return res.json({ ok: true, deleted: deleted.length, ids: deleted });
+  } catch (err) {
+    return serverError(res, err, 'deleteExpensesBatch');
+  }
+}
+
+export async function updateExpensesBatchHandler(req, res) {
+  const ids = normalizeIds(req.body?.ids);
+  if (!ids.length) return badRequest(res, 'Nenhuma despesa selecionada.');
+  const changes = req.body?.changes && typeof req.body.changes === 'object' ? req.body.changes : {};
+
+  let built;
+  try {
+    built = buildBatchChanges(changes);
+  } catch (err) {
+    return badRequest(res, err.message);
+  }
+  if (!built.set.length) return badRequest(res, 'Nenhum campo para alterar.');
+
+  try {
+    const updated = await updateExpensesBatch(ids, changes);
+    return res.json({ ok: true, updated: updated.length, ids: updated });
+  } catch (err) {
+    return serverError(res, err, 'updateExpensesBatch');
   }
 }
