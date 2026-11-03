@@ -9,6 +9,8 @@
 // ║   PUT  /api/products-locations/:id                                   ║
 // ║   PATCH /api/products-locations/:id/deactivate                        ║
 // ║   DELETE /api/products-locations/:id                                 ║
+// ║   GET  /api/products-locations/batch/products   (Localizações em Lote)║
+// ║   POST /api/products-locations/batch            (Localizações em Lote)║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
@@ -17,6 +19,7 @@ import pool from '../config/db.js';
 
 // ✅ NEW: use your DAL that now searches SKU/description/barcode
 import productsLocationsApi from '../repositories/productsLocations/productsLocations.index.js';
+import productsLocationsBatch from '../repositories/productsLocations/productsLocationsBatch.repository.js';
 
 const TB = 'public."productsLocations"';
 
@@ -319,9 +322,90 @@ export async function remove(req, res) {
   }
 }
 
+/* ============================================================
+   LOCALIZAÇÕES EM LOTE
+   GET  /api/products-locations/batch/products
+        ?q=&store_id=&corredor=&withoutLocation=true&limit=&offset=&codesOnly=true
+   POST /api/products-locations/batch
+        { product_codes: [], mode: 'MOVER'|'ADICIONAR',
+          destination: { store_id, corredor, prateleira, bandeja, box },
+          observacao }
+   ============================================================ */
+export async function listBatchProducts(req, res) {
+  try {
+    const result = await productsLocationsBatch.listProducts({
+      q: String(req.query.q || '').trim() || undefined,
+      store_id: toStoreIdOrNull(req.query.store_id ?? req.query.storeId) ?? null,
+      corredor: toVarcharOrNull(req.query.corredor, 50) ?? null,
+      withoutLocation: sanitizeBoolean(req.query.withoutLocation, false),
+      limit: toInt(req.query.limit, 50),
+      offset: toInt(req.query.offset, 0),
+      codesOnly: sanitizeBoolean(req.query.codesOnly, false),
+    });
+    return res.json(result);
+  } catch (err) {
+    console.error('[productsLocations][listBatchProducts]', err);
+    return res.status(500).json({ error: 'Erro ao listar produtos.' });
+  }
+}
+
+export async function applyBatch(req, res) {
+  try {
+    const body = req.body || {};
+    const { BATCH_MAX_PRODUCTS, BATCH_MODES } = productsLocationsBatch;
+
+    const product_codes = [...new Set(
+      (Array.isArray(body.product_codes) ? body.product_codes : [])
+        .map((c) => String(c ?? '').trim())
+        .filter(Boolean)
+    )];
+
+    if (!product_codes.length) {
+      return res.status(400).json({ error: 'Selecione ao menos um produto.' });
+    }
+    if (product_codes.length > BATCH_MAX_PRODUCTS) {
+      return res.status(400).json({ error: `No máximo ${BATCH_MAX_PRODUCTS} produtos por vez.` });
+    }
+
+    const mode = String(body.mode || '').trim().toUpperCase();
+    if (![BATCH_MODES.MOVE, BATCH_MODES.ADD].includes(mode)) {
+      return res.status(400).json({ error: 'Modo inválido (use MOVER ou ADICIONAR).' });
+    }
+
+    const d = body.destination || {};
+    const destination = {
+      store_id: toStoreIdOrNull(d.store_id) ?? null,
+      corredor: toVarcharOrNull(d.corredor, 50) ?? null,
+      prateleira: toVarcharOrNull(d.prateleira, 50) ?? null,
+      bandeja: toVarcharOrNull(d.bandeja, 50) ?? null,
+      box: toVarcharOrNull(d.box, 50) ?? null,
+    };
+
+    if (!destination.store_id || !destination.corredor || !destination.prateleira) {
+      return res.status(400).json({ error: 'Informe Local, Corredor e Gôndola da nova localização.' });
+    }
+
+    const observacao = toTextOrNull(body.observacao) ?? null;
+
+    const result = await productsLocationsBatch.applyBatch({
+      product_codes,
+      destination,
+      mode,
+      observacao: observacao && observacao.trim() ? observacao.trim() : null,
+    });
+
+    return res.json({ ok: true, mode, destination, ...result });
+  } catch (err) {
+    console.error('[productsLocations][applyBatch]', err);
+    return res.status(500).json({ error: 'Erro ao alterar localizações em lote.' });
+  }
+}
+
 export default {
   list,
   listByProduct,
+  listBatchProducts,
+  applyBatch,
   getById,
   create,
   update,

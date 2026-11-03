@@ -1,0 +1,217 @@
+<!-- ╔════════════════════════════════════════════════════════════════════╗
+     ║ productsLocationsBatch.html — Localizações em Lote (CONSART ERP)   ║
+     ║ Marca vários produtos e grava a mesma localização em todos         ║
+     ║ API: /api/products-locations/batch (+ /api/locations/*)            ║
+     ╚════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png" />
+  <title>LOCALIZAÇÕES EM LOTE | CONSART ERP</title>
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/includes/css/modals.css?v=2" />
+  <link rel="stylesheet" href="/public/productsLocationsBatch/productsLocationsBatch.css?v=1" />
+</head>
+
+<body class="consart-theme page-locations-batch p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="table-layout-integrated table-max-height-700">
+
+      <!-- FILTROS -->
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3 plb-filter">
+          <div class="fields fields-w-20 fields-h-6 fields-font-3">
+            <label for="plbSearch">Buscar produto</label>
+            <input id="plbSearch" type="search" placeholder="SKU, descrição ou código de barras..." autocomplete="off" />
+          </div>
+
+          <div class="fields fields-w-10 fields-h-6 fields-font-3">
+            <label for="plbFilterLocal">Local atual</label>
+            <select id="plbFilterLocal">
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="fields fields-w-10 fields-h-6 fields-font-3">
+            <label for="plbFilterCorridor">Corredor atual</label>
+            <select id="plbFilterCorridor" disabled>
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <label class="plb-check" for="plbWithoutLocation">
+            <input id="plbWithoutLocation" type="checkbox" />
+            <span>Só sem localização</span>
+          </label>
+
+          <button id="plbBtnSearch" class="btn btn-filter btn-sm" type="button">🔍 Buscar</button>
+          <button id="plbBtnClear" class="btn btn-clean btn-sm" type="button">Limpar</button>
+
+          <div class="plb-actions">
+            <button id="plbBtnOpenModal" class="btn btn-new btn-sm" type="button" disabled>📍 Alterar localização <span id="plbSelectedCountBtn">(0)</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRID -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="productslocationsbatch.tblproducts">
+        <table id="plbTable" class="table table-fixed table-zebra table-zebra-hover table-sticky-head"
+          aria-label="Produtos e localização atual">
+          <thead>
+            <tr>
+              <th class="table-col-select"><input id="plbSelectPage" type="checkbox" title="Marcar a página" /></th>
+              <th class="plb-col-sku">SKU</th>
+              <th class="plb-col-desc">Descrição</th>
+              <th class="plb-col-local">Local</th>
+              <th class="plb-col-small">Corredor</th>
+              <th class="plb-col-small">Gôndola</th>
+              <th class="plb-col-small">Bandeja</th>
+              <th class="plb-col-small">Posição</th>
+              <th class="plb-col-qty">Estoque</th>
+              <th class="plb-col-other" title="Outras localizações ativas do produto">Outras</th>
+            </tr>
+          </thead>
+          <tbody id="plbTbody">
+            <!-- JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RODAPÉ -->
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="plbTotalInfo">0 produto(s)</span>
+          </div>
+          <div class="summary-pill summary-pill--warning">
+            <span id="plbSelectedInfo">0 selecionado(s)</span>
+          </div>
+          <button id="plbBtnSelectAll" class="btn btn-toolbar btn-sm" type="button"
+            title="Marca todos os produtos do filtro atual (todas as páginas)">Marcar todos do filtro</button>
+          <button id="plbBtnClearSelection" class="btn btn-clean btn-sm" type="button">Limpar seleção</button>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="plbBtnPrev" class="btn btn-clean btn-sm">◀ Anterior</button>
+          <span id="plbPageInfo" class="plb-page-info">Página 1 de 1</span>
+          <button type="button" id="plbBtnNext" class="btn btn-new btn-sm">Próxima ▶</button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="plbPageSize">Linhas</label>
+          <select id="plbPageSize" class="table-footer__page-size-select">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+          </select>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — ALTERAR LOCALIZAÇÃO EM LOTE          │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal" id="plbModal" role="dialog" aria-modal="true" aria-labelledby="plbModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal__panel--lg plb-modal-panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="plbModalTitle">📍 Alterar localização em lote</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section plb-modal-body">
+          <div class="plb-step-title">1. Nova localização</div>
+
+          <div class="plb-scan">
+            <div class="fields fields-w-20 fields-h-6 fields-font-3">
+              <label for="plbScan">Ler etiqueta de localização (opcional)</label>
+              <input id="plbScan" type="text" placeholder="Bipe o código LOC-... e tecle Enter" autocomplete="off" />
+            </div>
+            <span id="plbScanInfo" class="plb-scan-info"></span>
+          </div>
+
+          <div class="plb-dest">
+            <div class="fields fields-h-6 fields-font-3">
+              <label for="plbDestLocal">Local *</label>
+              <select id="plbDestLocal"><option value="">Selecione...</option></select>
+            </div>
+            <div class="fields fields-h-6 fields-font-3">
+              <label for="plbDestCorridor">Corredor *</label>
+              <select id="plbDestCorridor"><option value="">Selecione...</option></select>
+            </div>
+            <div class="fields fields-h-6 fields-font-3">
+              <label for="plbDestShelf">Gôndola *</label>
+              <select id="plbDestShelf"><option value="">Selecione...</option></select>
+            </div>
+            <div class="fields fields-h-6 fields-font-3">
+              <label for="plbDestBin">Bandeja</label>
+              <select id="plbDestBin"><option value="">—</option></select>
+            </div>
+            <div class="fields fields-h-6 fields-font-3">
+              <label for="plbDestPosition">Posição</label>
+              <select id="plbDestPosition"><option value="">—</option></select>
+            </div>
+          </div>
+
+          <div class="modal-divider"></div>
+
+          <div class="plb-step-title">2. O que fazer com a localização atual</div>
+          <div class="plb-mode" role="radiogroup">
+            <label class="plb-mode__opt is-on">
+              <input type="radio" name="plbMode" value="MOVER" checked />
+              <span><b>Mover</b> — a nova vira a localização principal e a antiga fica inativa (histórico)
+                <small>Use quando os produtos mudaram de lugar.</small></span>
+            </label>
+            <label class="plb-mode__opt">
+              <input type="radio" name="plbMode" value="ADICIONAR" />
+              <span><b>Adicionar</b> — inclui a nova como localização extra, sem mexer na principal
+                <small>Use quando o produto passa a ficar em mais de um lugar.</small></span>
+            </label>
+          </div>
+
+          <div class="fields fields-w-full fields-h-6 fields-font-3 plb-notes">
+            <label for="plbNotes">Observação (opcional, gravada em todas)</label>
+            <input id="plbNotes" type="text" maxlength="500" placeholder="Ex.: reorganização da loja nov/2026" />
+          </div>
+
+          <div class="modal-divider"></div>
+
+          <div class="plb-step-title">3. Conferência</div>
+          <div class="plb-preview">
+            <table>
+              <thead>
+                <tr><th>SKU</th><th>Produto</th><th>De</th><th></th><th>Para</th></tr>
+              </thead>
+              <tbody id="plbPreview"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <footer class="modal__footer plb-modal-footer">
+          <button type="button" class="btn btn-clean btn-sm" data-modal-close>Cancelar</button>
+          <button type="button" id="plbBtnConfirm" class="btn btn-new btn-sm">✔ Confirmar alteração <span id="plbSelectedCountConfirm">(0)</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    window.API_BASE = window.apiBase || window.location.origin;
+  </script>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → página bloqueada com aviso -->
+  <script type="module">import { guardProductLocationsPage } from "/public/includes/js/productLocationsFeature.js"; guardProductLocationsPage();</script>
+  <script type="module" src="/public/productsLocationsBatch/productsLocationsBatch.js?v=1"></script>
+</body>
+
+</html>

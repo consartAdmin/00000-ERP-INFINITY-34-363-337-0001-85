@@ -14,6 +14,8 @@ import {
   update,
   deactivate,
   remove,
+  listBatchProducts,
+  applyBatch,
 } from '../controllers/productsLocationsController.js';
 
 const router = Router();
@@ -27,6 +29,10 @@ const BASES = [
 // registra em todos aliases
 for (const BASE of BASES) {
   router.get(BASE, list);
+
+  // Localizações em Lote (antes de /:id)
+  router.get(`${BASE}/batch/products`, listBatchProducts);
+  router.post(`${BASE}/batch`, applyBatch);
 
   // ✅ rota que o frontend usa para carregar o select por SKU
   router.get(`${BASE}/by-product/:product_code`, listByProduct);
