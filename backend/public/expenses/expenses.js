@@ -9,6 +9,8 @@
 
 import { createExpenseCreateModal } from './expenseCreateModal.js';
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 /* ──────────────────────────────────────────────────────────────
    API BASE (compatível com seu padrão)
@@ -34,10 +36,10 @@ const el = {
   fVendor:   document.querySelector('.table-layout-integrated__filter #fornBusca'),
   btnVendor: document.querySelector('.table-layout-integrated__filter #btnFornBusca'),
 
+  // Período (vencimento): <date-range-field> → hidden #fFrom / #fTo
+  fDateRange: document.getElementById('fDateRange'),
   fFrom:     document.getElementById('fFrom'),
   fTo:       document.getElementById('fTo'),
-  fOrderBy:  document.getElementById('fOrderBy'),
-  fPageSize: document.getElementById('fPageSize'),
 
   btnFilter:  document.getElementById('btnFilter'),
   btnClear:   document.getElementById('btnClear'),
@@ -46,6 +48,9 @@ const el = {
 
   // PDF (ID no HTML está como btnPdfGenrate)
   btnPdf: document.getElementById('btnPdfGenrate'),
+  btnExcel: document.getElementById('btnExcelGenerate'),
+
+  table: document.getElementById('expensesTable'),
 
   // Table
   tbBody:     document.getElementById('tbBody'),
@@ -63,6 +68,10 @@ const el = {
 let limit = 50;
 let offset = 0;
 let total = 0;
+
+// Ordenação pelos cabeçalhos (sortableTable → ?sort=&dir=)
+const DEFAULT_SORT = { column: 'created_at', direction: 'desc' };
+let sortState = { ...DEFAULT_SORT };
 
 /* ──────────────────────────────────────────────────────────────
    Utils
@@ -124,13 +133,24 @@ function todayStamp() {
   return `${yyyy}${mm}${dd}_${hh}${mi}`;
 }
 
-function setBtnBusy(btn, busy, labelWhenIdle = null) {
+function setBtnBusy(btn, busy) {
   if (!btn) return;
   btn.disabled = !!busy;
-  btn.dataset.idleLabel ||= btn.textContent.trim();
-  btn.textContent = busy
-    ? 'Gerando…'
-    : (labelWhenIdle || btn.dataset.idleLabel || 'PDF');
+  // Mantém o ícone: troca só o texto do <span>
+  const label = btn.querySelector('span') || btn;
+  label.dataset.idleLabel ||= label.textContent.trim();
+  label.textContent = busy ? 'Gerando…' : label.dataset.idleLabel;
+}
+
+/** Copia o valor do <date-range-field> para os hidden #fFrom / #fTo */
+function syncDateRange(event) {
+  if (!el.fDateRange) return;
+  const value = el.fDateRange.value || {};
+  const detail = event?.detail || {};
+  const start = detail.startDate ?? detail.start_date ?? value.startDate ?? value.start_date ?? '';
+  const end = detail.endDate ?? detail.end_date ?? value.endDate ?? value.end_date ?? '';
+  if (el.fFrom) el.fFrom.value = start;
+  if (el.fTo) el.fTo.value = end;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -165,12 +185,15 @@ function buildQuery({ includePaging = true } = {}) {
   if (v(el.fStatus?.value))   q.set('status', v(el.fStatus.value));
   if (v(el.fCategory?.value)) q.set('category', v(el.fCategory.value));
   if (v(el.fVendor?.value))   q.set('vendor', v(el.fVendor.value));
+
+  syncDateRange();
   if (v(el.fFrom?.value))     q.set('date_from', v(el.fFrom.value));
   if (v(el.fTo?.value))       q.set('date_to', v(el.fTo.value));
 
-  q.set('order_by', v(el.fOrderBy?.value) || 'created_at_desc');
+  q.set('sort', sortState.column || DEFAULT_SORT.column);
+  q.set('dir', sortState.direction || DEFAULT_SORT.direction);
 
-  limit = Number(el.pageSize?.value || el.fPageSize?.value || 50);
+  limit = Number(el.pageSize?.value || 50);
 
   if (includePaging) {
     q.set('limit', String(limit));
@@ -222,8 +245,10 @@ async function load() {
           <td class="col-date">${fmtDateTimeBR(r.created_at)}</td>
           <td class="col-date">${fmtDateTimeBR(r.updated_at)}</td>
           <td class="col-actions">
-            <button class="btn btn-ghost btnEdit" data-id="${escapeHtml(r.id)}" title="Editar">✏️</button>
-            <button class="btn btn-ghost btnTrash" data-id="${escapeHtml(r.id)}" title="Excluir">🗑️</button>
+            ${actionIconsHtml([
+              { action: 'edit', title: 'Editar', attrs: { 'data-act': 'edit', 'data-id': r.id } },
+              { action: 'delete', title: 'Excluir', attrs: { 'data-act': 'delete', 'data-id': r.id } },
+            ])}
           </td>
         </tr>
       `;
@@ -309,7 +334,7 @@ function printFallback() {
 
 async function onPdfClick() {
   if (!el.btnPdf) return;
-  setBtnBusy(el.btnPdf, true, 'PDF');
+  setBtnBusy(el.btnPdf, true);
 
   try {
     await downloadPdfFromBackend();
@@ -321,7 +346,40 @@ async function onPdfClick() {
       alert(err.message || String(err));
     }
   } finally {
-    setBtnBusy(el.btnPdf, false, 'PDF');
+    setBtnBusy(el.btnPdf, false);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Excel: GET /api/expenses/excel?... (mesmos filtros e ordem)
+────────────────────────────────────────────────────────────── */
+async function onExcelClick() {
+  if (!el.btnExcel) return;
+  setBtnBusy(el.btnExcel, true);
+
+  try {
+    const qs = buildQuery({ includePaging: false });
+    const res = await fetch(`${API}/excel?${qs}`, { method: 'GET' });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(text || `Falha ao gerar Excel (HTTP ${res.status})`);
+    }
+
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    const objUrl = URL.createObjectURL(blob);
+    a.href = objUrl;
+    a.download = `despesas_${todayStamp()}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objUrl);
+  } catch (err) {
+    console.error(err);
+    alert(err.message || String(err));
+  } finally {
+    setBtnBusy(el.btnExcel, false);
   }
 }
 
@@ -392,10 +450,9 @@ function bindEvents() {
     el.fStatus.value = '';
     el.fCategory.value = '';
     el.fVendor.value = '';
+    if (el.fDateRange && typeof el.fDateRange.clear === 'function') el.fDateRange.clear();
     el.fFrom.value = '';
     el.fTo.value = '';
-    el.fOrderBy.value = 'created_at_desc';
-    el.fPageSize.value = '20';
     offset = 0;
     load();
   });
@@ -416,38 +473,47 @@ function bindEvents() {
     if (e.key === 'Enter') { e.preventDefault(); offset = 0; load(); }
   });
 
-  // PDF
+  // PDF / Excel
   el.btnPdf?.addEventListener('click', onPdfClick);
-
-  el.fPageSize?.addEventListener('change', () => {
-    if (el.pageSize) el.pageSize.value = el.fPageSize.value;
-    offset = 0;
-    load();
-  });
+  el.btnExcel?.addEventListener('click', onExcelClick);
 
   el.pageSize?.addEventListener('change', () => {
-    if (el.fPageSize) el.fPageSize.value = el.pageSize.value;
     offset = 0;
     load();
   });
 
-  el.fOrderBy?.addEventListener('change', () => {
+  // Período: escolher o intervalo já filtra
+  el.fDateRange?.addEventListener('range-change', (e) => {
+    syncDateRange(e);
     offset = 0;
     load();
   });
 
-  // Delegation: edit/trash buttons
-  document.addEventListener('click', (e) => {
-    const btnEdit = e.target.closest('.btnEdit');
-    const btnTrash = e.target.closest('.btnTrash');
-    if (btnEdit) {
-      e.preventDefault();
-      onEdit(btnEdit.dataset.id);
-    }
-    if (btnTrash) {
-      e.preventDefault();
-      onDeleteQuick(btnTrash.dataset.id);
-    }
+  // Delegation: ícones editar/excluir da linha
+  el.tbBody?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-act][data-id]');
+    if (!btn) return;
+    e.preventDefault();
+    if (btn.dataset.act === 'edit') onEdit(btn.dataset.id);
+    if (btn.dataset.act === 'delete') onDeleteQuick(btn.dataset.id);
+  });
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Ordenação por cabeçalho (todas as colunas, feita no backend)
+────────────────────────────────────────────────────────────── */
+function bindSortableTable() {
+  if (!el.table) return;
+  createSortableTable({
+    table: el.table,
+    defaultColumn: DEFAULT_SORT.column,
+    defaultDirection: DEFAULT_SORT.direction,
+    allowedColumns: ['id', 'name', 'category', 'vendor', 'value', 'due_date', 'status', 'created_at', 'updated_at'],
+    onSort: async ({ column, direction }) => {
+      sortState = { column, direction };
+      offset = 0;
+      await load();
+    },
   });
 }
 
@@ -455,4 +521,5 @@ function bindEvents() {
    Boot
 ────────────────────────────────────────────────────────────── */
 bindEvents();
+bindSortableTable();
 load();

@@ -4,15 +4,45 @@
 
 import { normalizeBool } from './expenses.utils.js';
 
-/** Permite apenas ORDER BY seguro */
-export function safeOrderBy(input) {
+/**
+ * Colunas que o cabeçalho da tabela (sortableTable) pode ordenar.
+ * Chave = valor de ?sort=, valor = coluna SQL.
+ */
+const SORT_COLUMNS = new Map([
+  ['id', '"id"'],
+  ['name', '"name"'],
+  ['category', '"category"'],
+  ['vendor', '"vendor"'],
+  ['value', '"value"'],
+  ['due_date', '"due_date"'],
+  ['status', '"status"'],
+  ['created_at', '"created_at"'],
+  ['updated_at', '"updated_at"'],
+]);
+
+/**
+ * ORDER BY a partir de ?sort=&dir= (whitelist). Retorna null se a coluna
+ * não for permitida, para cair no order_by antigo.
+ */
+export function sortOrderBy(sort, dir) {
+  const column = SORT_COLUMNS.get(String(sort || '').trim().toLowerCase());
+  if (!column) return null;
+  const direction = String(dir || '').trim().toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+  return `${column} ${direction} NULLS LAST, "id" ${direction}`;
+}
+
+/** Permite apenas ORDER BY seguro (sort/dir tem prioridade sobre order_by) */
+export function safeOrderBy(input, sort, dir) {
+  const bySort = sortOrderBy(sort, dir);
+  if (bySort) return bySort;
+
   const allowed = new Map([
     ['created_at_desc', '"created_at" DESC'],
     ['created_at_asc', '"created_at" ASC'],
     ['due_date_desc', '"due_date" DESC'],
     ['due_date_asc', '"due_date" ASC'],
-    ['updated_at_desc', '"update_at" DESC'], // sua coluna está "update_at"
-    ['updated_at_asc', '"update_at" ASC'],
+    ['updated_at_desc', '"updated_at" DESC'],
+    ['updated_at_asc', '"updated_at" ASC'],
     ['value_desc', '"value" DESC'],
     ['value_asc', '"value" ASC'],
     ['name_asc', '"name" ASC'],

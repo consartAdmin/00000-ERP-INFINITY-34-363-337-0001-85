@@ -13,12 +13,14 @@ import {
   patchExpenseStatusHandler,
   deleteExpenseHandler,
   getExpensesPdf, // ✅ ADD
+  getExpensesExcel,
 } from '../controllers/expensesController.js';
 
 const router = Router();
 
 // ✅ MUITO IMPORTANTE: antes de "/:id"
 router.get('/pdf', getExpensesPdf);
+router.get('/excel', getExpensesExcel);
 
 router.get('/', getExpenses);
 router.get('/:id', getExpense);
