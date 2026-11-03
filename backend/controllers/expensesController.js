@@ -21,6 +21,13 @@ import {
   updateExpensesBatch,
 } from '../repositories/expenses/expensesBatch.repository.js';
 import { sendExpensesToPayable } from '../repositories/expenses/expensesToPayable.repository.js';
+import {
+  listAttachments,
+  addAttachment,
+  signAttachmentDownload,
+  deactivateAttachment,
+  countAttachmentsByExpense,
+} from '../repositories/expenses/expensesAttachments.repository.js';
 import ExcelJS from 'exceljs';
 import { generateExpensesPdf } from '../generationPdf/generateExpensesPdf.js'; // ✅ ajuste path se preciso
 
@@ -48,6 +55,9 @@ function requireFields(body, fields = []) {
 export async function getExpenses(req, res) {
   try {
     const data = await listExpenses(req.query);
+    // 📎 quantidade de anexos por despesa (contratos e documentos)
+    const counts = await countAttachmentsByExpense((data.rows || []).map((r) => r.id));
+    (data.rows || []).forEach((r) => { r.attachments_count = counts[Number(r.id)] || 0; });
     return res.json({
       ok: true,
       total: data.total,
@@ -338,5 +348,51 @@ export async function sendExpensesToPayableHandler(req, res) {
   } catch (err) {
     if (err?.status === 400) return badRequest(res, err.message);
     return serverError(res, err, 'sendExpensesToPayable');
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Anexos (contratos e documentos) — bucket expenses/expense-{id}/
+────────────────────────────────────────────────────────────── */
+function attachmentError(res, err, where) {
+  if (err?.code === 'VALIDATION') return badRequest(res, err.message);
+  if (err?.code === 'NOT_FOUND') return res.status(404).json({ ok: false, message: err.message });
+  return serverError(res, err, where);
+}
+
+// GET /api/expenses/:id/attachments
+export async function listExpenseAttachmentsHandler(req, res) {
+  try {
+    return res.json({ ok: true, data: await listAttachments(req.params.id) });
+  } catch (err) {
+    return attachmentError(res, err, 'listExpenseAttachments');
+  }
+}
+
+// POST /api/expenses/:id/attachments (multipart, campo "arquivo")
+export async function addExpenseAttachmentHandler(req, res) {
+  try {
+    return res.status(201).json({ ok: true, data: await addAttachment(req.params.id, req.file) });
+  } catch (err) {
+    return attachmentError(res, err, 'addExpenseAttachment');
+  }
+}
+
+// GET /api/expenses/:id/attachments/:attachmentId/download → URL assinada
+export async function downloadExpenseAttachmentHandler(req, res) {
+  try {
+    return res.redirect(302, await signAttachmentDownload(req.params.id, req.params.attachmentId));
+  } catch (err) {
+    return attachmentError(res, err, 'downloadExpenseAttachment');
+  }
+}
+
+// DELETE /api/expenses/:id/attachments/:attachmentId (exclusão lógica)
+export async function deleteExpenseAttachmentHandler(req, res) {
+  try {
+    await deactivateAttachment(req.params.id, req.params.attachmentId);
+    return res.json({ ok: true });
+  } catch (err) {
+    return attachmentError(res, err, 'deleteExpenseAttachment');
   }
 }

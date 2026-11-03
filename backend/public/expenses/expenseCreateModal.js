@@ -14,6 +14,7 @@
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { Modal } from '/public/includes/js/modal.js';
 import { createCashCategoryPair } from '/public/includes/js/cashCategorySelects.js';
+import { createExpensesAttachments } from './expensesAttachments.js';
 
 const MODAL_ID = 'expenseModal';
 
@@ -51,6 +52,7 @@ export function createExpenseCreateModal({
   onDelete,
   onAfterSave = async () => {},
   onAfterDelete = async () => {},
+  attachmentsApi = '/api/expenses',
 } = {}) {
 
   if (typeof onCreate !== 'function') throw new Error('onCreate é obrigatório');
@@ -102,6 +104,9 @@ export function createExpenseCreateModal({
 
   let mode = 'create';
 
+  // 📎 Contratos e documentos (sobem ao salvar)
+  const attachments = createExpensesAttachments({ api: attachmentsApi });
+
   // Categoria + Subcategoria do Caixa (IDs) — mesma língua do Financeiro
   const cashCategory = createCashCategoryPair({
     categorySelect: el.category,
@@ -147,6 +152,7 @@ export function createExpenseCreateModal({
     el.modalSub.textContent = 'Preencha os campos e salve.';
     setDeleteVisible(false);
     resetDefaults();
+    attachments.reset(null);
     open('#name');
   }
 
@@ -158,6 +164,7 @@ export function createExpenseCreateModal({
     el.modalSub.textContent = 'Altere os campos e salve.';
 
     fillForm(row);
+    attachments.reset(row.id ? Number(row.id) : null);
     open('#name');
   }
 
@@ -240,13 +247,17 @@ export function createExpenseCreateModal({
       el.btnSave.disabled = true;
 
       try {
-        if (!el.id.value) {
-          await onCreate(payload);
+        let savedId = Number(el.id.value) || null;
+        if (!savedId) {
+          const created = await onCreate(payload);
+          savedId = Number(created?.id) || null;
         } else {
-          await onUpdate(Number(el.id.value), payload);
+          await onUpdate(savedId, payload);
         }
+        const sent = await attachments.uploadPending(savedId);
         close();
         await onAfterSave();
+        if (sent.failed.length) alert(`Despesa salva, mas não foi possível enviar: ${sent.failed.join(', ')}.`);
       } catch (err) {
         alert(err.message);
       } finally {

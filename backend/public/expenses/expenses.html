@@ -354,6 +354,20 @@
                 </div>
               </div>
 
+              <!-- Contratos e documentos (bucket expenses/expense-{id}/) -->
+              <div class="exp-section exp-section--full">
+                <div class="exp-section__title">📎 Contratos e documentos</div>
+                <div id="expFilesBox" class="exp-files">
+                  <div class="exp-files__bar">
+                    <button type="button" id="expFilesBtn" class="btn btn-flat btn-sm">📎 Anexar</button>
+                    <span class="exp-files__hint">ou arraste aqui (até 50 MB por arquivo). Os arquivos sobem ao salvar.</span>
+                  </div>
+                  <ul id="expFilesList" class="exp-files__list" aria-live="polite"></ul>
+                  <input type="file" id="expFilesInput" multiple
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.odt,.ods,.txt,.xml,.zip" />
+                </div>
+              </div>
+
               <!-- Dados extras -->
               <div class="exp-section exp-section--full">
                 <div class="exp-section__title">🧩 Dados extras (JSON opcional)</div>

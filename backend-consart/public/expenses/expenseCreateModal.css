@@ -227,3 +227,43 @@
   font-size: 0.85em;
   opacity: 0.7;
 }
+
+/* ── 📎 Contratos e documentos (mesmo padrão do Contas a Receber) ── */
+.exp-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+  padding: 8px;
+  border: 1px dashed var(--fields-border-color, #c7d0db);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+.exp-files input[type="file"] { display: none !important; }
+.exp-files.is-dragover { border-color: #3b82f6; background: #eff6ff; }
+.exp-files__bar { display: flex; align-items: center; gap: 8px; }
+.exp-files__hint { font-size: 11px; color: #64748b; }
+.exp-files__list { list-style: none; margin: 0; padding: 0; max-height: 140px; overflow: auto; }
+.exp-files__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 2px;
+  border-bottom: 1px solid #eef2f6;
+  font-size: 12px;
+}
+.exp-files__item:last-child { border-bottom: 0; }
+.exp-files__item.is-pending { color: #1d4ed8; }
+.exp-files__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+a.exp-files__name { color: #0f2747; text-decoration: none; }
+a.exp-files__name:hover { text-decoration: underline; }
+.exp-files__meta { flex: 0 0 auto; font-size: 11px; color: #64748b; }
+.exp-files__empty { font-size: 12px; color: #94a3b8; }
+
+/* 📎 N ao lado do nome na tabela */
+.exp-attach-count {
+  margin-left: 6px;
+  font-size: 0.82em;
+  opacity: 0.75;
+  white-space: nowrap;
+}

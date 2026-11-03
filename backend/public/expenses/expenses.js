@@ -229,7 +229,8 @@ async function load() {
               data-due="${escapeHtml(r.due_date ? String(r.due_date).slice(0, 10) : '')}" aria-label="Marcar despesa ${escapeHtml(r.id)}" />
           </td>
           <td class="col-id" title="${escapeHtml(r.id)}">${escapeHtml(idShort)}${String(r.id).length > 10 ? '…' : ''}</td>
-          <td>${escapeHtml(r.name || '')}${r.account_payable_id
+          <td>${escapeHtml(r.name || '')}${Number(r.attachments_count) > 0
+            ? `<span class="exp-attach-count" title="${escapeHtml(r.attachments_count)} contrato(s)/documento(s) anexado(s)">📎${escapeHtml(r.attachments_count)}</span>` : ''}${r.account_payable_id
             ? `<div class="exp-payable-link" title="Último título gerado no Contas a Pagar">📤 CP nº ${escapeHtml(r.account_payable_id)}</div>` : ''}</td>
           <td>${escapeHtml(r.category || '')}${r.cash_subcategory_name
             ? `<div class="exp-subcategory">${escapeHtml(r.cash_subcategory_name)}</div>` : ''}</td>
@@ -268,6 +269,7 @@ async function loadOne(id) {
    Modal (via module)
 ────────────────────────────────────────────────────────────── */
 const expenseModal = createExpenseCreateModal({
+  attachmentsApi: API,
   onCreate: async (payload) => {
     return await apiFetch(API, { method: 'POST', body: JSON.stringify(payload) });
   },
