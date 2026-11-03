@@ -71,3 +71,70 @@
   font-size: 11px;
   font-weight: 600;
 }
+
+/* ====================================================================
+   Modal único (funcionalidade + opções + atribuições)
+==================================================================== */
+
+.af-modal .modal__body { max-height: calc(100vh - 170px); overflow-y: auto; }
+.af-modal .emp-section + .emp-section { margin-top: 12px; }
+
+.af-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.af-grid-4 > .af-span-3 { grid-column: span 3; }
+
+.af-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.af-section-title .btn { height: 24px; padding: 0 10px; font-size: 11px; }
+
+.af-grid-table-wrap { overflow-x: auto; }
+
+.af-edit-table { width: 100%; table-layout: fixed; }
+.af-edit-table th { font-size: 11px; white-space: nowrap; }
+.af-edit-table td { padding: 3px 4px; vertical-align: middle; }
+.af-edit-table input[type="text"],
+.af-edit-table input[type="number"],
+.af-edit-table input:not([type]),
+.af-edit-table select {
+  width: 100%;
+  height: 28px;
+  padding: 2px 6px;
+  font-size: 12px;
+  border: 1px solid #d5dbe5;
+  border-radius: 6px;
+  box-sizing: border-box;
+  background: #fff;
+}
+.af-edit-table input[type="checkbox"] { width: 16px; height: 16px; }
+.af-edit-table .af-empty-row td { color: #6b7280; text-align: center; padding: 10px; }
+
+.af-e-code { width: 170px; }
+.af-e-name { width: 190px; }
+.af-e-json { width: 240px; }
+.af-e-order { width: 70px; }
+.af-e-check { width: 56px; text-align: center; }
+.af-e-scope { width: 120px; }
+.af-e-opt { width: 250px; }
+.af-e-date { width: 160px; }
+.af-e-del { width: 40px; }
+
+.af-del-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 15px;
+  color: #9ca3af;
+}
+.af-del-btn:hover { color: #dc2626; }
+
+@media (max-width: 900px) {
+  .af-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .af-grid-4 > .af-span-3 { grid-column: 1 / -1; }
+  .af-edit-table { min-width: 900px; }
+}
+
+/* destaque rápido quando a opção padrão é copiada para as atribuições */
+.af-edit-table tr.af-row-synced td { background: #fef9c3 !important; transition: background .3s; }
