@@ -29,6 +29,14 @@ export function validateEnterprisePayload(payload) {
     errors.push('Informe um e-mail válido.');
   }
 
+  if (payload.accountant_cpf && onlyDigits(payload.accountant_cpf).length !== 11) {
+    errors.push('CPF do contador deve ter 11 dígitos.');
+  }
+
+  if (!isValidEmail(payload.accountant_email)) {
+    errors.push('Informe um e-mail válido para o contador.');
+  }
+
   if (!Number.isSafeInteger(payload.next_nfe_number) || payload.next_nfe_number < 1) {
     errors.push('O próximo número da NF-e deve ser um inteiro maior ou igual a 1.');
   }

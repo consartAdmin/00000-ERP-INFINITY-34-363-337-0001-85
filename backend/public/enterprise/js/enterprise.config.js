@@ -61,6 +61,11 @@ export const SELECTORS = Object.freeze({
   enterpriseLogoPreview: '#enterpriseLogoPreview',
   slogan: '#slogan',
   document_notes: '#document_notes',
+  accountant_name: '#accountant_name',
+  accountant_cpf: '#accountant_cpf',
+  accountant_crc: '#accountant_crc',
+  accountant_email: '#accountant_email',
+  accountant_phone: '#accountant_phone',
   is_active: '#is_active',
 });
 
