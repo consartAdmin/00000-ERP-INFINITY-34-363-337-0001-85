@@ -15,6 +15,7 @@ import path from 'node:path';
 import PDFDocument from 'pdfkit';
 import { fileURLToPath } from 'node:url';
 import pool from '../config/db.js';
+import { C, PAGE, drawFullHeader, autoCompactHeader, drawFooters } from './consartPdfTheme.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,7 +29,7 @@ const CONSART_FALLBACK = {
   cnpj: CONSART_CNPJ,
 };
 
-const GREEN = '#0f6b5c';
+const GREEN = C.blue; // cor de destaque do layout padrão (consartPdfTheme)
 const BORDER = '#cbd5e1';
 const MUTED = '#475569';
 const LINE = '#e2e8f0';
@@ -271,7 +272,11 @@ export async function generateContractConsartPdf(contract) {
   const logo = await resolveLogo(enterprise.logo_url);
   const values = placeholderValues(contract, enterprise);
 
-  const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
+  const doc = new PDFDocument({
+    size: 'A4',
+    margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 16 },
+    bufferPages: true,
+  });
   const chunks = [];
   doc.on('data', (ch) => chunks.push(ch));
   const done = new Promise((resolve, reject) => {
@@ -282,47 +287,31 @@ export async function generateContractConsartPdf(contract) {
   const left = doc.page.margins.left;
   const right = doc.page.width - doc.page.margins.right;
   const width = right - left;
-  const bottom = () => doc.page.height - doc.page.margins.bottom - 24; // espaço do rodapé
+  const bottom = () => doc.page.height - doc.page.margins.bottom; // rodapé fica abaixo da margem
 
   const ensureSpace = (h) => {
     if (doc.y + h > bottom()) doc.addPage();
   };
 
-  // ── Cabeçalho ───────────────────────────────────────────────────
-  const top = doc.y;
-  let textX = left;
-  if (logo) {
-    try {
-      doc.image(logo, left, top, { fit: [56, 56] });
-      textX = left + 66;
-    } catch (error) {
-      console.warn('[PDF Contrato] logo inválido:', error.message);
-    }
-  }
-
+  // ── Cabeçalho (layout padrão) ───────────────────────────────────
+  const companyName = clean(enterprise.trade_name || enterprise.corporate_name);
   const companyContact = join([enterprise.phone || enterprise.whatsapp, enterprise.email, enterprise.website]);
-
-  doc.font('Helvetica-Bold').fontSize(12).fillColor('#111')
-    .text(clean(enterprise.trade_name || enterprise.corporate_name), textX, top + 2, { width: 220 });
-  doc.font('Helvetica').fontSize(8).fillColor(MUTED);
-  if (clean(enterprise.corporate_name) && enterprise.corporate_name !== enterprise.trade_name) {
-    doc.text(clean(enterprise.corporate_name), { width: 220 });
-  }
-  doc.text(`CNPJ ${formatDoc(enterprise.cnpj)}`, { width: 220 });
-  if (companyContact) doc.text(companyContact, { width: 220 });
-  const companyBottom = doc.y;
-
-  doc.font('Helvetica-Bold').fontSize(14).fillColor(GREEN)
-    .text('CONTRATO DE PRESTAÇÃO', left, top, { width, align: 'right' })
-    .text('DE SERVIÇOS', { width, align: 'right' });
-  doc.font('Helvetica').fontSize(9).fillColor('#334155')
-    .text(`Nº ${contract.number}`, { width, align: 'right' })
-    .text(`Emissão: ${dateBR(contract.issue_date)}`, { width, align: 'right' });
-  if (contract.proposal_number) doc.text(`Ref. Proposta nº ${contract.proposal_number}`, { width, align: 'right' });
-
-  const headerBottom = Math.max(companyBottom, doc.y, top + 58) + 8;
-  doc.moveTo(left, headerBottom).lineTo(right, headerBottom).lineWidth(2.5).strokeColor(GREEN).stroke();
-  doc.y = headerBottom + 14;
+  const docTitle = `Contrato Nº ${contract.number}`;
+  const headerY = drawFullHeader(doc, {
+    title: 'Contrato de Prestação de Serviços',
+    brand: companyName,
+    subtitle: join([`CNPJ ${formatDoc(enterprise.cnpj)}`, companyContact]),
+    info: [
+      ['Nº', clean(contract.number)],
+      ['Emissão', dateBR(contract.issue_date)],
+      ['Ref. proposta', clean(contract.proposal_number)],
+    ],
+    logo: logo || undefined,
+    logoTile: Boolean(logo),
+  });
+  autoCompactHeader(doc, { title: docTitle, subtitle: companyName, logo: logo || undefined, logoTile: Boolean(logo) });
+  doc.x = left;
+  doc.y = headerY + 16;
 
   // ── Caixas de texto ─────────────────────────────────────────────
   const PAD = 9;
@@ -673,18 +662,7 @@ export async function generateContractConsartPdf(contract) {
   signatureRows.forEach(drawSignatures);
 
   // ── Rodapé em todas as páginas ──────────────────────────────────
-  const range = doc.bufferedPageRange();
-  for (let i = range.start; i < range.start + range.count; i += 1) {
-    doc.switchToPage(i);
-    const fy = doc.page.height - 50;
-    doc.page.margins.bottom = 0; // escrever no rodapé sem abrir página nova
-    doc.moveTo(left, fy - 4).lineTo(right, fy - 4).lineWidth(0.6).strokeColor(LINE).stroke();
-    doc.font('Helvetica').fontSize(7.5).fillColor('#64748b');
-    doc.text(`Contrato ${contract.number} · Consart ERP · Rubricas: ______ / ______`, left, fy, { width: width * 0.7, lineBreak: false });
-    doc.text(`Página ${i - range.start + 1} de ${range.count}`, left + width * 0.7, fy, {
-      width: width * 0.3, align: 'right', lineBreak: false,
-    });
-  }
+  drawFooters(doc, { title: docTitle, center: 'Rubricas: ______ / ______' });
 
   doc.end();
   return done;

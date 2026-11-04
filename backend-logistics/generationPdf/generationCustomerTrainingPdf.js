@@ -8,6 +8,7 @@
 import PDFDocument from 'pdfkit';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { C, PAGE, drawFullHeader, autoCompactHeader, drawFooters, nowBR } from './consartPdfTheme.js';
 import { FORMAT_LABELS, STATUS_LABELS } from '../repositories/customerTrainings/customerTrainings.constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,11 +17,11 @@ const __dirname = path.dirname(__filename);
 const LOGO_PATH = path.resolve(__dirname, '../public/imagens/brasaoConsartInfinity.png');
 
 const COLORS = {
-  dark: '#0f172a',
-  text: '#111827',
-  muted: '#4b5563',
-  border: '#d1d5db',
-  headBg: '#f1f5f9',
+  dark: C.navy,
+  text: C.text,
+  muted: C.muted,
+  border: C.border,
+  headBg: C.blue,
 };
 
 // "YYYY-MM-DDTHH:mm" → "DD/MM/YYYY às HH:mm" (sem conversão de fuso)
@@ -45,36 +46,22 @@ function formatTaxId(value) {
   return value || '';
 }
 
-function drawHeader(doc, title) {
-  const pageWidth = doc.page.width;
-  const { left } = doc.page.margins;
-  const headerHeight = 70;
-
-  doc.save().rect(0, 0, pageWidth, headerHeight).fill(COLORS.dark).restore();
-
-  let logoLoaded = false;
-  try {
-    doc.image(LOGO_PATH, left, 10, { fit: [48, 48] });
-    logoLoaded = true;
-  } catch {
-    console.warn('[generationCustomerTrainingPdf] Logo não encontrada em:', LOGO_PATH);
-  }
-
-  doc
-    .fillColor('#ffffff')
-    .font('Helvetica-Bold')
-    .fontSize(16)
-    .text('CONSART ERP', left + (logoLoaded ? 60 : 0), 16);
-
-  doc.font('Helvetica').fontSize(10).text('Treinamentos de Clientes');
-
-  doc.font('Helvetica-Bold').fontSize(15).text(title, left, 26, {
-    width: pageWidth - left * 2,
-    align: 'right',
+function drawHeader(doc, title, training = {}) {
+  const docTitle = `${title} nº ${training.training_id ?? ''}`.trim();
+  const y = drawFullHeader(doc, {
+    title,
+    subtitle: 'Treinamentos de Clientes',
+    info: [
+      ['Treinamento', training.training_id != null ? `nº ${training.training_id}` : ''],
+      ['Data', formatScheduledAt(training.scheduled_at)],
+      ['Situação', STATUS_LABELS[training.status] || training.status || ''],
+    ],
+    logo: LOGO_PATH,
   });
+  autoCompactHeader(doc, { title: docTitle, subtitle: training.title || 'Treinamentos de Clientes', logo: LOGO_PATH });
 
   doc.fillColor(COLORS.text);
-  return headerHeight + 20;
+  return y + 18;
 }
 
 function ensureSpace(doc, y, needed) {
@@ -86,8 +73,9 @@ function ensureSpace(doc, y, needed) {
 
 function sectionTitle(doc, text, y) {
   y = ensureSpace(doc, y, 40);
-  doc.font('Helvetica-Bold').fontSize(11).fillColor(COLORS.text).text(text, doc.page.margins.left, y);
-  return doc.y + 4;
+  doc.font('Helvetica-Bold').fontSize(11).fillColor(C.navy).text(text, doc.page.margins.left, y);
+  doc.rect(doc.page.margins.left, doc.y + 1, 34, 2).fill(C.teal);
+  return doc.y + 8;
 }
 
 // Caixa com texto livre (altura acompanha o conteúdo)
@@ -149,7 +137,7 @@ function attendeesTable(doc, attendees, y, showAttendance) {
     doc.save().rect(left, top, width, rowHeight).fill(COLORS.headBg).restore();
     let x = left;
     cols.forEach(([label, w]) => {
-      doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.text)
+      doc.font('Helvetica-Bold').fontSize(9).fillColor(C.white)
         .text(label, x + 6, top + 6, { width: width * w - 12 });
       x += width * w;
     });
@@ -198,6 +186,7 @@ function signatures(doc, training, y) {
   const lineWidth = (width - 40) / 2;
 
   y = ensureSpace(doc, y + 30, 50);
+  if (y === doc.page.margins.top) y += 30; // página nova: espaço para assinar abaixo do cabeçalho
 
   [
     [left, training.trainer_name || 'Instrutor', 'Instrutor'],
@@ -221,14 +210,19 @@ function signatures(doc, training, y) {
 export default function generateCustomerTrainingPdf(training) {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 16 },
+        bufferPages: true,
+      });
       const chunks = [];
       doc.on('data', (c) => chunks.push(c));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
       const isDone = training.status === 'done';
-      let y = drawHeader(doc, isDone ? 'Relatório de Treinamento' : 'Programação de Treinamento');
+      const headerTitle = isDone ? 'Relatório de Treinamento' : 'Programação de Treinamento';
+      let y = drawHeader(doc, headerTitle, training);
 
       // 1. Título
       doc.font('Helvetica-Bold').fontSize(14).fillColor(COLORS.text)
@@ -269,15 +263,8 @@ export default function generateCustomerTrainingPdf(training) {
         y = signatures(doc, training, y);
       }
 
-      // Rodapé
-      y = ensureSpace(doc, y, 20);
-      doc.font('Helvetica').fontSize(8).fillColor(COLORS.muted)
-        .text(
-          `Emitido em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })} · CONSART ERP · Treinamento nº ${training.training_id}`,
-          doc.page.margins.left,
-          y,
-          { width: doc.page.width - doc.page.margins.left - doc.page.margins.right, align: 'right' }
-        );
+      // Rodapé (layout padrão) em todas as páginas
+      drawFooters(doc, { title: `Treinamento nº ${training.training_id ?? '-'}`, generatedAt: nowBR() });
 
       doc.end();
     } catch (err) {
