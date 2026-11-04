@@ -83,7 +83,7 @@ function enrichParticipant(participant, fallback = {}) {
   return enriched;
 }
 
-function scopeMasterData({ participants, products, documents, inventory }) {
+export function scopeMasterData({ participants, products, documents, inventory }) {
   const participantCodes = new Set(
     documents
       .map(document => String(document.participante_codigo || '').trim())
@@ -98,12 +98,20 @@ function scopeMasterData({ participants, products, documents, inventory }) {
 
     for (const item of Array.isArray(document.items) ? document.items : []) {
       const code = String(item.codigo_produto || '').trim();
-      if (!code || productReferences.has(code)) continue;
+      if (!code) continue;
 
-      productReferences.set(code, {
+      const reference = productReferences.get(code) || {
         descricao: item.descricao || '',
         unidade: item.unidade || 'UN',
-      });
+        unitFactors: new Map(),
+      };
+
+      const unit = String(item.unidade || 'UN').trim() || 'UN';
+      if (!reference.unitFactors.has(unit)) {
+        reference.unitFactors.set(unit, toNumber(item.fator_conversao, 1) || 1);
+      }
+
+      productReferences.set(code, reference);
     }
   }
 
@@ -117,6 +125,7 @@ function scopeMasterData({ participants, products, documents, inventory }) {
       productReferences.set(code, {
         descricao: item.descricao || '',
         unidade: item.unidade || 'UN',
+        unitFactors: new Map(),
       });
     }
   }
@@ -146,20 +155,34 @@ function scopeMasterData({ participants, products, documents, inventory }) {
   const scopedProducts = [];
   const exportedProductCodes = new Set();
 
+  /*
+   * 0200 usa a unidade do cadastro (ou a do inventário / 1ª nota). Toda
+   * unidade diferente usada nos C170 ganha um 0220 com o fator de conversão
+   * da nota de entrada — o PVA exige isso.
+   */
+  function withConversions(product, reference) {
+    const baseUnit = String(product.unidade || 'UN').trim() || 'UN';
+    const conversoes = [];
+
+    for (const [unit, factor] of reference.unitFactors.entries()) {
+      if (unit === baseUnit) continue;
+      conversoes.push({ unidade: unit, fator: factor });
+    }
+
+    return { ...product, unidade: baseUnit, conversoes };
+  }
+
   for (const product of products) {
     const code = String(product.codigo || '').trim();
     const reference = productReferences.get(code);
     if (!reference) continue;
 
-    scopedProducts.push({
-      ...product,
-      // Without inventory for this item, using the document unit avoids an
-      // artificial 0220 requirement for a conversion factor we do not know.
-      unidade: inventoryCodes.has(code)
-        ? product.unidade
-        : reference.unidade || product.unidade || 'UN',
-    });
+    const masterUnit = String(product.unidade || '').trim();
+    const baseUnit = inventoryCodes.has(code) || reference.unitFactors.has(masterUnit) || reference.unitFactors.size > 1
+      ? masterUnit || reference.unidade || 'UN'
+      : reference.unidade || masterUnit || 'UN';
 
+    scopedProducts.push(withConversions({ ...product, unidade: baseUnit }, reference));
     exportedProductCodes.add(code);
   }
 
@@ -167,7 +190,7 @@ function scopeMasterData({ participants, products, documents, inventory }) {
   for (const [code, reference] of productReferences.entries()) {
     if (exportedProductCodes.has(code)) continue;
 
-    scopedProducts.push({
+    scopedProducts.push(withConversions({
       codigo: code,
       descricao: reference.descricao || `Item ${code}`,
       unidade: reference.unidade || 'UN',
@@ -178,7 +201,7 @@ function scopeMasterData({ participants, products, documents, inventory }) {
       cod_lsit: '',
       aliq_icms: 0,
       cest: '',
-    });
+    }, reference));
   }
 
   return {

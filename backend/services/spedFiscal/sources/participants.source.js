@@ -6,6 +6,26 @@
 
 import pool from '../../../config/db.js';
 
+// Comparação de cidade sem acento/maiúsculas ("SAO PAULO" = "São Paulo").
+const ACCENTS_FROM = 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑáàâãäéèêëíìîïóòôõöúùûüçñ';
+const ACCENTS_TO = 'AAAAAEEEEIIIIOOOOOUUUUCNaaaaaeeeeiiiiooooouuuucn';
+
+function cityKeySql(expression) {
+  return `UPPER(TRIM(translate(COALESCE(${expression}, ''), '${ACCENTS_FROM}', '${ACCENTS_TO}')))`;
+}
+
+function ibgeByCityLateral(cityExpr, stateExpr, alias) {
+  return `
+      LEFT JOIN LATERAL (
+        SELECT l.ibge_code
+        FROM public."ibgeLocations" l
+        WHERE UPPER(l.state) = UPPER(TRIM(COALESCE(${stateExpr}, '')))
+          AND ${cityKeySql('l.city')} = ${cityKeySql(cityExpr)}
+        ORDER BY l.status DESC, l.ibge_location_id ASC
+        LIMIT 1
+      ) ${alias} ON true`;
+}
+
 function onlyDigits(value) {
   return String(value ?? '').replace(/\D+/g, '');
 }
@@ -57,7 +77,7 @@ async function getCustomers() {
         COALESCE(c.trade_name, c.legal_name, '') AS nome,
         c.tax_id AS documento,
         c.state_registration AS ie,
-        COALESCE(ci.codigo_ibge::text, '') AS cod_mun,
+        COALESCE(NULLIF(ci.codigo_ibge::text, ''), il.ibge_code::text, '') AS cod_mun,
         c.street_name AS endereco,
         c.street_number AS numero,
         c.address_complement AS complemento,
@@ -68,6 +88,7 @@ async function getCustomers() {
       FROM customers c
       LEFT JOIN "customersIbge" ci
         ON ci.customer_id = c.customer_id
+      ${ibgeByCityLateral('c.city', 'c.state', 'il')}
       WHERE COALESCE(c.is_active, true) = true
       ORDER BY COALESCE(c.trade_name, c.legal_name), c.customer_id
     `);
@@ -76,6 +97,40 @@ async function getCustomers() {
   } catch (err) {
     console.error('[SPED Fiscal] getCustomers participants error:', err.message);
     return [];
+  }
+}
+
+/*
+ * Fornecedor sem cidade/UF no cadastro: usa o <cMun> do emitente no XML
+ * das NF-e de entrada guardadas pelo DF-e (nfeInbox).
+ */
+async function fillSupplierMunicipalityFromXml(suppliers = []) {
+  const missing = suppliers.filter(p => !p.cod_mun && (p.cnpj || p.cpf));
+  if (!missing.length) return;
+
+  try {
+    const { rows } = await pool.query(
+      `
+        SELECT DISTINCT ON (doc)
+          doc,
+          substring(ni.xml_completo FROM '<enderEmit>.*?<cMun>([0-9]{7})</cMun>') AS cod_mun
+        FROM (
+          SELECT unnest($1::text[]) AS doc
+        ) d
+        JOIN public."nfeInbox" ni
+          ON regexp_replace(COALESCE(ni.emitente_cnpj, ''), '\\D+', '', 'g') = d.doc
+        WHERE ni.xml_completo LIKE '%<enderEmit>%'
+        ORDER BY doc, ni.data_emissao DESC NULLS LAST
+      `,
+      [missing.map(p => p.cnpj || p.cpf)],
+    );
+
+    const byDoc = new Map(rows.filter(r => r.cod_mun).map(r => [r.doc, r.cod_mun]));
+    for (const participant of missing) {
+      participant.cod_mun = byDoc.get(participant.cnpj || participant.cpf) || '';
+    }
+  } catch (err) {
+    console.warn('[SPED Fiscal] supplier cMun from nfeInbox failed:', err.message);
   }
 }
 
@@ -97,18 +152,13 @@ async function getSuppliers() {
         s.state,
         ''::text AS suframa
       FROM suppliers s
-      LEFT JOIN LATERAL (
-        SELECT l.ibge_code
-        FROM public."ibgeLocations" l
-        WHERE UPPER(l.state) = UPPER(TRIM(COALESCE(s.state, '')))
-          AND LOWER(l.city) = LOWER(TRIM(COALESCE(s.city, '')))
-        ORDER BY l.status DESC, l.ibge_location_id ASC
-        LIMIT 1
-      ) il ON true
+${ibgeByCityLateral('s.city', 's.state', 'il')}
       ORDER BY COALESCE(s.name, ''), s.supplier_id
     `);
 
-    return rows.map(row => normalizeParticipant(row, 'supplier'));
+    const suppliers = rows.map(row => normalizeParticipant(row, 'supplier'));
+    await fillSupplierMunicipalityFromXml(suppliers);
+    return suppliers;
   } catch (err) {
     console.error('[SPED Fiscal] getSuppliers participants error:', err.message);
     return [];
@@ -123,7 +173,7 @@ async function getTransporters() {
         COALESCE(t.trade_name, t.corporate_name, '') AS nome,
         COALESCE(t.cnpj, t.cpf, '') AS documento,
         t.state_registration AS ie,
-        COALESCE(t.city_ibge_code::text, '') AS cod_mun,
+        COALESCE(NULLIF(t.city_ibge_code::text, ''), il.ibge_code::text, '') AS cod_mun,
         t.address AS endereco,
         t.address_number AS numero,
         t.address_complement AS complemento,
@@ -132,6 +182,7 @@ async function getTransporters() {
         t.state,
         ''::text AS suframa
       FROM transporters t
+      ${ibgeByCityLateral('t.city', 't.state', 'il')}
       WHERE COALESCE(t.is_active, true) = true
       ORDER BY COALESCE(t.trade_name, t.corporate_name), t.id
     `);
