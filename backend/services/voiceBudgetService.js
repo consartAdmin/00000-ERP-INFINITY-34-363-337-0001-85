@@ -14,6 +14,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import customersApi from '../repositories/customers/customers.index.js';
 import productsApi from '../repositories/products/products.index.js';
 import paymentMethodsApi from '../repositories/paymentMethods/paymentMethods.index.js';
+import { lastInvoiceItems, lastBudgetItems } from '../repositories/voiceBudgets/voiceBudgetsHistory.repository.js';
 
 const DEFAULT_MODEL = 'claude-sonnet-5-5';
 const MAX_TURNS = 12;
@@ -108,6 +109,32 @@ const TOOLS = [
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
+    name: 'ultima_nota_cliente',
+    description:
+      'Itens da última nota fiscal (NF-e autorizada) emitida para o cliente, com quantidades. ' +
+      'Use quando o vendedor pedir para repetir/copiar a última nota ou a última compra do cliente. ' +
+      'Precisa do customer_id que veio de buscar_clientes.',
+    input_schema: {
+      type: 'object',
+      properties: { cliente_id: { type: 'string', description: 'customer_id do cliente.' } },
+      required: ['cliente_id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'ultimo_orcamento_cliente',
+    description:
+      'Itens do último orçamento feito para o cliente, com quantidades. ' +
+      'Use quando o vendedor pedir para usar o último orçamento como base. ' +
+      'Precisa do customer_id que veio de buscar_clientes.',
+    input_schema: {
+      type: 'object',
+      properties: { cliente_id: { type: 'string', description: 'customer_id do cliente.' } },
+      required: ['cliente_id'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'entregar_rascunho',
     description:
       'Entrega o rascunho final do orçamento. Chame exatamente uma vez, no fim, ' +
@@ -191,6 +218,7 @@ Passos:
 2. Use buscar_clientes para achar o cliente. Tente variações se não achar (só parte do nome, sem "mercado/loja/ltda").
 3. Use buscar_produtos para cada produto. Tente termos curtos, abreviações e medidas. Escolha o produto que melhor corresponde ao que foi falado; se houver vários parecidos (cor, medida, acabamento), escolha o mais provável, liste os outros em alternativos e marque a certeza como "media" ou "baixa".
 4. Use listar_formas_pagamento e escolha a que corresponde ao que foi falado ("trinta sessenta" = 30/60, "à vista", "pix", "boleto 28 dias").
+Se o vendedor pedir para copiar/repetir a última nota (ou a última compra) do cliente, use ultima_nota_cliente; se pedir o último orçamento, use ultimo_orcamento_cliente. Coloque os itens devolvidos no rascunho com as mesmas quantidades, a menos que ele diga outra coisa ("igual à última nota, mas 50 do papel toalha"). Itens marcados como inativos ou não encontrados ficam de fora; avise na fala.
 5. Termine chamando entregar_rascunho uma única vez. Use somente ids e códigos que vieram das buscas. Nunca invente.
 
 Quantidade não falada = 1. Se algo ficou ambíguo, escreva uma pergunta curta em perguntas. Não escreva texto fora das ferramentas.
@@ -274,6 +302,39 @@ export async function interpretVoiceBudget({ text, history = [], draft: appDraft
         tipo: r.type,
         parcelas: r.installments,
       }));
+    }
+    if (name === 'ultima_nota_cliente' || name === 'ultimo_orcamento_cliente') {
+      const cid = String(input?.cliente_id ?? '').trim();
+      if (!seenCustomers.has(cid)) {
+        return 'Busque o cliente com buscar_clientes antes e use o customer_id devolvido.';
+      }
+      const src = name === 'ultima_nota_cliente'
+        ? await lastInvoiceItems(cid)
+        : await lastBudgetItems(cid);
+      if (!src) {
+        return name === 'ultima_nota_cliente'
+          ? 'Este cliente não tem nota fiscal autorizada.'
+          : 'Este cliente não tem orçamento anterior.';
+      }
+      const itens = [];
+      for (const it of src.items ?? []) {
+        const code = String(it.product_code ?? '').trim();
+        const row = code ? await findProductByCode(code) : null;
+        if (row) seenProducts.set(code, row);
+        itens.push(compact({
+          ...(row ? summarizeProduct(row) : { product_code: code || null, descricao: it.description }),
+          quantidade: Number(it.quantity) || 1,
+          unidade_vendida: it.unit_code,
+          situacao: row ? null : 'produto não encontrado/inativo',
+        }));
+      }
+      return compact({
+        nota: src.nfe_number != null ? String(src.nfe_number) : null,
+        orcamento: src.budget_id != null && name === 'ultimo_orcamento_cliente' ? String(src.budget_id) : null,
+        data: src.issued_at ?? src.issue_date ?? null,
+        total: src.total_amount != null ? Number(src.total_amount) : null,
+        itens,
+      });
     }
     throw new Error(`Ferramenta desconhecida: ${name}`);
   }
@@ -441,10 +502,7 @@ async function loadDraft(draft, { seenCustomers, seenProducts, loadPaymentMethod
     const qty = Number(it?.quantity) > 0 ? Number(it.quantity) : 1;
     let row = null;
     if (code) {
-      try {
-        const res = await productsApi.search({ q: code, limit: 20 });
-        row = (res?.rows ?? []).find((r) => String(r.product_code) === code) ?? null;
-      } catch { /* sem produto */ }
+      row = await findProductByCode(code);
     }
     if (row) seenProducts.set(code, row);
     summary.itens.push({
@@ -461,4 +519,14 @@ async function loadDraft(draft, { seenCustomers, seenProducts, loadPaymentMethod
     if (pm) summary.forma_pagamento = { paymentMethods_id: String(pm.paymentMethods_id), nome: pm.name };
   }
   return summary;
+}
+
+/** Produto pelo código exato (a busca do ERP é por trecho). */
+async function findProductByCode(code) {
+  try {
+    const res = await productsApi.search({ q: code, limit: 20 });
+    return (res?.rows ?? []).find((r) => String(r.product_code) === code) ?? null;
+  } catch {
+    return null;
+  }
 }
