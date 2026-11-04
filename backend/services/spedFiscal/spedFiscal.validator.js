@@ -58,6 +58,27 @@ export function validateSpedContext(ctx) {
     });
   }
 
+  // Registro 0100 (contabilista) é obrigatório: avisar já na prévia/validação,
+  // em vez de só estourar no Gerar TXT. Dados em Empresas → Contabilista.
+  const accountantChecks = [
+    ['NOME', String(company.accountant_name || '').trim(), v => Boolean(v)],
+    ['CPF', String(company.accountant_cpf || '').replace(/\D+/g, ''), v => /^\d{11}$/.test(v)],
+    ['CRC', String(company.accountant_crc || '').trim(), v => Boolean(v) && v.length <= 15],
+    ['E-MAIL', String(company.accountant_email || '').trim(), v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)],
+    ['Código IBGE do município (Endereço da empresa)', String(company.cod_mun || '').replace(/\D+/g, ''), v => /^\d{7}$/.test(v)],
+  ];
+
+  for (const [field, value, isValid] of accountantChecks) {
+    if (!isValid(value)) {
+      pushIssue(issues, {
+        type: 'erro',
+        bloco: '0',
+        registro: '0100',
+        mensagem: `${field} do contabilista não informado ou inválido (cadastre em Empresas → Contabilista).`,
+      });
+    }
+  }
+
   for (const p of participants) {
     if (!p.codigo) {
       pushIssue(issues, {

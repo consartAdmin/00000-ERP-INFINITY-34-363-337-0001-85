@@ -8,6 +8,7 @@ import {
   $,
   applyCepMask,
   applyCnpjMask,
+  applyCpfMask,
   applyPhoneMask,
   normalizeDateInput,
 } from './enterprise.utils.js';
@@ -41,6 +42,11 @@ const FIELD_NAMES = [
   'logo_url',
   'slogan',
   'document_notes',
+  'accountant_name',
+  'accountant_cpf',
+  'accountant_crc',
+  'accountant_email',
+  'accountant_phone',
   'is_active',
 ];
 
@@ -85,6 +91,11 @@ export function getEnterpriseFormData() {
     logo_url: f.logo_url.value.trim(),
     slogan: f.slogan.value.trim(),
     document_notes: f.document_notes.value.trim(),
+    accountant_name: f.accountant_name.value.trim(),
+    accountant_cpf: f.accountant_cpf.value.replace(/\D+/g, ''),
+    accountant_crc: f.accountant_crc.value.trim(),
+    accountant_email: f.accountant_email.value.trim(),
+    accountant_phone: f.accountant_phone.value.trim(),
     is_active: f.is_active.value === 'true',
   };
 }
@@ -121,6 +132,11 @@ export function fillEnterpriseForm(data = {}) {
   setEnterpriseLogoView(data.logo_url ?? '');
   f.slogan.value = data.slogan ?? '';
   f.document_notes.value = data.document_notes ?? '';
+  f.accountant_name.value = data.accountant_name ?? '';
+  f.accountant_cpf.value = applyCpfMask(data.accountant_cpf ?? '');
+  f.accountant_crc.value = data.accountant_crc ?? '';
+  f.accountant_email.value = data.accountant_email ?? '';
+  f.accountant_phone.value = applyPhoneMask(data.accountant_phone ?? '');
   f.is_active.value = String(data.is_active !== false);
 }
 
@@ -266,6 +282,14 @@ export function bindEnterpriseFormMasks() {
 
   f.phone?.addEventListener('input', () => {
     f.phone.value = applyPhoneMask(f.phone.value);
+  });
+
+  f.accountant_cpf?.addEventListener('input', () => {
+    f.accountant_cpf.value = applyCpfMask(f.accountant_cpf.value);
+  });
+
+  f.accountant_phone?.addEventListener('input', () => {
+    f.accountant_phone.value = applyPhoneMask(f.accountant_phone.value);
   });
 
   f.whatsapp?.addEventListener('input', () => {

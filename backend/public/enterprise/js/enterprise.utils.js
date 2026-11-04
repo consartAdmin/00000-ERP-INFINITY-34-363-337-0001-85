@@ -27,6 +27,14 @@ export function applyCnpjMask(value) {
     .replace(/(\d{4})(\d)/, '$1-$2');
 }
 
+export function applyCpfMask(value) {
+  return onlyDigits(value)
+    .slice(0, 11)
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1-$2');
+}
+
 export function applyCepMask(value) {
   const digits = onlyDigits(value).slice(0, 8);
   return digits.replace(/^(\d{5})(\d)/, '$1-$2');
