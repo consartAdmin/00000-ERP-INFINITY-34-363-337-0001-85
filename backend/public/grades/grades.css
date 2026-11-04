@@ -77,6 +77,66 @@
     max-width: var(--grades-col-actions-width);
 }
 
+/* =========================================================
+   Cabeçalho integrado à tabela (título + filtros + ações)
+========================================================= */
+
+.cad-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.cad-toolbar__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 8px;
+}
+
+.cad-toolbar__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    font-size: 18px;
+}
+
+.cad-toolbar__title h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.cad-toolbar__title p {
+    margin: 0;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.cad-toolbar > .cad-toolbar__filters {
+    flex: 0 1 auto;
+    width: auto;
+    margin: 0;
+}
+
+.cad-toolbar__actions {
+    flex: 0 0 auto;
+    margin-left: auto;
+    align-items: center;
+}
+
+.grades-table .row-actions .action-icons {
+    justify-content: center;
+}
+
 .grades-header-actions {
     align-items: center;
     gap: 12px;
@@ -84,13 +144,6 @@
 
 .grades-header-actions h2 {
     margin: 0;
-}
-
-.header .fields-inline {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
 }
 
 .filter-actions {

@@ -1,3 +1,4 @@
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { elements, state } from './grades.state.js';
 import { escapeHtml } from './grades.utils.js';
 
@@ -63,22 +64,10 @@ export function renderGrades() {
         </span>
       </td>
       <td class="row-actions">
-        <button
-          class="icon-action"
-          type="button"
-          data-action="edit"
-          data-id="${escapeHtml(row.grade_id)}"
-          aria-label="Editar grade ${escapeHtml(row.grade || '')}"
-          title="Editar"
-        >✏️</button>
-        <button
-          class="icon-action is-danger"
-          type="button"
-          data-action="delete"
-          data-id="${escapeHtml(row.grade_id)}"
-          aria-label="Excluir grade ${escapeHtml(row.grade || '')}"
-          title="Excluir"
-        >🗑️</button>
+        ${actionIconsHtml([
+          { action: 'edit', title: `Editar grade ${row.grade || ''}`.trim(), attrs: { 'data-action': 'edit', 'data-id': row.grade_id } },
+          { action: 'delete', title: `Excluir grade ${row.grade || ''}`.trim(), attrs: { 'data-action': 'delete', 'data-id': row.grade_id } },
+        ])}
       </td>
     `;
 

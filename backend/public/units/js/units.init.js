@@ -17,6 +17,7 @@ import {
   handleSave,
 } from './units.actions.js';
 import { closeUnitModal } from './units.modal.js';
+import { exportUnits } from './units.export.js';
 
 function $(id) {
   return document.getElementById(id);
@@ -47,6 +48,8 @@ function cacheRefs() {
     pageSize: $('unitsRowsPerPage'),
 
     newButton: $('btnNewUnit'),
+    exportPdf: $('btnExportPdf'),
+    exportExcel: $('btnExportExcel'),
 
     modal: $('unitModal'),
     modalTitle: $('unitModalTitle'),
@@ -70,6 +73,8 @@ function bindEvents() {
   const refs = state.refs;
 
   refs.newButton?.addEventListener('click', handleNew);
+  refs.exportPdf?.addEventListener('click', () => exportUnits('pdf', refs.exportPdf));
+  refs.exportExcel?.addEventListener('click', () => exportUnits('xlsx', refs.exportExcel));
   refs.closeModal?.addEventListener('click', closeUnitModal);
   refs.cancelModal?.addEventListener('click', closeUnitModal);
 

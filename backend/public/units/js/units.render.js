@@ -3,6 +3,7 @@
 // ╚════════════════════════════════════════════════════════════╝
 
 import { state } from './units.state.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -41,25 +42,10 @@ function renderRow(row) {
         </span>
       </td>
       <td>
-        <div class="units-action-group">
-          <button
-            type="button"
-            class="btn btn-toolbar btn-sm units-action-button"
-            data-unit-action="edit"
-            data-unit-id="${escapeHtml(id)}"
-            title="Editar unidade"
-            aria-label="Editar unidade"
-          >✎</button>
-
-          <button
-            type="button"
-            class="btn btn-clean btn-sm units-action-button units-action-button--delete"
-            data-unit-action="delete"
-            data-unit-id="${escapeHtml(id)}"
-            title="Excluir unidade"
-            aria-label="Excluir unidade"
-          >Excluir</button>
-        </div>
+        ${actionIconsHtml([
+          { action: 'edit', title: 'Editar unidade', attrs: { 'data-unit-action': 'edit', 'data-unit-id': id } },
+          { action: 'delete', title: 'Excluir unidade', attrs: { 'data-unit-action': 'delete', 'data-unit-id': id } },
+        ])}
       </td>
     </tr>
   `;
