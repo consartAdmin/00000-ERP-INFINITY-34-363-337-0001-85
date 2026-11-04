@@ -8,6 +8,7 @@
 import PDFDocument from 'pdfkit';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { C, PAGE, drawFullHeader, autoCompactHeader, drawFooters, nowBR } from './consartPdfTheme.js';
 
 // 👇 Resolver __dirname em ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -96,7 +97,8 @@ export default function generateProcessesPdf(proc) {
     try {
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 40,
+        margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 16 },
+        bufferPages: true,
       });
 
       const chunks = [];
@@ -112,48 +114,17 @@ export default function generateProcessesPdf(proc) {
       /* 1. CABEÇALHO (barra com logo + título)                        */
       /* ────────────────────────────────────────────────────────────── */
 
-      const headerHeight = 70;
-      doc
-        .save()
-        .rect(0, 0, pageWidth, headerHeight)
-        .fill('#0f172a')
-        .restore();
+      const headerBottom = drawFullHeader(doc, {
+        title: 'Ficha do Processo',
+        subtitle: 'Gestão de Processos',
+        info: [['Processo', proc.nome || '-']],
+        logo: LOGO_PATH,
+      });
+      autoCompactHeader(doc, { title: 'Ficha do Processo', subtitle: proc.nome || 'Gestão de Processos', logo: LOGO_PATH });
 
-      // Logo
-      let logoLoaded = false;
-      try {
-        doc.image(LOGO_PATH, left, 10, { fit: [48, 48] });
-        logoLoaded = true;
-      } catch (e) {
-        console.warn('[generationProcessesPdf] Logo não encontrada em:', LOGO_PATH);
-      }
+      doc.fillColor(C.text);
 
-      // Títulos
-      doc
-        .fillColor('#ffffff')
-        .font('Helvetica-Bold')
-        .fontSize(16)
-        .text('CONSART ERP', left + (logoLoaded ? 60 : 0), 16, {
-          continued: false,
-        });
-
-      doc
-        .font('Helvetica')
-        .fontSize(10)
-        .text('Gestão de Processos', {
-          align: 'left',
-        });
-
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(16)
-        .text('Ficha do Processo', {
-          align: 'right',
-        });
-
-      doc.fillColor('#000000');
-
-      let cursorY = headerHeight + 20;
+      let cursorY = headerBottom + 18;
 
       /* ────────────────────────────────────────────────────────────── */
       /* 2. BLOCO: NOME DO PROCESSO                                    */
@@ -165,17 +136,17 @@ export default function generateProcessesPdf(proc) {
       doc
         .font('Helvetica-Bold')
         .fontSize(11)
-        .fillColor('#111827')
+        .fillColor(C.navy)
         .text('Nome do processo', left, cursorY);
 
-      cursorY += 4;
+      cursorY = doc.y + 4; // caixa abaixo do título (antes sobrepunha o texto)
 
       const nomeText = proc.nome || '-';
       const nomeBoxHeight = 32;
 
       doc
         .lineWidth(0.5)
-        .strokeColor('#d1d5db')
+        .strokeColor(C.border)
         .rect(left, cursorY, contentWidth, nomeBoxHeight)
         .stroke();
 
@@ -196,10 +167,10 @@ export default function generateProcessesPdf(proc) {
       doc
         .font('Helvetica-Bold')
         .fontSize(11)
-        .fillColor('#111827')
+        .fillColor(C.navy)
         .text('Descrição / Fluxo do processo', left, cursorY);
 
-      cursorY += 4;
+      cursorY = doc.y + 4; // caixa abaixo do título (antes sobrepunha o texto)
 
       const descBoxTop = cursorY;
 
@@ -228,7 +199,7 @@ export default function generateProcessesPdf(proc) {
       // Caixa em volta da descrição
       doc
         .lineWidth(0.5)
-        .strokeColor('#d1d5db')
+        .strokeColor(C.border)
         .rect(left, descBoxTop, contentWidth, descBoxHeight)
         .stroke();
 
@@ -257,14 +228,7 @@ export default function generateProcessesPdf(proc) {
       doc
         .text(`Última atualização: ${updatedTxt}`, left, cursorY + 12);
 
-      doc
-        .font('Helvetica')
-        .fontSize(9)
-        .fillColor('#4b5563')
-        .text('CONSART ERP · Gestão de Processos', left, cursorY, {
-          width: contentWidth,
-          align: 'right',
-        });
+      drawFooters(doc, { title: 'Ficha do Processo · Gestão de Processos', generatedAt: nowBR() });
 
       doc.end();
     } catch (err) {

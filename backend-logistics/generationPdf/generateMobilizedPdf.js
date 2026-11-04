@@ -30,6 +30,7 @@
 'use strict';
 
 import PDFDocument from 'pdfkit';
+import { C, PAGE, drawFullHeader, drawCompactHeader, drawFooters, nowBR } from './consartPdfTheme.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -318,58 +319,37 @@ function drawHeader(doc, { mobilized, company }) {
   const externalRef = safeStr(mobilized?.external_ref, 80);
   const sourceSystem = safeStr(mobilized?.source_system, 60);
 
-  doc.save().rect(0, 0, pageWidth, 72).fill('#F2F4F7').restore();
-
   const companyName = safeStr(company?.name || company?.razao_social || company?.nome_fantasia, 120);
   const companyCnpj = safeStr(company?.cnpj, 30);
 
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(16)
-    .fillColor('#111827')
-    .text(title, left, 18, { width: pageWidth - left - right });
-
-  doc.font('Helvetica').fontSize(9).fillColor('#374151');
-
-  const line2 = [];
-  if (companyName) line2.push(companyName);
-  if (companyCnpj) line2.push(`CNPJ: ${companyCnpj}`);
-  if (line2.length) doc.text(line2.join(' • '), left, 38, { width: pageWidth - left - right });
-
-  const meta = [
-    status ? `Status: ${status}` : null,
-    acquired ? `Aquisição: ${acquired}` : null,
-    sourceSystem ? `Origem: ${sourceSystem}` : null,
-    externalRef ? `Ref: ${externalRef}` : null,
-  ].filter(Boolean);
-
-  doc.text(meta.join(' • '), left, 54, { width: pageWidth - left - right });
-
-  doc.save()
-    .moveTo(left, 78)
-    .lineTo(pageWidth - right, 78)
-    .lineWidth(1)
-    .strokeColor('#E5E7EB')
-    .stroke()
-    .restore();
+  const y = drawFullHeader(doc, {
+    title,
+    subtitle: [companyName, companyCnpj ? `CNPJ: ${companyCnpj}` : ''].filter(Boolean).join(' · ') || 'Mobilizado',
+    info: [
+      status ? ['Status', status] : null,
+      acquired ? ['Aquisição', acquired] : null,
+      sourceSystem ? ['Origem', sourceSystem] : null,
+      externalRef ? ['Ref', externalRef] : null,
+    ].filter(Boolean),
+  }) + 10;
 
   const notes = safeStr(mobilized?.notes, 2000);
   if (notes) {
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#111827').text('Observações', left, 90);
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(C.navy).text('Observações', left, y);
     doc
       .font('Helvetica')
       .fontSize(9)
-      .fillColor('#374151')
-      .text(notes, left, 104, { width: pageWidth - left - right });
+      .fillColor(C.text)
+      .text(notes, left, y + 14, { width: pageWidth - left - right });
 
-    return Math.max(doc.y + 8, 130);
+    return Math.max(doc.y + 8, y + 36);
   }
 
-  return 96;
+  return y;
 }
 
 function drawTableHeader(doc, x, y, cols) {
-  doc.save().rect(x, y, cols.totalWidth, cols.headerHeight).fill('#111827').restore();
+  doc.save().rect(x, y, cols.totalWidth, cols.headerHeight).fill(C.blue).restore();
 
   doc.font('Helvetica-Bold').fontSize(9).fillColor('#FFFFFF');
   const padY = 6;
@@ -378,9 +358,9 @@ function drawTableHeader(doc, x, y, cols) {
   doc.text('SKU', cols.sku.x, y + padY, { width: cols.sku.w, align: 'left' });
   doc.text('Descrição', cols.desc.x, y + padY, { width: cols.desc.w, align: 'left' });
   doc.text('Qtd', cols.qty.x, y + padY, { width: cols.qty.w, align: 'right' });
-  doc.text('Un.', cols.unit.x, y + padY, { width: cols.unit.w, align: 'left' });
+  doc.text('Un.', cols.unit.x + 6, y + padY, { width: cols.unit.w - 6, align: 'left' });
   doc.text('Unitário', cols.unitPrice.x, y + padY, { width: cols.unitPrice.w, align: 'right' });
-  doc.text('Total', cols.total.x, y + padY, { width: cols.total.w, align: 'right' });
+  doc.text('Total', cols.total.x, y + padY, { width: cols.total.w - 6, align: 'right' });
 
   doc.save()
     .moveTo(x, y + cols.headerHeight)
@@ -458,7 +438,7 @@ function estimateRowHeightFromText({ baseDesc, extras }) {
 function drawRow(doc, item, cols, y, rowH, zebra, imageBuffer) {
   const x = cols.x;
 
-  if (zebra) doc.save().rect(x, y, cols.totalWidth, rowH).fill('#F9FAFB').restore();
+  if (zebra) doc.save().rect(x, y, cols.totalWidth, rowH).fill(C.zebra).restore();
 
   // ─────────────────────────────
   // Thumbnail
@@ -517,7 +497,7 @@ function drawRow(doc, item, cols, y, rowH, zebra, imageBuffer) {
     { width: cols.qty.w, align: 'right' }
   );
 
-  doc.text(item.unit ?? '', cols.unit.x, y + 6);
+  doc.text(item.unit ?? '', cols.unit.x + 6, y + 6);
 
   doc.text(
     item.unit_price != null ? formatBRL(item.unit_price) : '',
@@ -530,7 +510,7 @@ function drawRow(doc, item, cols, y, rowH, zebra, imageBuffer) {
     item.total_value != null ? formatBRL(item.total_value) : '',
     cols.total.x,
     y + 6,
-    { width: cols.total.w, align: 'right' }
+    { width: cols.total.w - 6, align: 'right' }
   );
 
   // ─────────────────────────────
@@ -561,7 +541,7 @@ function drawRow(doc, item, cols, y, rowH, zebra, imageBuffer) {
     doc.save()
       .rect(bx + 2, boxesTop, bw - 4, boxH)
       .lineWidth(1)
-      .strokeColor('#EF4444')
+      .strokeColor(C.border)
       .stroke()
       .restore();
 
@@ -607,7 +587,8 @@ export async function generateMobilizedPdf({
   const doc = new PDFDocument({
     size: 'A4',
     layout: 'landscape',
-    margins: { top: 36, left: 36, right: 36, bottom: 36 },
+    margins: { top: 36, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 12 },
+    bufferPages: true,
     info: {
       Title: safeStr(mobilized?.title, 180) || `Mobilized ${mobilized?.mobilized_id ?? ''}`,
       Author: safeStr(company?.name || company?.razao_social || 'CONSART ERP', 120),
@@ -671,11 +652,20 @@ export async function generateMobilizedPdf({
     cols.total.x = cols.unitPrice.x + cols.unitPrice.w;
   }
 
-  // Header
+  // Header (layout padrão) + cabeçalho compacto nas páginas seguintes
+  const reportTitle = safeStr(mobilized?.title, 180) || `Mobilizado #${mobilized?.mobilized_id ?? ''}`;
+  const compactTop = PAGE.compactHeaderH + 16;
+  doc.on('pageAdded', () => {
+    drawCompactHeader(doc, { title: reportTitle, subtitle: 'Mobilizado (continuação)' });
+    doc.page.margins.top = compactTop;
+    doc.y = compactTop;
+  });
+
   const startY = drawHeader(doc, { mobilized, company });
 
-  doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827').text('Itens', left, startY + 6);
-  doc.y = startY + 22;
+  doc.font('Helvetica-Bold').fontSize(11).fillColor(C.navy).text('Itens', left, startY + 6);
+  doc.rect(left, startY + 20, 34, 2).fill(C.teal);
+  doc.y = startY + 26;
 
   // Table header
   const tableHeaderY = doc.y;
@@ -763,24 +753,17 @@ doc.y += 12;
 
 const yLine = doc.y;
 
-doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827');
+doc.font('Helvetica-Bold').fontSize(11).fillColor(C.navy);
 
-// ✅ value (right)
+// label (left) + value (right)
+doc.text('Total do mobilizado', left, yLine, { width: 260 });
 doc.text(formatBRL(totalAll), pageWidth - right - 220, yLine, { width: 220, align: 'right' });
 
 // move cursor below
 doc.y = yLine + 16;
 
-  doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827');
-  doc.text('Total do mobilizado', left, doc.y, { continued: true });
-  doc.text(formatBRL(totalAll), pageWidth - right - 200, doc.y, { width: 200, align: 'right' });
-
-  // Footer
-  const footerText = `Gerado em ${formatDateTimeBR(new Date())} • CONSART ERP`;
-  doc.font('Helvetica').fontSize(8).fillColor('#6B7280');
-
-  const footerY = doc.page.height - doc.page.margins.bottom + 12;
-  doc.text(footerText, left, footerY, { width: usableW, align: 'center' });
+  // Rodapé padrão em todas as páginas
+  drawFooters(doc, { title: reportTitle, generatedAt: nowBR() });
 
   return buildBufferFromDoc(doc);
 }

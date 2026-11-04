@@ -6,6 +6,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import PDFDocument from 'pdfkit';
+import { C, PAGE, drawFullHeader, drawCompactHeader, drawFooters, nowBR } from './consartPdfTheme.js';
 
 function moneyBR(value) {
   return Number(value || 0).toLocaleString('pt-BR', {
@@ -93,51 +94,31 @@ function drawRoundedCard(doc, x, y, w, h, options = {}) {
     .fillAndStroke(fill, stroke);
 }
 
-function drawPageHeader(doc, order, ctx) {
-  const { left, right, usableWidth } = ctx;
+const REPORT_TITLE = 'Pedido para Fabricante';
 
-  const y = 28;
-  const h = 78;
-
-  doc
-    .roundedRect(left, y, usableWidth, h, 12)
-    .fill('#0f172a');
-
-  doc
-    .fillColor('#ffffff')
-    .font('Helvetica-Bold')
-    .fontSize(20)
-    .text('PEDIDO PARA FABRICANTE', left + 22, y + 18);
-
-  doc
-    .font('Helvetica')
-    .fontSize(9)
-    .fillColor('#cbd5e1')
-    .text('CONSART ERP - Ordem de produção/compras para fabricante', left + 22, y + 45);
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(13)
-    .fillColor('#ffffff')
-    .text(safe(order.order_number), right - 210, y + 20, {
-      width: 190,
-      align: 'right',
-    });
-
-  doc
-    .font('Helvetica')
-    .fontSize(8)
-    .fillColor('#cbd5e1')
-    .text(`Emitido em: ${dateBR(new Date())}`, right - 250, y + 48, {
-      width: 230,
-      align: 'right',
-    });
+// Cabeçalho padrão (consartPdfTheme). Retorna o y logo abaixo da faixa.
+function drawPageHeader(doc, order) {
+  return drawFullHeader(doc, {
+    title: REPORT_TITLE,
+    subtitle: 'Ordem de produção/compras para fabricante',
+    info: [
+      ['Pedido', safe(order.order_number)],
+      ['Fabricante', safe(order.manufacturer_name)],
+      ['Emitido em', dateBR(new Date())],
+    ],
+  });
 }
 
-function drawInfoAndSummary(doc, order, items, ctx) {
+function drawContinuationHeader(doc, order) {
+  return drawCompactHeader(doc, {
+    title: `${REPORT_TITLE} ${safe(order.order_number)}`,
+    subtitle: `${safe(order.manufacturer_name)} (continuação)`,
+  });
+}
+
+function drawInfoAndSummary(doc, order, items, ctx, y = 122) {
   const { left, usableWidth } = ctx;
 
-  const y = 122;
   const infoW = usableWidth * 0.62;
   const summaryW = usableWidth - infoW - 14;
 
@@ -223,13 +204,13 @@ function drawTableHeader(doc, y, ctx) {
   const { left, usableWidth } = ctx;
 
   doc
-    .roundedRect(left, y, usableWidth, 25, 8)
-    .fill('#eaf0f7');
+    .rect(left, y, usableWidth, 25)
+    .fill(C.blue);
 
   doc
     .font('Helvetica-Bold')
     .fontSize(7.5)
-    .fillColor('#334155');
+    .fillColor(C.white);
 
   const cols = getColumns(left);
 
@@ -261,29 +242,29 @@ function getColumns(left) {
 }
 
 function ensureSpace(doc, y, needed, order, ctx) {
-  if (y + needed < doc.page.height - 74) return y;
+  if (y + needed < doc.page.height - doc.page.margins.bottom) return y;
 
   doc.addPage();
-  drawPageHeader(doc, order, ctx);
+  const top = drawContinuationHeader(doc, order) + 12;
 
   doc
     .font('Helvetica-Bold')
     .fontSize(11)
-    .fillColor('#0f172a')
-    .text('Produtos do Pedido', ctx.left, 124);
+    .fillColor(C.navy)
+    .text('Produtos do Pedido', ctx.left, top);
 
-  return drawTableHeader(doc, 146, ctx);
+  return drawTableHeader(doc, top + 20, ctx);
 }
 
-function drawItemsTable(doc, order, items, ctx) {
+function drawItemsTable(doc, order, items, ctx, startY = 258) {
   const { left, right, usableWidth } = ctx;
 
-  let y = 258;
+  let y = startY;
 
   doc
     .font('Helvetica-Bold')
     .fontSize(12)
-    .fillColor('#0f172a')
+    .fillColor(C.navy)
     .text('Produtos do Pedido', left, y);
 
   y += 20;
@@ -317,7 +298,7 @@ function drawItemsTable(doc, order, items, ctx) {
 
     doc
       .rect(left, y, usableWidth, rowHeight)
-      .fill(index % 2 === 0 ? '#ffffff' : '#f8fafc');
+      .fill(index % 2 === 0 ? C.white : C.zebra);
 
     if (stockMin > 0 && stockQty < stockMin) {
       doc
@@ -379,11 +360,16 @@ function drawTotal(doc, y, total, ctx) {
   const boxW = 250;
   const boxH = 56;
   const boxX = right - boxW;
-  const boxY = y + 18;
+  let boxY = y + 18;
+  if (boxY + boxH > doc.page.height - doc.page.margins.bottom) {
+    // total não cabe: vai para a página seguinte, abaixo do cabeçalho compacto
+    doc.addPage();
+    boxY = drawContinuationHeader(doc, ctx.order) + 16;
+  }
 
   doc
     .roundedRect(boxX, boxY, boxW, boxH, 12)
-    .fill('#0f172a');
+    .fill(C.navy);
 
   doc
     .font('Helvetica')
@@ -403,36 +389,13 @@ function drawTotal(doc, y, total, ctx) {
   return boxY + boxH;
 }
 
-function drawFooter(doc, ctx) {
-  const { left, usableWidth } = ctx;
-  const pages = doc.bufferedPageRange();
-
-  for (let i = 0; i < pages.count; i++) {
-    doc.switchToPage(i);
-
-    doc
-      .font('Helvetica')
-      .fontSize(7)
-      .fillColor('#94a3b8')
-      .text(
-        `CONSART ERP - Pedido para Fabricante | Página ${i + 1} de ${pages.count}`,
-        left,
-        doc.page.height - 34,
-        {
-          width: usableWidth,
-          align: 'center',
-        }
-      );
-  }
-}
-
 export function buildOrdersManufacturesPdfStream(order = {}) {
   const items = Array.isArray(order.items) ? order.items : [];
 
   const doc = new PDFDocument({
     size: 'A4',
     layout: 'landscape',
-    margin: 32,
+    margins: { top: 28, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 12 },
     bufferPages: true,
   });
 
@@ -445,15 +408,16 @@ export function buildOrdersManufacturesPdfStream(order = {}) {
     left,
     right,
     usableWidth,
+    order,
   };
 
-  drawPageHeader(doc, order, ctx);
-  drawInfoAndSummary(doc, order, items, ctx);
+  const infoY = drawPageHeader(doc, order) + 14;
+  drawInfoAndSummary(doc, order, items, ctx, infoY);
 
-  const tableResult = drawItemsTable(doc, order, items, ctx);
+  const tableResult = drawItemsTable(doc, order, items, ctx, infoY + 108 + 22);
   drawTotal(doc, tableResult.y, tableResult.total, ctx);
 
-  drawFooter(doc, ctx);
+  drawFooters(doc, { title: `${REPORT_TITLE} ${safe(order.order_number)}`, generatedAt: nowBR() });
 
   return doc;
 }
