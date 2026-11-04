@@ -1,10 +1,13 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ generationAccountsPayablePdf.js — Exportação PDF                    ║
 // ║ CONSART ERP — Contas a Pagar                                        ║
-// ║ Layout tabular estilo Excel                                          ║
+// ║ Layout padrão (consartPdfTheme.js)                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import PDFDocument from 'pdfkit';
+import {
+    C, SERIES, PAGE,
+    createThemedDoc, drawFullHeader, drawFooters, drawKpis, makeTable, money, number, nowBR,
+} from './consartPdfTheme.js';
 import { list } from '../repositories/accountsPayable/accountsPayable.index.js';
 import { PAYABLE_GROUPS, parseGroups } from '../repositories/accountsPayable/accountsPayable.groups.js';
 
@@ -187,49 +190,6 @@ async function loadAllRows(filters = {}) {
     return rows.slice(0, MAX_EXPORT_ROWS);
 }
 
-function buildFilterDescription(filters = {}) {
-    const parts = [];
-
-    if (filters.search) {
-        parts.push(`Busca: ${filters.search}`);
-    }
-
-    const groups = parseGroups(filters.groups);
-    if (groups.length) {
-        parts.push(`Grupos: ${groups.map(formatGroup).join(', ')}`);
-    }
-
-    if (filters.status) {
-        parts.push(`Status: ${formatStatus(filters.status)}`);
-    }
-
-    if (filters.month) {
-        parts.push(
-            `Mês: ${String(filters.month).padStart(2, '0')}`
-        );
-    }
-
-    if (filters.year) {
-        parts.push(`Ano: ${filters.year}`);
-    }
-
-    if (filters.fromDueDate) {
-        parts.push(
-            `Venc. inicial: ${formatDateBR(filters.fromDueDate)}`
-        );
-    }
-
-    if (filters.toDueDate) {
-        parts.push(
-            `Venc. final: ${formatDateBR(filters.toDueDate)}`
-        );
-    }
-
-    return parts.length
-        ? parts.join('  |  ')
-        : 'Filtros: todos os registros';
-}
-
 function makeFilename() {
     const stamp = new Date()
         .toISOString()
@@ -243,567 +203,119 @@ function makeFilename() {
  * Gerador PDF
  * ===================================================================== */
 
+const REPORT_TITLE = 'Contas a Pagar';
+
+const STATUS_COLORS = Object.freeze({
+    PAID: C.green,
+    OVERDUE: C.red,
+    PARTIAL: C.amber,
+    CANCELLED: C.muted,
+    CANCELED: C.muted,
+});
+
+function headerInfo(filters = {}) {
+    const info = [];
+    const from = filters.fromDueDate ? formatDateBR(filters.fromDueDate) : '';
+    const to = filters.toDueDate ? formatDateBR(filters.toDueDate) : '';
+
+    if (from || to) info.push(['Vencimento', from && to ? `${from} a ${to}` : (from ? `A partir de ${from}` : `Até ${to}`)]);
+    else if (filters.month || filters.year) info.push(['Competência', [filters.month ? String(filters.month).padStart(2, '0') : '', filters.year].filter(Boolean).join('/')]);
+    else info.push(['Período', 'Todos os períodos']);
+
+    info.push(['Status', filters.status ? formatStatus(filters.status) : 'Todos']);
+
+    const groups = parseGroups(filters.groups);
+    info.push(['Grupos', groups.length ? groups.map(formatGroup).join(', ') : 'Todos']);
+
+    if (filters.search) info.push(['Busca', filters.search]);
+    return info;
+}
+
 export async function generateAccountsPayablePdf(filters = {}) {
 
     const rows = await loadAllRows(filters);
 
-    const doc = new PDFDocument({
-        size: 'A4',
-        layout: 'landscape',
+    const { doc, done } = createThemedDoc({ title: REPORT_TITLE, subject: 'Relatório de Contas a Pagar' });
+    const generatedAt = nowBR();
 
-        margins: {
-            top: 32,
-            right: 24,
-            bottom: 32,
-            left: 24,
-        },
+    /* ---------------- Totais ---------------- */
 
-        bufferPages: true,
+    const totalValue = rows.reduce((sum, row) => sum + toNumber(row.total_value), 0);
+    const amountPaid = rows.reduce((sum, row) => sum + toNumber(row.amount_paid), 0);
+    const balance = rows.reduce((sum, row) => sum + getBalance(row), 0);
 
-        info: {
-            Title: 'Contas a Pagar',
-            Author: 'CONSART ERP',
-            Subject: 'Relatório de Contas a Pagar',
-        },
+    const overdue = rows.filter((row) => String(row.status || '').toUpperCase() === 'OVERDUE');
+    const overdueBalance = overdue.reduce((sum, row) => sum + getBalance(row), 0);
+
+    /* ---------------- Cabeçalho + KPIs ---------------- */
+
+    let y = drawFullHeader(doc, {
+        title: REPORT_TITLE,
+        subtitle: 'Títulos a pagar por vencimento',
+        info: headerInfo(filters),
+    }) + 14;
+
+    y = drawKpis(doc, y, [
+        { label: 'Títulos', value: number(rows.length, 0), hint: 'Registros no relatório', color: SERIES[0] },
+        { label: 'Valor total', value: money(totalValue), hint: 'Soma dos títulos', color: SERIES[5] },
+        { label: 'Pago', value: money(amountPaid), hint: 'Valor já baixado', color: SERIES[1] },
+        { label: 'Saldo a pagar', value: money(balance), hint: 'Valor - pago', color: SERIES[2] },
+        { label: 'Vencidos', value: money(overdueBalance), hint: `${number(overdue.length, 0)} título(s) vencido(s)`, color: overdue.length ? C.red : SERIES[7] },
+    ]) + 16;
+
+    /* ---------------- Tabela ---------------- */
+
+    const table = makeTable(doc, {
+        title: 'Títulos',
+        continuation: { title: REPORT_TITLE, subtitle: 'Títulos (continuação)' },
+        rowH: 18,
+        fontSize: 7.5,
+        headFontSize: 7.5,
+        columns: [
+            { label: 'Vencimento', w: 70, align: 'center' },
+            { label: 'Fornecedor' },
+            { label: 'Documento', w: 90 },
+            { label: 'Descrição' },
+            { label: 'Status', w: 70, align: 'center' },
+            { label: 'Valor', w: 86, align: 'right' },
+            { label: 'Pago', w: 86, align: 'right' },
+            { label: 'Saldo', w: 86, align: 'right', bold: true },
+        ],
     });
 
-    const chunks = [];
+    y = table.section(y);
 
-    doc.on('data', (chunk) => {
-        chunks.push(chunk);
-    });
-
-    /* =================================================================
-     * Página
-     * ================================================================= */
-
-    const pageWidth = doc.page.width;
-
-    const left = doc.page.margins.left;
-
-    const right =
-        pageWidth -
-        doc.page.margins.right;
-
-    const tableWidth =
-        right -
-        left;
-
-    /* =================================================================
-     * Colunas
-     * ================================================================= */
-
-    const columns = [
-        {
-            key: 'due_date',
-            title: 'Vencimento',
-            width: 72,
-            align: 'center',
-        },
-        {
-            key: 'supplier_name',
-            title: 'Fornecedor',
-            width: 155,
-            align: 'left',
-        },
-        {
-            key: 'document_number',
-            title: 'Documento',
-            width: 85,
-            align: 'left',
-        },
-        {
-            key: 'description',
-            title: 'Descrição',
-            width: 155,
-            align: 'left',
-        },
-        {
-            key: 'status',
-            title: 'Status',
-            width: 70,
-            align: 'center',
-        },
-        {
-            key: 'total_value',
-            title: 'Valor',
-            width: 83,
-            align: 'right',
-        },
-        {
-            key: 'amount_paid',
-            title: 'Pago',
-            width: 83,
-            align: 'right',
-        },
-        {
-            key: 'balance',
-            title: 'Saldo',
-            width: 83,
-            align: 'right',
-        },
-    ];
-
-    const naturalWidth = columns.reduce(
-        (sum, column) => sum + column.width,
-        0
-    );
-
-    const scale =
-        tableWidth /
-        naturalWidth;
-
-    columns.forEach((column) => {
-        column.width *= scale;
-    });
-
-    /* =================================================================
-     * Dimensões da tabela
-     * ================================================================= */
-
-    const TABLE_HEADER_HEIGHT = 25;
-    const ROW_HEIGHT = 23;
-
-    const TABLE_BORDER_COLOR = '#9E9E9E';
-    const TABLE_GRID_COLOR = '#C8C8C8';
-
-    /* =================================================================
-     * Cabeçalho relatório
-     * ================================================================= */
-
-    function drawReportHeader() {
-
-        doc
-            .fillColor('#111111')
-            .font('Helvetica-Bold')
-            .fontSize(16)
-            .text(
-                'CONSART ERP — CONTAS A PAGAR',
-                left,
-                28,
-                {
-                    width: tableWidth,
-                    align: 'left',
-                }
-            );
-
-        doc
-            .font('Helvetica')
-            .fontSize(8)
-            .fillColor('#555555')
-            .text(
-                `Gerado em ${new Date().toLocaleString(
-                    'pt-BR',
-                    {
-                        timeZone: 'America/Sao_Paulo',
-                    }
-                )}`,
-                left,
-                30,
-                {
-                    width: tableWidth,
-                    align: 'right',
-                }
-            );
-
-        doc
-            .font('Helvetica')
-            .fontSize(8)
-            .fillColor('#333333')
-            .text(
-                buildFilterDescription(filters),
-                left,
-                51,
-                {
-                    width: tableWidth,
-                    align: 'left',
-                    ellipsis: true,
-                }
-            );
-
-        doc
-            .moveTo(left, 67)
-            .lineTo(right, 67)
-            .lineWidth(0.8)
-            .strokeColor('#808080')
-            .stroke();
-
-        return 76;
+    if (!rows.length) {
+        doc.font('Helvetica').fontSize(9).fillColor(C.muted)
+            .text('Nenhum título encontrado para os filtros selecionados.', PAGE.margin, y + 16, { width: table.width, align: 'center' });
     }
-
-    /* =================================================================
-     * Cabeçalho da tabela — estilo Excel
-     * ================================================================= */
-
-    function drawTableHeader(y) {
-
-        let x = left;
-
-        doc
-            .font('Helvetica-Bold')
-            .fontSize(8)
-            .fillColor('#111111');
-
-        for (const column of columns) {
-
-            /*
-             * Fundo da célula
-             */
-            doc
-                .rect(
-                    x,
-                    y,
-                    column.width,
-                    TABLE_HEADER_HEIGHT
-                )
-                .fillAndStroke(
-                    '#D9E2F3',
-                    TABLE_BORDER_COLOR
-                );
-
-            /*
-             * Texto
-             */
-            doc
-                .fillColor('#111111')
-                .text(
-                    column.title,
-                    x + 4,
-                    y + 8,
-                    {
-                        width: column.width - 8,
-                        align: column.align,
-                        lineBreak: false,
-                        ellipsis: true,
-                    }
-                );
-
-            x += column.width;
-        }
-
-        return y + TABLE_HEADER_HEIGHT;
-    }
-
-    /* =================================================================
-     * Linha / célula
-     * ================================================================= */
-
-    function drawCell({
-        x,
-        y,
-        width,
-        height,
-        value,
-        align = 'left',
-        background = '#FFFFFF',
-    }) {
-
-        /*
-         * Célula estilo planilha
-         */
-        doc
-            .rect(
-                x,
-                y,
-                width,
-                height
-            )
-            .fillAndStroke(
-                background,
-                TABLE_GRID_COLOR
-            );
-
-        /*
-         * Texto
-         */
-        doc
-            .fillColor('#111111')
-            .font('Helvetica')
-            .fontSize(7.5)
-            .text(
-                String(value ?? ''),
-                x + 4,
-                y + 7,
-                {
-                    width: width - 8,
-                    height: height - 8,
-                    align,
-                    lineBreak: false,
-                    ellipsis: true,
-                }
-            );
-    }
-
-    /* =================================================================
-     * Nova página
-     * ================================================================= */
-
-    function ensureSpace(y, neededHeight) {
-
-        const maxY =
-            doc.page.height -
-            doc.page.margins.bottom -
-            28;
-
-        if (
-            y + neededHeight <= maxY
-        ) {
-            return y;
-        }
-
-        doc.addPage({
-            size: 'A4',
-            layout: 'landscape',
-
-            margins: {
-                top: 32,
-                right: 24,
-                bottom: 32,
-                left: 24,
-            },
-        });
-
-        let newY =
-            drawReportHeader();
-
-        newY =
-            drawTableHeader(newY);
-
-        return newY;
-    }
-
-    /* =================================================================
-     * Início
-     * ================================================================= */
-
-    let y =
-        drawReportHeader();
-
-    y =
-        drawTableHeader(y);
-
-    /* =================================================================
-     * Registros
-     * ================================================================= */
 
     rows.forEach((row, index) => {
+        const statusKey = String(row.status || '').trim().toUpperCase();
 
-        y = ensureSpace(
-            y,
-            ROW_HEIGHT
-        );
-
-        const values = {
-
-            due_date:
-                formatDateBR(
-                    row.due_date
-                ),
-
-            supplier_name:
-                row.supplier_name ||
-                '-',
-
-            document_number:
-                row.document_number ||
-                row.invoice_number ||
-                '-',
-
-            description:
-                row.description ||
-                '-',
-
-            status:
-                formatStatus(
-                    row.status
-                ),
-
-            total_value:
-                formatCurrency(
-                    row.total_value
-                ),
-
-            amount_paid:
-                formatCurrency(
-                    row.amount_paid
-                ),
-
-            balance:
-                formatCurrency(
-                    getBalance(row)
-                ),
-        };
-
-        /*
-         * Alternância leve estilo planilha
-         */
-        const background =
-            index % 2 === 0
-                ? '#FFFFFF'
-                : '#F8F9FA';
-
-        let x = left;
-
-        for (const column of columns) {
-
-            drawCell({
-                x,
-                y,
-                width: column.width,
-                height: ROW_HEIGHT,
-                value: values[column.key],
-                align: column.align,
-                background,
-            });
-
-            x +=
-                column.width;
-        }
-
-        y +=
-            ROW_HEIGHT;
+        y = table.row(y, [
+            formatDateBR(row.due_date),
+            row.supplier_name || '-',
+            row.document_number || row.invoice_number || '-',
+            row.description || '-',
+            { text: formatStatus(row.status), color: STATUS_COLORS[statusKey] || C.text, bold: true },
+            formatCurrency(row.total_value),
+            formatCurrency(row.amount_paid),
+            formatCurrency(getBalance(row)),
+        ], { index });
     });
 
-    /* =================================================================
-     * Totais
-     * ================================================================= */
-
-    y =
-        ensureSpace(
-            y,
-            55
-        );
-
-    const totalValue =
-        rows.reduce(
-            (sum, row) =>
-                sum +
-                toNumber(
-                    row.total_value
-                ),
-            0
-        );
-
-    const amountPaid =
-        rows.reduce(
-            (sum, row) =>
-                sum +
-                toNumber(
-                    row.amount_paid
-                ),
-            0
-        );
-
-    const balance =
-        rows.reduce(
-            (sum, row) =>
-                sum +
-                getBalance(row),
-            0
-        );
-
-    const TOTAL_ROW_HEIGHT = 26;
-
-    /*
-     * Linha de totais estilo Excel
-     */
-    doc
-        .rect(
-            left,
-            y + 6,
-            tableWidth,
-            TOTAL_ROW_HEIGHT
-        )
-        .fillAndStroke(
-            '#E2F0D9',
-            TABLE_BORDER_COLOR
-        );
-
-    doc
-        .fillColor('#111111')
-        .font('Helvetica-Bold')
-        .fontSize(8.5)
-        .text(
-            `${rows.length} registro(s)`,
-            left + 6,
-            y + 15,
-            {
-                width: tableWidth * 0.3,
-                align: 'left',
-            }
-        );
-
-    doc
-        .text(
-            `Total: ${formatCurrency(totalValue)}   ` +
-            `Pago: ${formatCurrency(amountPaid)}   ` +
-            `Saldo: ${formatCurrency(balance)}`,
-            left,
-            y + 15,
-            {
-                width: tableWidth - 6,
-                align: 'right',
-            }
-        );
-
-    /* =================================================================
-     * Numeração de páginas
-     * ================================================================= */
-
-    const range = doc.bufferedPageRange();
-
-    for (
-        let i = range.start;
-        i < range.start + range.count;
-        i += 1
-    ) {
-        doc.switchToPage(i);
-
-        const footerY =
-            doc.page.height -
-            doc.page.margins.bottom -
-            10;
-
-        doc
-            .font('Helvetica')
-            .fontSize(7)
-            .fillColor('#666666')
-            .text(
-                `Página ${i + 1} de ${range.count}`,
-                left,
-                footerY,
-                {
-                    width: tableWidth,
-                    align: 'right',
-                    lineBreak: false,
-                }
-            );
+    if (rows.length) {
+        table.total(y, [
+            'TOTAL', `${number(rows.length, 0)} registro(s)`, '', '', '',
+            formatCurrency(totalValue), formatCurrency(amountPaid), formatCurrency(balance),
+        ]);
     }
 
-    /* =================================================================
-     * Finalização
-     * ================================================================= */
-
+    drawFooters(doc, { title: REPORT_TITLE, generatedAt });
     doc.end();
 
-    const buffer =
-        await new Promise(
-            (resolve, reject) => {
-
-                doc.on(
-                    'end',
-                    () =>
-                        resolve(
-                            Buffer.concat(chunks)
-                        )
-                );
-
-                doc.on(
-                    'error',
-                    reject
-                );
-            }
-        );
+    const buffer = await done;
 
     return {
         buffer,
