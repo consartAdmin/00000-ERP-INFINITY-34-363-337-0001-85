@@ -42,6 +42,9 @@ export const updateBoleto = (id, payload) => safeFetch(
     body: JSON.stringify(payload),
   }
 );
+export const batchUpdateAccounts = (ids, fields) => safeFetch(`${API_BASE}/batch-update`, {
+  method: 'POST', body: JSON.stringify({ ids, fields }),
+});
 export const receiveAccount = (id, payload) => safeFetch(`${API_BASE}/${encodeURIComponent(id)}/receive`, {
   method: 'POST', body: JSON.stringify(payload),
 });

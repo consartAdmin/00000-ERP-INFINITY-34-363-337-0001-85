@@ -19,6 +19,7 @@ import {
   getById,
   createAccount,
   updateAccount,
+  batchUpdateAccounts,
   updateBoletoValueAndDueDate,
   receivePayment,
   listAttachments,
@@ -195,6 +196,25 @@ export async function update(req, res) {
     return res.json({ ok: true, data: row });
   } catch (err) {
     return boom(res, err, 'ACCOUNTS-RECEIVABLE/UPDATE');
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* EDITAR EM LOTE                                                     */
+/* ------------------------------------------------------------------ */
+
+// POST /api/accounts-receivable/batch-update
+// body: { ids: [1, 2], fields: { due_date, bank_account_id, document_type_id,
+//         category_id, subcategory_id, chart_account_id } } — só os preenchidos mudam
+export async function batchUpdate(req, res) {
+  try {
+    const result = await batchUpdateAccounts(req.body || {});
+    return res.json({ ok: true, data: result });
+  } catch (err) {
+    if (err?.code === 'VALIDATION') {
+      return res.status(400).json({ ok: false, message: err.message });
+    }
+    return boom(res, err, 'ACCOUNTS-RECEIVABLE/BATCH-UPDATE');
   }
 }
 

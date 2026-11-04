@@ -18,6 +18,7 @@ const FILTER_SELECTOR = '#filterBankAccount';
 const FORM_SELECTS = [
   { selector: '#arCashAccountId', placeholder: 'Selecione...' },
   { selector: '#receive_conta_caixa', placeholder: 'Selecione...' },
+  { selector: '#arBatchBankAccountId', placeholder: '— Manter —' },
 ];
 
 function rowsFrom(response) {

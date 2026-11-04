@@ -6,4 +6,7 @@ export const state = {
   // Últimos registros efetivamente gerados primeiro
   orderBy: 'created_at',
   orderDirection: 'desc',
+
+  // Títulos marcados (checkbox). Mantém entre páginas e filtros.
+  selectedIds: new Set(),
 };

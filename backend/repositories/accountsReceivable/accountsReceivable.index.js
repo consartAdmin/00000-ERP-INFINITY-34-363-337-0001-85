@@ -18,6 +18,7 @@ import { listAccountsReceivable, resumoMes } from './accountsReceivableQuery.rep
 import { getById } from './accountsReceivableGetById.repository.js';
 import { createAccount } from './accountsReceivableCreate.repository.js';
 import { updateAccount } from './accountsReceivableUpdate.repository.js';
+import { batchUpdateAccounts } from './accountsReceivableBatchUpdate.repository.js';
 import { receivePayment } from './accountsReceivableReceive.repository.js';
 import {
   listAttachments,
@@ -49,6 +50,7 @@ export {
   getById,
   createAccount,
   updateAccount,
+  batchUpdateAccounts,
   updateBoletoValueAndDueDate,
   receivePayment,
   listAttachments,
