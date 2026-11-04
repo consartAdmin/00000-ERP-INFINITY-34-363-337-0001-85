@@ -46,7 +46,11 @@
           <div class="fields-inline fields-gap-3">
             <div class="fields fields-h-6 fields-w-20 fields-font-3">
               <label for="name">Nome do Módulo (texto no menu)</label>
-              <input type="text" id="name" placeholder="Ex.: 📋 Cadastro de Clientes" autocomplete="off" required />
+              <div class="ms-name-wrap">
+                <input type="text" id="name" placeholder="Ex.: 📋 Cadastro de Clientes" autocomplete="off" required />
+                <button type="button" id="btnIconPicker" class="ms-icon-btn" title="Escolher ícone para o nome"
+                  aria-label="Escolher ícone para o nome">😀</button>
+              </div>
             </div>
 
             <div class="fields fields-h-6 fields-w-12 fields-font-3">
@@ -242,6 +246,42 @@
       </footer>
     </section>
   </main>
+
+  <!-- Modal Escolher Ícone (padrão modals.css / modal.js) -->
+  <div id="ms-modal-icons" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true" aria-labelledby="msIconsTitle">
+
+        <header class="modal__header modal-header-color-3">
+          <h2 id="msIconsTitle" class="modal__title">😀 Escolher Ícone</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </header>
+
+        <div class="modal__body">
+          <div class="ms-icons-top">
+            <input type="text" id="msIconSearch" placeholder="🔍 Buscar ícone (ex.: casa, dinheiro, caminhão)..."
+              autocomplete="off" />
+            <div class="ms-icons-preview">
+              <span>Como fica no menu:</span>
+              <strong id="msIconPreview">Novo módulo</strong>
+            </div>
+          </div>
+
+          <div class="ms-icons-tabs" id="msIconTabs" role="tablist"></div>
+          <div class="ms-icons-grid" id="msIconGrid"></div>
+          <p class="ms-icons-empty" id="msIconEmpty" hidden>Nenhum ícone encontrado.</p>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <button type="button" id="msIconRemove" class="btn btn-cancel btn-sm">🚫 Sem ícone</button>
+          <button type="button" class="btn btn-clean btn-sm" data-modal-close>Fechar</button>
+        </footer>
+
+      </section>
+    </div>
+  </div>
 
   <!-- Scripts globais -->
   <script type="module" src="/public/includes/js/core.js"></script>
