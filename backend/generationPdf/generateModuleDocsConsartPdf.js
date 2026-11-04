@@ -11,11 +11,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import PDFDocument from 'pdfkit';
 import { fileURLToPath } from 'node:url';
+import { C, PAGE, SERIES, drawFullHeader, autoCompactHeader, drawFooters, drawKpis, nowBR } from './consartPdfTheme.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const GREEN = '#0f6b5c';
-const GREEN_LIGHT = '#e6f2ef';
+const GREEN = C.blue; // cor de destaque do layout padrão (consartPdfTheme)
+const GREEN_LIGHT = C.totalFill;
 const MUTED = '#475569';
 const LINE = '#e2e8f0';
 
@@ -44,13 +45,6 @@ const pdfText = (v) => clean(
     .replace(/[^\n\x20-\x7E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\u203A]/g, '')
     .replace(/[ \t]{2,}/g, ' ')
 );
-
-function dateTimeBR(date = new Date()) {
-  return date.toLocaleString('pt-BR', {
-    timeZone: 'America/Sao_Paulo',
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  });
-}
 
 function defaultLogo() {
   const candidates = [
@@ -89,7 +83,11 @@ function describeFilters(filters = {}) {
 export async function generateModuleDocsConsartPdf({
   rows = [], summary = {}, filters = {}, showEmpty = true, showPaths = true, showNotes = true,
 }) {
-  const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
+  const doc = new PDFDocument({
+    size: 'A4',
+    margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 16 },
+    bufferPages: true,
+  });
   const chunks = [];
   doc.on('data', (c) => chunks.push(c));
   const done = new Promise((resolve, reject) => {
@@ -100,43 +98,32 @@ export async function generateModuleDocsConsartPdf({
   const left = doc.page.margins.left;
   const right = doc.page.width - doc.page.margins.right;
   const width = right - left;
-  const bottom = () => doc.page.height - doc.page.margins.bottom - 24; // espaço do rodapé
+  const bottom = () => doc.page.height - doc.page.margins.bottom; // rodapé fica abaixo da margem
 
   const ensureSpace = (h) => {
     if (doc.y + h > bottom()) doc.addPage();
   };
 
-  // ── Cabeçalho ───────────────────────────────────────────────────
-  const top = doc.y;
-  let textX = left;
+  // ── Cabeçalho (layout padrão) ───────────────────────────────────
+  const REPORT_TITLE = 'Documentação dos Módulos';
   const logo = defaultLogo();
-  if (logo) {
-    try {
-      doc.image(logo, left, top, { fit: [48, 48] });
-      textX = left + 58;
-    } catch (error) {
-      console.warn('[PDF Documentação Módulos] logo inválido:', error.message);
-    }
-  }
-
-  doc.font('Helvetica-Bold').fontSize(16).fillColor(GREEN)
-    .text('DOCUMENTAÇÃO DOS MÓDULOS', textX, top + 4, { width: right - textX });
-  doc.font('Helvetica').fontSize(9).fillColor(MUTED)
-    .text(`Consart ERP · Gerado em ${dateTimeBR()}`, textX, doc.y + 2, { width: right - textX })
-    .text(`Filtros: ${pdfText(describeFilters(filters))}`, { width: right - textX });
-
-  const headerBottom = Math.max(doc.y, top + 50) + 8;
-  doc.moveTo(left, headerBottom).lineTo(right, headerBottom).lineWidth(2.5).strokeColor(GREEN).stroke();
-  doc.y = headerBottom + 10;
+  const headerBottom = drawFullHeader(doc, {
+    title: REPORT_TITLE,
+    subtitle: 'Situação da documentação por módulo',
+    info: [['Filtros', pdfText(describeFilters(filters))]],
+    logo: logo || undefined,
+  });
+  autoCompactHeader(doc, { title: REPORT_TITLE, subtitle: 'Documentação dos Módulos (continuação)', logo: logo || undefined });
 
   // Resumo
   const total = Number(summary.total || rows.length);
-  doc.font('Helvetica').fontSize(9).fillColor('#334155').text(
-    `${total} ${total === 1 ? 'item' : 'itens'} · ${summary.DOCUMENTADO || 0} documentados · `
-    + `${summary.REVISAR || 0} a revisar · ${summary.PENDENTE || 0} pendentes`,
-    left, doc.y, { width },
-  );
-  doc.moveDown(0.8);
+  doc.y = drawKpis(doc, headerBottom + 14, [
+    { label: 'Itens', value: String(total), hint: total === 1 ? 'item no relatório' : 'itens no relatório', color: SERIES[0] },
+    { label: 'Documentados', value: String(summary.DOCUMENTADO || 0), hint: 'Status documentado', color: C.green },
+    { label: 'A revisar', value: String(summary.REVISAR || 0), hint: 'Status revisar', color: C.amber },
+    { label: 'Pendentes', value: String(summary.PENDENTE || 0), hint: 'Status pendente', color: C.red },
+  ], { x: left, width }) + 14;
+  doc.x = left;
 
   // ── Blocos ──────────────────────────────────────────────────────
   function statusPill(status, label, x, y) {
@@ -272,18 +259,7 @@ export async function generateModuleDocsConsartPdf({
   });
 
   // ── Rodapé em todas as páginas ──────────────────────────────────
-  const range = doc.bufferedPageRange();
-  for (let i = range.start; i < range.start + range.count; i += 1) {
-    doc.switchToPage(i);
-    const fy = doc.page.height - 50;
-    doc.page.margins.bottom = 0; // escrever no rodapé sem abrir página nova
-    doc.moveTo(left, fy - 4).lineTo(right, fy - 4).lineWidth(0.6).strokeColor(LINE).stroke();
-    doc.font('Helvetica').fontSize(7.5).fillColor('#64748b');
-    doc.text('Documentação dos Módulos · Consart ERP', left, fy, { width: width / 2, lineBreak: false });
-    doc.text(`Página ${i - range.start + 1} de ${range.count}`, left + width / 2, fy, {
-      width: width / 2, align: 'right', lineBreak: false,
-    });
-  }
+  drawFooters(doc, { title: REPORT_TITLE, generatedAt: nowBR() });
 
   doc.end();
   return done;
