@@ -4,7 +4,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import { ensureTable } from './productsLocationsSchema.repository.js';
-import { list, listByProductCode, getById } from './productsLocationsQuery.repository.js';
+import { list, listByProductCode, getById, listFilterValues } from './productsLocationsQuery.repository.js';
 import { create } from './productsLocationsCreate.repository.js';
 import { update, deactivate, setPrimary } from './productsLocationsUpdate.repository.js';
 import { remove } from './productsLocationsRemove.repository.js';
@@ -16,6 +16,7 @@ import {
 export {
   ensureTable,
   list,
+  listFilterValues,
   listByProductCode,
   getById,
   create,
@@ -30,6 +31,7 @@ export {
 export default {
   ensureTable,
   list,
+  listFilterValues,
   listByProductCode,
   getById,
   create,
