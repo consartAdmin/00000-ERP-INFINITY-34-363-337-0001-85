@@ -328,10 +328,10 @@ export function autoCompactHeader(doc, opts = {}) {
 
 /**
  * Rodapé em todas as páginas. Chame no fim, antes de doc.end().
- * opts: { title, brand, generatedAt, extra }
+ * opts: { title, brand, generatedAt, extra, center } — center substitui o "Gerado em" do meio
  */
 export function drawFooters(doc, opts = {}) {
-    const { title = '', brand = BRAND, generatedAt = nowBR(), extra = '' } = typeof opts === 'string' ? { generatedAt: opts } : opts;
+    const { title = '', brand = BRAND, generatedAt = nowBR(), extra = '', center } = typeof opts === 'string' ? { generatedAt: opts } : opts;
     const range = doc.bufferedPageRange();
 
     for (let i = range.start; i < range.start + range.count; i += 1) {
@@ -350,7 +350,7 @@ export function drawFooters(doc, opts = {}) {
         const left = [brand, title, extra].filter(Boolean).join('  ·  ');
         doc.font('Helvetica').fontSize(7.5).fillColor(C.muted);
         doc.text(fit(doc, left, W / 2 - 120 - PAGE.margin), PAGE.margin, y, { lineBreak: false });
-        doc.text(`Gerado em ${generatedAt}`, W / 2 - 100, y, { width: 200, align: 'center', lineBreak: false });
+        doc.text(center ?? `Gerado em ${generatedAt}`, W / 2 - 100, y, { width: 200, align: 'center', lineBreak: false });
         doc.text(`Página ${i + 1 - range.start} de ${range.count}`, W - PAGE.margin - 120, y, { width: 120, align: 'right', lineBreak: false });
 
         doc.page.margins.bottom = oldBottom;
