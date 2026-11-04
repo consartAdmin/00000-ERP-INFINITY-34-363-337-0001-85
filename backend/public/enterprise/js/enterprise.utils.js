@@ -5,6 +5,8 @@
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
 export function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -76,11 +78,20 @@ export function getApiEntity(result) {
   return result?.data ?? result?.enterprise ?? result ?? null;
 }
 
-export function showMessage(message, type = 'info') {
-  if (typeof window.showToast === 'function') {
-    window.showToast(message, type);
-    return;
-  }
+const MESSAGE_TITLES = Object.freeze({
+  success: 'Sucesso',
+  error: 'Erro',
+  warning: 'Atenção',
+  info: 'Aviso',
+});
 
-  window.alert(message);
+// Avisos da tela de Empresas no modal central padrão do ERP (centerAlertModal).
+export function showMessage(message, type = 'info') {
+  const variant = MESSAGE_TITLES[type] ? type : 'info';
+
+  return showCenterModal({
+    variant,
+    title: MESSAGE_TITLES[variant],
+    message: String(message ?? ''),
+  });
 }
