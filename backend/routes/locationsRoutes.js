@@ -16,18 +16,26 @@ import {
   // Corridors
   listCorridors,
   createCorridor,
+  updateCorridor,
+  deleteCorridor,
 
   // Shelves
   listShelves,
   createShelf,
+  updateShelf,
+  deleteShelf,
 
   // Bins
   listBins,
   createBin,
+  updateBin,
+  deleteBin,
 
   // Positions
   listPositions,
   createPosition,
+  updatePosition,
+  deletePosition,
 
   // Location Map
   listLocationMap,
@@ -58,6 +66,8 @@ router.delete('/locals/:id', deleteLocal);
 
 router.get('/corridors', listCorridors);
 router.post('/corridors', createCorridor);
+router.put('/corridors/:id', updateCorridor);
+router.delete('/corridors/:id', deleteCorridor);
 
 /* --------------------------------------------------------------------- */
 /* 3) Shelves                                                            */
@@ -65,6 +75,8 @@ router.post('/corridors', createCorridor);
 
 router.get('/shelves', listShelves);
 router.post('/shelves', createShelf);
+router.put('/shelves/:id', updateShelf);
+router.delete('/shelves/:id', deleteShelf);
 
 /* --------------------------------------------------------------------- */
 /* 4) Bins                                                               */
@@ -72,6 +84,8 @@ router.post('/shelves', createShelf);
 
 router.get('/bins', listBins);
 router.post('/bins', createBin);
+router.put('/bins/:id', updateBin);
+router.delete('/bins/:id', deleteBin);
 
 /* --------------------------------------------------------------------- */
 /* 5) Positions                                                          */
@@ -79,6 +93,8 @@ router.post('/bins', createBin);
 
 router.get('/positions', listPositions);
 router.post('/positions', createPosition);
+router.put('/positions/:id', updatePosition);
+router.delete('/positions/:id', deletePosition);
 
 /* --------------------------------------------------------------------- */
 /* 5.1) Location Map — estrutura completa do estoque                      */
