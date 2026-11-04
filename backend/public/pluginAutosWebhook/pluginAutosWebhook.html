@@ -26,15 +26,6 @@
 <body class="consart-theme c-page page-products">
 
       <!-- 🔹 Barra de título (topGradientBar) – markup fixo -->
-  <header class="top-gradient-bar">
-    <div class="top-gradient-bar__inner">
-      <div class="top-gradient-bar__titles">
-        <h1 class="top-gradient-bar__title">Comissões de Vendas</h1>
-        <p class="top-gradient-bar__subtitle">
-        </p>
-      </div>
-    </div>
-  </header>
 
     <!-- Conteúdo principal -->
     <main class="page-webhook-autos__content">
@@ -179,14 +170,7 @@
     </main>
   </div>      <!-- 🔹 Top gradient bar: apenas atualiza o texto se precisar -->
 
-<script type="module">
-import { initTopGradientBar } from '/public/includes/js/topGradientBar.js';
-
-initTopGradientBar({
-  title: 'WebHook PlugNotas',
-  subtitle: 'Gestão de Documentos Fiscais Via integração PlugNtoas (TecnoSpeed).',
-});
-</script>
+<!-- Barra de título: automática (topGradientBar.js via core.js, título + breadcrumb do menu) -->
 
   <!-- 🔹 Primeiro: base de API global (cria window.getApiBase) -->
   <script src="/backend/config/apiBase.js"></script>
