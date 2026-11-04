@@ -10,6 +10,8 @@
 
 'use strict';
 
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
 const PAGE_SIZE = 50;
 
 function htmlEscape(value) {
@@ -303,12 +305,17 @@ export function initImportFromDfe({ core, ROUTES, state, refs }) {
 
     if (!id || !row) return;
 
-    const confirmed = window.confirm(
-      'Enviar à SEFAZ a "Ciência da Operação" desta NF-e?\n\n'
-      + 'Ela apenas registra que a empresa tomou conhecimento da nota e libera o XML completo. '
-      + 'Não confirma nem recusa a operação.'
-    );
-    if (!confirmed) return;
+    const confirmed = await showCenterModal({
+      variant: 'info',
+      title: 'Manifestar ciência da NF-e',
+      message: 'Enviar à SEFAZ a <strong>"Ciência da Operação"</strong> desta NF-e?<br><br>'
+        + 'Ela apenas registra que a empresa tomou conhecimento da nota e libera o XML completo. '
+        + 'Não confirma nem recusa a operação.',
+      okText: 'Enviar à SEFAZ',
+      closeText: 'Cancelar',
+      timeoutMs: null, // confirmação não pode sumir sozinha
+    });
+    if (confirmed !== true) return;
 
     const release = setBusy(rowEl.querySelector('[data-dfe-manifest]'), 'Enviando…');
 
