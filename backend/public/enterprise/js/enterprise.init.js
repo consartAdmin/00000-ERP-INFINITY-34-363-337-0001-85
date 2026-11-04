@@ -16,6 +16,7 @@ import { SELECTORS } from './enterprise.config.js';
 import { bindEnterpriseFormMasks, getEnterpriseFormElement } from './enterprise.form.js';
 import { setupEnterpriseModal } from './enterprise.modal.js';
 import { $ } from './enterprise.utils.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 function bindListEvents() {
   $(SELECTORS.btnSearch)?.addEventListener('click', loadEnterprises);
@@ -54,7 +55,14 @@ function bindFormEvents() {
   });
 
   $(SELECTORS.btnRemoveEnterpriseLogo)?.addEventListener('click', async () => {
-    if (!window.confirm('Deseja remover a logo atual desta empresa?')) return;
+    const confirmed = await showCenterModal({
+      variant: 'warning',
+      title: 'Remover logo',
+      message: 'Deseja remover a logo atual desta empresa?',
+      okText: 'Sim, remover',
+      closeText: 'Cancelar',
+    });
+    if (confirmed !== true) return;
 
     try {
       await removeCurrentEnterpriseLogo();
