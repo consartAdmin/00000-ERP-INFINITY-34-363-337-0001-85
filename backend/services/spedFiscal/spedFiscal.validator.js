@@ -110,6 +110,16 @@ export function validateSpedContext(ctx) {
       });
     }
 
+    if (!String(p.endereco || '').trim()) {
+      pushIssue(issues, {
+        type: 'erro',
+        bloco: '0',
+        registro: '0150',
+        chave_ref: `${p.codigo || ''} ${p.nome || ''}`.trim(),
+        mensagem: 'Participante sem endereço (complete o cadastro do cliente/fornecedor).',
+      });
+    }
+
     if (!p.cnpj && !p.cpf) {
       pushIssue(issues, {
         type: 'alerta',
