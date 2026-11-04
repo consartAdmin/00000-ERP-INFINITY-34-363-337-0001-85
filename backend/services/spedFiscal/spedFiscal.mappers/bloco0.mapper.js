@@ -77,6 +77,11 @@ export function mapBloco0(ctx) {
   for (const product of products) {
     const unit = String(product.unidade || '').trim();
     if (unit) unitsSet.add(unit);
+
+    for (const conversion of Array.isArray(product.conversoes) ? product.conversoes : []) {
+      const convUnit = String(conversion.unidade || '').trim();
+      if (convUnit) unitsSet.add(convUnit);
+    }
   }
 
   for (const document of documents) {
@@ -236,6 +241,17 @@ export function mapBloco0(ctx) {
         onlyDigits(product.cest),
       ),
     );
+
+    for (const conversion of Array.isArray(product.conversoes) ? product.conversoes : []) {
+      lines.push(
+        line(
+          '0220',
+          sanitizeText(conversion.unidade),
+          formatDecimal(conversion.fator || 1, 6),
+          '',
+        ),
+      );
+    }
   }
 
   return lines;

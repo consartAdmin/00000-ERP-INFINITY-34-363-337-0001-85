@@ -20,12 +20,140 @@ function sumBy(list = [], field) {
   return list.reduce((acc, item) => acc + toNumber(item?.[field]), 0);
 }
 
+const SIMPLES_CSOSN = new Set(['101', '102', '103', '201', '202', '203', '300', '400', '500', '900']);
+
 function normalizeFiscalProductCode(value) {
   const code = String(value ?? '').trim();
   if (!/^\d+$/.test(code)) return code;
 
   const significant = code.replace(/^0+/, '') || '0';
   return significant.padStart(6, '0');
+}
+
+/*
+ * Itens como foram emitidos na NF-e: snapshot gravado na tentativa
+ * AUTORIZADA (budgetsNfeAttemptItems / ordersNfeAttemptItems), ligada à
+ * nota por invoice_id. Traz CFOP, CST e ICMS realmente usados na emissão.
+ * NF-e de orçamento não tem order_id, então sem isso ficava sem itens
+ * (C100 sem C190 no PVA).
+ */
+const ATTEMPT_SOURCES = [
+  { attempts: 'public."budgetsNfeAttempts"', items: 'public."budgetsNfeAttemptItems"' },
+  { attempts: 'public."ordersNfeAttempts"', items: 'public."ordersNfeAttemptItems"' },
+];
+
+async function getIssuedAttemptItems(invoiceId) {
+  if (!invoiceId) return [];
+
+  for (const source of ATTEMPT_SOURCES) {
+    try {
+      const { rows } = await pool.query(
+        `
+          WITH attempt AS (
+            SELECT a.attempt_id
+            FROM ${source.attempts} a
+            WHERE a.invoice_id = $1
+              AND (a.nfe_status_id = 3 OR a.authorized_at IS NOT NULL)
+            ORDER BY a.authorized_at DESC NULLS LAST, a.attempt_id DESC
+            LIMIT 1
+          )
+          SELECT
+            ai.item_number,
+            ai.product_code::text AS codigo_produto,
+            COALESCE(ai.description, '') AS descricao,
+            COALESCE(ai.quantity, 0) AS quantidade,
+            COALESCE(NULLIF(ai.commercial_unit, ''), 'UN') AS unidade,
+            COALESCE(ai.gross_total, COALESCE(ai.quantity, 0) * COALESCE(ai.unit_price, 0)) AS valor_item,
+            COALESCE(ai.discount_amount, 0) AS valor_desconto,
+            COALESCE(ai.freight_amount, 0) AS valor_frete,
+            COALESCE(ai.insurance_amount, 0) AS valor_seguro,
+            COALESCE(ai.other_expenses_amount, 0) AS outras_despesas,
+            NULLIF(regexp_replace(COALESCE(ai.icms_cst::text, ''), '\\D+', '', 'g'), '') AS icms_code,
+            COALESCE(NULLIF(regexp_replace(COALESCE(ai.origin_code::text, ''), '\\D+', '', 'g'), ''), '0') AS origin_code,
+            COALESCE(NULLIF(regexp_replace(COALESCE(ai.cfop_used::text, ai.cfop_exit::text, ''), '\\D+', '', 'g'), ''), '') AS cfop,
+            COALESCE(ai.icms_base, 0) AS valor_bc_icms,
+            COALESCE(ai.icms_effective_rate, ai.icms_rate, 0) AS aliq_icms,
+            COALESCE(ai.icms_value, 0) AS valor_icms,
+            COALESCE(ai.icms_st_base, 0) AS valor_bc_icms_st,
+            COALESCE(ai.icms_st_rate, 0) AS aliq_st,
+            COALESCE(ai.icms_st_value, 0) AS valor_icms_st,
+            COALESCE(ai.pis_cst::text, '') AS cst_pis,
+            COALESCE(ai.pis_base, 0) AS valor_bc_pis,
+            COALESCE(ai.pis_effective_rate, ai.pis_rate, 0) AS aliq_pis,
+            COALESCE(ai.pis_value, 0) AS valor_pis,
+            COALESCE(ai.cofins_cst::text, '') AS cst_cofins,
+            COALESCE(ai.cofins_base, 0) AS valor_bc_cofins,
+            COALESCE(ai.cofins_effective_rate, ai.cofins_rate, 0) AS aliq_cofins,
+            COALESCE(ai.cofins_value, 0) AS valor_cofins
+          FROM ${source.items} ai
+          JOIN attempt ON attempt.attempt_id = ai.attempt_id
+          ORDER BY ai.item_number ASC
+        `,
+        [invoiceId],
+      );
+
+      if (!rows.length) continue;
+
+      return rows.map((item) => {
+        const code = String(item.icms_code || '');
+        const isCsosn = SIMPLES_CSOSN.has(code);
+
+        return {
+          codigo_produto: normalizeFiscalProductCode(item.codigo_produto),
+          descricao: item.descricao,
+          quantidade: toNumber(item.quantidade),
+          unidade: item.unidade,
+          valor_item: toNumber(item.valor_item),
+          valor_desconto: toNumber(item.valor_desconto),
+          valor_frete: toNumber(item.valor_frete),
+          valor_seguro: toNumber(item.valor_seguro),
+          outras_despesas: toNumber(item.outras_despesas),
+          movimenta_estoque: '0',
+          cst_icms: isCsosn
+            ? ''
+            : (code.length === 2 ? `${item.origin_code.slice(0, 1)}${code}` : code),
+          csosn: isCsosn ? code : '',
+          cfop: item.cfop,
+          codigo_natureza: '',
+          valor_bc_icms: toNumber(item.valor_bc_icms),
+          aliq_icms: toNumber(item.aliq_icms),
+          valor_icms: toNumber(item.valor_icms),
+          valor_bc_icms_st: toNumber(item.valor_bc_icms_st),
+          aliq_st: toNumber(item.aliq_st),
+          valor_icms_st: toNumber(item.valor_icms_st),
+          apuracao_ipi: '',
+          cst_ipi: '',
+          cod_enq: '',
+          valor_bc_ipi: 0,
+          aliq_ipi: 0,
+          valor_ipi: 0,
+          cst_pis: item.cst_pis,
+          valor_bc_pis: toNumber(item.valor_bc_pis),
+          aliq_pis: toNumber(item.aliq_pis),
+          quant_bc_pis: 0,
+          aliq_pis_reais: 0,
+          valor_pis: toNumber(item.valor_pis),
+          cst_cofins: item.cst_cofins,
+          valor_bc_cofins: toNumber(item.valor_bc_cofins),
+          aliq_cofins: toNumber(item.aliq_cofins),
+          quant_bc_cofins: 0,
+          aliq_cofins_reais: 0,
+          valor_cofins: toNumber(item.valor_cofins),
+          cod_cta: '',
+          valor_reducao_bc: 0,
+        };
+      });
+    } catch (error) {
+      // Tabela/coluna ausente neste banco: tenta a próxima fonte.
+      console.warn('[SPED Fiscal] attempt items lookup failed.', {
+        invoice_id: invoiceId,
+        table: source.items,
+        message: error.message,
+      });
+    }
+  }
+
+  return [];
 }
 
 async function getOutboundItems(orderId) {
@@ -378,7 +506,10 @@ export async function getOutboundDocumentsSource({ period }) {
     const normalized = [];
 
     for (const doc of rows) {
-      const items = await getOutboundItems(doc.order_id);
+      const attemptItems = await getIssuedAttemptItems(doc.id);
+      const items = attemptItems.length
+        ? attemptItems
+        : await getOutboundItems(doc.order_id);
       const itemTotal = sumBy(items, 'valor_item');
       const itemDiscount = sumBy(items, 'valor_desconto');
       const itemIcmsBase = sumBy(items, 'valor_bc_icms');
@@ -393,9 +524,9 @@ export async function getOutboundDocumentsSource({ period }) {
         ...doc,
         valor_total: toNumber(doc.valor_total),
         valor_mercadorias: itemTotal || toNumber(doc.valor_total),
-        valor_frete: 0,
-        valor_seguro: 0,
-        outras_despesas: 0,
+        valor_frete: sumBy(items, 'valor_frete'),
+        valor_seguro: sumBy(items, 'valor_seguro'),
+        outras_despesas: sumBy(items, 'outras_despesas'),
         valor_desconto: itemDiscount,
         valor_bc_icms: itemIcmsBase,
         valor_icms: itemIcms,
@@ -413,6 +544,7 @@ export async function getOutboundDocumentsSource({ period }) {
       document_count: normalized.length,
       item_count: normalized.reduce((acc, doc) => acc + doc.items.length, 0),
       documents_without_order: normalized.filter(doc => !doc.order_id).length,
+      documents_without_items: normalized.filter(doc => !doc.items.length).length,
       documents_without_participant: normalized.filter(
         doc => !doc.participante_codigo,
       ).length,

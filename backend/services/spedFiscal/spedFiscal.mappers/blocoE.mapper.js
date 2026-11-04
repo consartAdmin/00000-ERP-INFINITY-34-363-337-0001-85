@@ -70,11 +70,21 @@ export function mapBlocoE(ctx) {
     )))
   ));
 
+  /*
+   * E210/VL_OUT_CRED_ST: só entra o ICMS-ST de devoluções/retornos
+   * (CFOP 1/2.410, 411, 414, 415, 660, 661, 662) + ajustes E220. O ST retido
+   * pelo fornecedor nas compras para revenda não é crédito — o PVA recusa.
+   */
+  const ST_CREDIT_CFOP_SUFFIXES = new Set(['410', '411', '414', '415', '660', '661', '662']);
+
   const inboundIcmsStCredit = documents
     .filter(document => String(document.ind_oper ?? '') === '0')
-    .reduce((total, document) => (
-      total + toNumber(document.valor_icms_st)
-    ), 0);
+    .flatMap(document => (Array.isArray(document.items) ? document.items : []))
+    .filter(item => {
+      const cfop = String(item.cfop || '');
+      return /^[12]/.test(cfop) && ST_CREDIT_CFOP_SUFFIXES.has(cfop.slice(1));
+    })
+    .reduce((total, item) => total + toNumber(item.valor_icms_st), 0);
 
   if (hasIcmsStMovement) {
     lines.push(line(

@@ -28,14 +28,45 @@ function normalizeFiscalProductCode(value) {
   return significant.padStart(6, '0');
 }
 
+/*
+ * CFOP de saída do fornecedor (5/6/7xxx) → CFOP de entrada (1/2/3xxx).
+ * Alguns códigos não têm "espelho" direto na tabela de CFOP e o PVA recusa
+ * (ex.: 5405 → 1405 não existe). Esses são trocados pelo equivalente de entrada.
+ */
+const INBOUND_CFOP_EQUIVALENT = Object.freeze({
+  // Venda de mercadoria com ST (substituído) → compra p/ comercialização com ST.
+  '405': '403',
+  '404': '403',
+  // Lançamento de cupom fiscal / outras saídas sem espelho → outras entradas.
+  '929': '949',
+  // Remessa/venda de combustível com ST sem espelho → compra de combustível p/ comercialização.
+  '656': '652',
+  '667': '652',
+});
+
 function normalizeInboundCfop(value) {
   const cfop = String(value ?? '').replace(/\D+/g, '');
   if (!/^\d{4}$/.test(cfop)) return cfop;
 
   const firstDigitMap = { 5: '1', 6: '2', 7: '3' };
-  return firstDigitMap[cfop[0]]
-    ? `${firstDigitMap[cfop[0]]}${cfop.slice(1)}`
-    : cfop;
+  if (!firstDigitMap[cfop[0]]) return cfop;
+
+  const suffix = cfop.slice(1);
+  return `${firstDigitMap[cfop[0]]}${INBOUND_CFOP_EQUIVALENT[suffix] || suffix}`;
+}
+
+/*
+ * CST do IPI no XML é o do fornecedor (saída: 50–99). Na entrada o PVA exige
+ * a tabela de entrada (00–49): 50→00, 51→01 ... 55→05 e 99→49.
+ */
+function normalizeInboundIpiCst(value) {
+  const cst = String(value ?? '').replace(/\D+/g, '');
+  if (!cst) return '';
+
+  const n = Number(cst);
+  if (n < 50) return cst.padStart(2, '0');
+  if (n >= 50 && n <= 55) return String(n - 50).padStart(2, '0');
+  return '49';
 }
 
 async function getInboundItems(inboundId) {
@@ -124,6 +155,7 @@ async function getInboundItems(inboundId) {
           ) AS descricao,
           COALESCE(item_fiscal.quantity, 0) AS quantidade,
           COALESCE(NULLIF(item_fiscal.unit, ''), 'UN') AS unidade,
+          COALESCE(item_fiscal.conversion_factor, 1) AS fator_conversao,
 
           -- VL_ITEM = valor bruto do item (qtd x unitário), como no XML (vProd).
           COALESCE(item_fiscal.gross_total, item_fiscal.total_price, 0) AS valor_item,
@@ -232,6 +264,8 @@ async function getInboundItems(inboundId) {
       ...item,
       codigo_produto: normalizeFiscalProductCode(item.codigo_produto),
       cfop: normalizeInboundCfop(item.cfop),
+      cst_ipi: normalizeInboundIpiCst(item.cst_ipi),
+      fator_conversao: toNumber(item.fator_conversao, 1) || 1,
       quantidade: toNumber(item.quantidade),
       valor_item: toNumber(item.valor_item),
       valor_desconto: toNumber(item.valor_desconto),
@@ -259,7 +293,13 @@ async function getInboundItems(inboundId) {
       aliq_cofins: toNumber(item.aliq_cofins),
       valor_cofins: toNumber(item.valor_cofins),
 
-      valor_reducao_bc: toNumber(item.valor_reducao_bc),
+      // CST x20/x70 (base reduzida): VL_RED_BC = parte da operação fora da base.
+      valor_reducao_bc: /^(\d)?(20|70)$/.test(String(item.cst_icms || ''))
+        ? Math.max(
+          toNumber(item.valor_item) - toNumber(item.valor_desconto) - toNumber(item.valor_bc_icms),
+          0,
+        )
+        : toNumber(item.valor_reducao_bc),
     }));
   } catch (error) {
     console.error('[SPED Fiscal] getInboundItems V2 error.', {
