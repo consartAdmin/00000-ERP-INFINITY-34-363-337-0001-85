@@ -195,6 +195,11 @@
             </div>
 
             <div class="btn-inline btn-position-right">
+              <button type="button" id="btnBatchEdit" class="btn btn-toolbar btn-sm" disabled
+                title="Editar os títulos marcados na tabela">
+                ✏️ Editar em lote (0)
+              </button>
+
               <button type="button" id="btnNew" class="btn btn-new btn-sm">
                 Nova Conta a Receber
               </button>
@@ -222,6 +227,7 @@
             conteúdo filtrado. A ordem dos <col> segue a ordem das colunas.
           -->
           <colgroup>
+            <col class="table-col-select">  <!-- Seleção:      42px  -->
             <col class="table-col-w-2">  <!-- ID:           70px  -->
             <col class="table-col-w-4">  <!-- Cliente (ID): 110px -->
             <col class="table-col-w-8">  <!-- Cliente:      220px -->
@@ -239,6 +245,11 @@
 
           <thead>
             <tr>
+              <th class="table-col-select" scope="col">
+                <input type="checkbox" id="arSelectAll" title="Marcar todos desta página"
+                  aria-label="Marcar todos desta página">
+              </th>
+
               <th class="col-id table-sortable" data-sort-column="id" aria-sort="ascending">
                 <button type="button" class="table-sort-button" data-sort-button title="Ordenar por ID">
                   ID
@@ -848,6 +859,92 @@
         <div class="modal__footer">
           <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
           <button type="submit" form="arCustomerLinkForm" class="btn btn-save btn-sm">🔗 Salvar vínculo</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal Editar em lote (títulos marcados na tabela) -->
+  <div id="arBatchEditModal" class="modal ar-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true" aria-labelledby="arBatchEditTitle">
+
+        <!-- div (e não <header>): a barra de título global (topGradientBar) se ancora no 1º <header> da página -->
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="arBatchEditTitle" class="modal__title">✏️ Editar em lote</h2>
+            <p class="ar-modal__subtitle" id="arBatchEditSubtitle">Só os campos preenchidos serão alterados.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="arBatchEditForm" class="ar-form" autocomplete="off">
+            <div class="ar-grid ar-grid--two">
+              <div class="ar-section">
+                <div class="ar-section__title">📅 Vencimento e conta</div>
+                <div class="ar-section__grid">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arBatchDueDate">Novo Vencimento</label>
+                    <input type="date" id="arBatchDueDate">
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arBatchBankAccountId">Conta Caixa</label>
+                    <select id="arBatchBankAccountId">
+                      <option value="">— Manter —</option>
+                    </select>
+                  </div>
+                </div>
+                <small class="ar-help">
+                  Títulos com boleto no Asaas têm o vencimento alterado lá também (o valor continua o mesmo).
+                  Títulos recebidos ou cancelados mantêm o vencimento.
+                </small>
+              </div>
+
+              <div class="ar-section">
+                <div class="ar-section__title">🏷️ Classificação</div>
+                <div class="ar-section__grid">
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="arBatchDocumentTypeId">Tipo de Documento</label>
+                    <select id="arBatchDocumentTypeId">
+                      <option value="">— Manter —</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arBatchCategoryId">Categoria</label>
+                    <select id="arBatchCategoryId">
+                      <option value="">— Manter —</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="arBatchSubcategoryId">Subcategoria</label>
+                    <select id="arBatchSubcategoryId">
+                      <option value="">— Manter —</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3 ar-span-full">
+                    <label for="arBatchChartAccountSearch">Plano de Contas</label>
+                    <input type="hidden" id="arBatchChartAccountId">
+                    <input type="text" id="arBatchChartAccountSearch" placeholder="— Manter — (clique para localizar)"
+                      readonly role="button" aria-haspopup="dialog">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="submit" form="arBatchEditForm" id="btnConfirmBatchEdit" class="btn btn-save btn-sm">
+            ✏️ Aplicar aos selecionados
+          </button>
         </div>
       </section>
     </div>

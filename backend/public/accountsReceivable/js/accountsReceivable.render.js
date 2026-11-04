@@ -107,7 +107,7 @@ export function renderTable(items, handlers) {
     const row = tbody.insertRow();
     const cell = row.insertCell();
 
-    cell.colSpan = 13;
+    cell.colSpan = 14;
     cell.textContent =
       'Nenhum registro encontrado para o filtro atual.';
 
@@ -167,7 +167,20 @@ export function renderTable(items, handlers) {
       row.dataset.boletoUrl = boletoLink;
     }
 
+    const selected = state.selectedIds.has(Number(id));
+    row.classList.toggle('is-selected', selected);
+
     row.innerHTML = `
+      <td class="table-cell-select">
+        <input
+          type="checkbox"
+          class="ar-row-checkbox"
+          data-id="${id}"
+          aria-label="Selecionar título ${id}"
+          ${selected ? 'checked' : ''}
+        >
+      </td>
+
       <td>
         ${item.account_id ?? item.id ?? ''}
       </td>

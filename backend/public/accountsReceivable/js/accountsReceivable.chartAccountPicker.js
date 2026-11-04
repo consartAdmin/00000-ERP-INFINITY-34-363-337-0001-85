@@ -16,6 +16,10 @@ const PICKERS = {
     id: '#arLinkChartAccountId',
     search: '#arLinkChartAccountSearch',
   },
+  batch: {
+    id: '#arBatchChartAccountId',
+    search: '#arBatchChartAccountSearch',
+  },
 };
 
 function labelFrom(code, description) {

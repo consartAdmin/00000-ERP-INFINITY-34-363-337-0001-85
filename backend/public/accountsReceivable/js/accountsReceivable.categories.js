@@ -23,6 +23,11 @@ const SELECT_PAIRS = [
     subcategory: '#arLinkSubcategoryId',
     placeholder: '— Nenhuma —',
   },
+  {
+    category: '#arBatchCategoryId',
+    subcategory: '#arBatchSubcategoryId',
+    placeholder: '— Manter —',
+  },
 ];
 
 let categories = [];

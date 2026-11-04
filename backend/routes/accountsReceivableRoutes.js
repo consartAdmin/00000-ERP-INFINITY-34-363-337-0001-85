@@ -37,6 +37,7 @@ router.get('/chart-of-accounts', ctrl.chartOfAccounts);
 router.get('/export/pdf', ctrl.exportPdf);
 router.get('/export/excel', ctrl.exportExcel);
 router.post('/sync-asaas', ctrl.syncAsaasHandler);
+router.post('/batch-update', ctrl.batchUpdate);
 
 /* ------------------------------------------------------------------
    BOLETO

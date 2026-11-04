@@ -6,6 +6,7 @@ import { $ } from './accountsReceivable.utils.js';
 const SELECTS = [
   { selector: '#arDocumentTypeId', placeholder: 'Selecione...' },
   { selector: '#receive_document_type_id', placeholder: '(opcional)' },
+  { selector: '#arBatchDocumentTypeId', placeholder: '— Manter —' },
 ];
 
 function rowsFrom(response) {

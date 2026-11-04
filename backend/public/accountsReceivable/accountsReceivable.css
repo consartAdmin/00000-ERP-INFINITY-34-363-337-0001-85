@@ -244,3 +244,14 @@ a.ar-files__name:hover {
     grid-column: auto;
   }
 }
+
+/* Editar em lote: duas seções lado a lado (vira uma coluna no celular) */
+.ar-grid.ar-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .ar-grid.ar-grid--two {
+    grid-template-columns: 1fr;
+  }
+}

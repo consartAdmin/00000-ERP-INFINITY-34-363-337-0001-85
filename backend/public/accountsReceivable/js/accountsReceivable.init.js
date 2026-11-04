@@ -15,6 +15,7 @@ import { bindForm } from './accountsReceivable.form.js';
 import { bindReceiveModal } from './accountsReceivable.modal.js';
 import { bindAttachments } from './accountsReceivable.attachments.js';
 import { bindCustomerLink } from './accountsReceivable.customerLink.js';
+import { bindBatchEdit } from './accountsReceivable.batchEdit.js';
 import { $ } from './accountsReceivable.utils.js';
 import { openCustomersModalSearch } from '/public/modalsSearch/customersModalSearch.js';
 import { Modal } from './modal.js';
@@ -93,6 +94,7 @@ async function initializeAccountsReceivable() {
   bindCustomerLink();
   bindForm(loadAccounts);
   bindReceiveModal(loadAccounts);
+  bindBatchEdit(() => loadAccounts());
   bindFilters();
 
   $('#btnSyncAsaas')?.addEventListener(
