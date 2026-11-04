@@ -400,6 +400,82 @@ export async function createPosition(req, res) {
 }
 
 /* --------------------------------------------------------------------- */
+/* 5.0) UPDATE / DELETE — corredores, prateleiras, bandejas e posições   */
+/* --------------------------------------------------------------------- */
+// Os repositórios já tinham update/delete; só faltavam as rotas. A tela de
+// Localizações edita, inativa e exclui qualquer nível.
+
+const LEVEL_OPS = {
+  corridors: { update: 'updateCorridor', remove: 'deleteCorridor', label: 'Corredor' },
+  shelves: { update: 'updateShelf', remove: 'deleteShelf', label: 'Prateleira' },
+  bins: { update: 'updateBin', remove: 'deleteBin', label: 'Bandeja' },
+  positions: { update: 'updatePosition', remove: 'deletePosition', label: 'Posição' },
+};
+
+function buildLevelPatch(body = {}) {
+  // whitelist: buildUpdateSet usa as chaves como nome de coluna
+  const patch = {};
+  if (body.name !== undefined) {
+    const name = String(body.name ?? '').trim();
+    if (!name) return { error: 'Nome é obrigatório.' };
+    patch.name = name;
+  }
+  if (body.description !== undefined) patch.description = toTrimOrNull(body.description);
+  if (body.active !== undefined) patch.active = toBool(body.active, true);
+  if (!Object.keys(patch).length) return { error: 'Nada para atualizar.' };
+  return { patch };
+}
+
+function makeUpdateLevel(level) {
+  const ops = LEVEL_OPS[level];
+  const origin = `update:${level}`;
+  return async function updateLevel(req, res) {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ error: 'ID inválido', origin });
+      }
+      const { patch, error } = buildLevelPatch(req.body || {});
+      if (error) return res.status(400).json({ error, origin });
+
+      const updated = await locationsApi[ops.update](pool, id, patch);
+      if (!updated) {
+        return res.status(404).json({ error: `${ops.label} não encontrado(a)`, origin });
+      }
+      return res.json(updated);
+    } catch (err) {
+      return handleDbError(res, err, origin);
+    }
+  };
+}
+
+function makeDeleteLevel(level) {
+  const ops = LEVEL_OPS[level];
+  const origin = `delete:${level}`;
+  return async function deleteLevel(req, res) {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ error: 'ID inválido', origin });
+      }
+      await locationsApi[ops.remove](pool, id);
+      return res.status(204).send();
+    } catch (err) {
+      return handleDbError(res, err, origin);
+    }
+  };
+}
+
+export const updateCorridor = makeUpdateLevel('corridors');
+export const deleteCorridor = makeDeleteLevel('corridors');
+export const updateShelf = makeUpdateLevel('shelves');
+export const deleteShelf = makeDeleteLevel('shelves');
+export const updateBin = makeUpdateLevel('bins');
+export const deleteBin = makeDeleteLevel('bins');
+export const updatePosition = makeUpdateLevel('positions');
+export const deletePosition = makeDeleteLevel('positions');
+
+/* --------------------------------------------------------------------- */
 /* 5.1) LOCATION MAP — full warehouse structure                           */
 /* --------------------------------------------------------------------- */
 

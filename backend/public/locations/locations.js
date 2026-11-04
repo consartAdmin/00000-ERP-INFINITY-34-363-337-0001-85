@@ -1,765 +1,624 @@
 // ╔═══════════════════════════════════════════════════════════════════════════╗
-// ║ locations.js — Warehouse Locations | CONSART ERP (Frontend ESM)           ║
+// ║ locations.js — Localizações (endereçamento do estoque) | CONSART ERP      ║
 // ║ Path: backend/public/locations/locations.js                               ║
-// ║ API base: /api/locations                                                  ║
-// ║ - Hierarquia: locals/corridors/shelves/bins/positions                      ║
-// ║ - Produto→Localização: product-locations (localizationProducts)            ║
-// ║ Opcional: integra com /public/modalsSearch/productsModalSearch.js (F2)     ║
+// ║ API base: /api/locations (locals/corridors/shelves/bins/positions)        ║
+// ║ - Carrega os 5 níveis de uma vez e navega em colunas (sem recarregar).    ║
+// ║ - ＋ na coluna cria dentro do item selecionado na coluna anterior.        ║
+// ║ - Editar / inativar / excluir por linha; modal único (modal.js).          ║
 // ╚═══════════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
+import { Modal } from '/public/includes/js/modal.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
 const API_BASE = '/api/locations';
 
 /* -------------------------------------------------------------------------- */
-/* DOM                                                                         */
+/* 1. Níveis                                                                   */
+/* -------------------------------------------------------------------------- */
+
+const LEVELS = [
+  { key: 'locals', title: 'Locais', one: 'Local', novo: 'Novo', icon: '🏢', parentKey: null, placeholder: 'Ex.: GALPÃO, LOJA' },
+  { key: 'corridors', title: 'Corredores', one: 'Corredor', novo: 'Novo', icon: '🚪', parentKey: 'local_id', placeholder: 'Ex.: A, CORREDOR 1' },
+  { key: 'shelves', title: 'Prateleiras', one: 'Prateleira', novo: 'Nova', icon: '🗄️', parentKey: 'corridor_id', placeholder: 'Ex.: 01, PRAT-01' },
+  { key: 'bins', title: 'Bandejas', one: 'Bandeja', novo: 'Nova', icon: '📥', parentKey: 'shelf_id', placeholder: 'Ex.: 1, BIN-02' },
+  { key: 'positions', title: 'Posições', one: 'Posição', novo: 'Nova', icon: '📌', parentKey: 'bin_id', placeholder: 'Ex.: P01' },
+];
+
+const state = {
+  rows: { locals: [], corridors: [], shelves: [], bins: [], positions: [] },
+  selected: [null, null, null, null, null], // id selecionado por nível
+  filters: ['', '', '', '', ''],
+  showInactive: false,
+  modal: null, // { mode: 'new'|'edit', level, parentId, id }
+};
+
+/* -------------------------------------------------------------------------- */
+/* 2. Helpers                                                                  */
 /* -------------------------------------------------------------------------- */
 
 const $ = (sel) => document.querySelector(sel);
 
-const btnReloadAll = $('#btnReloadAll');
-const chkOnlyActive = $('#chkOnlyActive');
-
-const tabs = Array.from(document.querySelectorAll('.loc-tab'));
-const panels = Array.from(document.querySelectorAll('.loc-tabpanel'));
-
-const selLocal = $('#selLocal');
-const selCorridor = $('#selCorridor');
-const selShelf = $('#selShelf');
-const selBin = $('#selBin');
-const selPosition = $('#selPosition');
-
-const selEntity = $('#selEntity');
-const txtName = $('#txtName');
-const txtDesc = $('#txtDesc');
-const chkActive = $('#chkActive');
-const btnCreate = $('#btnCreate');
-
-const tbLocals = $('#tbLocals');
-const tbCorridors = $('#tbCorridors');
-const tbShelves = $('#tbShelves');
-const tbBins = $('#tbBins');
-const tbPositions = $('#tbPositions');
-
-/* Product locations */
-const txtProductCode = $('#txtProductCode');
-const btnPickProduct = $('#btnPickProduct');
-
-const plLocalId = $('#plLocalId');
-const plCorridorId = $('#plCorridorId');
-const plShelfId = $('#plShelfId');
-const plBinId = $('#plBinId');
-const plPositionId = $('#plPositionId');
-
-const plLocal = $('#plLocal');
-const plCorridor = $('#plCorridor');
-const plShelf = $('#plShelf');
-const plBin = $('#plBin');
-const plPosition = $('#plPosition');
-
-const plNotes = $('#plNotes');
-const btnCreatePL = $('#btnCreatePL');
-const btnClearPL = $('#btnClearPL');
-
-const txtPLSearch = $('#txtPLSearch');
-const btnSearchPL = $('#btnSearchPL');
-const btnReloadPL = $('#btnReloadPL');
-const tbProductLocations = $('#tbProductLocations');
-
-/* -------------------------------------------------------------------------- */
-/* Optional UI helpers (center modal/alert)                                    */
-/* -------------------------------------------------------------------------- */
-
-let centerAlertModal = null;
-
-async function lazyLoadCenterAlert() {
-  if (centerAlertModal) return centerAlertModal;
-  try {
-    const mod = await import('/public/includes/js/centerAlertModal.js');
-    if (typeof mod.centerAlertModal === 'function') centerAlertModal = mod.centerAlertModal;
-  } catch (_) {
-    // ignore
-  }
-  return centerAlertModal;
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
-async function uiAlert(title, message) {
-  const fn = await lazyLoadCenterAlert();
-  if (fn) return fn({ title, message });
-  alert(`${title}\n\n${message}`);
+function norm(s) {
+  return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
-/* -------------------------------------------------------------------------- */
-/* Fetch wrapper                                                               */
-/* -------------------------------------------------------------------------- */
+const collator = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
 
 async function apiFetch(path, opts = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
     ...opts,
   });
-
-  const contentType = res.headers.get('content-type') || '';
-  const isJson = contentType.includes('application/json');
+  const isJson = (res.headers.get('content-type') || '').includes('application/json');
   const data = isJson ? await res.json().catch(() => null) : null;
-
   if (!res.ok) {
     const msg = data?.error || data?.message || `HTTP ${res.status}`;
-    const detail = data?.detail ? `\n${data.detail}` : '';
+    const detail = data?.detail ? ` — ${data.detail}` : '';
     throw new Error(`${msg}${detail}`);
   }
   return data;
 }
 
-function boolToPill(active) {
-  const on = !!active;
-  return `<span class="loc-pill ${on ? 'is-on' : 'is-off'}">${on ? 'SIM' : 'NÃO'}</span>`;
+function alertError(title, err) {
+  return showCenterModal({ variant: 'error', title, message: esc(err?.message || err) });
 }
 
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+function confirmDanger(title, message, label) {
+  return showCenterModal({
+    variant: 'warning',
+    title,
+    message,
+    buttons: [
+      { label: 'Cancelar', variant: 'cancel', action: () => false },
+      { label, variant: 'danger', action: () => true },
+    ],
+  }).then((r) => r === true);
 }
 
-/* -------------------------------------------------------------------------- */
-/* Tabs                                                                        */
-/* -------------------------------------------------------------------------- */
-
-function setActiveTab(tabId) {
-  tabs.forEach((b) => b.classList.toggle('is-active', b.dataset.tab === tabId));
-  panels.forEach((p) => p.classList.toggle('is-active', p.id === tabId));
+function findRow(levelIdx, id) {
+  if (id == null) return null;
+  return state.rows[LEVELS[levelIdx].key].find((r) => Number(r.id) === Number(id)) || null;
 }
 
-tabs.forEach((btn) => {
-  btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
-});
-
-/* -------------------------------------------------------------------------- */
-/* Data caches                                                                 */
-/* -------------------------------------------------------------------------- */
-
-const state = {
-  locals: [],
-  corridors: [],
-  shelves: [],
-  bins: [],
-  positions: [],
-};
-
-/* -------------------------------------------------------------------------- */
-/* Loaders                                                                     */
-/* -------------------------------------------------------------------------- */
-
-function activeOnlyParam() {
-  return chkOnlyActive.checked ? 'true' : 'false';
+/** filhos de um item (nível levelIdx+1 cujo parentKey = id) */
+function childrenOf(levelIdx, id) {
+  const next = LEVELS[levelIdx + 1];
+  if (!next) return [];
+  return state.rows[next.key].filter((r) => Number(r[next.parentKey]) === Number(id));
 }
 
-async function loadLocals() {
-  state.locals = await apiFetch(`/locals?activeOnly=${activeOnlyParam()}`);
-  renderSelect(selLocal, state.locals, 'Selecione...');
-  renderTable('locals', state.locals, tbLocals);
+/** linhas visíveis da coluna levelIdx (respeita pai selecionado + inativos) */
+function rowsForColumn(levelIdx) {
+  const lvl = LEVELS[levelIdx];
+  let rows = state.rows[lvl.key];
+  if (levelIdx > 0) {
+    const parentId = state.selected[levelIdx - 1];
+    if (parentId == null) return null; // coluna bloqueada
+    rows = rows.filter((r) => Number(r[lvl.parentKey]) === Number(parentId));
+  }
+  if (!state.showInactive) rows = rows.filter((r) => r.active !== false);
+  const f = norm(state.filters[levelIdx]);
+  if (f) rows = rows.filter((r) => norm(r.name).includes(f) || norm(r.description).includes(f));
+  return [...rows].sort((a, b) => collator.compare(a.name ?? '', b.name ?? ''));
 }
 
-async function loadCorridors() {
-  const localId = getSelectedId(selLocal);
-  const q = new URLSearchParams();
-  if (localId) q.set('localId', String(localId));
-  q.set('activeOnly', activeOnlyParam());
-  state.corridors = await apiFetch(`/corridors?${q.toString()}`);
-  renderSelect(selCorridor, state.corridors, 'Selecione...');
-  renderTable('corridors', state.corridors, tbCorridors);
-}
-
-async function loadShelves() {
-  const corridorId = getSelectedId(selCorridor);
-  const q = new URLSearchParams();
-  if (corridorId) q.set('corridorId', String(corridorId));
-  q.set('activeOnly', activeOnlyParam());
-  state.shelves = await apiFetch(`/shelves?${q.toString()}`);
-  renderSelect(selShelf, state.shelves, 'Selecione...');
-  renderTable('shelves', state.shelves, tbShelves);
-}
-
-async function loadBins() {
-  const shelfId = getSelectedId(selShelf);
-  const q = new URLSearchParams();
-  if (shelfId) q.set('shelfId', String(shelfId));
-  q.set('activeOnly', activeOnlyParam());
-  state.bins = await apiFetch(`/bins?${q.toString()}`);
-  renderSelect(selBin, state.bins, 'Selecione...');
-  renderTable('bins', state.bins, tbBins);
-}
-
-async function loadPositions() {
-  const binId = getSelectedId(selBin);
-  const q = new URLSearchParams();
-  if (binId) q.set('binId', String(binId));
-  q.set('activeOnly', activeOnlyParam());
-  state.positions = await apiFetch(`/positions?${q.toString()}`);
-  renderSelect(selPosition, state.positions, 'Selecione...');
-  renderTable('positions', state.positions, tbPositions);
-}
-
-async function reloadAllHierarchy() {
-  await loadLocals();
-  await loadCorridors();
-  await loadShelves();
-  await loadBins();
-  await loadPositions();
+/** caminho (nomes) até o item: [{levelIdx,id,name}] */
+function pathTo(levelIdx, id) {
+  const out = [];
+  let li = levelIdx;
+  let row = findRow(li, id);
+  while (row && li >= 0) {
+    out.unshift({ levelIdx: li, id: row.id, name: row.name });
+    const pk = LEVELS[li].parentKey;
+    li -= 1;
+    row = pk ? findRow(li, row[pk]) : null;
+  }
+  return out;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Select helpers                                                              */
+/* 3. Carga                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function renderSelect(selectEl, rows, placeholder = 'Selecione...') {
-  const current = selectEl.value;
-  selectEl.innerHTML = '';
-  const opt0 = document.createElement('option');
-  opt0.value = '';
-  opt0.textContent = placeholder;
-  selectEl.appendChild(opt0);
+async function loadAll() {
+  // sempre traz ativos e inativos; o filtro "Mostrar inativos" é na tela
+  const results = await Promise.all(
+    LEVELS.map((l) => apiFetch(`/${l.key}?activeOnly=false`).then((r) => (Array.isArray(r) ? r : [])))
+  );
+  LEVELS.forEach((l, i) => { state.rows[l.key] = results[i]; });
 
-  rows.forEach((r) => {
-    const opt = document.createElement('option');
-    opt.value = String(r.id);
-    opt.textContent = `${r.name}`;
-    selectEl.appendChild(opt);
+  // descarta seleção que não existe mais
+  for (let i = 0; i < LEVELS.length; i += 1) {
+    if (state.selected[i] != null && !findRow(i, state.selected[i])) {
+      for (let j = i; j < LEVELS.length; j += 1) state.selected[j] = null;
+      break;
+    }
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. Render                                                                   */
+/* -------------------------------------------------------------------------- */
+
+const columnsEl = $('#locColumns');
+
+function buildColumns() {
+  columnsEl.innerHTML = LEVELS.map((lvl, i) => `
+    <div class="loc-col" data-level="${i}">
+      <div class="loc-col__head">
+        <span class="loc-col__title">${lvl.icon} ${lvl.title} <span class="loc-col__count" data-count></span></span>
+        <button type="button" class="loc-col__add" data-add="${i}" title="${lvl.novo} ${lvl.one.toLowerCase()}">＋</button>
+      </div>
+      <div class="loc-col__filter">
+        <input type="search" data-filter="${i}" placeholder="Filtrar ${lvl.title.toLowerCase()}..." autocomplete="off" />
+      </div>
+      <ul class="loc-col__list" data-list role="listbox" aria-label="${lvl.title}"></ul>
+    </div>
+  `).join('');
+}
+
+function renderColumn(i) {
+  const lvl = LEVELS[i];
+  const col = columnsEl.querySelector(`.loc-col[data-level="${i}"]`);
+  const list = col.querySelector('[data-list]');
+  const countEl = col.querySelector('[data-count]');
+  const addBtn = col.querySelector('[data-add]');
+  const filterEl = col.querySelector('[data-filter]');
+  const rows = rowsForColumn(i);
+
+  const locked = rows === null;
+  col.classList.toggle('is-locked', locked);
+  addBtn.disabled = locked;
+  filterEl.disabled = locked;
+
+  if (locked) {
+    countEl.textContent = '';
+    list.innerHTML = `<li class="loc-col__empty"><span>← Selecione um item em <b>${LEVELS[i - 1].title}</b></span></li>`;
+    return;
+  }
+
+  countEl.textContent = `(${rows.length})`;
+
+  if (!rows.length) {
+    const parent = i > 0 ? findRow(i - 1, state.selected[i - 1]) : null;
+    list.innerHTML = `<li class="loc-col__empty"><span>${state.filters[i] ? 'Nada encontrado no filtro.' : `Nenhum item${parent ? ` em <b>${esc(parent.name)}</b>` : ''}.`}</span>
+      ${state.filters[i] ? '' : `<button type="button" class="btn btn-toolbar btn-sm" data-add="${i}">＋ ${lvl.novo} ${lvl.one.toLowerCase()}</button>`}</li>`;
+    return;
+  }
+
+  const isLast = i === LEVELS.length - 1;
+  list.innerHTML = rows.map((r) => {
+    const kids = isLast ? [] : childrenOf(i, r.id).filter((k) => state.showInactive || k.active !== false);
+    const sel = Number(state.selected[i]) === Number(r.id);
+    const off = r.active === false;
+    return `
+      <li class="loc-item${sel ? ' is-selected' : ''}${off ? ' is-inactive' : ''}" data-id="${r.id}" role="option" aria-selected="${sel}" tabindex="0">
+        <div class="loc-item__main">
+          <span class="loc-item__name">${esc(r.name)}</span>
+          ${off ? '<span class="loc-badge loc-badge--off">inativo</span>' : ''}
+          ${r.description ? `<span class="loc-item__desc" title="${esc(r.description)}">${esc(r.description)}</span>` : ''}
+        </div>
+        <div class="loc-item__side">
+          <span class="loc-item__actions">
+            <button type="button" data-act="edit" title="Editar">✏️</button>
+            <button type="button" data-act="toggle" title="${off ? 'Ativar' : 'Inativar'}">${off ? '✅' : '⛔'}</button>
+            <button type="button" data-act="del" title="Excluir">🗑️</button>
+          </span>
+          ${isLast ? '' : `<span class="loc-item__kids" title="Itens dentro">${kids.length}</span><span class="loc-item__chev" aria-hidden="true">›</span>`}
+        </div>
+      </li>`;
+  }).join('');
+}
+
+function renderBreadcrumb() {
+  const el = $('#locBreadcrumb');
+  let last = -1;
+  for (let i = 0; i < LEVELS.length; i += 1) if (state.selected[i] != null) last = i;
+
+  const parts = [`<button type="button" class="loc-crumb" data-crumb="-1">🏠 Todos os locais</button>`];
+  if (last >= 0) {
+    pathTo(last, state.selected[last]).forEach((p) => {
+      parts.push(`<span class="loc-crumb__sep">›</span><button type="button" class="loc-crumb${p.levelIdx === last ? ' is-current' : ''}" data-crumb="${p.levelIdx}"><small>${LEVELS[p.levelIdx].one}</small> ${esc(p.name)}</button>`);
+    });
+  }
+  el.innerHTML = parts.join('');
+}
+
+function renderTotals() {
+  const count = (k) => state.rows[k].filter((r) => state.showInactive || r.active !== false).length;
+  $('#locTotals').textContent = LEVELS.map((l) => `${count(l.key)} ${l.title.toLowerCase()}`).join(' · ');
+}
+
+function renderAll() {
+  LEVELS.forEach((_, i) => renderColumn(i));
+  renderBreadcrumb();
+  renderTotals();
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. Seleção / navegação                                                      */
+/* -------------------------------------------------------------------------- */
+
+function selectItem(levelIdx, id) {
+  state.selected[levelIdx] = id;
+  for (let j = levelIdx + 1; j < LEVELS.length; j += 1) {
+    state.selected[j] = null;
+    state.filters[j] = '';
+    const f = columnsEl.querySelector(`[data-filter="${j}"]`);
+    if (f) f.value = '';
+  }
+  renderAll();
+  // em telas estreitas leva a próxima coluna para a vista
+  const next = columnsEl.querySelector(`.loc-col[data-level="${Math.min(levelIdx + 1, LEVELS.length - 1)}"]`);
+  next?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+}
+
+function goToPath(levelIdx, id) {
+  const path = pathTo(levelIdx, id);
+  state.selected = [null, null, null, null, null];
+  state.filters = ['', '', '', '', ''];
+  columnsEl.querySelectorAll('[data-filter]').forEach((f) => { f.value = ''; });
+  path.forEach((p) => { state.selected[p.levelIdx] = p.id; });
+  const target = findRow(levelIdx, id);
+  if (target?.active === false) {
+    state.showInactive = true;
+    $('#locShowInactive').checked = true;
+  }
+  renderAll();
+  columnsEl.querySelector(`.loc-col[data-level="${levelIdx}"] .loc-item[data-id="${id}"]`)
+    ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6. Busca global                                                             */
+/* -------------------------------------------------------------------------- */
+
+function renderSearch() {
+  const box = $('#locSearchResults');
+  const q = norm($('#locSearch').value);
+  if (q.length < 1) { box.hidden = true; box.innerHTML = ''; return; }
+
+  const hits = [];
+  LEVELS.forEach((lvl, i) => {
+    state.rows[lvl.key].forEach((r) => {
+      if (!state.showInactive && r.active === false) return;
+      if (norm(r.name).includes(q) || norm(r.description).includes(q)) hits.push({ i, r });
+    });
   });
 
-  // try to keep old selection if exists
-  if (current && rows.some((r) => String(r.id) === String(current))) {
-    selectEl.value = current;
+  if (!hits.length) {
+    box.innerHTML = '<div class="loc-search-results__empty">Nenhum endereço encontrado.</div>';
   } else {
-    selectEl.value = '';
+    box.innerHTML = hits.slice(0, 40).map(({ i, r }) => {
+      const path = pathTo(i, r.id).map((p) => esc(p.name)).join(' › ');
+      return `<button type="button" class="loc-search-hit" data-level="${i}" data-id="${r.id}">
+        <span class="loc-search-hit__lvl">${LEVELS[i].icon} ${LEVELS[i].one}</span>
+        <span class="loc-search-hit__path">${path}</span>
+      </button>`;
+    }).join('') + (hits.length > 40 ? `<div class="loc-search-results__empty">+${hits.length - 40} resultado(s). Refine a busca.</div>` : '');
   }
-}
-
-function getSelectedId(selectEl) {
-  const v = selectEl.value;
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Tables                                                                      */
-/* -------------------------------------------------------------------------- */
-
-function renderTable(entity, rows, tbody) {
-  tbody.innerHTML = rows.map((r) => {
-    return `
-      <tr data-entity="${entity}" data-id="${r.id}">
-        <td>${r.id}</td>
-        <td title="${esc(r.description || '')}">${esc(r.name)}</td>
-        <td>${boolToPill(r.active)}</td>
-        <td>
-          <div class="loc-actions-row">
-            <button class="btn btn-toolbar btn-sm" data-act="edit">✏️</button>
-            <button class="btn btn-toolbar btn-sm" data-act="toggle">${r.active ? '⛔' : '✅'}</button>
-            <button class="btn btn-toolbar btn-sm" data-act="del">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
+  box.hidden = false;
 }
 
 /* -------------------------------------------------------------------------- */
-/* CRUD (Hierarchy)                                                            */
+/* 7. Modal Novo / Editar                                                      */
 /* -------------------------------------------------------------------------- */
 
-function parentIdForEntity(entity) {
-  // Based on your API: corridors.local_id, shelves.corridor_id, bins.shelf_id, positions.bin_id
-  if (entity === 'corridors') return { key: 'local_id', value: getSelectedId(selLocal) };
-  if (entity === 'shelves') return { key: 'corridor_id', value: getSelectedId(selCorridor) };
-  if (entity === 'bins') return { key: 'shelf_id', value: getSelectedId(selShelf) };
-  if (entity === 'positions') return { key: 'bin_id', value: getSelectedId(selBin) };
-  return null;
+const els = {
+  title: $('#locModalTitle'),
+  path: $('#locModalPath'),
+  name: $('#locName'),
+  desc: $('#locDesc'),
+  active: $('#locActive'),
+  bulkBox: $('#locBulkBox'),
+  bulk: $('#locBulk'),
+  bulkFields: $('#locBulkFields'),
+  bulkFrom: $('#locBulkFrom'),
+  bulkTo: $('#locBulkTo'),
+  bulkPad: $('#locBulkPad'),
+  bulkPreview: $('#locBulkPreview'),
+  btnDelete: $('#locBtnDelete'),
+  btnSave: $('#locBtnSave'),
+  btnSaveNew: $('#locBtnSaveNew'),
+};
+
+function pathHtml(levelIdx, parentId) {
+  if (levelIdx === 0 || parentId == null) return '<span class="loc-modal-path__root">Nível mais alto (sem pai)</span>';
+  return `<span class="loc-modal-path__label">Dentro de</span> ${pathTo(levelIdx - 1, parentId)
+    .map((p) => `<span class="loc-modal-path__chip"><small>${LEVELS[p.levelIdx].one}</small> ${esc(p.name)}</span>`)
+    .join('<span class="loc-crumb__sep">›</span>')}`;
 }
 
-function validateParent(entity) {
-  const p = parentIdForEntity(entity);
-  if (!p) return true;
-  if (!p.value) return false;
-  return true;
+function bulkNames() {
+  const from = Math.trunc(Number(els.bulkFrom.value));
+  const to = Math.trunc(Number(els.bulkTo.value));
+  const pad = Number(els.bulkPad.value) || 1;
+  const prefix = String(els.name.value || '').trim();
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to < from) return [];
+  const out = [];
+  for (let n = from; n <= to && out.length <= 200; n += 1) out.push(`${prefix}${String(n).padStart(pad, '0')}`);
+  return out;
 }
 
-async function createEntity() {
-  const entity = selEntity.value; // locals/corridors/shelves/bins/positions
-  const name = String(txtName.value || '').trim();
-  const description = String(txtDesc.value || '').trim() || null;
-  const active = !!chkActive.checked;
-
-  if (!name) {
-    await uiAlert('Atenção', 'Informe o nome.');
-    txtName.focus();
-    return;
-  }
-
-  if (!validateParent(entity)) {
-    const p = parentIdForEntity(entity);
-    await uiAlert('Atenção', `Para criar "${entity}", selecione o pai (${p?.key}) no filtro.`);
-    return;
-  }
-
-  const payload = { name, description, active };
-  const p = parentIdForEntity(entity);
-  if (p?.value) payload[p.key] = p.value;
-
-  try {
-    await apiFetch(`/${entity}`, { method: 'POST', body: JSON.stringify(payload) });
-    txtName.value = '';
-    txtDesc.value = '';
-    await refreshEntity(entity);
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
+function updateBulkPreview() {
+  const on = els.bulk.checked;
+  els.bulkFields.hidden = !on;
+  $('label[for="locName"]').textContent = on ? 'Prefixo (opcional)' : 'Nome *';
+  if (!on) return;
+  const names = bulkNames();
+  if (!names.length) { els.bulkPreview.textContent = 'Informe De ≤ Até.'; return; }
+  if (names.length > 200) { els.bulkPreview.textContent = 'Máximo de 200 por vez.'; return; }
+  const sample = names.length > 4 ? `${names.slice(0, 3).join(', ')} … ${names[names.length - 1]}` : names.join(', ');
+  els.bulkPreview.textContent = `Vai criar ${names.length}: ${sample}`;
 }
 
-async function refreshEntity(entity) {
-  if (entity === 'locals') return loadLocals();
-  if (entity === 'corridors') return loadCorridors();
-  if (entity === 'shelves') return loadShelves();
-  if (entity === 'bins') return loadBins();
-  if (entity === 'positions') return loadPositions();
+function openModal({ mode, level, parentId = null, id = null }) {
+  const lvl = LEVELS[level];
+  state.modal = { mode, level, parentId, id };
+
+  if (mode === 'edit') {
+    const row = findRow(level, id);
+    if (!row) return;
+    els.title.textContent = `✏️ Editar ${lvl.one.toLowerCase()}`;
+    els.path.innerHTML = pathHtml(level, lvl.parentKey ? row[lvl.parentKey] : null);
+    els.name.value = row.name ?? '';
+    els.desc.value = row.description ?? '';
+    els.active.checked = row.active !== false;
+    els.bulkBox.hidden = true;
+    els.bulk.checked = false;
+    els.btnDelete.hidden = false;
+    els.btnSaveNew.hidden = true;
+  } else {
+    els.title.textContent = `${lvl.icon} ${lvl.novo} ${lvl.one.toLowerCase()}`;
+    els.path.innerHTML = pathHtml(level, parentId);
+    els.name.value = '';
+    els.desc.value = '';
+    els.active.checked = true;
+    els.bulkBox.hidden = false;
+    els.bulk.checked = false;
+    els.btnDelete.hidden = true;
+    els.btnSaveNew.hidden = false;
+  }
+  els.name.placeholder = lvl.placeholder;
+  updateBulkPreview();
+  Modal.open('locModal', { focusSelector: '#locName' });
 }
 
-async function editRow(entity, row) {
-  const id = Number(row.dataset.id);
-  const current = findRow(entity, id);
-  if (!current) return;
-
-  const name = prompt('Nome:', current.name ?? '');
-  if (name === null) return;
-
-  const description = prompt('Descrição (opcional):', current.description ?? '');
-  if (description === null) return;
-
-  // keep active as-is
-  try {
-    await apiFetch(`/${entity}/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ name: String(name).trim(), description: String(description).trim() || null }),
-    });
-    await refreshEntity(entity);
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-}
-
-async function toggleRow(entity, row) {
-  const id = Number(row.dataset.id);
-  const current = findRow(entity, id);
-  if (!current) return;
-
-  const next = !current.active;
-  try {
-    await apiFetch(`/${entity}/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ active: next }),
-    });
-    await refreshEntity(entity);
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-}
-
-async function deleteRow(entity, row) {
-  const id = Number(row.dataset.id);
-  const current = findRow(entity, id);
-  if (!current) return;
-
-  const ok = confirm(`Excluir "${current.name}" (id ${id})?`);
-  if (!ok) return;
+async function saveModal({ keepOpen = false } = {}) {
+  const m = state.modal;
+  if (!m) return;
+  const lvl = LEVELS[m.level];
+  const name = String(els.name.value || '').trim();
+  const description = String(els.desc.value || '').trim() || null;
+  const active = !!els.active.checked;
 
   try {
-    await apiFetch(`/${entity}/${id}`, { method: 'DELETE' });
-    await refreshEntity(entity);
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-}
-
-function findRow(entity, id) {
-  const map = {
-    locals: state.locals,
-    corridors: state.corridors,
-    shelves: state.shelves,
-    bins: state.bins,
-    positions: state.positions,
-  };
-  return (map[entity] || []).find((r) => Number(r.id) === Number(id)) || null;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Product Locations                                                          */
-/* -------------------------------------------------------------------------- */
-
-function buildLocationLabel(plRow) {
-  // Use text fields when present; fallback to ids
-  const parts = [
-    plRow.local ?? (plRow.local_id ? `L${plRow.local_id}` : null),
-    plRow.corridor ?? (plRow.corridor_id ? `C${plRow.corridor_id}` : null),
-    plRow.shelf ?? (plRow.shelf_id ? `S${plRow.shelf_id}` : null),
-    plRow.bin ?? (plRow.bin_id ? `B${plRow.bin_id}` : null),
-    plRow.position ?? (plRow.position_id ? `P${plRow.position_id}` : null),
-  ].filter(Boolean);
-
-  return parts.join(' / ');
-}
-
-async function loadProductLocations({ sku = null } = {}) {
-  const q = new URLSearchParams();
-  if (sku) q.set('productCode', sku); // your controller accepts productCode/product_code
-  const rows = await apiFetch(`/product-locations?${q.toString()}`);
-
-  tbProductLocations.innerHTML = rows.map((r) => {
-    return `
-      <tr data-plid="${r.id}">
-        <td>${r.id}</td>
-        <td>${esc(r.product_code)}</td>
-        <td title="${esc(r.product_description || '')}">${esc(r.product_description || '')}</td>
-        <td title="${esc(buildLocationLabel(r))}">${esc(buildLocationLabel(r))}</td>
-        <td>
-          <div class="loc-actions-row">
-            <button class="btn btn-toolbar btn-sm" data-plact="use">⬅️</button>
-            <button class="btn btn-toolbar btn-sm" data-plact="del">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function clearPLForm() {
-  plLocalId.value = '';
-  plCorridorId.value = '';
-  plShelfId.value = '';
-  plBinId.value = '';
-  plPositionId.value = '';
-
-  plLocal.value = '';
-  plCorridor.value = '';
-  plShelf.value = '';
-  plBin.value = '';
-  plPosition.value = '';
-
-  plNotes.value = '';
-}
-
-async function saveProductLocation() {
-  const sku = String(txtProductCode.value || '').trim();
-  if (!sku) {
-    await uiAlert('Atenção', 'Informe o SKU do produto.');
-    txtProductCode.focus();
-    return;
-  }
-
-  const payload = {
-    product_code: sku,
-    local_id: plLocalId.value ? Number(plLocalId.value) : null,
-    corridor_id: plCorridorId.value ? Number(plCorridorId.value) : null,
-    shelf_id: plShelfId.value ? Number(plShelfId.value) : null,
-    bin_id: plBinId.value ? Number(plBinId.value) : null,
-    position_id: plPositionId.value ? Number(plPositionId.value) : null,
-    local: plLocal.value ? String(plLocal.value).trim() : null,
-    corridor: plCorridor.value ? String(plCorridor.value).trim() : null,
-    shelf: plShelf.value ? String(plShelf.value).trim() : null,
-    bin: plBin.value ? String(plBin.value).trim() : null,
-    position: plPosition.value ? String(plPosition.value).trim() : null,
-    notes: plNotes.value ? String(plNotes.value).trim() : null,
-  };
-
-  try {
-    await apiFetch('/product-locations', { method: 'POST', body: JSON.stringify(payload) });
-    await loadProductLocations({ sku });
-    await uiAlert('OK', 'Localização salva com sucesso.');
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-}
-
-async function deleteProductLocationRow(plId) {
-  const ok = confirm(`Excluir localização do produto? (id ${plId})`);
-  if (!ok) return;
-
-  try {
-    await apiFetch(`/product-locations/${plId}`, { method: 'DELETE' });
-    const sku = String(txtPLSearch.value || '').trim() || null;
-    await loadProductLocations({ sku });
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-}
-
-function applyPLToForm(rowData) {
-  txtProductCode.value = rowData.product_code ?? '';
-
-  plLocalId.value = rowData.local_id ?? '';
-  plCorridorId.value = rowData.corridor_id ?? '';
-  plShelfId.value = rowData.shelf_id ?? '';
-  plBinId.value = rowData.bin_id ?? '';
-  plPositionId.value = rowData.position_id ?? '';
-
-  plLocal.value = rowData.local ?? '';
-  plCorridor.value = rowData.corridor ?? '';
-  plShelf.value = rowData.shelf ?? '';
-  plBin.value = rowData.bin ?? '';
-  plPosition.value = rowData.position ?? '';
-
-  plNotes.value = rowData.notes ?? '';
-}
-
-/* -------------------------------------------------------------------------- */
-/* Optional: Product modal (F2)                                                */
-/* -------------------------------------------------------------------------- */
-
-async function tryOpenProductsModal(initial = '') {
-  // Uses your existing modal if present:
-  // /public/modalsSearch/productsModalSearch.js exporting openProductsModalSearch
-  try {
-    const mod = await import('/public/modalsSearch/productsModalSearch.js');
-    const openProductsModalSearch = mod.openProductsModalSearch || mod.default || null;
-
-    if (typeof openProductsModalSearch !== 'function') {
-      await uiAlert('Aviso', 'Modal de produtos não encontrado (export openProductsModalSearch).');
-      return null;
-    }
-
-    return await new Promise((resolve) => {
-      openProductsModalSearch({
-        apiBase: '/api',
-        title: 'Selecionar Produto',
-        initial,
-        onPickProduct: (p) => resolve(p),
-      });
-    });
-  } catch (err) {
-    await uiAlert('Aviso', 'Não foi possível abrir o modal de produtos.\n' + err.message);
-    return null;
-  }
-}
-
-/* -------------------------------------------------------------------------- */
-/* Events                                                                      */
-/* -------------------------------------------------------------------------- */
-
-btnReloadAll.addEventListener('click', async () => {
-  try {
-    await reloadAllHierarchy();
-    await loadProductLocations({ sku: null });
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-});
-
-chkOnlyActive.addEventListener('change', async () => {
-  try {
-    await reloadAllHierarchy();
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-});
-
-/* Cascade filters */
-selLocal.addEventListener('change', async () => {
-  try {
-    // reset lower selects
-    selCorridor.value = '';
-    selShelf.value = '';
-    selBin.value = '';
-    selPosition.value = '';
-    await loadCorridors();
-    await loadShelves();
-    await loadBins();
-    await loadPositions();
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-});
-
-selCorridor.addEventListener('change', async () => {
-  try {
-    selShelf.value = '';
-    selBin.value = '';
-    selPosition.value = '';
-    await loadShelves();
-    await loadBins();
-    await loadPositions();
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-});
-
-selShelf.addEventListener('change', async () => {
-  try {
-    selBin.value = '';
-    selPosition.value = '';
-    await loadBins();
-    await loadPositions();
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-});
-
-selBin.addEventListener('change', async () => {
-  try {
-    selPosition.value = '';
-    await loadPositions();
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-});
-
-/* Create */
-btnCreate.addEventListener('click', createEntity);
-
-txtName.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    createEntity();
-  }
-});
-
-/* Refresh buttons on lists */
-document.addEventListener('click', async (e) => {
-  const btn = e.target.closest('[data-refresh]');
-  if (!btn) return;
-  const entity = btn.getAttribute('data-refresh');
-  try {
-    await refreshEntity(entity);
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-});
-
-/* Table actions */
-document.addEventListener('click', async (e) => {
-  const tr = e.target.closest('tr[data-entity][data-id]');
-  if (!tr) return;
-
-  const entity = tr.dataset.entity;
-  const actBtn = e.target.closest('button[data-act]');
-  if (!actBtn) return;
-
-  const act = actBtn.dataset.act;
-  if (act === 'edit') return editRow(entity, tr);
-  if (act === 'toggle') return toggleRow(entity, tr);
-  if (act === 'del') return deleteRow(entity, tr);
-});
-
-/* Product location search/save */
-btnCreatePL.addEventListener('click', saveProductLocation);
-btnClearPL.addEventListener('click', clearPLForm);
-
-btnSearchPL.addEventListener('click', async () => {
-  const sku = String(txtPLSearch.value || '').trim();
-  try {
-    await loadProductLocations({ sku: sku || null });
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-});
-
-btnReloadPL.addEventListener('click', async () => {
-  try {
-    await loadProductLocations({ sku: null });
-  } catch (err) {
-    await uiAlert('Erro', err.message);
-  }
-});
-
-txtPLSearch.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    btnSearchPL.click();
-  }
-});
-
-txtProductCode.addEventListener('keydown', async (e) => {
-  if (e.key === 'F2') {
-    e.preventDefault();
-    const picked = await tryOpenProductsModal(String(txtProductCode.value || '').trim());
-    if (picked?.product_code || picked?.sku || picked?.code) {
-      const sku = picked.product_code ?? picked.sku ?? picked.code;
-      txtProductCode.value = String(sku).trim();
-      txtPLSearch.value = String(sku).trim();
-      await loadProductLocations({ sku: String(sku).trim() });
-    }
-  }
-
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    const sku = String(txtProductCode.value || '').trim();
-    if (sku) {
-      txtPLSearch.value = sku;
-      await loadProductLocations({ sku });
+    if (m.mode === 'edit') {
+      if (!name) { els.name.focus(); return showCenterModal({ variant: 'warning', title: 'Atenção', message: 'Informe o nome.' }); }
+      await apiFetch(`/${lvl.key}/${m.id}`, { method: 'PUT', body: JSON.stringify({ name, description, active }) });
     } else {
-      // empty SKU: open modal if available
-      const picked = await tryOpenProductsModal('');
-      if (picked?.product_code || picked?.sku || picked?.code) {
-        const psku = picked.product_code ?? picked.sku ?? picked.code;
-        txtProductCode.value = String(psku).trim();
-        txtPLSearch.value = String(psku).trim();
-        await loadProductLocations({ sku: String(psku).trim() });
+      const names = els.bulk.checked ? bulkNames() : [name];
+      if (!names.length || !names[0]) { els.name.focus(); return showCenterModal({ variant: 'warning', title: 'Atenção', message: els.bulk.checked ? 'Confira De / Até.' : 'Informe o nome.' }); }
+      if (names.length > 200) return showCenterModal({ variant: 'warning', title: 'Atenção', message: 'Máximo de 200 por vez.' });
+
+      const created = [];
+      for (const n of names) {
+        const payload = { name: n, description, active };
+        if (lvl.parentKey) payload[lvl.parentKey] = m.parentId;
+        created.push(await apiFetch(`/${lvl.key}`, { method: 'POST', body: JSON.stringify(payload) }));
+      }
+      if (created.length > 1) {
+        showCenterModal({ variant: 'success', title: 'Criados', message: `${created.length} ${lvl.title.toLowerCase()} criados.` });
       }
     }
-  }
-});
 
-btnPickProduct.addEventListener('click', async () => {
-  const picked = await tryOpenProductsModal(String(txtProductCode.value || '').trim());
-  if (picked?.product_code || picked?.sku || picked?.code) {
-    const sku = picked.product_code ?? picked.sku ?? picked.code;
-    txtProductCode.value = String(sku).trim();
-    txtPLSearch.value = String(sku).trim();
-    await loadProductLocations({ sku: String(sku).trim() });
-  }
-});
+    await loadAll();
+    renderAll();
 
-/* Product locations table actions */
-tbProductLocations.addEventListener('click', async (e) => {
-  const tr = e.target.closest('tr[data-plid]');
-  if (!tr) return;
-
-  const actBtn = e.target.closest('button[data-plact]');
-  if (!actBtn) return;
-
-  const plId = Number(tr.dataset.plid);
-  const act = actBtn.dataset.plact;
-
-  if (act === 'del') {
-    return deleteProductLocationRow(plId);
-  }
-
-  if (act === 'use') {
-    // fetch all for current filter and apply selected row quickly by scanning DOM text
-    try {
-      // For accuracy, reload list for current filter and find by id
-      const sku = String(txtPLSearch.value || '').trim() || null;
-      const q = new URLSearchParams();
-      if (sku) q.set('productCode', sku);
-      const rows = await apiFetch(`/product-locations?${q.toString()}`);
-      const row = rows.find((r) => Number(r.id) === Number(plId));
-      if (row) applyPLToForm(row);
-      setActiveTab('tabProduct');
-    } catch (err) {
-      await uiAlert('Erro', err.message);
+    if (keepOpen && m.mode === 'new') {
+      els.name.value = '';
+      els.desc.value = '';
+      els.bulk.checked = false;
+      updateBulkPreview();
+      els.name.focus();
+    } else {
+      Modal.close('locModal');
     }
+  } catch (err) {
+    alertError('Erro ao salvar', err);
   }
-});
+}
 
 /* -------------------------------------------------------------------------- */
-/* Init                                                                        */
+/* 8. Ações por item                                                           */
+/* -------------------------------------------------------------------------- */
+
+async function toggleItem(level, id) {
+  const lvl = LEVELS[level];
+  const row = findRow(level, id);
+  if (!row) return;
+  const next = row.active === false;
+  if (!next) {
+    const kids = childrenOf(level, id).filter((k) => k.active !== false).length;
+    const ok = await confirmDanger(
+      `Inativar ${lvl.one.toLowerCase()}`,
+      `Inativar <b>${esc(row.name)}</b>?${kids ? `<br><small>Os ${kids} item(ns) dentro dele continuam como estão.</small>` : ''}`,
+      'Inativar'
+    );
+    if (!ok) return;
+  }
+  try {
+    await apiFetch(`/${lvl.key}/${id}`, { method: 'PUT', body: JSON.stringify({ active: next }) });
+    await loadAll();
+    renderAll();
+  } catch (err) {
+    alertError('Erro', err);
+  }
+}
+
+async function deleteItem(level, id) {
+  const lvl = LEVELS[level];
+  const row = findRow(level, id);
+  if (!row) return false;
+  const kids = childrenOf(level, id).length;
+  if (kids) {
+    await showCenterModal({
+      variant: 'warning',
+      title: 'Não é possível excluir',
+      message: `<b>${esc(row.name)}</b> tem ${kids} ${LEVELS[level + 1].title.toLowerCase()} dentro.<br>Exclua-os antes, ou apenas inative.`,
+    });
+    return false;
+  }
+  const ok = await confirmDanger(`Excluir ${lvl.one.toLowerCase()}`, `Excluir <b>${esc(row.name)}</b> definitivamente?`, 'Excluir');
+  if (!ok) return false;
+  try {
+    await apiFetch(`/${lvl.key}/${id}`, { method: 'DELETE' });
+    if (Number(state.selected[level]) === Number(id)) selectItem(level, null);
+    await loadAll();
+    renderAll();
+    return true;
+  } catch (err) {
+    alertError('Erro ao excluir', err);
+    return false;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 9. Eventos                                                                  */
+/* -------------------------------------------------------------------------- */
+
+const lastClick = { level: -1, id: -1, at: 0 };
+
+function wireEvents() {
+  columnsEl.addEventListener('click', (e) => {
+    const add = e.target.closest('[data-add]');
+    if (add) {
+      const level = Number(add.dataset.add);
+      openModal({ mode: 'new', level, parentId: level > 0 ? state.selected[level - 1] : null });
+      return;
+    }
+    const item = e.target.closest('.loc-item');
+    if (!item) return;
+    const level = Number(item.closest('.loc-col').dataset.level);
+    const id = Number(item.dataset.id);
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'edit') return openModal({ mode: 'edit', level, id });
+    if (act === 'toggle') return toggleItem(level, id);
+    if (act === 'del') return deleteItem(level, id);
+
+    // duplo clique "manual": o 1º clique re-renderiza a coluna (troca o nó),
+    // então o evento dblclick nativo nem sempre chega
+    const now = Date.now();
+    if (lastClick.level === level && lastClick.id === id && now - lastClick.at < 450) {
+      lastClick.at = 0;
+      return openModal({ mode: 'edit', level, id });
+    }
+    lastClick.level = level; lastClick.id = id; lastClick.at = now;
+    if (Number(state.selected[level]) !== id) selectItem(level, id);
+  });
+
+  columnsEl.addEventListener('keydown', (e) => {
+    const item = e.target.closest('.loc-item');
+    if (!item) return;
+    const level = Number(item.closest('.loc-col').dataset.level);
+    if (e.key === 'Enter') { e.preventDefault(); selectItem(level, Number(item.dataset.id)); }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const sib = e.key === 'ArrowDown' ? item.nextElementSibling : item.previousElementSibling;
+      sib?.focus();
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      selectItem(level, Number(item.dataset.id));
+      columnsEl.querySelector(`.loc-col[data-level="${level + 1}"] .loc-item`)?.focus();
+    }
+    if (e.key === 'ArrowLeft' && level > 0) {
+      e.preventDefault();
+      columnsEl.querySelector(`.loc-col[data-level="${level - 1}"] .loc-item.is-selected`)?.focus();
+    }
+  });
+
+  columnsEl.addEventListener('input', (e) => {
+    const f = e.target.closest('[data-filter]');
+    if (!f) return;
+    const i = Number(f.dataset.filter);
+    state.filters[i] = f.value;
+    renderColumn(i);
+  });
+
+  $('#locBreadcrumb').addEventListener('click', (e) => {
+    const c = e.target.closest('[data-crumb]');
+    if (!c) return;
+    const level = Number(c.dataset.crumb);
+    if (level < 0) {
+      state.selected = [null, null, null, null, null];
+      renderAll();
+    } else {
+      selectItem(level, state.selected[level]);
+    }
+  });
+
+  $('#locShowInactive').addEventListener('change', (e) => {
+    state.showInactive = e.target.checked;
+    renderAll();
+    renderSearch();
+  });
+
+  $('#locBtnReload').addEventListener('click', async () => {
+    try { await loadAll(); renderAll(); } catch (err) { alertError('Erro ao carregar', err); }
+  });
+
+  const search = $('#locSearch');
+  search.addEventListener('input', renderSearch);
+  search.addEventListener('focus', renderSearch);
+  search.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { search.value = ''; renderSearch(); }
+    if (e.key === 'Enter') { e.preventDefault(); $('#locSearchResults .loc-search-hit')?.click(); }
+  });
+  $('#locSearchResults').addEventListener('click', (e) => {
+    const hit = e.target.closest('.loc-search-hit');
+    if (!hit) return;
+    goToPath(Number(hit.dataset.level), Number(hit.dataset.id));
+    $('#locSearchResults').hidden = true;
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.loc-toolbar__search')) $('#locSearchResults').hidden = true;
+  });
+
+  // modal
+  els.bulk.addEventListener('change', updateBulkPreview);
+  [els.bulkFrom, els.bulkTo, els.bulkPad, els.name].forEach((el) => el.addEventListener('input', updateBulkPreview));
+  els.btnSave.addEventListener('click', () => saveModal());
+  els.btnSaveNew.addEventListener('click', () => saveModal({ keepOpen: true }));
+  $('#locForm').addEventListener('submit', (e) => { e.preventDefault(); saveModal(); });
+  els.name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveModal(); } });
+  els.btnDelete.addEventListener('click', async () => {
+    const m = state.modal;
+    if (m?.mode !== 'edit') return;
+    if (await deleteItem(m.level, m.id)) Modal.close('locModal');
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/* 10. Init                                                                    */
 /* -------------------------------------------------------------------------- */
 
 async function init() {
+  Modal.setup();
+  buildColumns();
+  wireEvents();
   try {
-    setActiveTab('tabHierarchy');
-    await reloadAllHierarchy();
-    await loadProductLocations({ sku: null });
+    await loadAll();
   } catch (err) {
-    await uiAlert('Erro', err.message);
+    alertError('Erro ao carregar localizações', err);
   }
+  renderAll();
 }
 
 init();
