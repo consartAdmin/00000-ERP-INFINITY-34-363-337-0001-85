@@ -1,13 +1,11 @@
 'use strict';
 
-import PDFDocument from 'pdfkit';
+import {
+  C, SERIES, PAGE,
+  createThemedDoc, drawFullHeader, drawFooters, drawKpis, makeTable, number as themeNumber, nowBR,
+} from './consartPdfTheme.js';
 
 const MAX_ROWS = 20000;
-const PAGE = { size: 'A4', layout: 'landscape', margin: 28 };
-const COLORS = {
-  black: '#111827', gray: '#6B7280', light: '#F3F4F6',
-  border: '#D1D5DB', green: '#166534', amber: '#92400E', white: '#FFFFFF',
-};
 
 const STATUS_LABELS = Object.freeze({
   PENDING: 'Pendente', PAID: 'Pago', OVERDUE: 'Vencido',
@@ -59,94 +57,34 @@ function statusLabel(value) {
   return STATUS_LABELS[key] || text(value);
 }
 
-function truncate(doc, value, width) {
-  const source = text(value);
-  if (doc.widthOfString(source) <= width) return source;
-  let output = source;
-  while (output.length > 1 && doc.widthOfString(`${output}…`) > width) output = output.slice(0, -1);
-  return `${output}…`;
-}
+const REPORT_TITLE = 'Contas a Receber';
 
-function filterDescription(filters = {}) {
-  const parts = [];
-  if (filters.search) parts.push(`Busca: ${filters.search}`);
-  if (filters.status) parts.push(`Status: ${statusLabel(filters.status)}`);
+const STATUS_COLORS = Object.freeze({
+  PAID: C.green, OVERDUE: C.red, PARTIAL: C.amber, CANCELLED: C.muted, CANCELED: C.muted,
+});
 
-  const dateType = String(filters.dateType || '').toLowerCase() === 'issue_date'
-    ? 'issue_date'
-    : 'due_date';
-  const fromDate = filters.fromDate || (
-    dateType === 'issue_date' ? filters.fromIssueDate : filters.fromDueDate
-  );
-  const toDate = filters.toDate || (
-    dateType === 'issue_date' ? filters.toIssueDate : filters.toDueDate
-  );
+function headerInfo(filters = {}) {
+  const dateType = String(filters.dateType || '').toLowerCase() === 'issue_date' ? 'issue_date' : 'due_date';
+  const fromDate = filters.fromDate || (dateType === 'issue_date' ? filters.fromIssueDate : filters.fromDueDate);
+  const toDate = filters.toDate || (dateType === 'issue_date' ? filters.toIssueDate : filters.toDueDate);
 
+  const info = [];
   if (fromDate || toDate) {
-    parts.push(`${dateType === 'issue_date' ? 'Emissão' : 'Vencimento'}: ${dateBR(fromDate)} até ${dateBR(toDate)}`);
+    info.push([dateType === 'issue_date' ? 'Emissão' : 'Vencimento', `${dateBR(fromDate)} a ${dateBR(toDate)}`]);
+  } else {
+    info.push(['Período', 'Todos os períodos']);
   }
-  return parts.length ? parts.join('  |  ') : 'Filtros: todos os registros';
+  info.push(['Status', filters.status ? statusLabel(filters.status) : 'Todos']);
+  if (filters.search) info.push(['Busca', filters.search]);
+  return info;
 }
 
-const COLUMNS = [
-  { key: 'id', label: 'ID', x: 28, width: 38, align: 'left' },
-  { key: 'customer_name', label: 'Cliente', x: 70, width: 176, align: 'left' },
-  { key: 'invoice_number', label: 'Nº Fatura', x: 250, width: 68, align: 'left' },
-  { key: 'issue_date', label: 'Emissão', x: 322, width: 66, align: 'left' },
-  { key: 'due_date', label: 'Vencimento', x: 392, width: 70, align: 'left' },
-  { key: 'status', label: 'Status', x: 466, width: 64, align: 'left' },
-  { key: 'value', label: 'Total', x: 534, width: 78, align: 'right' },
-  { key: 'paid_value', label: 'Recebido', x: 616, width: 78, align: 'right' },
-  { key: 'balance', label: 'Saldo', x: 698, width: 86, align: 'right' },
-];
+export async function generateAccountsReceivablePdf({ rows = [], filters = {} } = {}) {
+  const safeRows = Array.isArray(rows) ? rows.slice(0, MAX_ROWS) : [];
+  const { doc, done } = createThemedDoc({ title: REPORT_TITLE, subject: 'Relatório de Contas a Receber' });
+  const generatedAt = nowBR();
 
-function addHeader(doc, filters, rowsCount) {
-  doc.fillColor(COLORS.black).font('Helvetica-Bold').fontSize(14)
-    .text('CONSART ERP — CONTAS A RECEBER', 28, 24, { align: 'center' });
-  doc.font('Helvetica').fontSize(7.5).fillColor(COLORS.gray)
-    .text(filterDescription(filters), 28, 45, { width: 756, align: 'left' })
-    .text(`${rowsCount} registro(s)`, 28, 45, { width: 756, align: 'right' });
-  doc.moveTo(28, 59).lineTo(784, 59).strokeColor(COLORS.border).lineWidth(0.6).stroke();
-  return 66;
-}
-
-function addTableHeader(doc, y) {
-  doc.rect(28, y, 756, 18).fill(COLORS.black);
-  doc.font('Helvetica-Bold').fontSize(7).fillColor(COLORS.white);
-  for (const column of COLUMNS) {
-    doc.text(column.label, column.x + 3, y + 5, {
-      width: column.width - 6, align: column.align, lineBreak: false,
-    });
-  }
-  return y + 18;
-}
-
-function rowValue(row, key) {
-  if (key === 'issue_date') return dateBR(row.issue_date ?? row.emissao);
-  if (key === 'due_date') return dateBR(row.due_date ?? row.vencimento);
-  if (key === 'status') return statusLabel(row[key]);
-  if (key === 'value' || key === 'paid_value') return money(row[key]);
-  if (key === 'balance') return money(number(row.value) - number(row.paid_value));
-  return text(row[key]);
-}
-
-function addRow(doc, row, y, index) {
-  const height = 16;
-  if (index % 2) doc.rect(28, y, 756, height).fill(COLORS.light);
-  doc.font('Helvetica').fontSize(6.8).fillColor(COLORS.black);
-  for (const column of COLUMNS) {
-    const value = truncate(doc, rowValue(row, column.key), column.width - 6);
-    doc.text(value, column.x + 3, y + 4.5, {
-      width: column.width - 6, align: column.align, lineBreak: false,
-    });
-  }
-  doc.moveTo(28, y + height).lineTo(784, y + height)
-    .strokeColor(COLORS.border).lineWidth(0.25).stroke();
-  return y + height;
-}
-
-function addTotals(doc, rows, y) {
-  const totals = rows.reduce((acc, row) => {
+  const totals = safeRows.reduce((acc, row) => {
     const total = number(row.value);
     const paid = number(row.paid_value);
     const balance = Math.max(0, total - paid);
@@ -154,60 +92,73 @@ function addTotals(doc, rows, y) {
     acc.total += total;
     acc.paid += paid;
     if (OPEN_STATUSES.has(status)) acc.balance += balance;
+    if (status === 'OVERDUE') { acc.overdue += balance; acc.overdueCount += 1; }
     return acc;
-  }, { total: 0, paid: 0, balance: 0 });
+  }, { total: 0, paid: 0, balance: 0, overdue: 0, overdueCount: 0 });
 
-  doc.rect(28, y, 756, 25).fill(COLORS.light);
-  doc.font('Helvetica-Bold').fontSize(8).fillColor(COLORS.black)
-    .text(`TOTAL: ${money(totals.total)}`, 300, y + 8, { width: 150, align: 'right' })
-    .fillColor(COLORS.green)
-    .text(`PAGO: ${money(totals.paid)}`, 456, y + 8, { width: 150, align: 'right' })
-    .fillColor(COLORS.amber)
-    .text(`ABERTO: ${money(totals.balance)}`, 612, y + 8, { width: 166, align: 'right' });
-}
+  let y = drawFullHeader(doc, {
+    title: REPORT_TITLE,
+    subtitle: 'Títulos a receber de clientes',
+    info: headerInfo(filters),
+  }) + 14;
 
-function addFooters(doc) {
-  const range = doc.bufferedPageRange();
-  for (let i = range.start; i < range.start + range.count; i += 1) {
-    doc.switchToPage(i);
-    doc.font('Helvetica').fontSize(6.5).fillColor(COLORS.gray)
-      .text(`Gerado em ${new Date().toLocaleString('pt-BR')}  •  Página ${i + 1} de ${range.count}`,
-        28, 565, { width: 756, align: 'center', lineBreak: false });
-  }
-}
+  y = drawKpis(doc, y, [
+    { label: 'Títulos', value: themeNumber(safeRows.length, 0), hint: 'Registros no relatório', color: SERIES[0] },
+    { label: 'Valor total', value: money(totals.total), hint: 'Soma dos títulos', color: SERIES[5] },
+    { label: 'Recebido', value: money(totals.paid), hint: 'Valor já recebido', color: SERIES[1] },
+    { label: 'Em aberto', value: money(totals.balance), hint: 'Pendentes, vencidos e parciais', color: SERIES[2] },
+    { label: 'Vencidos', value: money(totals.overdue), hint: `${themeNumber(totals.overdueCount, 0)} título(s) vencido(s)`, color: totals.overdueCount ? C.red : SERIES[7] },
+  ]) + 16;
 
-export function generateAccountsReceivablePdf({ rows = [], filters = {} } = {}) {
-  return new Promise((resolve, reject) => {
-    const safeRows = Array.isArray(rows) ? rows.slice(0, MAX_ROWS) : [];
-    const doc = new PDFDocument({
-      ...PAGE,
-      bufferPages: true,
-      info: { Title: 'CONSART ERP — Contas a Receber', Author: 'CONSART ERP' },
-    });
-    const chunks = [];
-    doc.on('data', (chunk) => chunks.push(chunk));
-    doc.on('error', reject);
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
-
-    let y = addHeader(doc, filters, safeRows.length);
-    y = addTableHeader(doc, y);
-    safeRows.forEach((row, index) => {
-      if (y + 16 > 552) {
-        doc.addPage();
-        y = addHeader(doc, filters, safeRows.length);
-        y = addTableHeader(doc, y);
-      }
-      y = addRow(doc, row, y, index);
-    });
-
-    if (y + 25 > 552) {
-      doc.addPage();
-      y = addHeader(doc, filters, safeRows.length);
-    }
-    addTotals(doc, safeRows, y + 4);
-    addFooters(doc);
-    doc.end();
+  const table = makeTable(doc, {
+    title: 'Títulos',
+    continuation: { title: REPORT_TITLE, subtitle: 'Títulos (continuação)' },
+    rowH: 17,
+    columns: [
+      { label: 'ID', w: 40 },
+      { label: 'Cliente' },
+      { label: 'Nº Fatura', w: 76 },
+      { label: 'Emissão', w: 62 },
+      { label: 'Vencimento', w: 66 },
+      { label: 'Status', w: 66 },
+      { label: 'Total', w: 84, align: 'right' },
+      { label: 'Recebido', w: 84, align: 'right' },
+      { label: 'Saldo', w: 88, align: 'right', bold: true },
+    ],
   });
+
+  y = table.section(y);
+
+  if (!safeRows.length) {
+    doc.font('Helvetica').fontSize(9).fillColor(C.muted)
+      .text('Nenhum título encontrado para os filtros selecionados.', PAGE.margin, y + 16, { width: table.width, align: 'center' });
+  }
+
+  safeRows.forEach((row, index) => {
+    const statusKey = String(row.status ?? '').trim().toUpperCase();
+    y = table.row(y, [
+      text(row.id),
+      text(row.customer_name),
+      text(row.invoice_number),
+      dateBR(row.issue_date ?? row.emissao),
+      dateBR(row.due_date ?? row.vencimento),
+      { text: statusLabel(row.status), color: STATUS_COLORS[statusKey] || C.text, bold: true },
+      money(row.value),
+      money(row.paid_value),
+      money(number(row.value) - number(row.paid_value)),
+    ], { index });
+  });
+
+  if (safeRows.length) {
+    table.total(y, [
+      'TOTAL', `${themeNumber(safeRows.length, 0)} registro(s)`, '', '', '', '',
+      money(totals.total), money(totals.paid), `Aberto ${money(totals.balance)}`,
+    ]);
+  }
+
+  drawFooters(doc, { title: REPORT_TITLE, generatedAt });
+  doc.end();
+  return done;
 }
 
 export default generateAccountsReceivablePdf;

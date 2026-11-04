@@ -3,7 +3,7 @@
 // ║ Path: backend/generationPdf/generateExpensesPdf.js                   ║
 // ║ CONSART ERP | ESM                                                    ║
 // ║ - Gera PDF A4 Paisagem                                               ║
-// ║ - Zebra table + header repetido a cada página                         ║
+// ║ - Layout padrão (consartPdfTheme.js)                                 ║
 // ║ - Filtros: q, name, status, category, vendor, date_from, date_to     ║
 // ║ - Ordenação compatível com o frontend (created_at_desc etc.)         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -11,7 +11,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import PDFDocument from 'pdfkit';
+import {
+  C, SERIES, PAGE,
+  createThemedDoc, drawFullHeader, drawFooters, drawKpis, makeTable, number, nowBR,
+} from './consartPdfTheme.js';
 import pool from '../config/db.js';
 
 const TB = 'public."Expenses"'; // ajuste se seu schema/tabela for diferente
@@ -151,6 +154,8 @@ async function fetchExpensesForPdf({
   q, name, status, category, vendor,
   date_from, date_to,
   order_by = 'created_at_desc',
+  sort = '',
+  dir = '',
   limit = 2000, // limite de segurança (pdf não deve explodir)
 } = {}) {
   const { whereSql, params } = buildWhereAndParams({
@@ -199,184 +204,27 @@ async function fetchExpensesForPdf({
 }
 
 /* ──────────────────────────────────────────────────────────────
-   PDF Layout helpers
+   Layout padrão
 ────────────────────────────────────────────────────────────── */
-function drawHeader(doc, meta) {
-  const {
-    title = 'RELATÓRIO DE DESPESAS',
-    subtitle = '',
-    filtersText = '',
-    totalsText = '',
-    generatedAt = '',
-  } = meta || {};
+const REPORT_TITLE = 'Relatório de Despesas';
 
-  const pageW = doc.page.width;
-  const margin = doc.page.margins.left;
-  const top = doc.page.margins.top;
+const STATUS_COLORS = { PAGO: C.green, CANCELADO: C.muted, PENDENTE: C.amber };
 
-  // header bar
-  const barH = 54;
-  doc.save();
-  doc
-    .rect(0, 0, pageW, barH)
-    .fill('#f3f4f6');
-  doc.restore();
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(14)
-    .fillColor('#0f172a')
-    .text(title, margin, 16, { continued: false });
-
-  doc
-    .font('Helvetica')
-    .fontSize(9)
-    .fillColor('#475569')
-    .text(subtitle, margin, 34);
-
-  doc
-    .font('Helvetica')
-    .fontSize(8.5)
-    .fillColor('#475569')
-    .text(generatedAt, 0, 18, { align: 'right' });
-
-  // filters line
-  const boxY = top + 16;
-  if (filtersText || totalsText) {
-    doc.save();
-    doc
-      .roundedRect(margin, boxY, pageW - margin * 2, 34, 8)
-      .lineWidth(0.8)
-      .strokeColor('#e5e7eb')
-      .fillColor('#ffffff')
-      .fillAndStroke();
-    doc.restore();
-
-    doc
-      .font('Helvetica')
-      .fontSize(8.5)
-      .fillColor('#334155')
-      .text(filtersText || 'Filtros: (nenhum)', margin + 10, boxY + 8, {
-        width: pageW - margin * 2 - 20,
-        ellipsis: true,
-      });
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(8.5)
-      .fillColor('#0f172a')
-      .text(totalsText || '', margin + 10, boxY + 20, {
-        width: pageW - margin * 2 - 20,
-        ellipsis: true,
-      });
+function headerInfo(f = {}) {
+  const info = [];
+  if (f.date_from || f.date_to) {
+    info.push(['Vencimento', `${f.date_from ? fmtDateBR(f.date_from) : '...'} a ${f.date_to ? fmtDateBR(f.date_to) : '...'}`]);
+  } else {
+    info.push(['Período', 'Todos os períodos']);
   }
-
-  // return y start for table
-  return (filtersText || totalsText) ? (boxY + 48) : (top + 8);
-}
-
-function drawTableHeader(doc, x, y, cols) {
-  doc.save();
-  doc
-    .rect(x, y, cols.totalW, cols.h)
-    .fill('#f3f4f6');
-  doc.restore();
-
-  doc.font('Helvetica-Bold').fontSize(9).fillColor('#0f172a');
-
-  for (const c of cols.items) {
-    doc.text(c.label, c.x, y + 7, { width: c.w, align: c.align || 'left' });
-  }
-
-  doc
-    .moveTo(x, y + cols.h)
-    .lineTo(x + cols.totalW, y + cols.h)
-    .lineWidth(0.8)
-    .strokeColor('#e5e7eb')
-    .stroke();
-
-  return y + cols.h;
-}
-
-function drawRow(doc, x, y, cols, row, zebra) {
-  const h = cols.rowH;
-
-  // zebra bg
-  doc.save();
-  doc
-    .rect(x, y, cols.totalW, h)
-    .fill(zebra ? '#ffffff' : '#fafafa');
-  doc.restore();
-
-  doc.font('Helvetica').fontSize(9).fillColor('#0f172a');
-
-  const cells = {
-    id: String(row.expense_id || row.id || ''),
-    name: String(row.name || ''),
-    category: String(row.category || ''),
-    vendor: String(row.vendor || ''),
-    value: moneyBR(row.value),
-    due: fmtDateBR(row.due_date),
-    status: statusLabel(row.status),
-    created: fmtDateTimeBR(row.created_at),
-  };
-
-  for (const c of cols.items) {
-    let text = '';
-    if (c.key === 'id') text = cells.id;
-    if (c.key === 'name') text = cells.name;
-    if (c.key === 'category') text = cells.category;
-    if (c.key === 'vendor') text = cells.vendor;
-    if (c.key === 'value') text = cells.value;
-    if (c.key === 'due') text = cells.due;
-    if (c.key === 'status') text = cells.status;
-    if (c.key === 'created') text = cells.created;
-
-    doc.text(text, c.x, y + 7, { width: c.w, align: c.align || 'left', ellipsis: true });
-  }
-
-  // row bottom line
-  doc
-    .moveTo(x, y + h)
-    .lineTo(x + cols.totalW, y + h)
-    .lineWidth(0.4)
-    .strokeColor('#e5e7eb')
-    .stroke();
-
-  return y + h;
-}
-
-function drawFooter(doc, meta) {
-  const pageW = doc.page.width;
-  const pageH = doc.page.height;
-  const margin = doc.page.margins.left;
-
-  doc.save();
-  doc
-    .font('Helvetica')
-    .fontSize(8)
-    .fillColor('#64748b')
-    .text(meta?.footerLeft || 'CONSART ERP • Despesas', margin, pageH - 26);
-
-  doc
-    .font('Helvetica')
-    .fontSize(8)
-    .fillColor('#64748b')
-    .text(`Página ${doc.page.pageNumber}`, 0, pageH - 26, { align: 'right' });
-  doc.restore();
-}
-
-function buildFiltersText(f = {}) {
-  const parts = [];
-  if (f.q) parts.push(`Busca="${f.q}"`);
-  if (f.name) parts.push(`Nome="${f.name}"`);
-  if (f.status) parts.push(`Status=${String(f.status).toUpperCase()}`);
-  if (f.category) parts.push(`Categoria="${f.category}"`);
-  if (f.vendor) parts.push(`Fornecedor="${f.vendor}"`);
-  if (f.date_from) parts.push(`De=${fmtDateBR(f.date_from)}`);
-  if (f.date_to) parts.push(`Até=${fmtDateBR(f.date_to)}`);
-  if (f.order_by) parts.push(`Order=${f.order_by}`);
-  return parts.length ? `Filtros: ${parts.join(' • ')}` : 'Filtros: (nenhum)';
+  info.push(['Status', f.status ? statusLabel(f.status) : 'Todos']);
+  const extra = [];
+  if (f.q) extra.push(`Busca "${f.q}"`);
+  if (f.name) extra.push(`Nome "${f.name}"`);
+  if (f.category) extra.push(`Categoria "${f.category}"`);
+  if (f.vendor) extra.push(`Fornecedor "${f.vendor}"`);
+  info.push(['Filtros', extra.length ? extra.join(' · ') : 'Nenhum']);
+  return info;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -401,6 +249,8 @@ export async function generateExpensesPdf({ filters = {}, baseUrl = '' } = {}) {
     date_from: filters.date_from,
     date_to: filters.date_to,
     order_by: filters.order_by || 'created_at_desc',
+    sort: filters.sort,
+    dir: filters.dir,
     limit: filters.limit || 2000,
   });
 
@@ -410,116 +260,75 @@ export async function generateExpensesPdf({ filters = {}, baseUrl = '' } = {}) {
   const filename = `expenses_${stamp}.pdf`;
   const filePath = path.join(OUT_DIR, filename);
 
-  // 3) create PDF
-  const doc = new PDFDocument({
-    size: 'A4',
-    layout: 'landscape',
-    margins: { top: 70, left: 28, right: 28, bottom: 36 },
-    autoFirstPage: true,
+  // 3) totais
+  const sumBy = (st) => rows.filter((r) => statusLabel(r.status) === st).reduce((s, r) => s + Number(r.value || 0), 0);
+  const countBy = (st) => rows.filter((r) => statusLabel(r.status) === st).length;
+  const paid = sumBy('PAGO');
+  const pending = sumBy('PENDENTE');
+
+  // 4) PDF
+  const { doc, done } = createThemedDoc({ title: REPORT_TITLE, subject: 'Despesas' });
+  const generatedAt = nowBR();
+
+  let y = drawFullHeader(doc, {
+    title: REPORT_TITLE,
+    subtitle: 'Financeiro · Gestão de Despesas',
+    info: headerInfo(filters),
+  }) + 14;
+
+  y = drawKpis(doc, y, [
+    { label: 'Despesas', value: number(total, 0), hint: rows.length < total ? `${number(rows.length, 0)} listadas no PDF` : 'Registros no relatório', color: SERIES[0] },
+    { label: 'Valor total', value: moneyBR(total_value), hint: 'Soma dos valores', color: SERIES[5] },
+    { label: 'Pagas', value: moneyBR(paid), hint: `${number(countBy('PAGO'), 0)} despesa(s)`, color: SERIES[1] },
+    { label: 'Pendentes', value: moneyBR(pending), hint: `${number(countBy('PENDENTE'), 0)} despesa(s)`, color: SERIES[2] },
+  ]) + 16;
+
+  const table = makeTable(doc, {
+    title: 'Despesas',
+    continuation: { title: REPORT_TITLE, subtitle: 'Despesas (continuação)' },
+    rowH: 18,
+    fontSize: 7.5,
+    columns: [
+      { label: 'ID', w: 44 },
+      { label: 'Nome' },
+      { label: 'Categoria' },
+      { label: 'Fornecedor' },
+      { label: 'Valor', w: 86, align: 'right', bold: true },
+      { label: 'Venc.', w: 64, align: 'center' },
+      { label: 'Status', w: 66, align: 'center' },
+      { label: 'Criado em', w: 84 },
+    ],
   });
 
-  const stream = fs.createWriteStream(filePath);
-  doc.pipe(stream);
+  y = table.section(y);
 
-  // columns layout (A4 landscape)
-  const margin = doc.page.margins.left;
-  const pageW = doc.page.width;
-  const tableW = pageW - margin * 2;
-
-  const cols = {
-    h: 26,
-    rowH: 24,
-    totalW: tableW,
-    items: [],
-  };
-
-  // define columns (ajuste se quiser)
-  const colDefs = [
-    { key: 'id',      label: 'ID',          w: 50,  align: 'left' },
-    { key: 'name',    label: 'Nome',        w: 180, align: 'left' },
-    { key: 'category',label: 'Categoria',   w: 200, align: 'left' },
-    { key: 'vendor',  label: 'Fornecedor',  w: 150, align: 'left' },
-    { key: 'value',   label: 'Valor',       w: 95,  align: 'left' },
-    { key: 'due',     label: 'Venc.',       w: 85,  align: 'left' },
-    { key: 'status',  label: 'Status',      w: 90,  align: 'left' },
-    { key: 'created', label: 'Criado em',   w: 150, align: 'left' },
-  ];
-
-  // fit columns to table width (scale if needed)
-  const sumW = colDefs.reduce((a, c) => a + c.w, 0);
-  const scale = sumW > tableW ? (tableW / sumW) : 1;
-
-  let xCursor = margin;
-  cols.items = colDefs.map(c => {
-    const w = Math.floor(c.w * scale);
-    const col = { ...c, x: xCursor, w };
-    xCursor += w;
-    return col;
-  });
-
-  // meta header
-  const filtersText = buildFiltersText({
-    q: filters.q,
-    name: filters.name,
-    status: filters.status,
-    category: filters.category,
-    vendor: filters.vendor,
-    date_from: filters.date_from,
-    date_to: filters.date_to,
-    order_by: filters.order_by || 'created_at_desc',
-  });
-
-  const totalsText = `Total registros: ${total} • Soma valores: ${moneyBR(total_value)}`;
-  const generatedAt = `Gerado em: ${fmtDateTimeBR(now.toISOString())}`;
-
-  const headerMeta = {
-    title: 'RELATÓRIO DE DESPESAS',
-    subtitle: 'CONSART ERP • Financeiro',
-    filtersText,
-    totalsText,
-    generatedAt,
-    footerLeft: 'CONSART ERP • Despesas',
-  };
-
-  // header on first page
-  let y = drawHeader(doc, headerMeta);
-
-  // table header
-  y = drawTableHeader(doc, margin, y, cols);
-
-  // available height
-  const pageH = doc.page.height;
-  const bottomLimit = pageH - doc.page.margins.bottom - 10;
-
-  // handle new pages
-  const newPage = () => {
-    doc.addPage();
-    let yy = drawHeader(doc, headerMeta);
-    yy = drawTableHeader(doc, margin, yy, cols);
-    return yy;
-  };
-
-  // rows
-  let zebra = true;
-  for (let i = 0; i < rows.length; i++) {
-    if (y + cols.rowH > bottomLimit) {
-      drawFooter(doc, headerMeta);
-      y = newPage();
-    }
-    y = drawRow(doc, margin, y, cols, rows[i], zebra);
-    zebra = !zebra;
+  if (!rows.length) {
+    doc.font('Helvetica').fontSize(9).fillColor(C.muted)
+      .text('Nenhuma despesa encontrada para os filtros selecionados.', PAGE.margin, y + 16, { width: table.width, align: 'center' });
   }
 
-  // footer last page
-  drawFooter(doc, headerMeta);
+  rows.forEach((row, index) => {
+    const st = statusLabel(row.status);
+    y = table.row(y, [
+      String(row.expense_id || row.id || ''),
+      String(row.name || ''),
+      String(row.category || ''),
+      String(row.vendor || ''),
+      moneyBR(row.value),
+      fmtDateBR(row.due_date),
+      { text: st, color: STATUS_COLORS[st] || C.text, bold: true },
+      fmtDateTimeBR(row.created_at),
+    ], { index });
+  });
 
-  // finish
+  if (rows.length) {
+    table.total(y, ['TOTAL', `${number(rows.length, 0)} registro(s)`, '', '', moneyBR(rows.reduce((s, r) => s + Number(r.value || 0), 0)), '', '', '']);
+  }
+
+  drawFooters(doc, { title: REPORT_TITLE, generatedAt });
   doc.end();
 
-  await new Promise((resolve, reject) => {
-    stream.on('finish', resolve);
-    stream.on('error', reject);
-  });
+  await fs.promises.writeFile(filePath, await done);
 
   // public url
   // arquivo salvo em: backend/public/pdfs/expenses/<file>

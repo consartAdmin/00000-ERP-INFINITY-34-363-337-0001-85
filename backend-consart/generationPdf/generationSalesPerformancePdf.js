@@ -1,12 +1,15 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ generationSalesPerformancePdf.js — PDF Desempenho de Vendedores     ║
-// ║ CONSART ERP | PDFKit | ESM                                          ║
+// ║ CONSART ERP | PDFKit | ESM | layout padrão (consartPdfTheme.js)     ║
 // ║ Caminho: backend/generationPdf/generationSalesPerformancePdf.js     ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
-import PDFDocument from 'pdfkit';
+import {
+    C, SERIES, PAGE,
+    createThemedDoc, drawFullHeader, drawFooters, drawKpis, makeTable, nowBR,
+} from './consartPdfTheme.js';
 
 function safeText(value, def = '-') {
     const s = String(value ?? '').trim();
@@ -140,98 +143,6 @@ function getMotivoPerda(row) {
     );
 }
 
-function addPageIfNeeded(doc, y, needed = 20) {
-    const bottom = doc.page.height - doc.page.margins.bottom;
-
-    if (y + needed <= bottom) return y;
-
-    doc.addPage();
-    return doc.page.margins.top;
-}
-
-function drawTitle(doc, text, y) {
-    doc
-        .font('Helvetica-Bold')
-        .fontSize(14)
-        .fillColor('#111827')
-        .text(text, doc.page.margins.left, y);
-
-    return y + 22;
-}
-
-function drawInfo(doc, { inicio, fim, responsavel }, y) {
-    doc.font('Helvetica').fontSize(10).fillColor('#111827');
-
-    doc.text(`Período: ${formatDateInputBR(inicio)} até ${formatDateInputBR(fim)}`, 40, y);
-    y += 15;
-
-    doc.text(`Responsável: ${safeText(responsavel, 'Todos')}`, 40, y);
-    y += 15;
-
-    doc.text(`Emitido em: ${new Date().toLocaleString('pt-BR')}`, 40, y);
-    y += 22;
-
-    return y;
-}
-
-function drawSectionHeader(doc, title, y) {
-    y = addPageIfNeeded(doc, y, 24);
-
-    doc
-        .font('Helvetica-Bold')
-        .fontSize(12)
-        .fillColor('#111827')
-        .text(title, 40, y);
-
-    return y + 18;
-}
-
-function drawSimpleTable(doc, y, headers, rows, widths) {
-    const xStart = 40;
-    const rowH = 22;
-    let x = xStart;
-
-    y = addPageIfNeeded(doc, y, rowH + 10);
-
-    doc.rect(xStart, y, widths.reduce((a, b) => a + b, 0), rowH).fill('#2d89ef');
-
-    doc.font('Helvetica-Bold').fontSize(9).fillColor('#ffffff');
-
-    headers.forEach((h, i) => {
-        doc.text(h, x + 5, y + 7, { width: widths[i] - 10 });
-        x += widths[i];
-    });
-
-    y += rowH;
-
-    doc.font('Helvetica').fontSize(9).fillColor('#374151');
-
-    rows.forEach((row, rowIndex) => {
-        y = addPageIfNeeded(doc, y, rowH + 8);
-
-        x = xStart;
-
-        if (rowIndex % 2 === 0) {
-            doc.rect(xStart, y, widths.reduce((a, b) => a + b, 0), rowH).fill('#f3f4f6');
-        }
-
-        doc.fillColor('#374151');
-
-        row.forEach((cell, i) => {
-            doc.text(safeText(cell), x + 5, y + 7, {
-                width: widths[i] - 10,
-                ellipsis: true
-            });
-
-            x += widths[i];
-        });
-
-        y += rowH;
-    });
-
-    return y + 10;
-}
-
 const KPI_LABELS = {
     contatosInseridos: 'Quantos Contatos Foram Inseridos',
     leadsEncerrados: 'Quantos Leads Foram Encerrados',
@@ -243,138 +154,30 @@ const KPI_LABELS = {
     clientesUnicos: 'Clientes Únicos'
 };
 
-function drawIndicadores(doc, y, metricas = {}, configPdf = {}) {
-    y = drawSectionHeader(doc, 'INDICADORES', y);
+const REPORT_TITLE = 'Desempenho de Vendedores';
 
-    const kpisSelecionados = Array.isArray(configPdf?.kpis)
-        ? configPdf.kpis
-        : [];
+const KPI_SHORT = {
+    contatosInseridos: ['Contatos inseridos', 'Quantos contatos foram inseridos'],
+    leadsEncerrados: ['Leads encerrados', 'Quantos leads foram encerrados'],
+    leadsConvertidos: ['Leads convertidos', 'Quantos leads foram convertidos'],
+    leadsPerdidos: ['Leads perdidos', 'Quantos leads foram perdidos'],
+    movimentosEtapa: ['Mov. de etapa', 'Movimentações de etapa'],
+    atualizacoes: ['Atualizações', 'Atualizações realizadas'],
+    totalAcoes: ['Total de ações', 'Todas as ações no CRM'],
+    clientesUnicos: ['Clientes únicos', 'Clientes diferentes'],
+};
 
-    const keys = kpisSelecionados.length
-        ? kpisSelecionados
-        : Object.keys(KPI_LABELS);
+const KPI_COLORS = {
+    leadsConvertidos: C.green,
+    leadsPerdidos: C.red,
+};
 
-    const rows = keys.map((key) => [
-        KPI_LABELS[key] || key,
-        numberBR(metricas[key] || 0)
-    ]);
+const CONVERSION_TYPES = ['OUTCOME_CONVERSION', 'CONVERSION', 'DEAL_WON', 'SALE_CONVERTED', 'GANHO', 'WON'];
 
-    return drawSimpleTable(
-        doc,
-        y,
-        ['Indicador', 'Quantidade'],
-        rows,
-        [390, 160]
-    );
-}
-
-function drawMovimentacoes(doc, y, movimentacoes = [], options = {}) {
-    y = drawSectionHeader(doc, 'MOVIMENTAÇÕES DETALHADAS', y);
-
-    const configPdf = options?.configPdf || {};
-
-    const kpis = Array.isArray(configPdf?.kpis)
-        ? configPdf.kpis
-        : [];
-
-    const somentePerdidos =
-        kpis.length === 1 &&
-        kpis.includes('leadsPerdidos');
-
-    const somenteConvertidos =
-        kpis.length === 1 &&
-        kpis.includes('leadsConvertidos');
-
-    let rowsBase = [...movimentacoes];
-
-    if (somentePerdidos) {
-        rowsBase = rowsBase.filter((m) => isPerda(m?.tipo));
-    }
-
-    if (somenteConvertidos) {
-        rowsBase = rowsBase.filter((m) => {
-            const tipo = normalizeTipo(m?.tipo);
-
-            return [
-                'OUTCOME_CONVERSION',
-                'CONVERSION',
-                'DEAL_WON',
-                'SALE_CONVERTED',
-                'GANHO',
-                'WON'
-            ].includes(tipo);
-        });
-    }
-
-    const headers = somentePerdidos
-        ? [
-            'Data',
-            'Hora',
-            'Vendedor',
-            'Cliente',
-            'Tipo',
-            'Motivo da Perda',
-            'Valor'
-        ]
-        : [
-            'Data',
-            'Hora',
-            'Vendedor',
-            'Cliente',
-            'Tipo',
-            'Valor'
-        ];
-
-    const widths = somentePerdidos
-        ? [55, 45, 90, 155, 70, 145, 70]
-        : [60, 50, 110, 230, 90, 80];
-
-    const rows = rowsBase.length
-        ? rowsBase.map((m) => {
-            const row = [
-                dateBR(m?.datahora || m?.created_at),
-                hourBR(m?.datahora || m?.created_at),
-                getVendedor(m),
-                getCliente(m),
-                formatTipo(m?.tipo)
-            ];
-
-            if (somentePerdidos) {
-                row.push(getMotivoPerda(m));
-            }
-
-            row.push(
-                moneyBR(
-                    m?.valor ??
-                    m?.value_at_moment ??
-                    m?.estimated_value ??
-                    0
-                )
-            );
-
-            return row;
-        })
-        : [headers.map(() => 'Sem dados')];
-
-    return drawSimpleTable(doc, y, headers, rows, widths);
-}
-function addFooter(doc) {
-    const total = doc.bufferedPageRange().count;
-
-    for (let i = 0; i < total; i += 1) {
-        doc.switchToPage(i);
-
-        doc
-            .font('Helvetica')
-            .fontSize(8)
-            .fillColor('#6b7280')
-            .text(
-                `CONSART ERP • Página ${i + 1} de ${total}`,
-                40,
-                doc.page.height - 30,
-                { align: 'left' }
-            );
-    }
+function tipoColor(tipo) {
+    if (isPerda(tipo)) return C.red;
+    if (CONVERSION_TYPES.includes(normalizeTipo(tipo))) return C.green;
+    return C.text;
 }
 
 export async function generateSalesPerformancePdf({
@@ -385,39 +188,84 @@ export async function generateSalesPerformancePdf({
     movimentacoes = [],
     configPdf = {}
 } = {}) {
-    return new Promise((resolve, reject) => {
-        try {
-            const doc = new PDFDocument({
-                size: 'A4',
-                layout: 'landscape',
-                margin: 40,
-                bufferPages: true
-            });
+    const { doc, done } = createThemedDoc({ title: REPORT_TITLE });
+    const generatedAt = nowBR();
 
-            const chunks = [];
+    let y = drawFullHeader(doc, {
+        title: REPORT_TITLE,
+        subtitle: 'Indicadores e movimentações do CRM',
+        info: [
+            ['Período', `${formatDateInputBR(inicio)} a ${formatDateInputBR(fim)}`],
+            ['Responsável', safeText(responsavel, 'Todos')],
+        ],
+    }) + 14;
 
-            doc.on('data', (chunk) => chunks.push(chunk));
-            doc.on('end', () => resolve(Buffer.concat(chunks)));
-            doc.on('error', reject);
+    /* ---------------- Indicadores ---------------- */
 
-            let y = 35;
+    const kpisSelecionados = Array.isArray(configPdf?.kpis) ? configPdf.kpis : [];
+    const keys = kpisSelecionados.length ? kpisSelecionados : Object.keys(KPI_LABELS);
+    const cards = keys.map((key, i) => ({
+        label: KPI_SHORT[key]?.[0] || KPI_LABELS[key] || key,
+        value: numberBR(metricas[key] || 0),
+        hint: KPI_SHORT[key]?.[1] || '',
+        color: KPI_COLORS[key] || SERIES[i % SERIES.length],
+    }));
 
-            y = drawTitle(doc, 'RELATÓRIO DE DESEMPENHO DE VENDEDORES', y);
-            y = drawInfo(doc, { inicio, fim, responsavel }, y);
+    for (let i = 0; i < cards.length; i += 4) {
+        y = drawKpis(doc, y, cards.slice(i, i + 4)) + 10;
+    }
+    y += 6;
 
-            y = drawIndicadores(doc, y, metricas, configPdf);
+    /* ---------------- Movimentações ---------------- */
 
-            y = drawMovimentacoes(doc, y, movimentacoes, {
-                configPdf
-            });
+    const somentePerdidos = kpisSelecionados.length === 1 && kpisSelecionados.includes('leadsPerdidos');
+    const somenteConvertidos = kpisSelecionados.length === 1 && kpisSelecionados.includes('leadsConvertidos');
 
-            addFooter(doc);
+    let rowsBase = [...movimentacoes];
+    if (somentePerdidos) rowsBase = rowsBase.filter((m) => isPerda(m?.tipo));
+    if (somenteConvertidos) rowsBase = rowsBase.filter((m) => CONVERSION_TYPES.includes(normalizeTipo(m?.tipo)));
 
-            doc.end();
-        } catch (err) {
-            reject(err);
-        }
+    const columns = [
+        { label: 'Data', w: 62 },
+        { label: 'Hora', w: 44 },
+        { label: 'Vendedor', w: 110 },
+        { label: 'Cliente' },
+        { label: 'Tipo', w: 120 },
+        ...(somentePerdidos ? [{ label: 'Motivo da Perda' }] : []),
+        { label: 'Valor', w: 90, align: 'right', bold: true },
+    ];
+
+    const table = makeTable(doc, {
+        title: 'Movimentações detalhadas',
+        continuation: { title: REPORT_TITLE, subtitle: 'Movimentações detalhadas (continuação)' },
+        rowH: 18,
+        fontSize: 7.5,
+        columns,
     });
+
+    y = table.section(y);
+
+    if (!rowsBase.length) {
+        doc.font('Helvetica').fontSize(9).fillColor(C.muted)
+            .text('Sem movimentações para o período.', PAGE.margin, y + 16, { width: table.width, align: 'center' });
+    }
+
+    rowsBase.forEach((m, index) => {
+        const row = [
+            dateBR(m?.datahora || m?.created_at),
+            hourBR(m?.datahora || m?.created_at),
+            getVendedor(m),
+            getCliente(m),
+            { text: formatTipo(m?.tipo), color: tipoColor(m?.tipo), bold: true },
+        ];
+        if (somentePerdidos) row.push(getMotivoPerda(m));
+        row.push(moneyBR(m?.valor ?? m?.value_at_moment ?? m?.estimated_value ?? 0));
+        y = table.row(y, row, { index });
+    });
+
+    drawFooters(doc, { title: REPORT_TITLE, generatedAt });
+    doc.end();
+    return done;
 }
 
 export default generateSalesPerformancePdf;

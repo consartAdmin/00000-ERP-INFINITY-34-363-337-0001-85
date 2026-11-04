@@ -8,6 +8,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import PDFDocument from 'pdfkit';
+import { C, PAGE, drawFullHeader, autoCompactHeader, drawFooters, nowBR } from './consartPdfTheme.js';
 
 /**
  * Gera um Buffer de PDF com o resumo das campanhas Google Ads.
@@ -37,7 +38,8 @@ export function generateGoogleAdsPdf({
       const doc = new PDFDocument({
         size: 'A4',
         layout: 'landscape', // PDF em PAISAGEM
-        margin: 40,
+        margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 20 },
+        bufferPages: true,
       });
 
       const chunks = [];
@@ -71,63 +73,23 @@ export function generateGoogleAdsPdf({
         return `${d}/${m}/${y}`;
       };
 
-      function renderFooter() {
-        const page = doc.page || {};
-        const {
-          width = 0,
-          height = 0,
-          margins = { left: 40, right: 40, bottom: 40 },
-        } = page;
-
-        const footerY = height - (margins.bottom - 10);
-        const pageNumber = page.number ?? '';
-
-        if (!pageNumber) return;
-
-        doc
-          .fontSize(8)
-          .fillColor('#9ca3af')
-          .text(
-            `Página ${pageNumber}`,
-            margins.left,
-            footerY,
-            {
-              width: width - margins.left - margins.right,
-              align: 'right',
-            },
-          );
-      }
+      // Rodapé padrão é desenhado no fim (drawFooters) em todas as páginas.
+      function renderFooter() {}
 
       function drawKpiCard({ x, y, width, height, label, value, helper }) {
-        doc
-          .save()
-          .roundedRect(x, y, width, height, 8)
-          .fill('#f9fafb');
-
-        doc
-          .fillColor('#6b7280')
-          .fontSize(8)
-          .text(label, x + 10, y + 6, {
-            width: width - 20,
-          });
-
-        doc
-          .fillColor('#111827')
-          .fontSize(13)
-          .text(value, x + 10, y + 20, {
-            width: width - 20,
-          });
-
+        doc.save();
+        doc.roundedRect(x, y, width, height, 6).fillAndStroke(C.white, C.border);
+        doc.rect(x, y + 6, 3, height - 12).fill(C.teal);
+        doc.font('Helvetica').fillColor(C.muted).fontSize(7.5)
+          .text(String(label).toUpperCase(), x + 12, y + 7, { width: width - 22, lineBreak: false });
+        doc.font('Helvetica-Bold').fillColor(C.navy).fontSize(13)
+          .text(value, x + 12, y + 19, { width: width - 22, lineBreak: false });
         if (helper) {
-          doc
-            .fillColor('#6b7280')
-            .fontSize(7)
-            .text(helper, x + 10, y + height - 14, {
-              width: width - 20,
-            });
+          doc.font('Helvetica').fillColor(C.muted).fontSize(7)
+            .text(helper, x + 12, y + height - 14, { width: width - 22, lineBreak: false });
         }
-
         doc.restore();
+        doc.font('Helvetica');
       }
 
       /**
@@ -170,7 +132,7 @@ export function generateGoogleAdsPdf({
           const barY = innerY + (innerHeight - safeHeight);
 
           doc
-            .fillColor('#3b82f6')
+            .fillColor(C.teal)
             .roundedRect(barX, barY, barWidth, safeHeight, 2)
             .fill();
 
@@ -413,66 +375,35 @@ export function generateGoogleAdsPdf({
         ad: 'Filtro: Anúncios da campanha ',
       };
 
-      const gradient = doc.linearGradient(
-        headerX,
-        headerY,
-        headerX + contentWidth,
-        headerY,
-      );
-      gradient.stop(0, '#2563eb').stop(1, '#0ea5e9');
-
-      doc
-        .save()
-        .roundedRect(headerX, headerY, contentWidth, headerHeight, 8)
-        .fill(gradient);
-
-      doc
-        .fillColor('#ffffff')
-        .fontSize(16)
-        .text(
-          titleByLevel[level] || titleByLevel.campaign,
-          headerX + 18,
-          headerY + 8,
-          { width: contentWidth - 36, align: 'left' },
-        );
-
-      // linha "Conta"
-      doc
-        .fontSize(9)
-        .fillColor('#e5e7eb')
-        .text(
-          `Conta: ${accountLabel}`,
-          headerX + 18,
-          headerY + 26,
-          { width: contentWidth - 36, align: 'left' },
-        );
-
-      // se houver filtro de campanha, mostra mais uma linha
+      const reportTitle = titleByLevel[level] || titleByLevel.campaign;
+      const headerInfo = [
+        ['Período', startDate && endDate ? `${fmtDateLabel(startDate)} a ${fmtDateLabel(endDate)}` : '—'],
+        ['Conta', accountLabel],
+      ];
       if (campaignLabel) {
-        const prefix = subtitleFilterByLevel[level] || subtitleFilterByLevel.campaign;
-        doc
-          .fontSize(9)
-          .fillColor('#e5e7eb')
-          .text(
-            `${prefix}${campaignLabel}`,
-            headerX + 18,
-            headerY + 36,
-            { width: contentWidth - 36, align: 'left' },
-          );
+        const prefix = (subtitleFilterByLevel[level] || subtitleFilterByLevel.campaign).replace(/^Filtro:\s*/, '').trim();
+        headerInfo.push(['Filtro', `${prefix} ${campaignLabel}`]);
       }
 
-      doc.restore();
+      const afterHeader = drawFullHeader(doc, {
+        title: reportTitle,
+        subtitle: 'Google Ads · desempenho de campanhas',
+        info: headerInfo,
+      });
+      autoCompactHeader(doc, { title: reportTitle, subtitle: 'Google Ads (continuação)' });
 
-      doc.y = headerY + headerHeight + 16;
+      doc.y = afterHeader + 14;
 
       /* ----------------------------------------------------------------- */
       /* Dashboard: KPIs principais                                        */
       /* ----------------------------------------------------------------- */
 
       doc
+        .font('Helvetica-Bold')
         .fontSize(11)
-        .fillColor('#111827')
+        .fillColor(C.navy)
         .text('Resumo Geral', headerX, doc.y);
+      doc.font('Helvetica');
 
       doc.moveDown(0.4);
 
@@ -489,7 +420,7 @@ export function generateGoogleAdsPdf({
         label: 'Investimento total',
         value: fmtMoney(totalCost),
         helper: startDate && endDate
-          ? `Período: ${startDate} a ${endDate}`
+          ? `Período: ${fmtDateLabel(startDate)} a ${fmtDateLabel(endDate)}`
           : undefined,
       });
 
@@ -551,9 +482,11 @@ export function generateGoogleAdsPdf({
 
       if (costPerDateArray.length >= 2) {
         doc
+          .font('Helvetica-Bold')
           .fontSize(11)
-          .fillColor('#111827')
+          .fillColor(C.navy)
           .text('Custo diário (gráfico de barras)', headerX, doc.y);
+        doc.font('Helvetica');
 
         doc.moveDown(0.4);
 
@@ -694,12 +627,13 @@ export function generateGoogleAdsPdf({
           doc
             .save()
             .rect(startX - 2, headerY - 3, contentWidth + 4, 16)
-            .fill('#f3f4f6')
+            .fill(C.blue)
             .restore();
 
           doc
-            .fontSize(9)
-            .fillColor('#111827')
+            .font('Helvetica-Bold')
+            .fontSize(8)
+            .fillColor(C.white)
             .text('Campanha', col.name, headerY, {
               width: widths.name,
               align: 'left',
@@ -754,13 +688,15 @@ export function generateGoogleAdsPdf({
           }
 
           doc
+            .font('Helvetica-Bold')
             .fontSize(11)
-            .fillColor('#111827')
+            .fillColor(C.navy)
             .text(
               `Resumo por campanha — ${fmtDateLabel(dateKey)}`,
               headerX,
               doc.y,
             );
+          doc.font('Helvetica');
 
           doc
             .fontSize(8)
@@ -774,7 +710,7 @@ export function generateGoogleAdsPdf({
           doc.moveDown(2);
 
           printTableHeader();
-          doc.fontSize(8).fillColor('#111827');
+          doc.font('Helvetica').fontSize(8).fillColor(C.text);
 
           let currentY = doc.y;
           let rowIndex = 0;
@@ -789,17 +725,19 @@ export function generateGoogleAdsPdf({
 
               doc.y = doc.page.margins.top;
               doc
+                .font('Helvetica-Bold')
                 .fontSize(11)
-                .fillColor('#111827')
+                .fillColor(C.navy)
                 .text(
                   `Resumo por campanha — ${fmtDateLabel(dateKey)} (continuação)`,
                   headerX,
                   doc.y,
                 );
+              doc.font('Helvetica');
 
               doc.moveDown(0.8);
               printTableHeader();
-              doc.fontSize(8).fillColor('#111827');
+              doc.font('Helvetica').fontSize(8).fillColor(C.text);
 
               currentY = doc.y;
               rowIndex = 0;
@@ -943,12 +881,13 @@ export function generateGoogleAdsPdf({
           doc
             .save()
             .rect(startX - 2, headerY - 3, contentWidth + 4, 16)
-            .fill('#f3f4f6')
+            .fill(C.blue)
             .restore();
 
           doc
-            .fontSize(9)
-            .fillColor('#111827')
+            .font('Helvetica-Bold')
+            .fontSize(8)
+            .fillColor(C.white)
             .text('Campanha', col.camp, headerY, {
               width: widths.camp,
               align: 'left',
@@ -1010,13 +949,15 @@ export function generateGoogleAdsPdf({
           }
 
           doc
+            .font('Helvetica-Bold')
             .fontSize(11)
-            .fillColor('#111827')
+            .fillColor(C.navy)
             .text(
               `Resumo por palavra-chave — ${fmtDateLabel(dateKey)}`,
               headerX,
               doc.y,
             );
+          doc.font('Helvetica');
 
           doc
             .fontSize(8)
@@ -1030,7 +971,7 @@ export function generateGoogleAdsPdf({
           doc.moveDown(2);
 
           printTableHeader();
-          doc.fontSize(8).fillColor('#111827');
+          doc.font('Helvetica').fontSize(8).fillColor(C.text);
 
           let currentY = doc.y;
           let rowIndex = 0;
@@ -1055,8 +996,9 @@ export function generateGoogleAdsPdf({
 
               doc.y = doc.page.margins.top;
               doc
+                .font('Helvetica-Bold')
                 .fontSize(11)
-                .fillColor('#111827')
+                .fillColor(C.navy)
                 .text(
                   `Resumo por palavra-chave — ${fmtDateLabel(
                     dateKey,
@@ -1064,10 +1006,11 @@ export function generateGoogleAdsPdf({
                   headerX,
                   doc.y,
                 );
+              doc.font('Helvetica');
 
               doc.moveDown(0.8);
               printTableHeader();
-              doc.fontSize(8).fillColor('#111827');
+              doc.font('Helvetica').fontSize(8).fillColor(C.text);
 
               currentY = doc.y;
               rowIndex = 0;
@@ -1229,12 +1172,13 @@ export function generateGoogleAdsPdf({
           doc
             .save()
             .rect(startX - 2, headerY - 3, contentWidth + 4, 16)
-            .fill('#f3f4f6')
+            .fill(C.blue)
             .restore();
 
           doc
-            .fontSize(9)
-            .fillColor('#111827')
+            .font('Helvetica-Bold')
+            .fontSize(8)
+            .fillColor(C.white)
             .text('Campanha', col.camp, headerY, {
               width: widths.camp,
               align: 'left',
@@ -1296,13 +1240,15 @@ export function generateGoogleAdsPdf({
           }
 
           doc
+            .font('Helvetica-Bold')
             .fontSize(11)
-            .fillColor('#111827')
+            .fillColor(C.navy)
             .text(
               `Resumo por anúncio — ${fmtDateLabel(dateKey)}`,
               headerX,
               doc.y,
             );
+          doc.font('Helvetica');
 
           doc
             .fontSize(8)
@@ -1316,7 +1262,7 @@ export function generateGoogleAdsPdf({
           doc.moveDown(2);
 
           printTableHeader();
-          doc.fontSize(8).fillColor('#111827');
+          doc.font('Helvetica').fontSize(8).fillColor(C.text);
 
           let currentY = doc.y;
           let rowIndex = 0;
@@ -1343,8 +1289,9 @@ export function generateGoogleAdsPdf({
 
               doc.y = doc.page.margins.top;
               doc
+                .font('Helvetica-Bold')
                 .fontSize(11)
-                .fillColor('#111827')
+                .fillColor(C.navy)
                 .text(
                   `Resumo por anúncio — ${fmtDateLabel(
                     dateKey,
@@ -1352,10 +1299,11 @@ export function generateGoogleAdsPdf({
                   headerX,
                   doc.y,
                 );
+              doc.font('Helvetica');
 
               doc.moveDown(0.8);
               printTableHeader();
-              doc.fontSize(8).fillColor('#111827');
+              doc.font('Helvetica').fontSize(8).fillColor(C.text);
 
               currentY = doc.y;
               rowIndex = 0;
@@ -1486,7 +1434,7 @@ export function generateGoogleAdsPdf({
       }
 
       // Footer da última página
-      renderFooter();
+      drawFooters(doc, { title: reportTitle, generatedAt: nowBR() });
       doc.end();
     } catch (err) {
       reject(err);

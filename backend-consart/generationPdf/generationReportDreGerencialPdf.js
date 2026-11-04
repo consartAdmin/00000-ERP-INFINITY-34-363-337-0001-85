@@ -4,7 +4,12 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import PDFDocument from 'pdfkit';
+import {
+  C, SERIES,
+  drawFullHeader, drawCompactHeader, drawFooters, drawKpis, nowBR,
+} from './consartPdfTheme.js';
 
+const REPORT_TITLE = 'DRE Gerencial';
 function num(value, fallback = 0) {
   const n = Number(value ?? fallback);
   return Number.isFinite(n) ? n : fallback;
@@ -79,53 +84,19 @@ function ensureSpace(doc, minHeight = 60) {
   if (doc.y + minHeight <= 780) return;
 
   doc.addPage();
-  doc.y = 42;
+  doc.y = drawCompactHeader(doc, { title: REPORT_TITLE, subtitle: 'Demonstrativo de Resultado (continuação)' }) + 14;
 }
 
-function drawHeader(doc, { title, subtitle }) {
-  doc
-    .rect(0, 0, 595.28, 92)
-    .fill('#f8fafc');
-
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(19)
-    .fillColor('#0f172a')
-    .text(title, 36, 30, { width: 523, align: 'center' });
-
-  doc
-    .font('Helvetica')
-    .fontSize(9)
-    .fillColor('#64748b')
-    .text(subtitle, 36, 56, { width: 523, align: 'center' });
-
-  doc
-    .moveTo(36, 82)
-    .lineTo(559, 82)
-    .strokeColor('#cbd5e1')
-    .lineWidth(1)
-    .stroke();
-
-  doc.y = 105;
+function drawHeader(doc, { title, subtitle, periodo }) {
+  doc.y = drawFullHeader(doc, {
+    title,
+    subtitle,
+    info: [['Período', periodo]],
+  }) + 14;
 }
 
 function drawFooter(doc) {
-  const range = doc.bufferedPageRange();
-
-  for (let i = range.start; i < range.start + range.count; i += 1) {
-    doc.switchToPage(i);
-
-    doc
-      .font('Helvetica')
-      .fontSize(8)
-      .fillColor('#64748b')
-      .text(
-        `CONSART ERP • DRE Gerencial • Página ${i + 1} de ${range.count}`,
-        36,
-        805,
-        { width: 523, align: 'center' }
-      );
-  }
+  drawFooters(doc, { title: REPORT_TITLE, generatedAt: nowBR() });
 }
 
 function drawSectionTitle(doc, title) {
@@ -133,11 +104,13 @@ function drawSectionTitle(doc, title) {
 
   doc
     .font('Helvetica-Bold')
-    .fontSize(12)
-    .fillColor('#0f172a')
+    .fontSize(11)
+    .fillColor(C.navy)
     .text(title, 36, doc.y);
 
-  doc.moveDown(0.45);
+  doc.rect(36, doc.y + 1, 34, 2).fill(C.teal);
+  doc.y += 3;
+  doc.moveDown(0.55);
 }
 
 function drawSimpleRows(doc, rows = []) {
@@ -345,44 +318,20 @@ function drawIrpjCsll(doc, resumo = {}) {
 }
 
 function drawIndicadores(doc, resumo = {}) {
+  // título e cards sempre juntos na mesma página
+  ensureSpace(doc, 100);
   drawSectionTitle(doc, 'Indicadores');
 
   const margemBruta = resumo.margens?.margem_bruta_percent ?? 0;
   const margemLiquida = resumo.margens?.margem_liquida_percent ?? 0;
 
-  ensureSpace(doc, 45);
+  ensureSpace(doc, 70);
 
-  const y = doc.y;
-
-  const cards = [
-    ['Margem Bruta', percentBR(margemBruta)],
-    ['Margem Líquida', percentBR(margemLiquida)],
-    ['Receita Líquida', moneyBR(resumo.receita_liquida)],
-  ];
-
-  cards.forEach(([label, value], index) => {
-    const x = 36 + index * 176;
-
-    doc
-      .rect(x, y, 165, 40)
-      .fill('#f8fafc')
-      .strokeColor('#e2e8f0')
-      .stroke();
-
-    doc
-      .font('Helvetica')
-      .fontSize(7.5)
-      .fillColor('#64748b')
-      .text(label, x + 10, y + 9, { width: 145 });
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(11)
-      .fillColor('#0f172a')
-      .text(value, x + 10, y + 22, { width: 145 });
-  });
-
-  doc.y = y + 54;
+  doc.y = drawKpis(doc, doc.y, [
+    { label: 'Margem bruta', value: percentBR(margemBruta), color: SERIES[1] },
+    { label: 'Margem líquida', value: percentBR(margemLiquida), color: num(margemLiquida) < 0 ? C.red : SERIES[0] },
+    { label: 'Receita líquida', value: moneyBR(resumo.receita_liquida), color: SERIES[5] },
+  ], { x: 36, width: 523, h: 50 }) + 16;
 }
 
 function drawLancamentosHeader(doc) {
@@ -392,12 +341,12 @@ function drawLancamentosHeader(doc) {
 
   doc
     .rect(36, y, 523, 22)
-    .fill('#e2e8f0');
+    .fill(C.blue);
 
   doc
     .font('Helvetica-Bold')
     .fontSize(7.2)
-    .fillColor('#0f172a')
+    .fillColor(C.white)
     .text('Descrição', 42, y + 7, { width: 140 })
     .text('Tipo DRE', 185, y + 7, { width: 82 })
     .text('Categoria', 270, y + 7, { width: 82 })
@@ -446,7 +395,7 @@ function drawLancamentosTable(doc, despesas = [], titulo = 'Lançamentos da DRE'
   despesas.forEach((row, index) => {
     ensureSpace(doc, 31);
 
-    if (doc.y < 70) drawLancamentosHeader(doc);
+    if (doc.y < 80) drawLancamentosHeader(doc);
 
     const y = doc.y;
     const tipo = getTipoDre(row);
@@ -519,8 +468,9 @@ export function generateReportDreGerencialPdfStream({
   const grupos = splitDespesas(despesas);
 
   drawHeader(doc, {
-    title: 'DRE Gerencial',
-    subtitle: `Demonstrativo de Resultado em Tempo Real • Período: ${periodo}`,
+    title: REPORT_TITLE,
+    subtitle: 'Demonstrativo de Resultado em tempo real',
+    periodo,
   });
 
   drawResumoTable(doc, resumo);

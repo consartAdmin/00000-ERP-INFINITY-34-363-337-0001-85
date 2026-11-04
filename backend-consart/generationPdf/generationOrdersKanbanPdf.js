@@ -7,6 +7,10 @@
 // ╚════════════════════════════════════════════════════════════════════════════╝
 
 import PDFDocument from 'pdfkit';
+import {
+  C, SERIES, PAGE,
+  drawFullHeader, drawCompactHeader, drawFooters, drawKpis, contentBottom,
+} from './consartPdfTheme.js';
 import moment from 'moment-timezone';
 import fs from 'node:fs';
 
@@ -50,11 +54,13 @@ export async function generateOrdersKanbanPendingsPdf({
   const filename = `pendencias_rota_${now.format('YYYY-MM-DD_HHmm')}.pdf`;
 
   const doc = new PDFDocument({
-    margin: Number(page?.margin ?? 40),
+    margins: { top: PAGE.margin, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 12 },
     size: page?.size ?? 'A4',
     layout: page?.layout ?? 'landscape',
     compress: true,
+    bufferPages: true,
   });
+  const REPORT_TITLE = 'Relatório de Pendências';
 
   const buffers = [];
   doc.on('data', buffers.push.bind(buffers));
@@ -67,11 +73,11 @@ export async function generateOrdersKanbanPendingsPdf({
     CreationDate: new Date(),
   };
 
-  const margin = Number(page?.margin ?? 40);
+  const margin = PAGE.margin;
   const startX = margin;
   const endX = doc.page.width - margin;
   const topY = margin;
-  const bottomY = doc.page.height - margin;
+  const bottomY = contentBottom(doc) + 20;
 
   const headers = ['Card', 'Pedido', 'Cliente', 'Produto', 'Descrição', 'Qtd', 'Status', 'Observações'];
   const alignMap = ['center', 'center', 'left', 'left', 'left', 'right', 'center', 'left'];
@@ -114,53 +120,37 @@ export async function generateOrdersKanbanPendingsPdf({
     const headerHeight = 22;
     let x = startX;
 
-    doc.save();
-    doc
-      .rect(startX, cursorY, colWidths.reduce((a, b) => a + b, 0), headerHeight)
-      .fillOpacity(0.06)
-      .fill('#000');
-    doc.restore();
-
-    doc.lineWidth(0.5).strokeColor('#000');
-    doc.font('Helvetica-Bold').fontSize(9);
+    doc.rect(startX, cursorY, colWidths.reduce((a, b) => a + b, 0), headerHeight).fill(C.blue);
+    doc.font('Helvetica-Bold').fontSize(8).fillColor(C.white);
 
     headers.forEach((h, i) => {
-      doc.rect(x, cursorY, colWidths[i], headerHeight).stroke();
-      doc.text(h, x + 4, cursorY + 6, { width: colWidths[i] - 8, align: 'left' });
+      doc.text(h, x + 4, cursorY + 7, { width: colWidths[i] - 8, align: 'left', lineBreak: false });
       x += colWidths[i];
     });
+    doc.fillColor(C.text);
 
     cursorY += headerHeight;
   }
 
+  let firstPage = true;
   function drawHeader() {
-    doc.font('Helvetica-Bold').fontSize(14).text(company?.name || '', { align: 'center' });
-
-    doc
-      .font('Helvetica')
-      .fontSize(10)
-      .text(company?.cnpj ? `CNPJ: ${company.cnpj}` : '', { align: 'center' })
-      .text(company?.address || '', { align: 'center' })
-      .text(company?.phones ? `Telefone: ${company.phones}` : '', { align: 'center' })
-      .text(`E-mail: ${company?.email || '-'} | Site: ${company?.site || '-'}`, { align: 'center' });
-
-    doc.moveDown(0.7);
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(12)
-      .text(`RELATÓRIO DE PENDÊNCIAS – ${moment().tz(tz).format('DD/MM/YYYY')}`, { align: 'center' });
-
-    doc.moveTo(startX, doc.y).lineTo(endX, doc.y).lineWidth(0.5).strokeColor('#000').stroke();
-    doc.moveDown(0.3);
-
-    doc
-      .font('Helvetica')
-      .fontSize(10)
-      .text(`Total de registros: ${rows.length}  •  Filtro: ${filtroDesc}`, startX, doc.y, { align: 'left' });
-
-    cursorY = doc.y + 10;
-    drawTableHeader();
+    if (firstPage) {
+      firstPage = false;
+      const subtitle = [company?.name, company?.cnpj ? `CNPJ ${company.cnpj}` : ''].filter(Boolean).join('  ·  ');
+      cursorY = drawFullHeader(doc, {
+        title: `${REPORT_TITLE} – ${moment().tz(tz).format('DD/MM/YYYY')}`,
+        subtitle,
+        info: [
+          ['Filtro', filtroDesc],
+          ['Registros', String(rows.length)],
+        ],
+      }) + 14;
+      // a tabela começa no cabeçalho do primeiro card
+      cursorY = drawKpis(doc, cursorY, kpis) + 16;
+    } else {
+      cursorY = drawCompactHeader(doc, { title: REPORT_TITLE, subtitle: 'Pendências por card (continuação)' }) + 12;
+      drawTableHeader();
+    }
   }
 
   function normalizeStatus(s) {
@@ -211,19 +201,17 @@ export async function generateOrdersKanbanPendingsPdf({
     if (ensureSpace(rowHeight)) return drawRowZebra(values);
 
     if (zebraOn) {
-      doc.save();
-      doc
-        .rect(startX, cursorY, colWidths.reduce((a, b) => a + b, 0), rowHeight)
-        .fillOpacity(0.04)
-        .fill('#000');
-      doc.restore();
+      doc.rect(startX, cursorY, colWidths.reduce((a, b) => a + b, 0), rowHeight).fill(C.zebra);
     }
     zebraOn = !zebraOn;
 
     let x = startX;
     values.forEach((val, i) => {
       const align = alignMap[i] || 'left';
-      doc.rect(x, cursorY, colWidths[i], rowHeight).lineWidth(0.4).strokeColor('#000').stroke();
+      doc.rect(x, cursorY, colWidths[i], rowHeight).lineWidth(0.4).strokeColor(C.border).stroke();
+      const isStatus = i === 6;
+      doc.font(isStatus ? 'Helvetica-Bold' : 'Helvetica')
+        .fillColor(isStatus ? (val === 'ABERTO' ? C.red : (val === 'CONCLUÍDO' ? C.green : C.text)) : C.text);
       doc.text((val ?? '').toString(), x + 4, cursorY + 4, { width: colWidths[i] - 8, align });
       x += colWidths[i];
     });
@@ -237,11 +225,9 @@ export async function generateOrdersKanbanPendingsPdf({
 
     if (ensureSpace(faixaH + 28)) return drawCardSectionHeader(cardInfo);
 
-    doc.save();
-    doc.rect(startX, cursorY, faixaW, faixaH).fillOpacity(0.12).fill('#000');
-    doc.restore();
-
-    doc.lineWidth(0.6).strokeColor('#000').rect(startX, cursorY, faixaW, faixaH).stroke();
+    doc.rect(startX, cursorY, faixaW, faixaH).fill(C.totalFill);
+    doc.rect(startX, cursorY, 3, faixaH).fill(C.teal);
+    doc.fillColor(C.navy);
 
     const yTxt = cursorY + 7;
 
@@ -258,6 +244,7 @@ export async function generateOrdersKanbanPendingsPdf({
     doc
       .font('Helvetica')
       .fontSize(10)
+      .fillColor(C.text)
       .text(`Pendentes: ${cardInfo.pend}  |  Concluídas: ${cardInfo.concl}`, startX + faixaW - 240, yTxt, {
         width: 230,
         align: 'right',
@@ -272,6 +259,19 @@ export async function generateOrdersKanbanPendingsPdf({
     addWatermark();
     drawHeader();
   });
+
+  // KPIs do cabeçalho
+  const kpis = (() => {
+    const cards = new Set(rows.map((r) => r.card_id ?? '—'));
+    const abertos = rows.filter((r) => normalizeStatus(r.status) === 'ABERTO').length;
+    const concluidos = rows.filter((r) => normalizeStatus(r.status) === 'CONCLUÍDO').length;
+    return [
+      { label: 'Cards', value: String(cards.size), hint: 'Cards com pendências', color: SERIES[0] },
+      { label: 'Itens', value: String(rows.length), hint: 'Registros no relatório', color: SERIES[5] },
+      { label: 'Pendentes', value: String(abertos), hint: 'Status aberto', color: abertos ? C.red : SERIES[7] },
+      { label: 'Concluídos', value: String(concluidos), hint: 'Status concluído', color: SERIES[1] },
+    ];
+  })();
 
   addWatermark();
   drawHeader();
@@ -336,6 +336,7 @@ export async function generateOrdersKanbanPendingsPdf({
     cursorY += 6;
   }
 
+  drawFooters(doc, { title: REPORT_TITLE });
   doc.end();
 
   const buffer = await new Promise((resolve, reject) => {
