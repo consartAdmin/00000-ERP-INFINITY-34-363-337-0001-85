@@ -9,6 +9,7 @@
 
 import { openProductsModalSearch } from '/public/modalsSearch/productsModalSearch.js';
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
 
 // ---------------------------------------------------------------------
 // Helper definitivo: utiliza a função global getApiBase() do apiBase.js
@@ -41,13 +42,31 @@ let cachePositions = [];
 
 // Controle de corrida
 let __locReqSeq = 0;
+let __filterReqSeq = 0;
+
+// Lista: filtros em cascata, ordenação (backend) e paginação
+const LOC_FILTERS = [
+  { id: 'filtroCorredor', param: 'fCorredor', key: 'corredor' },
+  { id: 'filtroGondola', param: 'fGondola', key: 'gondola' },
+  { id: 'filtroBandeja', param: 'fBandeja', key: 'bandeja' },
+  { id: 'filtroPosicao', param: 'fPosicao', key: 'posicao' },
+];
+const EMPTY_TOKEN = '__EMPTY__';
+const listState = {
+  page: 1,
+  pageSize: 100,
+  total: 0,
+  sort: { column: 'sku', direction: 'asc' },
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   bindTabs();
   bindEvents();
   bindAutoSearch();
+  bindListControls();
   loadLocalsFilter();
   loadLocals();
+  loadFilterValues();
 
   // ?q=SKU (ex.: link "Gerenciar localizações" da Edição de Produtos) já abre filtrado
   const initialQ = new URLSearchParams(window.location.search).get('q');
@@ -111,6 +130,7 @@ function openListTab() {
 
 function bindEvents() {
   $('#btnRecarregarLocalizacoes')?.addEventListener('click', () => {
+    loadFilterValues();
     loadLocations();
   });
 
@@ -129,7 +149,10 @@ function bindEvents() {
 
     if (q) q.value = '';
     if (filtro) filtro.value = '';
+    LOC_FILTERS.forEach((f) => { const el = $(`#${f.id}`); if (el) el.value = ''; });
+    listState.page = 1;
 
+    loadFilterValues();
     loadLocations();
   });
 
@@ -228,6 +251,7 @@ function bindAutoSearch() {
   if (!qInput) return;
 
   const doSearchDebounced = debounce(() => {
+    listState.page = 1;
     loadLocations();
   }, 250);
 
@@ -248,8 +272,111 @@ function bindAutoSearch() {
   });
 
   localSelect?.addEventListener('change', () => {
+    // novo Local: zera Corredor/Gôndola/Bandeja/Posição e recarrega as opções
+    LOC_FILTERS.forEach((f) => { const el = $(`#${f.id}`); if (el) el.value = ''; });
+    listState.page = 1;
+    loadFilterValues();
     loadLocations();
   });
+
+  LOC_FILTERS.forEach((f, i) => {
+    $(`#${f.id}`)?.addEventListener('change', () => {
+      // cascata: zera os níveis abaixo
+      LOC_FILTERS.slice(i + 1).forEach((low) => { const el = $(`#${low.id}`); if (el) el.value = ''; });
+      listState.page = 1;
+      loadFilterValues();
+      loadLocations();
+    });
+  });
+}
+
+/* --------------------------------------------------------------------- */
+/* Lista: ordenação + paginação                                          */
+/* --------------------------------------------------------------------- */
+
+function bindListControls() {
+  const table = $('#tblLocalizacoes');
+  if (table) {
+    createSortableTable({
+      table,
+      defaultColumn: listState.sort.column,
+      defaultDirection: listState.sort.direction,
+      onSort: async ({ column, direction }) => {
+        listState.sort = { column, direction };
+        listState.page = 1;
+        await loadLocations();
+      },
+    });
+  }
+
+  $('#plBtnPrev')?.addEventListener('click', () => {
+    if (listState.page <= 1) return;
+    listState.page -= 1;
+    loadLocations();
+  });
+
+  $('#plBtnNext')?.addEventListener('click', () => {
+    const pages = Math.max(1, Math.ceil(listState.total / listState.pageSize));
+    if (listState.page >= pages) return;
+    listState.page += 1;
+    loadLocations();
+  });
+
+  $('#plPageSize')?.addEventListener('change', (ev) => {
+    listState.pageSize = Number(ev.target.value) || 100;
+    listState.page = 1;
+    loadLocations();
+  });
+}
+
+function renderPager() {
+  const pages = Math.max(1, Math.ceil(listState.total / listState.pageSize));
+  const info = $('#plPageInfo');
+  if (info) info.textContent = `Página ${listState.page} de ${pages}`;
+  const prev = $('#plBtnPrev');
+  const next = $('#plBtnNext');
+  if (prev) prev.disabled = listState.page <= 1;
+  if (next) next.disabled = listState.page >= pages;
+}
+
+/** valores distintos de Corredor / Gôndola / Bandeja / Posição (cascata pelo Local e níveis acima) */
+async function loadFilterValues() {
+  const reqId = ++__filterReqSeq;
+  try {
+    const params = new URLSearchParams();
+    const storeId = $('#filtroLocal')?.value || '';
+    if (storeId) params.set('storeId', storeId);
+    LOC_FILTERS.forEach((f) => {
+      const v = $(`#${f.id}`)?.value || '';
+      if (v) params.set(f.param, v);
+    });
+
+    const data = await apiGet(`${LOC_API}/product-locations/filters?${params.toString()}`);
+    if (reqId !== __filterReqSeq) return;
+
+    LOC_FILTERS.forEach((f) => {
+      const select = $(`#${f.id}`);
+      if (!select) return;
+      const current = select.value;
+      const values = Array.isArray(data?.[f.key]) ? data[f.key] : [];
+
+      select.innerHTML = '<option value="">Todos</option>';
+      values.forEach((v) => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        select.appendChild(opt);
+      });
+      const empty = document.createElement('option');
+      empty.value = EMPTY_TOKEN;
+      empty.textContent = '(em branco)';
+      select.appendChild(empty);
+
+      if (current && [...select.options].some((o) => o.value === current)) select.value = current;
+    });
+  } catch (err) {
+    console.error('[localizacoes] loadFilterValues error:', err);
+  }
 }
 
 /* --------------------------------------------------------------------- */
@@ -708,21 +835,32 @@ async function loadLocations() {
 
     if (q) params.set('q', q);
     if (filtroLocal) params.set('storeId', filtroLocal);
+    LOC_FILTERS.forEach((f) => {
+      const v = $(`#${f.id}`)?.value || '';
+      if (v) params.set(f.param, v);
+    });
+    params.set('sort', listState.sort.column);
+    params.set('dir', listState.sort.direction);
+    params.set('withMeta', 'true');
+    params.set('limit', String(listState.pageSize));
+    params.set('offset', String((listState.page - 1) * listState.pageSize));
 
-    const query = params.toString();
-    const raw = await apiGet(
-      `${LOC_API}/product-locations${query ? `?${query}` : ''}`,
-    );
+    const raw = await apiGet(`${LOC_API}/product-locations?${params.toString()}`);
 
     if (reqId !== __locReqSeq) return;
 
-    const rows = safeRows(raw);
+    cacheLocations = safeRows(raw);
+    listState.total = Number(raw?.total ?? cacheLocations.length) || 0;
 
-    cacheLocations = filtroLocal
-      ? rows.filter((loc) => String(loc.store_id || '') === String(filtroLocal))
-      : rows;
+    // página além do fim (ex.: depois de excluir): volta para a última
+    const pages = Math.max(1, Math.ceil(listState.total / listState.pageSize));
+    if (listState.page > pages) {
+      listState.page = pages;
+      return loadLocations();
+    }
 
     renderLocationsTable();
+    renderPager();
   } catch (err) {
     if (reqId !== __locReqSeq) return;
     console.error('[localizacoes] loadLocations error:', err);
@@ -818,7 +956,7 @@ function renderLocationsTable() {
 
   const totalInfo = $('#totalInfoLocalizacoes');
   if (totalInfo) {
-    totalInfo.textContent = `${cacheLocations.length} localização(ões)`;
+    totalInfo.textContent = `${listState.total} localização(ões)`;
   }
 }
 

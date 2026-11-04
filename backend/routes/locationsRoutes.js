@@ -42,6 +42,7 @@ import {
 
   // Product locations
   listProductLocations,
+  listProductLocationFilters,
   createProductLocation,
   updateProductLocation,
   deactivateProductLocation,
@@ -107,6 +108,7 @@ router.get('/map', listLocationMap);
 /* --------------------------------------------------------------------- */
 
 router.get('/product-locations', listProductLocations);
+router.get('/product-locations/filters', listProductLocationFilters);
 router.post('/product-locations', createProductLocation);
 router.put('/product-locations/:id', updateProductLocation);
 router.patch('/product-locations/:id/deactivate', deactivateProductLocation);

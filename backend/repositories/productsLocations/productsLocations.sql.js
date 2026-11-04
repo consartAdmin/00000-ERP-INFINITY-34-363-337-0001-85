@@ -16,6 +16,10 @@ import {
  * buildWhere suporta busca também na descrição do produto (p.description)
  * e no barcode (pb.barcode).
  */
+// colunas de texto da localização que aceitam filtro exato (whitelist)
+export const EXACT_COLUMNS = Object.freeze(['corredor', 'prateleira', 'bandeja', 'box']);
+export const EMPTY_TOKEN = '__EMPTY__';
+
 export function buildWhere({
   q,
   product_code,
@@ -23,7 +27,8 @@ export function buildWhere({
   onlyActive,
   corredor,
   prateleira,
-  bandeja
+  bandeja,
+  exact = null, // { corredor, prateleira, bandeja, box } — igualdade (Mapa de Localização)
 } = {}) {
   const clauses = [];
   const params = [];
@@ -86,6 +91,20 @@ export function buildWhere({
   if (bandeja) {
     params.push(`%${String(bandeja).toLowerCase()}%`);
     clauses.push(`LOWER(COALESCE(${ALIAS}.bandeja,'')) LIKE $${params.length}`);
+  }
+
+  // 🎯 FILTROS EXATOS (selects do Mapa de Localização). '__EMPTY__' = sem valor
+  if (exact && typeof exact === 'object') {
+    for (const col of EXACT_COLUMNS) {
+      const v = exact[col];
+      if (v === undefined || v === null || v === '') continue;
+      if (v === EMPTY_TOKEN) {
+        clauses.push(`NULLIF(TRIM(${ALIAS}.${col}), '') IS NULL`);
+      } else {
+        params.push(String(v).trim().toLowerCase());
+        clauses.push(`LOWER(TRIM(COALESCE(${ALIAS}.${col}, ''))) = $${params.length}`);
+      }
+    }
   }
 
   // ✅ ATIVOS

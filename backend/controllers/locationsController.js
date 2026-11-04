@@ -539,6 +539,8 @@ export async function listProductLocations(req, res) {
       limit = 100,
       offset = 0,
       withMeta = false, // <- se true, retorna {rows,total,limit,offset}
+      sort = null,      // chave do LIST_ORDER_SQL (sortableTable)
+      dir = 'asc',
     } = req.query;
 
     const pc = (product_code ?? productCode ?? sku ?? null);
@@ -547,6 +549,9 @@ export async function listProductLocations(req, res) {
       q: q ?? null,
       product_code: pc ?? null,
       store_id: (store_id ?? storeId ?? null),
+      exact: readExactFilters(req.query),
+      sort: sort ? String(sort) : null,
+      dir: String(dir).toLowerCase() === 'desc' ? 'desc' : 'asc',
       onlyActive: toBool(onlyActive, false),
       limit: Number(limit) || 100,
       offset: Number(offset) || 0,
@@ -559,6 +564,39 @@ export async function listProductLocations(req, res) {
     return res.json(Array.isArray(data?.rows) ? data.rows : []);
   } catch (err) {
     return handleDbError(res, err, 'listProductLocations');
+  }
+}
+
+// filtros exatos dos selects do Mapa de Localização (?fCorredor=&fGondola=&fBandeja=&fPosicao=)
+function readExactFilters(query = {}) {
+  const pick = (v) => (v === undefined || v === null || String(v).trim() === '' ? undefined : String(v).trim());
+  return {
+    corredor: pick(query.fCorredor),
+    prateleira: pick(query.fGondola),
+    bandeja: pick(query.fBandeja),
+    box: pick(query.fPosicao),
+  };
+}
+
+// GET /api/locations/product-locations/filters?storeId=&fCorredor=&fGondola=&fBandeja=
+// Valores distintos para os selects Corredor / Gôndola / Bandeja / Posição (em cascata)
+export async function listProductLocationFilters(req, res) {
+  try {
+    const { store_id, storeId, onlyActive = false } = req.query;
+    const values = await productsLocationsApi.listFilterValues({
+      store_id: store_id ?? storeId ?? null,
+      exact: readExactFilters(req.query),
+      onlyActive: toBool(onlyActive, false),
+    });
+    return res.json({
+      ok: true,
+      corredor: values.corredor || [],
+      gondola: values.prateleira || [],
+      bandeja: values.bandeja || [],
+      posicao: values.box || [],
+    });
+  } catch (err) {
+    return handleDbError(res, err, 'listProductLocationFilters');
   }
 }
 
