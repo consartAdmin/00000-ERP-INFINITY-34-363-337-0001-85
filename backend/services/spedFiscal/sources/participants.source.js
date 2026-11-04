@@ -100,12 +100,29 @@ async function getCustomers() {
   }
 }
 
+function xmlTag(xml, tag) {
+  const match = String(xml || '').match(new RegExp(`<${tag}>([^<]*)</${tag}>`));
+  if (!match) return '';
+
+  return match[1]
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .trim();
+}
+
 /*
- * Fornecedor sem cidade/UF no cadastro: usa o <cMun> do emitente no XML
- * das NF-e de entrada guardadas pelo DF-e (nfeInbox).
+ * Fornecedor com cadastro incompleto (sem endereço ou cidade/UF): completa
+ * o 0150 com o <enderEmit> / <IE> do emitente no XML das NF-e de entrada
+ * guardadas pelo DF-e (nfeInbox). O cadastro em si não é alterado.
  */
-async function fillSupplierMunicipalityFromXml(suppliers = []) {
-  const missing = suppliers.filter(p => !p.cod_mun && (p.cnpj || p.cpf));
+async function fillSupplierAddressFromXml(suppliers = []) {
+  const missing = suppliers.filter(p => (
+    (p.cnpj || p.cpf)
+    && (!p.cod_mun || !String(p.endereco || '').trim())
+  ));
   if (!missing.length) return;
 
   try {
@@ -113,7 +130,8 @@ async function fillSupplierMunicipalityFromXml(suppliers = []) {
       `
         SELECT DISTINCT ON (doc)
           doc,
-          substring(ni.xml_completo FROM '<enderEmit>.*?<cMun>([0-9]{7})</cMun>') AS cod_mun
+          substring(ni.xml_completo FROM '<enderEmit>(.*?)</enderEmit>') AS ender,
+          substring(ni.xml_completo FROM '<emit>.*?<IE>([^<]*)</IE>') AS ie
         FROM (
           SELECT unnest($1::text[]) AS doc
         ) d
@@ -125,12 +143,27 @@ async function fillSupplierMunicipalityFromXml(suppliers = []) {
       [missing.map(p => p.cnpj || p.cpf)],
     );
 
-    const byDoc = new Map(rows.filter(r => r.cod_mun).map(r => [r.doc, r.cod_mun]));
+    const byDoc = new Map(rows.map(r => [r.doc, r]));
+
     for (const participant of missing) {
-      participant.cod_mun = byDoc.get(participant.cnpj || participant.cpf) || '';
+      const row = byDoc.get(participant.cnpj || participant.cpf);
+      if (!row?.ender) continue;
+
+      const fill = (field, value) => {
+        if (!String(participant[field] || '').trim() && value) participant[field] = value;
+      };
+
+      fill('endereco', xmlTag(row.ender, 'xLgr'));
+      fill('numero', xmlTag(row.ender, 'nro'));
+      fill('complemento', xmlTag(row.ender, 'xCpl'));
+      fill('bairro', xmlTag(row.ender, 'xBairro'));
+      fill('cod_mun', onlyDigits(xmlTag(row.ender, 'cMun')));
+
+      const ie = onlyDigits(row.ie);
+      if (ie) fill('ie', ie);
     }
   } catch (err) {
-    console.warn('[SPED Fiscal] supplier cMun from nfeInbox failed:', err.message);
+    console.warn('[SPED Fiscal] supplier address from nfeInbox failed:', err.message);
   }
 }
 
@@ -157,7 +190,7 @@ ${ibgeByCityLateral('s.city', 's.state', 'il')}
     `);
 
     const suppliers = rows.map(row => normalizeParticipant(row, 'supplier'));
-    await fillSupplierMunicipalityFromXml(suppliers);
+    await fillSupplierAddressFromXml(suppliers);
     return suppliers;
   } catch (err) {
     console.error('[SPED Fiscal] getSuppliers participants error:', err.message);

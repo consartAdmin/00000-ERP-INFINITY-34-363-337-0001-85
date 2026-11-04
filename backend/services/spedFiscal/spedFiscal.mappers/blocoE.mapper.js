@@ -71,20 +71,43 @@ export function mapBlocoE(ctx) {
   ));
 
   /*
-   * E210/VL_OUT_CRED_ST: só entra o ICMS-ST de devoluções/retornos
-   * (CFOP 1/2.410, 411, 414, 415, 660, 661, 662) + ajustes E220. O ST retido
-   * pelo fornecedor nas compras para revenda não é crédito — o PVA recusa.
+   * E210: ICMS-ST das entradas (CFOP 1/2xxx) somado como no C190 — por
+   * grupo CST|CFOP|alíquota e arredondado a 2 casas, igual ao PVA.
+   * Devoluções/retornos (x410, x411, x414, x415, x660–x662) vão para
+   * VL_DEVOL_ST; as demais entradas para VL_OUT_CRED_ST.
    */
-  const ST_CREDIT_CFOP_SUFFIXES = new Set(['410', '411', '414', '415', '660', '661', '662']);
+  const ST_DEVOLUTION_CFOP_SUFFIXES = new Set(['410', '411', '414', '415', '660', '661', '662']);
+  const round2 = value => Math.round((toNumber(value) + Number.EPSILON) * 100) / 100;
 
-  const inboundIcmsStCredit = documents
-    .filter(document => String(document.ind_oper ?? '') === '0')
-    .flatMap(document => (Array.isArray(document.items) ? document.items : []))
-    .filter(item => {
+  let inboundIcmsStDevolution = 0;
+  let inboundIcmsStOtherCredit = 0;
+
+  for (const document of documents) {
+    const groups = new Map();
+
+    for (const item of Array.isArray(document.items) ? document.items : []) {
       const cfop = String(item.cfop || '');
-      return /^[12]/.test(cfop) && ST_CREDIT_CFOP_SUFFIXES.has(cfop.slice(1));
-    })
-    .reduce((total, item) => total + toNumber(item.valor_icms_st), 0);
+      if (!/^[12]/.test(cfop)) continue;
+
+      const key = [item.cst_icms || item.csosn || '', cfop, item.aliq_icms ?? 0].join('|');
+      groups.set(key, {
+        cfop,
+        st: (groups.get(key)?.st || 0) + toNumber(item.valor_icms_st),
+      });
+    }
+
+    for (const group of groups.values()) {
+      if (ST_DEVOLUTION_CFOP_SUFFIXES.has(group.cfop.slice(1))) {
+        inboundIcmsStDevolution += round2(group.st);
+      } else {
+        inboundIcmsStOtherCredit += round2(group.st);
+      }
+    }
+  }
+
+  inboundIcmsStDevolution = round2(inboundIcmsStDevolution);
+  inboundIcmsStOtherCredit = round2(inboundIcmsStOtherCredit);
+  const inboundIcmsStCredit = round2(inboundIcmsStDevolution + inboundIcmsStOtherCredit);
 
   if (hasIcmsStMovement) {
     lines.push(line(
@@ -100,9 +123,9 @@ export function mapBlocoE(ctx) {
       'E210',
       '1',
       formatDecimal(0),
+      formatDecimal(inboundIcmsStDevolution),
       formatDecimal(0),
-      formatDecimal(0),
-      formatDecimal(inboundIcmsStCredit),
+      formatDecimal(inboundIcmsStOtherCredit),
       formatDecimal(0),
       formatDecimal(0),
       formatDecimal(0),
