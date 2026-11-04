@@ -128,16 +128,21 @@ export function fit(doc, text, width) {
 
 /**
  * Cria o PDFDocument no padrão (A4, margens, bufferPages para o rodapé).
- * Retorna { doc, done } — done() é uma Promise<Buffer> resolvida no 'end'.
+ * Retorna { doc, done } — done é uma Promise<Buffer> resolvida no 'end'
+ * (com collect=false, done é null e o chamador faz doc.pipe).
  */
-export function createThemedDoc({ title = 'Relatório', layout = 'landscape', subject, author = BRAND } = {}) {
+export function createThemedDoc({ title = 'Relatório', layout = 'landscape', subject, author = BRAND, collect = true } = {}) {
     const doc = new PDFDocument({
         size: 'A4',
         layout,
-        margin: PAGE.margin,
+        // margem inferior maior para o texto corrido não invadir o rodapé
+        margins: { top: PAGE.margin, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 12 },
         bufferPages: true,
         info: { Title: title, Author: author, ...(subject ? { Subject: subject } : {}) },
     });
+
+    // collect=false: quem chama faz doc.pipe(...) — não lemos o stream aqui
+    if (!collect) return { doc, done: null };
 
     const chunks = [];
     const done = new Promise((resolve, reject) => {
@@ -294,6 +299,23 @@ export function drawCompactHeader(doc, opts = {}) {
 
     doc.page.margins.bottom = oldBottom;
     return PAGE.compactHeaderH + 2;
+}
+
+/**
+ * Para documentos de fluxo livre (doc.text que quebra página sozinho):
+ * toda página nova ganha o cabeçalho compacto e o texto continua abaixo dele.
+ * Não use junto com makeTable (que já desenha o cabeçalho compacto).
+ */
+export function autoCompactHeader(doc, opts = {}) {
+    const top = PAGE.compactHeaderH + 2 + 14;
+    doc.on('pageAdded', () => {
+        const x = doc.x;
+        drawCompactHeader(doc, opts);
+        doc.page.margins.top = top;
+        doc.x = x;
+        doc.y = top;
+    });
+    return top;
 }
 
 /**
@@ -659,6 +681,6 @@ export default {
     C, SERIES, PAGE, BRAND, DEFAULT_LOGO_PATH,
     num, money, moneyShort, number, percent, isoDay, dateBR, nowBR, safe, periodLabel, fit,
     createThemedDoc, contentBottom, contentWidth, resolveLogo, drawLogo,
-    drawFullHeader, drawCompactHeader, drawFooters, drawSectionTitle, drawKpis, drawPanel, drawEmpty,
+    drawFullHeader, drawCompactHeader, autoCompactHeader, drawFooters, drawSectionTitle, drawKpis, drawPanel, drawEmpty,
     drawHorizontalBars, drawDonut, drawColumns, fitColumns, makeTable, drawTotalsBox,
 };

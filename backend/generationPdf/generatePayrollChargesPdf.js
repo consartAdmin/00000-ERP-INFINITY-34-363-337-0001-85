@@ -4,11 +4,15 @@
 // ║ • generateTerminationPdf       → demonstrativo da rescisão (A4)    ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import PDFDocument from 'pdfkit';
+import {
+  C, PAGE,
+  SERIES, createThemedDoc, drawFullHeader, autoCompactHeader, drawFooters, drawKpis, contentBottom, nowBR,
+} from './consartPdfTheme.js';
 
-const BLUE = '#1d4ed8';
-const MUTED = '#6b7280';
-const LINE = '#d1d5db';
+// Paleta do layout padrão
+const BLUE = C.blue;
+const MUTED = C.muted;
+const LINE = C.border;
 
 function money(value) {
   return Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -25,38 +29,27 @@ function competenceLabel(competence) {
   return `${month}/${year}`;
 }
 
-function startDoc(options) {
-  const doc = new PDFDocument({ size: 'A4', margin: 32, bufferPages: true, ...options });
-  const chunks = [];
-  doc.on('data', (chunk) => chunks.push(chunk));
-  const done = new Promise((resolve, reject) => {
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
-    doc.on('error', reject);
-  });
-  return { doc, done };
+function startDoc({ layout = 'portrait', title = 'Encargos e Rescisões' } = {}) {
+  const started = createThemedDoc({ title, layout });
+  started.title = title;
+  return started;
 }
 
-function header(doc, title, subtitle) {
-  const left = doc.page.margins.left;
-  const width = doc.page.width - left - doc.page.margins.right;
-  doc.font('Helvetica-Bold').fontSize(14).fillColor('#111').text(title, left, doc.page.margins.top, { width });
-  doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(subtitle, { width });
-  const y = doc.y + 6;
-  doc.moveTo(left, y).lineTo(left + width, y).lineWidth(2).strokeColor(BLUE).stroke();
-  doc.y = y + 10;
+// Cabeçalho padrão (azul-marinho + faixa verde-água); páginas novas ganham o cabeçalho compacto
+function header(doc, title, subtitle, info = []) {
+  doc.y = drawFullHeader(doc, { title, subtitle, info }) + 14;
+  autoCompactHeader(doc, { title, subtitle });
 }
 
-function footer(doc, note) {
-  const range = doc.bufferedPageRange();
-  for (let i = range.start; i < range.start + range.count; i += 1) {
-    doc.switchToPage(i);
+// Observação no fim do conteúdo + rodapé padrão em todas as páginas
+function footer(doc, note, title) {
+  if (note) {
     const left = doc.page.margins.left;
     const width = doc.page.width - left - doc.page.margins.right;
-    const y = doc.page.height - doc.page.margins.bottom - 10;
-    doc.font('Helvetica').fontSize(7).fillColor(MUTED)
-      .text(note, left, y, { width: width - 60, lineBreak: false })
-      .text(`Página ${i + 1} de ${range.count}`, left, y, { width, align: 'right', lineBreak: false });
+    if (doc.y + 24 > contentBottom(doc)) doc.addPage();
+    doc.font('Helvetica-Oblique').fontSize(7.5).fillColor(MUTED).text(note, left, doc.y + 8, { width });
   }
+  drawFooters(doc, { title, generatedAt: nowBR() });
 }
 
 // ======================================================================
@@ -81,25 +74,42 @@ const MONTH_COLUMNS = [
 ];
 
 export async function generatePayrollMonthPdf(report) {
-  const { doc, done } = startDoc({ layout: 'landscape' });
+  const { doc, done } = startDoc({ layout: 'landscape', title: 'Encargos da folha' });
   const left = doc.page.margins.left;
-  const bottom = () => doc.page.height - doc.page.margins.bottom - 24;
+  const bottom = () => contentBottom(doc);
 
   header(
     doc,
     `Encargos da folha — competência ${competenceLabel(report.competence)}`,
-    `Tabelas INSS/IRRF de ${report.table_year} • Regime: ${report.regime_label} • ${report.rows.length} colaborador(es)`,
+    `Tabelas INSS/IRRF de ${report.table_year} · Regime: ${report.regime_label}`,
+    [
+      ['Competência', competenceLabel(report.competence)],
+      ['Regime', report.regime_label],
+      ['Colaboradores', String(report.rows.length)],
+    ],
   );
 
+  doc.y = drawKpis(doc, doc.y, [
+    { label: 'Guia INSS', value: `R$ ${money(report.guides.inss)}`, hint: 'Segurados + patronal + RAT + terceiros', color: SERIES[0] },
+    { label: 'FGTS', value: `R$ ${money(report.guides.fgts)}`, hint: 'FGTS Digital', color: SERIES[1] },
+    { label: 'IRRF', value: `R$ ${money(report.guides.irrf)}`, hint: 'DARF cód. 0561', color: SERIES[2] },
+    { label: 'Folha líquida', value: `R$ ${money(report.guides.net_payroll)}`, hint: 'A pagar aos colaboradores', color: SERIES[5] },
+    { label: 'Custo total', value: `R$ ${money(report.guides.total_cost)}`, hint: 'Custo da folha', color: C.red },
+  ]) + 16;
+
   const rowHeight = 15;
-  const drawRow = (cells, { bold = false, fill = null } = {}) => {
-    if (doc.y + rowHeight > bottom()) doc.addPage();
+  const headCells = MONTH_COLUMNS.map((col) => col.label);
+  const drawRow = (cells, { bold = false, fill = null, color = C.text, isHead = false } = {}) => {
+    if (doc.y + rowHeight > bottom()) {
+      doc.addPage();
+      if (!isHead) drawRow(headCells, { bold: true, fill: C.blue, color: C.white, isHead: true });
+    }
     const y = doc.y;
     let x = left;
     const total = MONTH_COLUMNS.reduce((sum, col) => sum + col.width, 0);
     if (fill) doc.rect(left, y, total, rowHeight).fill(fill);
     MONTH_COLUMNS.forEach((col, index) => {
-      doc.font(bold || col.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(7.2).fillColor('#111')
+      doc.font(bold || col.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(7.2).fillColor(color)
         .text(cells[index], x + 3, y + 4, { width: col.width - 6, align: col.align || 'right', lineBreak: false, ellipsis: true });
       x += col.width;
     });
@@ -107,17 +117,17 @@ export async function generatePayrollMonthPdf(report) {
     doc.y = y + rowHeight;
   };
 
-  drawRow(MONTH_COLUMNS.map((col) => col.label), { bold: true, fill: '#eef2ff' });
-  report.rows.forEach((row) => {
+  drawRow(headCells, { bold: true, fill: C.blue, color: C.white, isHead: true });
+  report.rows.forEach((row, index) => {
     drawRow(MONTH_COLUMNS.map((col) => {
       if (col.key === 'full_name') return row.full_name + (row.days < 30 ? ` (${row.days}d)` : '');
       return col.int ? String(row[col.key] || 0) : money(row[col.key]);
-    }));
+    }), { fill: index % 2 ? C.zebra : null });
   });
   drawRow(MONTH_COLUMNS.map((col) => {
     if (col.key === 'full_name') return 'Total';
     return col.int ? String(report.totals[col.key] || 0) : money(report.totals[col.key]);
-  }), { bold: true, fill: '#f3f4f6' });
+  }), { bold: true, fill: C.totalFill, color: C.navy });
 
   doc.moveDown(1.2);
   if (doc.y + 70 > bottom()) doc.addPage();
@@ -135,7 +145,7 @@ export async function generatePayrollMonthPdf(report) {
     doc.y = y + 14;
   });
 
-  footer(doc, 'Estimativa gerencial a partir do cadastro de Colaboradores; não substitui a folha do contador.');
+  footer(doc, 'Estimativa gerencial a partir do cadastro de Colaboradores; não substitui a folha do contador.', 'Encargos da folha');
   doc.end();
   return done;
 }
@@ -145,14 +155,14 @@ export async function generatePayrollMonthPdf(report) {
 // ======================================================================
 
 export async function generateTerminationPdf(result, meta = {}) {
-  const { doc, done } = startDoc({});
+  const { doc, done } = startDoc({ title: 'Demonstrativo de rescisão' });
   const left = doc.page.margins.left;
   const width = doc.page.width - left - doc.page.margins.right;
 
   header(
     doc,
     'Demonstrativo de rescisão (simulação)',
-    meta.id ? `Simulação nº ${meta.id} • ${meta.status === 'CONFIRMADA' ? 'Confirmada' : 'Simulação'}` : 'Simulação não salva',
+    meta.id ? `Simulação nº ${meta.id} · ${meta.status === 'CONFIRMADA' ? 'Confirmada' : 'Simulação'}` : 'Simulação não salva',
   );
 
   const info = [
@@ -177,8 +187,9 @@ export async function generateTerminationPdf(result, meta = {}) {
   doc.moveDown(0.6);
 
   const section = (title, items, totalLabel, totalValue, negative = false) => {
-    doc.font('Helvetica-Bold').fontSize(10).fillColor(BLUE).text(title, left, doc.y, { width });
-    doc.moveDown(0.2);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.navy).text(title, left, doc.y, { width });
+    doc.rect(left, doc.y + 1, 34, 2).fill(C.teal);
+    doc.moveDown(0.5);
     items.forEach((item) => {
       const y = doc.y;
       doc.font('Helvetica').fontSize(9).fillColor('#111').text(item.label, left, y, { width: width - 200 });
@@ -198,8 +209,9 @@ export async function generateTerminationPdf(result, meta = {}) {
   section('Descontos', result.discounts, 'Total de descontos', result.totals.discounts, true);
 
   const y = doc.y;
-  doc.rect(left, y, width, 24).fill('#ecfdf5');
-  doc.font('Helvetica-Bold').fontSize(11).fillColor('#065f46')
+  doc.rect(left, y, width, 24).fill(C.navy);
+  doc.rect(left, y + 24, width, 2).fill(C.teal);
+  doc.font('Helvetica-Bold').fontSize(11).fillColor(C.white)
     .text('Líquido a pagar ao colaborador', left + 8, y + 7, { width: width - 140 })
     .text(`R$ ${money(result.totals.net)}`, left + width - 140, y + 7, { width: 132, align: 'right' });
   doc.y = y + 36;
@@ -212,7 +224,7 @@ export async function generateTerminationPdf(result, meta = {}) {
     left, doc.y, { width },
   );
 
-  footer(doc, 'Simulação gerencial; confira com o contador antes do pagamento (prazo: 10 dias do desligamento).');
+  footer(doc, 'Simulação gerencial; confira com o contador antes do pagamento (prazo: 10 dias do desligamento).', 'Demonstrativo de rescisão');
   doc.end();
   return done;
 }
