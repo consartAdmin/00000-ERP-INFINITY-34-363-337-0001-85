@@ -8,8 +8,10 @@
 
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
-
-
+import {
+    C as THEME,
+    drawFullHeader, drawCompactHeader, drawFooters, nowBR,
+} from '../../generationPdf/consartPdfTheme.js';
 const MONEY_FORMAT = '"R$" #,##0.00;[Red]-"R$" #,##0.00';
 
 const COLORS = Object.freeze({
@@ -217,6 +219,8 @@ const PAGE = Object.freeze({
     gap: 10,
 });
 
+const PDF_TITLE = 'Memória de cálculo da apuração';
+
 // Standard PDF fonts are WinAnsi: no U+2212 minus sign.
 function pdfText(value) {
     return String(value ?? '').replace(/−/g, '-');
@@ -226,7 +230,7 @@ export function buildAssessmentPdf(data) {
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({
             size: 'A4',
-            margin: PAGE.margin,
+            margins: { top: PAGE.margin, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.margin },
             bufferPages: true,
             info: { Title: 'Memória de cálculo — Apuração', Author: 'CONSART ERP' },
         });
@@ -238,7 +242,7 @@ export function buildAssessmentPdf(data) {
 
         try {
             writePdf(doc, data);
-            addPageNumbers(doc);
+            drawFooters(doc, { title: PDF_TITLE, generatedAt: nowBR() });
             doc.end();
         } catch (error) {
             reject(error);
@@ -254,21 +258,20 @@ function writePdf(doc, data) {
     const valueX = left + width - PAGE.valueWidth;
     const bottom = () => doc.page.height - PAGE.margin - 20;
 
-    // ---------------- HEADER ----------------
-    doc.font('Helvetica-Bold').fontSize(16).fillColor(`#${COLORS.title}`)
-        .text('Memória de cálculo — Apuração de impostos', left, PAGE.margin, { width });
-    doc.moveDown(0.3);
-    doc.font('Helvetica').fontSize(10).fillColor('#334155')
-        .text(pdfText(`Período: ${periodText(data)}`), { width })
-        .text(pdfText(`Regime: ${data.regime?.summary || data.regime?.label || 'sem regime cadastrado'}`), { width });
-    doc.fontSize(8).fillColor(`#${COLORS.muted}`)
-        .text(`Gerado em ${generatedAt()} · valores estimados, conferir com a contabilidade`, { width });
-    doc.moveDown(0.8);
+    // ---------------- HEADER (layout padrão) ----------------
+    doc.y = drawFullHeader(doc, {
+        title: PDF_TITLE,
+        subtitle: 'Apuração de impostos · valores estimados',
+        info: [
+            ['Período', pdfText(periodText(data))],
+            ['Regime', pdfText(data.regime?.summary || data.regime?.label || 'sem regime cadastrado')],
+        ],
+    }) + 16;
 
     const ensureSpace = (height) => {
         if (doc.y + height > bottom()) {
             doc.addPage();
-            doc.y = PAGE.margin;
+            doc.y = drawCompactHeader(doc, { title: PDF_TITLE, subtitle: 'Memória de cálculo (continuação)' }) + 14;
         }
     };
 
@@ -277,8 +280,8 @@ function writePdf(doc, data) {
         ensureSpace(40);
 
         const titleY = doc.y;
-        doc.rect(left, titleY, width, 18).fill(`#${COLORS.section}`);
-        doc.font('Helvetica-Bold').fontSize(10).fillColor(`#${COLORS.sectionText}`)
+        doc.rect(left, titleY, width, 18).fill(THEME.blue);
+        doc.font('Helvetica-Bold').fontSize(10).fillColor(THEME.white)
             .text(pdfText(section.title), left + 6, titleY + 5, { width: width - 12 });
         doc.y = titleY + 22;
 
@@ -307,7 +310,7 @@ function writePdf(doc, data) {
             const y = doc.y;
 
             if (isTotal) {
-                doc.rect(left, y - 1, width, rowHeight).fill(`#${COLORS.total}`);
+                doc.rect(left, y - 1, width, rowHeight).fill(THEME.totalFill);
             }
 
             doc.font(labelFont).fontSize(9).fillColor('#0f172a')
@@ -336,21 +339,4 @@ function writePdf(doc, data) {
 
         doc.y += 10;
     });
-}
-
-function addPageNumbers(doc) {
-    const range = doc.bufferedPageRange();
-
-    for (let index = range.start; index < range.start + range.count; index += 1) {
-        doc.switchToPage(index);
-        // Writing below the bottom margin would otherwise open a new page.
-        doc.page.margins.bottom = 0;
-        doc.font('Helvetica').fontSize(8).fillColor(`#${COLORS.muted}`)
-            .text(
-                `Página ${index + 1} de ${range.count}`,
-                PAGE.margin,
-                doc.page.height - PAGE.margin,
-                { width: doc.page.width - PAGE.margin * 2, align: 'right', lineBreak: false }
-            );
-    }
 }

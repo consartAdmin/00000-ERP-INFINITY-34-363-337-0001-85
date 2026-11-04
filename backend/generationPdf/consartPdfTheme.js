@@ -244,11 +244,19 @@ export function drawFullHeader(doc, opts = {}) {
     const tx = PAGE.margin + (hasLogo ? 60 : 0);
 
     const lines = info.filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== '').slice(0, 4);
-    const infoW = lines.length ? 260 : 0;
+    // no A4 retrato o bloco de filtros fica mais estreito
+    const infoW = lines.length ? Math.min(260, Math.round(W * 0.36)) : 0;
     const titleW = W - tx - PAGE.margin - infoW - 12;
 
-    doc.font('Helvetica-Bold').fontSize(17).fillColor(C.white);
-    doc.text(fit(doc, title, titleW), tx, 20, { lineBreak: false });
+    // título longo (ou A4 retrato): reduz a fonte até caber, mínimo 12
+    let titleSize = 17;
+    doc.font('Helvetica-Bold').fontSize(titleSize);
+    while (titleSize > 12 && doc.widthOfString(String(title)) > titleW) {
+        titleSize -= 0.5;
+        doc.fontSize(titleSize);
+    }
+    doc.fillColor(C.white);
+    doc.text(fit(doc, title, titleW), tx, 20 + (17 - titleSize) / 2, { lineBreak: false });
 
     const sub = [brand, subtitle].filter(Boolean).join('  ·  ');
     doc.font('Helvetica').fontSize(9).fillColor(C.headerSub);
@@ -263,7 +271,7 @@ export function drawFullHeader(doc, opts = {}) {
             doc.font('Helvetica').fontSize(8).fillColor(C.headerLabel)
                 .text(`${label}:`, rx, ly, { width: 90, align: 'right', lineBreak: false });
             doc.font('Helvetica-Bold').fontSize(8.5).fillColor(C.white);
-            doc.text(fit(doc, value, 164), rx + 96, ly - 0.5, { width: 164, lineBreak: false });
+            doc.text(fit(doc, value, infoW - 96), rx + 96, ly - 0.5, { width: infoW - 96, lineBreak: false });
             ly += step;
         });
     }
