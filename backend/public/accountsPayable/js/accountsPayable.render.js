@@ -5,6 +5,7 @@ import { formatDate, formatMoney, qs } from './accountsPayable.utils.js';
 import { getAttachmentDownloadUrl } from './accountsPayable.api.js';
 import { renderGroupTag } from './accountsPayable.groups.js';
 import { refreshSelectionUi } from './accountsPayable.selection.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 export function renderStatusTag(status) {
   const map = {
@@ -67,13 +68,13 @@ export function renderTable(rows) {
       <td>${formatMoney(total)}</td>
       <td>${formatMoney(amountPaid)}</td>
       <td>${formatMoney(open)}</td>
-      <td class="ap-col-actions"><div class="ap-actions">
-        ${canPay ? '<button type="button" class="ap-btn-pay" data-action="pay" title="Pagar">💰</button>' : ''}
-        <button type="button" class="btn btn-sm btn-secondary" data-action="edit" title="Editar">✏️</button>
-        ${item.debt_id
-    ? '<button type="button" class="btn btn-sm btn-danger" disabled title="Exclua pelo Compromisso Financeiro">🗑️</button>'
-    : '<button type="button" class="btn btn-sm btn-danger" data-action="delete" title="Excluir">🗑️</button>'}
-      </div></td>`;
+      <td class="ap-col-actions">${actionIconsHtml([
+        canPay && { action: 'payment', title: 'Pagar', attrs: { 'data-action': 'pay' } },
+        { action: 'edit', title: 'Editar', attrs: { 'data-action': 'edit' } },
+        item.debt_id
+          ? { action: 'delete', title: 'Exclua pelo Compromisso Financeiro', disabled: true }
+          : { action: 'delete', title: 'Excluir', attrs: { 'data-action': 'delete' } },
+      ])}</td>`;
   });
 
   refreshSelectionUi();
