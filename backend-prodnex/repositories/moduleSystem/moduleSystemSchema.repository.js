@@ -56,6 +56,15 @@ export async function ensureTable(run = q) {
       ADD COLUMN IF NOT EXISTS is_public   BOOLEAN     NOT NULL DEFAULT false;
   `);
 
+  // Módulo "Código de Barras Secundário" (productBarCodeSecond) removido do
+  // sistema em 04/11/2026: o item do menu fica inativo (não é apagado, dá
+  // para reativar na Criação de Módulos). A tabela productBarCodeSecond fica.
+  await run(`
+    UPDATE ${TABLE}
+    SET is_active = false, updated_at = now()
+    WHERE path ~* 'productBarCodeSecond/' AND is_active IS TRUE;
+  `);
+
   await run(`
     CREATE INDEX IF NOT EXISTS idx_moduleSystem_name
       ON ${TABLE}(name);

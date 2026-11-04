@@ -1117,12 +1117,6 @@ app.use('/api/paymentForms', paymentFormsRoutes);
 import pdvSalesReportRoutes from './routes/pdvSalesReportRoutes.js';
 app.use('/api/reports/pdv-sales', pdvSalesReportRoutes);
 
-/* ╔═══════════════════════════════════════════════════════════╗
-   ║ ROTA:  productBarCodeSecondRoutes                         ║
-   ╚═══════════════════════════════════════════════════════════╝ */
-import productBarCodeSecondRoutes from './routes/productBarCodeSecondRoutes.js';
-app.use('/api/product-barcode-second', productBarCodeSecondRoutes);
-
 /* ╔══════════════════════════════════════════════════════════╗
    ║ ROTA: "productsBatchSupplierRoutes"                      ║
    ╚══════════════════════════════════════════════════════════╝ */

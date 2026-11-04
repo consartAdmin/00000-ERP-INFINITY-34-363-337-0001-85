@@ -104,3 +104,77 @@ export async function remove(req, res) {
     return httpError(res, e, 400);
   }
 }
+
+/* ──────────────────────────────────────────────────────────────
+   exportList() — GET /api/grades/export?format=pdf|xlsx&q=&is_active=
+   Mesmos filtros da tela, sem paginação.
+────────────────────────────────────────────────────────────── */
+const GRADE_COLUMNS = [
+  { key: 'grade_id', label: 'ID', w: 50, width: 8, align: 'center' },
+  { key: 'grade', label: 'Grade', w: 150, width: 24, bold: true },
+  { key: 'description', label: 'Descrição', width: 50, format: (v) => v || 'Sem descrição' },
+  {
+    key: 'is_active', label: 'Status', w: 80, width: 12, align: 'center',
+    format: (v) => (v !== false ? 'Ativa' : 'Inativa'),
+    value: (row) => (row.is_active !== false ? 'Ativa' : 'Inativa'),
+    color: (row) => (row.is_active !== false ? '#166534' : '#991b1b'),
+  },
+];
+
+export async function exportList(req, res) {
+  try {
+    const format = String(req.query.format || 'pdf').toLowerCase();
+    if (!['pdf', 'xlsx'].includes(format)) {
+      return res.status(400).json({ ok: false, error: 'format deve ser pdf ou xlsx.' });
+    }
+
+    const q = String(req.query.q || '').trim();
+    const status = String(req.query.is_active ?? '').toLowerCase();
+    const isActive = status === 'true' ? true : status === 'false' ? false : undefined;
+
+    const { rows } = await gradesApi.list({ q, isActive, limit: 10000, offset: 0, maxLimit: 10000 });
+    const active = rows.filter((r) => r.is_active !== false).length;
+
+    const info = [
+      ['Busca', q || 'Todas'],
+      ['Status', isActive === true ? 'Ativas' : isActive === false ? 'Inativas' : 'Todos'],
+    ];
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (format === 'xlsx') {
+      const { buildSimpleListWorkbook } = await import('../generationPdf/generationSimpleListExcel.js');
+      const buffer = await buildSimpleListWorkbook({
+        title: 'Relatório de Grades',
+        subtitle: 'Cores, tamanhos e variações',
+        sheetName: 'Grades',
+        info,
+        columns: GRADE_COLUMNS.map((c) => ({ ...c, value: c.value })),
+        rows,
+      });
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="grades-${today}.xlsx"`);
+      return res.send(Buffer.from(buffer));
+    }
+
+    const { generateSimpleListPdf } = await import('../generationPdf/generationSimpleListPdf.js');
+    const pdf = await generateSimpleListPdf({
+      title: 'Relatório de Grades',
+      subtitle: 'Cores, tamanhos e variações',
+      info,
+      kpis: [
+        { label: 'Grades', value: String(rows.length), hint: 'Registros no relatório' },
+        { label: 'Ativas', value: String(active), hint: 'Disponíveis para uso' },
+        { label: 'Inativas', value: String(rows.length - active), hint: 'Fora de uso' },
+      ],
+      columns: GRADE_COLUMNS,
+      rows,
+      emptyText: 'Nenhuma grade encontrada com os filtros escolhidos.',
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="grades-${today}.pdf"`);
+    return res.send(pdf);
+  } catch (e) {
+    console.error('ERRO AO EXPORTAR GRADES:', e?.message);
+    return httpError(res, e, 500);
+  }
+}

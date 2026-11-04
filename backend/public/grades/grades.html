@@ -7,51 +7,62 @@
   <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
   <title>CADASTRO DE GRADES | CONSART ERP</title>
   <link rel="stylesheet" href="/public/includes/css/style.css">
-  <link rel="stylesheet" href="grades.css">
+  <link rel="stylesheet" href="grades.css?v=grd-02">
 </head>
 
 <body class="page consart-theme p-page pw-page--full ph-page--xr">
   <main class="consart-container consart-container--full consart-container--ultraslim">
 
-    <div class="header">
-      <div class="fields-inline fields-gap-3">
-
-        <div>
-          <h2 id="gradesTitulo">Grades cadastradas</h2>
-          <p>Gerencie as grades, descrições e status</p>
-        </div>
-
-        <button id="btnNovaGrade" class="btn btn-new btn-sm" type="button">
-          ＋ Nova grade
-        </button>
-
-      </div>
-    </div>
-
     <section class="table-layout-integrated">
       <div class="table-layout-integrated__filter">
 
-        <div class="fields-inline fields-gap-3">
-          <div class="fields fields-h-6 fields-w-20 fields-font-4">
-            <label for="inputBusca"><b>🔎 Buscar</b></label>
-            <input id="inputBusca" type="search" placeholder="Buscar por grade ou descrição..." autocomplete="off">
+        <!-- TÍTULO + FILTROS + AÇÕES (cabeçalho integrado à tabela; div, não <header>) -->
+        <div class="cad-toolbar">
+          <div class="cad-toolbar__title">
+            <span class="cad-toolbar__icon" aria-hidden="true">🎨</span>
+            <div>
+              <h1 id="gradesTitulo">Grades cadastradas</h1>
+              <p>Gerencie as grades, descrições e status</p>
+            </div>
           </div>
 
-          <div class="fields fields-h-6 fields-w-10 fields-font-4">
-            <label for="selectStatus"><b>Status</b></label>
-            <select id="selectStatus" name="status">
-              <option value="">Todos</option>
-              <option value="ativo">Ativo</option>
-              <option value="inativo">Inativo</option>
-            </select>
+          <div class="fields-inline fields-gap-3 cad-toolbar__filters">
+            <div class="fields fields-h-6 fields-w-20 fields-font-4">
+              <label for="inputBusca"><b>🔎 Buscar</b></label>
+              <input id="inputBusca" type="search" placeholder="Buscar por grade ou descrição..." autocomplete="off">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-10 fields-font-4">
+              <label for="selectStatus"><b>Status</b></label>
+              <select id="selectStatus" name="status">
+                <option value="">Todos</option>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+
+            <div class="filter-actions">
+              <button id="btnFiltrar" class="btn btn-new btn-sm" type="button">
+                🔎 Filtrar
+              </button>
+            </div>
           </div>
 
-          <div class="filter-actions">
-            <button id="btnFiltrar" class="btn btn-new btn-sm" type="button">
-              🔎 Filtrar
+          <div class="btn-inline btn-gap-4 cad-toolbar__actions">
+            <button id="btnExportPdf" class="btn btn-toolbar btn-sm" type="button" title="Exportar PDF">
+              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar PDF</span>
+            </button>
+
+            <button id="btnExportExcel" class="btn btn-toolbar btn-sm" type="button" title="Exportar Excel">
+              <img src="/iconsImagens/excelIcons.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar Excel</span>
+            </button>
+
+            <button id="btnNovaGrade" class="btn btn-new btn-sm" type="button">
+              ＋ Nova grade
             </button>
           </div>
-
         </div>
       </div>
 
@@ -189,7 +200,7 @@
 
   <script type="module" src="/public/includes/js/core.js"></script>
 
-  <script type="module" src="js/grades.init.js"></script>
+  <script type="module" src="js/grades.init.js?v=grd-02"></script>
 
 </body>
 

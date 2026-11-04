@@ -10,6 +10,7 @@ import { ELEMENT_IDS } from './grades.config.js';
 import { handleGradeSubmit } from './grades.form.js';
 import { closeModal, openCreateModal } from './grades.modal.js';
 import { elements } from './grades.state.js';
+import { exportGrades } from './grades.export.js';
 
 function cacheElements() {
   ELEMENT_IDS.forEach((id) => {
@@ -19,6 +20,8 @@ function cacheElements() {
 
 function bindEvents() {
   elements.btnNovaGrade.addEventListener('click', openCreateModal);
+  elements.btnExportPdf?.addEventListener('click', () => exportGrades('pdf', elements.btnExportPdf));
+  elements.btnExportExcel?.addEventListener('click', () => exportGrades('xlsx', elements.btnExportExcel));
   elements.btnFecharModal.addEventListener('click', closeModal);
   elements.btnCancelar.addEventListener('click', closeModal);
   elements.formGrade.addEventListener('submit', handleGradeSubmit);

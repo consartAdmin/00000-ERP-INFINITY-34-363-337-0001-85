@@ -5,7 +5,7 @@
 
   import { Router } from 'express';
   import {
-    ensure, list, getById, create, upsert, update, deactivate, remove
+    ensure, list, exportList, getById, create, upsert, update, deactivate, remove
   } from '../controllers/unitsController.js';
 
   const router = Router();
@@ -18,6 +18,8 @@
 
   // CRUD
   router.get   ('/units',           list);
+  // Exportar PDF/Excel (antes de /:id) — ?format=pdf|xlsx&q=&onlyActive=
+  router.get   ('/units/export',    exportList);
   router.get   ('/units/:id',       getById);
   router.post  ('/units',           create);
   router.post  ('/units/upsert',    upsert);

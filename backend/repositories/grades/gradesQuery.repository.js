@@ -19,11 +19,12 @@ export async function list({
   isActive,
   limit = 50,
   offset = 0,
+  maxLimit = 100, // exportação (PDF/Excel) usa um teto maior
 } = {}) {
   await ensureTable();
 
   const safeQuery = String(q || '').trim();
-  const safeLimit = clampInt(limit, { min: 1, max: 100 });
+  const safeLimit = clampInt(limit, { min: 1, max: maxLimit });
   const safeOffset = clampInt(offset, {
     min: 0,
     max: 2_000_000_000,
