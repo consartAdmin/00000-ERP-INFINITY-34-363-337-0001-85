@@ -279,7 +279,9 @@ async function buildContext({ companyId, month, year, uf }) {
 
   const apuracao = await getApuracaoSource({
     enterpriseId: companyId,
-    period
+    period,
+    outboundDocuments,
+    inboundDocuments
   });
 
   const parameters = await repository.getParameters(
