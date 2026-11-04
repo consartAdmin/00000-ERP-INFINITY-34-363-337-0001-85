@@ -5,7 +5,6 @@
 // ║ - Relatório PDF de pedidos (/api/orders/report/pdf)                  ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 import pool from '../config/db.js';
-import PDFDocument from 'pdfkit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -28,6 +27,10 @@ import { generateDanfeFromXml } from '../services/danfeConsartService.js';
 import axios from 'axios';
 
 import { generateOrderSeparationPdf } from '../generationPdf/generationOrdersSeparationPdf.js';
+import {
+  C, SERIES, PAGE, createThemedDoc, drawFullHeader, drawFooters, drawKpis, makeTable,
+  money as themeMoney, number as themeNumber, nowBR as themeNowBR, dateBR as themeDateBR,
+} from '../generationPdf/consartPdfTheme.js';
 
 import { NFE_STATUS } from '../services/shared/constants/nfeStatus.js';
 import { ORDER_STATUS } from '../services/shared/constants/orderStatus.js';
@@ -445,221 +448,77 @@ export async function reportOrdersPdf(req, res) {
       };
     });
 
-    // 2) PDF EM MEMÓRIA (LANDSCAPE)
-    const doc = new PDFDocument({
-      size: 'A4',
-      margin: 40,
-      layout: 'landscape', // <<<<<<<<<<<<<<<<<<<<<<<< PAISAGEM 👈
-      autoFirstPage: true,
+    // 2) PDF EM MEMÓRIA (LANDSCAPE) — layout padrão CONSART (consartPdfTheme)
+    const REPORT_TITLE = 'Relatório de Pedidos / NF-e';
+    const { doc, done } = createThemedDoc({ title: REPORT_TITLE, subject: 'Pedidos com NF-e' });
+
+    const periodoLabel = `${dateFrom ? themeDateBR(dateFrom) : 'início'} a ${dateTo ? themeDateBR(dateTo) : 'hoje'}`;
+    const grandTotal = safeRows.reduce((acc, r) => acc + r.totalAmount, 0);
+    const customersCount = new Set(safeRows.map((r) => r.customerTaxId || r.customerName).filter(Boolean)).size;
+
+    let y = drawFullHeader(doc, {
+      title: REPORT_TITLE,
+      subtitle: 'Pedidos faturados por período',
+      info: [
+        ['Período', periodoLabel],
+        ['Status NF-e', String(effectiveNfeStatus || 'Todos')],
+        ...(status ? [['Status pedido', String(status)]] : []),
+      ],
+    }) + 14;
+
+    y = drawKpis(doc, y, [
+      { label: 'Pedidos', value: themeNumber(safeRows.length, 0), hint: 'Pedidos no período', color: SERIES[0] },
+      { label: 'Clientes', value: themeNumber(customersCount, 0), hint: 'Clientes diferentes', color: SERIES[5] },
+      { label: 'Total geral', value: themeMoney(grandTotal), hint: 'Soma dos pedidos', color: SERIES[1] },
+      { label: 'Ticket médio', value: themeMoney(safeRows.length ? grandTotal / safeRows.length : 0), hint: 'Total / pedidos', color: SERIES[2] },
+    ]) + 16;
+
+    const table = makeTable(doc, {
+      title: 'Pedidos',
+      continuation: { title: REPORT_TITLE, subtitle: 'Pedidos (continuação)' },
+      rowH: 17,
+      fontSize: 7.5,
+      columns: [
+        { label: 'Nº', w: 50 },
+        { label: 'Data', w: 70, align: 'center' },
+        { label: 'Cliente' },
+        { label: 'CNPJ/CPF', w: 110 },
+        { label: 'Pagamento', w: 150 },
+        { label: 'Status NF-e', w: 90 },
+        { label: 'Total (R$)', w: 90, align: 'right', bold: true },
+      ],
     });
 
-    const chunks = [];
-    let responseSent = false;
-
-    doc.on('data', (c) => chunks.push(c));
-    doc.on('end', () => {
-      if (responseSent) return;
-      const pdf = Buffer.concat(chunks);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader(
-        'Content-Disposition',
-        'inline; filename="relatorio-pedidos.pdf"'
-      );
-      res.send(pdf);
-    });
-
-    // 3) CABEÇALHO (DANFE)
-    const companyName = 'BH3 DISTRIBUIDORA DE PRODUTOS DE LIMPEZA LTDA';
-    const cnpj = 'CNPJ: 34.363.337/0001-85';
-    const addr1 = 'AV. BIAS FORTES, 784 - LOURDES';
-    const addr2 = 'CEP 30170-012 - BELO HORIZONTE/MG';
-    const phone = 'Fones: (31) 3566-0070 / (31) 3566-8888';
-    const emailSite =
-      'vendas@bh3distribuidora.com.br - www.bh3distribuidora.com.br';
-
-    const periodoLabel = (() => {
-      const ini = dateFrom ? fmtDate(dateFrom) : 'início';
-      const fim = dateTo ? fmtDate(dateTo) : 'hoje';
-      return `Período: ${ini} a ${fim}`;
-    })();
-
-    const drawTableHeader = (x, y) => {
-      const wNumber = 40;
-      const wDate = 70;
-      const wCustomer = 220;
-      const wTax = 110;
-      const wPayment = 140;
-      const wNfe = 100;
-      const wTotal = 80;
-      const h = 20;
-
-      const totalWidth =
-        wNumber + wDate + wCustomer + wTax + wPayment + wNfe + wTotal;
-
-      doc.rect(x, y, totalWidth, h).fill('#e5e7eb');
-      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9);
-
-      let cx = x + 5;
-      const ty = y + 5;
-
-      doc.text('Nº', cx, ty, { width: wNumber, align: 'left' });
-      cx += wNumber;
-
-      doc.text('Data', cx, ty, { width: wDate, align: 'center' });
-      cx += wDate;
-
-      doc.text('Cliente', cx, ty, { width: wCustomer, align: 'left' });
-      cx += wCustomer;
-
-      doc.text('CNPJ/CPF', cx, ty, { width: wTax, align: 'left' });
-      cx += wTax;
-
-      doc.text('Pagamento', cx, ty, { width: wPayment, align: 'left' });
-      cx += wPayment;
-
-      doc.text('Status NF-e', cx, ty, { width: wNfe, align: 'left' });
-      cx += wNfe;
-
-      doc.text('Total (R$)', cx, ty, { width: wTotal, align: 'right' });
-
-      doc.fillColor('black').font('Helvetica').fontSize(9);
-
-      return {
-        x,
-        y: y + h + 2,
-        wNumber,
-        wDate,
-        wCustomer,
-        wTax,
-        wPayment,
-        wNfe,
-        wTotal,
-        totalWidth,
-      };
-    };
-
-    const drawHeaderAndTable = () => {
-      const { width } = doc.page;
-
-      // LOGO
-      try {
-        const logo = path.join(
-          __dirname,
-          '..',
-          'public',
-          'imagens',
-          'logo_bh3_pdf.png'
-        );
-        doc.image(logo, 40, 25, { width: 90 });
-      } catch (_) { }
-
-      // TEXTO CABEÇALHO
-      doc.font('Helvetica-Bold').fontSize(10);
-      doc.text(companyName, 140, 25);
-      doc.font('Helvetica').fontSize(9);
-      doc.text(cnpj, 140, 39);
-      doc.text(addr1, 140, 52);
-      doc.text(addr2, 140, 64);
-      doc.text(phone, 140, 76);
-      doc.text(emailSite, 140, 88);
-
-      // LINHA
-      doc
-        .moveTo(40, 118)
-        .lineTo(width - 40, 118)
-        .strokeColor('#0f172a')
-        .stroke();
-
-      // TÍTULO
-      doc.font('Helvetica-Bold').fontSize(13);
-      doc.text('RELATÓRIO DE PEDIDOS / NF-e', 40, 125, {
-        width: width - 80,
-        align: 'center',
-      });
-
-      // PERÍODO
-      doc.font('Helvetica').fontSize(9);
-      doc.text(periodoLabel, 40, 145, {
-        width: width - 80,
-        align: 'center',
-      });
-
-      // CABEÇALHO DA TABELA
-      return drawTableHeader(40, 170);
-    };
-
-    // 5) RENDERIZAÇÃO DAS LINHAS
-    let table = drawHeaderAndTable();
-    let y = table.y;
-    const bottom = doc.page.height - 40;
-    let grandTotal = 0;
+    y = table.section(y);
 
     if (!safeRows.length) {
-      doc
-        .font('Helvetica-Oblique')
-        .fontSize(10)
-        .text('Nenhum pedido encontrado.', 40, y + 20);
-    } else {
-      safeRows.forEach((row, idx) => {
-        if (y > bottom - 20) {
-          doc.addPage();
-          table = drawHeaderAndTable();
-          y = table.y;
-        }
-
-        if (idx % 2 === 1) {
-          doc.save();
-          doc.rect(table.x, y - 2, table.totalWidth, 18).fill('#f9fafb');
-          doc.restore();
-        }
-
-        let cx = table.x + 5;
-        doc.font('Helvetica').fontSize(9);
-
-        doc.text(String(row.number), cx, y, { width: table.wNumber });
-        cx += table.wNumber;
-
-        doc.text(row.issueDate, cx, y, {
-          width: table.wDate,
-          align: 'center',
-        });
-        cx += table.wDate;
-
-        doc.text(row.customerName, cx, y, { width: table.wCustomer });
-        cx += table.wCustomer;
-
-        doc.text(row.customerTaxId, cx, y, { width: table.wTax });
-        cx += table.wTax;
-
-        doc.text(row.payment || '', cx, y, { width: table.wPayment });
-        cx += table.wPayment;
-
-        doc.text(row.nfeStatus, cx, y, { width: table.wNfe });
-        cx += table.wNfe;
-
-        doc.text(fmtMoney(row.totalAmount), cx, y, {
-          width: table.wTotal,
-          align: 'right',
-        });
-
-        grandTotal += row.totalAmount;
-        y += 15;
-      });
+      doc.font('Helvetica').fontSize(9).fillColor(C.muted)
+        .text('Nenhum pedido encontrado.', PAGE.margin, y + 16, { width: table.width, align: 'center' });
     }
 
-    // 6) TOTAL GERAL
-    if (y > bottom - 30) {
-      doc.addPage();
-      table = drawHeaderAndTable();
-      y = table.y;
+    safeRows.forEach((row, idx) => {
+      y = table.row(y, [
+        String(row.number),
+        themeDateBR(row.issueDate) || row.issueDate,
+        row.customerName,
+        row.customerTaxId,
+        row.payment || '',
+        row.nfeStatus,
+        fmtMoney(row.totalAmount),
+      ], { index: idx });
+    });
+
+    if (safeRows.length) {
+      table.total(y, ['TOTAL', '', `${themeNumber(safeRows.length, 0)} pedido(s)`, '', '', '', fmtMoney(grandTotal)]);
     }
 
-    doc.font('Helvetica-Bold').fontSize(10);
-    doc.text(`Total geral: R$ ${fmtMoney(grandTotal)}`, 40, y + 20);
-    doc.font('Helvetica').fontSize(9);
-    doc.text(`Quantidade de pedidos: ${safeRows.length}`, 40, y + 36);
-
+    drawFooters(doc, { title: REPORT_TITLE, generatedAt: themeNowBR() });
     doc.end();
+
+    const pdf = await done;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="relatorio-pedidos.pdf"');
+    return res.send(pdf);
   } catch (err) {
     reportOrdersError('[reportOrdersPdf] EXC:', err);
     return res

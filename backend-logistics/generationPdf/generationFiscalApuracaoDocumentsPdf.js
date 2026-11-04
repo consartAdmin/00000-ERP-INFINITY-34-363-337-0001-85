@@ -11,6 +11,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import PDFDocument from 'pdfkit';
+import {
+  C, SERIES,
+  drawFullHeader, drawCompactHeader, drawFooters, drawKpis, DEFAULT_LOGO_PATH, nowBR,
+} from './consartPdfTheme.js';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -66,7 +70,7 @@ const TABLE_COLUMNS = [
   { key: 'modelo', label: 'MOD', width: 42, align: 'center' },
   { key: 'numero', label: 'NÚMERO', width: 56, align: 'center' },
   { key: 'data', label: 'DATA', width: 56, align: 'center' },
-  { key: 'parceiro', label: 'PARCEIRO', width: 178, align: 'left' },
+  { key: 'parceiro', label: 'PARCEIRO', width: 156, align: 'left' },
   { key: 'total_nf', label: 'TOTAL NF', width: 72, align: 'right' },
   { key: 'icms', label: 'ICMS', width: 58, align: 'right' },
   { key: 'icms_st', label: 'ICMS ST', width: 62, align: 'right' },
@@ -231,75 +235,49 @@ function getPageMetrics(doc) {
   };
 }
 
+const REPORT_TITLE = 'Relatório de Documentos Importados';
+const headerDrawn = new WeakSet();
+
 function drawHeader(doc, context) {
-  const { company, apuracao, rows } = context;
+  const { company, apuracao, rows, logo = DEFAULT_LOGO_PATH } = context;
   const m = getPageMetrics(doc);
+  const logoTile = logo !== DEFAULT_LOGO_PATH;
 
-  const headerH = 72;
-  drawBox(doc, m.left, m.top, m.contentWidth, headerH, '#ffffff', COLORS.borderStrong);
+  // páginas seguintes: cabeçalho compacto
+  if (headerDrawn.has(doc)) {
+    return drawCompactHeader(doc, { title: REPORT_TITLE, subtitle: 'Documentos (continuação)', logo, logoTile }) + 12;
+  }
+  headerDrawn.add(doc);
 
-  doc.fillColor(COLORS.accent).font('Helvetica-Bold').fontSize(FONTS.title);
-  drawText(doc, 'RELATÓRIO DE DOCUMENTOS IMPORTADOS', m.left + 16, m.top + 12, {
-    width: 360,
-    lineBreak: false
-  });
+  const companyLine = [
+    safeText(company.name, DEFAULT_COMPANY.name),
+    company.taxId ? `CNPJ ${company.taxId}` : '',
+  ].filter(Boolean).join('  ·  ');
 
-  doc.fillColor(COLORS.muted).font('Helvetica').fontSize(FONTS.subtitle);
-  drawText(doc, safeText(company.name, DEFAULT_COMPANY.name), m.left + 16, m.top + 34, {
-    width: 300,
-    lineBreak: false
-  });
-
-  const metaX = m.left + 370;
-  const metaY = m.top + 12;
-  const lineGap = 12;
-
-  const periodText = `${dateBR(apuracao.date_from)} até ${dateBR(apuracao.date_to)}`;
-  const apuracaoId = safeText(apuracao.fiscal_apuracao_id, '-');
-  const regimeType = safeText(apuracao.regime_type, '-');
-  const status = safeText(apuracao.status, '-');
-
-  doc.font('Helvetica-Bold').fontSize(FONTS.metaLabel).fillColor(COLORS.muted);
-  drawText(doc, 'APURAÇÃO:', metaX, metaY);
-  drawText(doc, 'PERÍODO:', metaX, metaY + lineGap);
-  drawText(doc, 'REGIME:', metaX, metaY + (lineGap * 2));
-  drawText(doc, 'STATUS:', metaX, metaY + (lineGap * 3));
-
-  doc.font('Helvetica').fontSize(FONTS.metaValue).fillColor(COLORS.text);
-  drawText(doc, apuracaoId, metaX + 64, metaY);
-  drawText(doc, periodText, metaX + 64, metaY + lineGap);
-  drawText(doc, regimeType, metaX + 64, metaY + (lineGap * 2));
-  drawText(doc, status, metaX + 64, metaY + (lineGap * 3));
+  let y = drawFullHeader(doc, {
+    title: REPORT_TITLE,
+    subtitle: companyLine,
+    logo,
+    logoTile,
+    info: [
+      ['Apuração', safeText(apuracao.fiscal_apuracao_id, '-')],
+      ['Período', `${dateBR(apuracao.date_from)} a ${dateBR(apuracao.date_to)}`],
+      ['Regime', safeText(apuracao.regime_type, '-')],
+      ['Status', safeText(apuracao.status, '-')],
+    ],
+  }) + 14;
 
   const totals = calculateTotals(rows);
-  const cardY = m.top + headerH + 10;
-  const cardH = 42;
-  const gap = 8;
-  const cardW = Math.floor((m.contentWidth - (gap * 4)) / 5);
 
-  const cards = [
-    { label: 'DOCUMENTOS', value: String(totals.count), accent: COLORS.accentSoft },
-    { label: 'TOTAL NF', value: moneyBR(totals.total_nf), accent: '#ecfeff' },
-    { label: 'ICMS', value: moneyBR(totals.icms), accent: '#f0fdf4' },
-    { label: 'ICMS ST', value: moneyBR(totals.icms_st), accent: '#fff7ed' },
-    { label: 'PIS/COFINS/IPI', value: `${moneyBR(totals.pis)} / ${moneyBR(totals.cofins)} / ${moneyBR(totals.ipi)}`, accent: '#f8fafc' }
-  ];
+  y = drawKpis(doc, y, [
+    { label: 'Documentos', value: String(totals.count), hint: 'Entradas e saídas', color: SERIES[0] },
+    { label: 'Total NF', value: moneyBR(totals.total_nf), hint: 'Soma das notas', color: SERIES[5] },
+    { label: 'ICMS', value: moneyBR(totals.icms), color: SERIES[1] },
+    { label: 'ICMS ST', value: moneyBR(totals.icms_st), color: SERIES[2] },
+    { label: 'PIS / COFINS / IPI', value: moneyBR(totals.pis + totals.cofins + totals.ipi), hint: `PIS ${moneyBR(totals.pis)} · COFINS ${moneyBR(totals.cofins)} · IPI ${moneyBR(totals.ipi)}`, color: SERIES[3] },
+  ], { x: m.left, width: m.contentWidth }) + 14;
 
-  cards.forEach((card, index) => {
-    const x = m.left + ((cardW + gap) * index);
-    drawBox(doc, x, cardY, cardW, cardH, card.accent, COLORS.border);
-
-    doc.font('Helvetica-Bold').fontSize(7).fillColor(COLORS.muted);
-    drawText(doc, card.label, x + 10, cardY + 8, { width: cardW - 20, lineBreak: false });
-
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.text);
-    drawText(doc, fitText(doc, card.value, cardW - 20), x + 10, cardY + 20, {
-      width: cardW - 20,
-      lineBreak: false
-    });
-  });
-
-  return cardY + cardH + 14;
+  return y;
 }
 
 function drawTableHeader(doc, y) {
@@ -307,10 +285,10 @@ function drawTableHeader(doc, y) {
   let x = m.left;
 
   doc.save();
-  doc.rect(m.left, y, m.contentWidth, 20).fill(COLORS.headerBg);
+  doc.rect(m.left, y, m.contentWidth, 20).fill(C.blue);
   doc.restore();
 
-  doc.font('Helvetica-Bold').fontSize(FONTS.tableHeader).fillColor(COLORS.accent);
+  doc.font('Helvetica-Bold').fontSize(FONTS.tableHeader).fillColor(C.white);
 
   for (const col of TABLE_COLUMNS) {
     drawText(doc, col.label, x + 3, y + 6, {
@@ -320,11 +298,6 @@ function drawTableHeader(doc, y) {
     });
     x += col.width;
   }
-
-  doc.save();
-  doc.lineWidth(0.8).strokeColor(COLORS.borderStrong);
-  doc.rect(m.left, y, m.contentWidth, 20).stroke();
-  doc.restore();
 
   return y + 20;
 }
@@ -389,34 +362,11 @@ function drawRow(doc, row, y, index) {
 }
 
 function drawFooter(doc, context) {
-  const range = doc.bufferedPageRange();
-
-  for (let i = 0; i < range.count; i += 1) {
-    doc.switchToPage(i);
-
-    const m = getPageMetrics(doc);
-    const footerY = m.bottom - 10;
-    const current = i + 1;
-    const total = range.count;
-
-    doc.font('Helvetica').fontSize(FONTS.footer).fillColor(COLORS.muted);
-    drawText(doc, safeText(context.company.name, DEFAULT_COMPANY.name), m.left, footerY, {
-      width: 220,
-      lineBreak: false
-    });
-
-    drawText(
-      doc,
-      `Gerado em ${new Date().toLocaleString('pt-BR')}  |  Página ${current}/${total}`,
-      m.left + 220,
-      footerY,
-      {
-        width: m.contentWidth - 220,
-        align: 'right',
-        lineBreak: false
-      }
-    );
-  }
+  drawFooters(doc, {
+    title: REPORT_TITLE,
+    extra: safeText(context.company.name, DEFAULT_COMPANY.name),
+    generatedAt: nowBR(),
+  });
 }
 
 /* ======================================================================
@@ -451,19 +401,14 @@ export async function generateFiscalApuracaoDocumentsPdf({
     doc.pipe(stream);
 
     try {
-      if (logoPath && fs.existsSync(logoPath)) {
-        const m = getPageMetrics(doc);
-        doc.image(logoPath, m.right - 86, m.top + 10, {
-          fit: [60, 40],
-          align: 'right',
-          valign: 'top'
-        });
-      }
+      // logo da empresa (se houver) vai no cabeçalho padrão
+      const logo = logoPath && fs.existsSync(logoPath) ? logoPath : DEFAULT_LOGO_PATH;
 
       let cursorY = drawHeader(doc, {
         company: normalizedCompany,
         apuracao,
-        rows
+        rows,
+        logo
       });
 
       cursorY = drawTableHeader(doc, cursorY);
@@ -479,7 +424,8 @@ export async function generateFiscalApuracaoDocumentsPdf({
           cursorY = drawHeader(doc, {
             company: normalizedCompany,
             apuracao,
-            rows
+            rows,
+            logo
           });
           cursorY = drawTableHeader(doc, cursorY);
         }

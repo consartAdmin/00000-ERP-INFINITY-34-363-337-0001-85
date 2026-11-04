@@ -8,6 +8,10 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import PDFDocument from 'pdfkit';
+import {
+  C, SERIES, PAGE,
+  drawFullHeader, autoCompactHeader, drawFooters, drawKpis, nowBR,
+} from './consartPdfTheme.js';
 import { getPdvSalesReportData } from '../repositories/pdvSalesReport/pdvSalesReport.index.js';
 import pool from '../config/db.js';
 
@@ -33,19 +37,10 @@ function formatDateBR(d) {
 }
 
 function drawSectionTitle(doc, text) {
-  doc
-    .fontSize(12)
-    .font('Helvetica-Bold')
-    .fillColor('#111111')
-    .text(text);
-  doc.moveDown(0.2);
-  doc
-    .moveTo(doc.page.margins.left, doc.y)
-    .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-    .strokeColor('#cbd5e1')
-    .lineWidth(0.6)
-    .stroke();
-  doc.moveDown(0.4);
+  doc.fontSize(11).font('Helvetica-Bold').fillColor(C.navy).text(text, doc.page.margins.left);
+  doc.rect(doc.page.margins.left, doc.y + 1, 34, 2).fill(C.teal);
+  doc.y += 3;
+  doc.moveDown(0.5);
 }
 
 function drawTableHeader(doc, headers) {
@@ -53,24 +48,16 @@ function drawTableHeader(doc, headers) {
   const fullWidth =
     doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-  doc
-    .rect(doc.page.margins.left, topY - 2, fullWidth, 16)
-    .fill('#e5edf6');
+  doc.rect(doc.page.margins.left, topY - 3, fullWidth, 18).fill(C.blue);
 
-  doc.fontSize(9).font('Helvetica-Bold').fillColor('#111827');
+  doc.fontSize(8).font('Helvetica-Bold').fillColor(C.white);
 
   headers.forEach((h) => {
-    doc.text(h.label, h.x, topY, { width: h.w });
+    doc.text(h.label, h.x, topY + 1.5, { width: h.w, lineBreak: false });
   });
 
-  doc
-    .moveTo(doc.page.margins.left, topY + 16)
-    .lineTo(doc.page.width - doc.page.margins.right, topY + 16)
-    .strokeColor('#cbd5e1')
-    .lineWidth(0.4)
-    .stroke();
-
-  doc.y = topY + 18;
+  doc.fillColor(C.text);
+  doc.y = topY + 19;
 }
 
 // ---------------------------------------------------------------------
@@ -217,7 +204,8 @@ export async function generatePdvSalesReportPdf(filters = {}, mode = 'full') {
   const doc = new PDFDocument({
     size: 'A4',
     layout: 'landscape',
-    margin: 40,
+    margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 20 },
+    bufferPages: true,
     info: {
       Title: 'Relatório de Vendas PDV - CONSART ERP',
       Author: 'CONSART ERP',
@@ -233,91 +221,33 @@ export async function generatePdvSalesReportPdf(filters = {}, mode = 'full') {
 
     const startX = doc.page.margins.left;
 
-    // Cabeçalho
-    doc
-      .fontSize(18)
-      .font('Helvetica-Bold')
-      .fillColor('#0f172a')
-      .text('CONSART ERP', startX, doc.page.margins.top - 20, {
-        align: 'left'
-      });
-
-    let subtitle = 'Relatório de Vendas PDV (NFC-e)';
-    if (modeSafe === 'customers')
-      subtitle = 'Relatório de Vendas PDV por Cliente';
-    if (modeSafe === 'coupons') subtitle = 'Relatório de Vendas por Cupom';
-
-    doc
-      .moveDown(0.1)
-      .fontSize(11)
-      .font('Helvetica')
-      .fillColor('#374151')
-      .text(subtitle);
+    // Cabeçalho (layout padrão)
+    let reportTitle = 'Relatório de Vendas PDV (NFC-e)';
+    if (modeSafe === 'customers') reportTitle = 'Relatório de Vendas PDV por Cliente';
+    if (modeSafe === 'coupons') reportTitle = 'Relatório de Vendas por Cupom';
 
     const periodStart = data.filters?.startDate || 'Últimos 30 dias';
     const periodEnd = data.filters?.endDate || '';
 
-    doc
-      .moveDown(0.4)
-      .fontSize(9)
-      .fillColor('#4b5563')
-      .text(
-        `Período: ${formatDateBR(periodStart)}${
-          periodEnd ? ' até ' + formatDateBR(periodEnd) : ''
-        }`
-      );
-
-    doc.moveDown(0.5);
-    doc
-      .moveTo(doc.page.margins.left, doc.y)
-      .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-      .strokeColor('#cbd5e1')
-      .lineWidth(0.8)
-      .stroke();
-
-    doc.moveDown(0.8);
+    doc.y = drawFullHeader(doc, {
+      title: reportTitle,
+      subtitle: 'Frente de caixa · NFC-e',
+      info: [
+        ['Período', `${formatDateBR(periodStart)}${periodEnd ? ' a ' + formatDateBR(periodEnd) : ''}`],
+      ],
+    }) + 14;
+    autoCompactHeader(doc, { title: reportTitle, subtitle: 'Continuação' });
 
     // ===================================================================
     // RESUMO GERAL (cards)
     // ===================================================================
-    drawSectionTitle(doc, 'Resumo Geral');
-
-    const cardW = 150;
-    const yCards = doc.y;
-    const gap = 10;
-
-    const cards = [
-      { label: 'Total vendido', value: moneyBR(totalAmount) },
-      { label: 'Cupons', value: String(ordersCount) },
-      { label: 'Itens vendidos', value: String(itemsCount) },
-      { label: 'Ticket médio', value: moneyBR(ticket) },
-      { label: 'Lucro bruto (estimado)', value: moneyBR(grossProfit) }
-    ];
-
-    doc.font('Helvetica');
-    cards.forEach((c, idx) => {
-      const col = idx % 4;
-      const row = Math.floor(idx / 4);
-      const x = startX + col * (cardW + gap);
-      const y = yCards + row * 40;
-
-      doc
-        .roundedRect(x, y, cardW, 34, 6)
-        .fillAndStroke('#f9fafb', '#e5e7eb');
-
-      doc
-        .fontSize(8)
-        .fillColor('#6b7280')
-        .text(c.label, x + 8, y + 5, { width: cardW - 16 });
-      doc
-        .fontSize(11)
-        .font('Helvetica-Bold')
-        .fillColor('#111827')
-        .text(c.value, x + 8, y + 16, { width: cardW - 16 });
-    });
-
-    doc.y = yCards + 80;
-    doc.moveDown(0.8);
+    doc.y = drawKpis(doc, doc.y, [
+      { label: 'Total vendido', value: moneyBR(totalAmount), hint: 'Soma dos cupons', color: SERIES[0] },
+      { label: 'Cupons', value: String(ordersCount), hint: 'Vendas no período', color: SERIES[5] },
+      { label: 'Itens vendidos', value: String(itemsCount), color: SERIES[7] },
+      { label: 'Ticket médio', value: moneyBR(ticket), hint: 'Vendido / cupons', color: SERIES[2] },
+      { label: 'Lucro bruto', value: moneyBR(grossProfit), hint: 'Estimado pelo custo do produto', color: SERIES[1] },
+    ], { x: startX, width: doc.page.width - doc.page.margins.left - doc.page.margins.right }) + 16;
 
     // ===================================================================
     // TABELAS
@@ -547,7 +477,7 @@ export async function generatePdvSalesReportPdf(filters = {}, mode = 'full') {
           doc
             .fontSize(9)
             .font('Helvetica-Bold')
-            .fillColor('#111827')
+            .fillColor(C.navy)
             .text(
               `Cupom: ${info.couponNumber || ''}  |  Data: ${formatDateBR(
                 info.date
@@ -659,20 +589,8 @@ export async function generatePdvSalesReportPdf(filters = {}, mode = 'full') {
       }
     }
 
-    // Rodapé
-    doc.moveDown(1.0);
-    doc
-      .fontSize(8)
-      .font('Helvetica-Oblique')
-      .fillColor('#6b7280')
-      .text(
-        `Gerado em ${new Date().toLocaleString(
-          'pt-BR'
-        )} pelo CONSART ERP`,
-        {
-          align: 'right'
-        }
-      );
+    // Rodapé padrão em todas as páginas
+    drawFooters(doc, { title: reportTitle, generatedAt: nowBR() });
 
     doc.end();
   });

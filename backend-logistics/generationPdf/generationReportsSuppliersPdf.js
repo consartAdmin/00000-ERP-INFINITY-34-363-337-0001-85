@@ -1,22 +1,14 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ generationReportsSuppliersPdf.js — Relatório de Fornecedores       ║
-// ║ CONSART ERP · PDFKit · ESM                                         ║
+// ║ CONSART ERP · PDFKit · ESM · layout padrão (consartPdfTheme.js)    ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
-import PDFDocument from 'pdfkit';
-
-const COLOR = Object.freeze({
-    text: '#172033',
-    muted: '#64748B',
-    header: '#1D4ED8',
-    headerText: '#FFFFFF',
-    border: '#CBD5E1',
-    zebra: '#F8FAFC',
-    active: '#166534',
-    inactive: '#991B1B',
-});
+import {
+    C, SERIES, PAGE,
+    createThemedDoc, drawFullHeader, drawFooters, drawKpis, makeTable, number,
+} from './consartPdfTheme.js';
 
 const COLUMNS = Object.freeze([
     { key: 'supplierId', label: '#', width: 38, align: 'center' },
@@ -69,18 +61,6 @@ function normalizeSupplier(supplier = {}) {
     };
 }
 
-function truncate(doc, value, width) {
-    const original = text(value);
-    if (doc.widthOfString(original) <= width) return original;
-
-    let output = original;
-    while (output && doc.widthOfString(`${output}…`) > width) {
-        output = output.slice(0, -1);
-    }
-
-    return `${output}…`;
-}
-
 /**
  * Gera o relatório de fornecedores em formato PDF.
  *
@@ -90,9 +70,9 @@ function truncate(doc, value, width) {
  * @param {Date|string} [options.generatedAt=new Date()]
  * @returns {Promise<Buffer>}
  */
-export function generateReportsSuppliersPdf(suppliers = [], options = {}) {
+export async function generateReportsSuppliersPdf(suppliers = [], options = {}) {
     if (!Array.isArray(suppliers)) {
-        return Promise.reject(new TypeError('suppliers deve ser um array.'));
+        throw new TypeError('suppliers deve ser um array.');
     }
 
     const title = text(options.title) || 'Relatório de Fornecedores';
@@ -100,131 +80,58 @@ export function generateReportsSuppliersPdf(suppliers = [], options = {}) {
     const generatedAt = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
     const rows = suppliers.map(normalizeSupplier);
 
-    return new Promise((resolve, reject) => {
-        const doc = new PDFDocument({
-            size: 'A4',
-            layout: 'landscape',
-            margins: { top: 32, right: 28, bottom: 34, left: 28 },
-            bufferPages: true,
-            info: {
-                Title: title,
-                Author: 'CONSART ERP',
-                Subject: 'Relatório de fornecedores',
-            },
-        });
+    const { doc, done } = createThemedDoc({ title, subject: 'Relatório de fornecedores' });
 
-        const chunks = [];
-        const rowHeight = 22;
-        const headerHeight = 24;
-        const tableLeft = doc.page.margins.left;
-        const tableWidth = COLUMNS.reduce((total, column) => total + column.width, 0);
+    const active = rows.filter((r) => r.status === 'Ativo').length;
+    const states = new Set(rows.map((r) => r.state).filter(Boolean));
+    const withEmail = rows.filter((r) => r.email).length;
 
-        doc.on('data', (chunk) => chunks.push(chunk));
-        doc.on('error', reject);
-        doc.on('end', () => resolve(Buffer.concat(chunks)));
+    let y = drawFullHeader(doc, {
+        title,
+        subtitle: 'Cadastro de fornecedores',
+        info: [
+            ['Fornecedores', number(rows.length, 0)],
+            ['Ativos', number(active, 0)],
+        ],
+    }) + 14;
 
-        function drawPageHeading() {
-            doc.fillColor(COLOR.header).font('Helvetica-Bold').fontSize(15)
-                .text(title, tableLeft, 28, { width: tableWidth, align: 'left' });
+    y = drawKpis(doc, y, [
+        { label: 'Fornecedores', value: number(rows.length, 0), hint: 'Registros no relatório', color: SERIES[0] },
+        { label: 'Ativos', value: number(active, 0), hint: 'Status ativo', color: SERIES[1] },
+        { label: 'Inativos', value: number(rows.length - active, 0), hint: 'Status inativo', color: rows.length - active ? C.red : SERIES[7] },
+        { label: 'Estados', value: number(states.size, 0), hint: 'UFs diferentes', color: SERIES[5] },
+        { label: 'Com e-mail', value: number(withEmail, 0), hint: 'Cadastros com e-mail', color: SERIES[2] },
+    ]) + 16;
 
-            doc.fillColor(COLOR.muted).font('Helvetica').fontSize(8)
-                .text(`Gerado em: ${generatedAt.toLocaleString('pt-BR')}`, tableLeft, 31, {
-                    width: tableWidth,
-                    align: 'right',
-                });
-
-            doc.moveTo(tableLeft, 50).lineTo(tableLeft + tableWidth, 50)
-                .strokeColor(COLOR.header).lineWidth(1).stroke();
-        }
-
-        function drawTableHeader(y) {
-            doc.rect(tableLeft, y, tableWidth, headerHeight).fill(COLOR.header);
-
-            let x = tableLeft;
-            doc.font('Helvetica-Bold').fontSize(8).fillColor(COLOR.headerText);
-
-            for (const column of COLUMNS) {
-                doc.text(column.label, x + 4, y + 8, {
-                    width: column.width - 8,
-                    align: column.align,
-                    lineBreak: false,
-                });
-                x += column.width;
-            }
-
-            return y + headerHeight;
-        }
-
-        function startPage(addPage = false) {
-            if (addPage) doc.addPage();
-            drawPageHeading();
-            return drawTableHeader(58);
-        }
-
-        let y = startPage(false);
-
-        if (!rows.length) {
-            doc.rect(tableLeft, y, tableWidth, 34).strokeColor(COLOR.border).stroke();
-            doc.fillColor(COLOR.muted).font('Helvetica').fontSize(9)
-                .text('Nenhum fornecedor encontrado.', tableLeft, y + 12, {
-                    width: tableWidth,
-                    align: 'center',
-                });
-        }
-
-        rows.forEach((supplier, index) => {
-            const bottomLimit = doc.page.height - doc.page.margins.bottom - 16;
-            if (y + rowHeight > bottomLimit) y = startPage(true);
-
-            if (index % 2 === 1) {
-                doc.rect(tableLeft, y, tableWidth, rowHeight).fill(COLOR.zebra);
-            }
-
-            doc.rect(tableLeft, y, tableWidth, rowHeight)
-                .strokeColor(COLOR.border).lineWidth(0.35).stroke();
-
-            let x = tableLeft;
-            doc.font('Helvetica').fontSize(7.5);
-
-            for (const column of COLUMNS) {
-                const value = supplier[column.key];
-                doc.fillColor(
-                    column.key === 'status'
-                        ? (value === 'Ativo' ? COLOR.active : COLOR.inactive)
-                        : COLOR.text,
-                );
-
-                if (column.key === 'status') doc.font('Helvetica-Bold');
-
-                doc.text(truncate(doc, value, column.width - 8), x + 4, y + 8, {
-                    width: column.width - 8,
-                    align: column.align,
-                    lineBreak: false,
-                });
-
-                if (column.key === 'status') doc.font('Helvetica');
-                x += column.width;
-            }
-
-            y += rowHeight;
-        });
-
-        const pageRange = doc.bufferedPageRange();
-        for (let pageIndex = 0; pageIndex < pageRange.count; pageIndex += 1) {
-            doc.switchToPage(pageIndex);
-            doc.fillColor(COLOR.muted).font('Helvetica').fontSize(8)
-                .text(`Total: ${rows.length} fornecedor(es)`, tableLeft, doc.page.height - 24, {
-                    width: tableWidth / 2,
-                    align: 'left',
-                })
-                .text(`Página ${pageIndex + 1} de ${pageRange.count}`, tableLeft + tableWidth / 2, doc.page.height - 24, {
-                    width: tableWidth / 2,
-                    align: 'right',
-                });
-        }
-
-        doc.end();
+    const table = makeTable(doc, {
+        title: 'Fornecedores',
+        continuation: { title, subtitle: 'Fornecedores (continuação)' },
+        rowH: 18,
+        fontSize: 7.5,
+        columns: COLUMNS.map((c) => ({ label: c.label, w: c.width, align: c.align })),
     });
+
+    y = table.section(y);
+
+    if (!rows.length) {
+        doc.font('Helvetica').fontSize(9).fillColor(C.muted)
+            .text('Nenhum fornecedor encontrado.', PAGE.margin, y + 16, { width: table.width, align: 'center' });
+    }
+
+    rows.forEach((supplier, index) => {
+        y = table.row(y, COLUMNS.map((c) => (c.key === 'status'
+            ? { text: supplier.status, color: supplier.status === 'Ativo' ? C.green : C.red, bold: true }
+            : supplier[c.key])), { index });
+    });
+
+    drawFooters(doc, {
+        title,
+        extra: `${number(rows.length, 0)} fornecedor(es)`,
+        generatedAt: generatedAt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+    });
+    doc.end();
+
+    return done;
 }
 
 export default generateReportsSuppliersPdf;

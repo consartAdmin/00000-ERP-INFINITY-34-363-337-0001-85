@@ -12,6 +12,7 @@ import path from 'node:path';
 import PDFDocument from 'pdfkit';
 import { fileURLToPath } from 'node:url';
 import pool from '../config/db.js';
+import { C, PAGE, drawFullHeader, autoCompactHeader, drawFooters, nowBR } from './consartPdfTheme.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -25,7 +26,7 @@ const CONSART_FALLBACK = {
   cnpj: CONSART_CNPJ,
 };
 
-const GREEN = '#0f6b5c';
+const GREEN = C.blue; // cor de destaque do layout padrão (consartPdfTheme)
 const BORDER = '#cbd5e1';
 const MUTED = '#475569';
 const LINE = '#e2e8f0';
@@ -113,7 +114,11 @@ export async function generateProposalConsartPdf(proposal) {
   const enterprise = await findConsartEnterprise();
   const logo = await resolveLogo(enterprise.logo_url);
 
-  const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
+  const doc = new PDFDocument({
+    size: 'A4',
+    margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 16 },
+    bufferPages: true,
+  });
   const chunks = [];
   doc.on('data', (c) => chunks.push(c));
   const done = new Promise((resolve, reject) => {
@@ -124,46 +129,31 @@ export async function generateProposalConsartPdf(proposal) {
   const left = doc.page.margins.left;
   const right = doc.page.width - doc.page.margins.right;
   const width = right - left;
-  const bottom = () => doc.page.height - doc.page.margins.bottom - 24; // espaço do rodapé
+  const bottom = () => doc.page.height - doc.page.margins.bottom; // rodapé fica abaixo da margem
 
   const ensureSpace = (h) => {
     if (doc.y + h > bottom()) doc.addPage();
   };
 
-  // ── Cabeçalho ───────────────────────────────────────────────────
-  const top = doc.y;
-  let textX = left;
-  if (logo) {
-    try {
-      doc.image(logo, left, top, { fit: [56, 56] });
-      textX = left + 66;
-    } catch (error) {
-      console.warn('[PDF Proposta] logo inválido:', error.message);
-    }
-  }
-
+  // ── Cabeçalho (layout padrão) ───────────────────────────────────
+  const companyName = clean(enterprise.trade_name || enterprise.corporate_name);
   const companyContact = join([enterprise.phone || enterprise.whatsapp, enterprise.email, enterprise.website]);
-
-  doc.font('Helvetica-Bold').fontSize(12).fillColor('#111')
-    .text(clean(enterprise.trade_name || enterprise.corporate_name), textX, top + 2, { width: 230 });
-  doc.font('Helvetica').fontSize(8).fillColor(MUTED);
-  if (clean(enterprise.corporate_name) && enterprise.corporate_name !== enterprise.trade_name) {
-    doc.text(clean(enterprise.corporate_name), { width: 230 });
-  }
-  doc.text(`CNPJ ${formatDoc(enterprise.cnpj)}`, { width: 230 });
-  if (companyContact) doc.text(companyContact, { width: 230 });
-  const companyBottom = doc.y;
-
-  doc.font('Helvetica-Bold').fontSize(17).fillColor(GREEN)
-    .text('PROPOSTA COMERCIAL', left, top, { width, align: 'right' });
-  doc.font('Helvetica').fontSize(9).fillColor('#334155')
-    .text(`Nº ${proposal.number}`, { width, align: 'right' })
-    .text(`Emissão: ${dateBR(proposal.issue_date)}`, { width, align: 'right' })
-    .text(`Válida até: ${dateBR(proposal.valid_until)}`, { width, align: 'right' });
-
-  const headerBottom = Math.max(companyBottom, doc.y, top + 58) + 8;
-  doc.moveTo(left, headerBottom).lineTo(right, headerBottom).lineWidth(2.5).strokeColor(GREEN).stroke();
-  doc.y = headerBottom + 14;
+  const docTitle = `Proposta Comercial Nº ${proposal.number}`;
+  const headerY = drawFullHeader(doc, {
+    title: 'Proposta Comercial',
+    brand: companyName,
+    subtitle: join([`CNPJ ${formatDoc(enterprise.cnpj)}`, companyContact]),
+    info: [
+      ['Nº', clean(proposal.number)],
+      ['Emissão', dateBR(proposal.issue_date)],
+      ['Válida até', dateBR(proposal.valid_until)],
+    ],
+    logo: logo || undefined,
+    logoTile: Boolean(logo),
+  });
+  autoCompactHeader(doc, { title: docTitle, subtitle: companyName, logo: logo || undefined, logoTile: Boolean(logo) });
+  doc.x = left;
+  doc.y = headerY + 16;
 
   // ── Caixas de texto ─────────────────────────────────────────────
   const PAD = 9;
@@ -357,18 +347,7 @@ export async function generateProposalConsartPdf(proposal) {
   });
 
   // ── Rodapé em todas as páginas ──────────────────────────────────
-  const range = doc.bufferedPageRange();
-  for (let i = range.start; i < range.start + range.count; i += 1) {
-    doc.switchToPage(i);
-    const fy = doc.page.height - 50;
-    doc.page.margins.bottom = 0; // escrever no rodapé sem abrir página nova
-    doc.moveTo(left, fy - 4).lineTo(right, fy - 4).lineWidth(0.6).strokeColor(LINE).stroke();
-    doc.font('Helvetica').fontSize(7.5).fillColor('#64748b');
-    doc.text(`Proposta ${proposal.number} · Consart ERP`, left, fy, { width: width / 2, lineBreak: false });
-    doc.text(`Página ${i - range.start + 1} de ${range.count}`, left + width / 2, fy, {
-      width: width / 2, align: 'right', lineBreak: false,
-    });
-  }
+  drawFooters(doc, { title: docTitle, generatedAt: nowBR() });
 
   doc.end();
   return done;

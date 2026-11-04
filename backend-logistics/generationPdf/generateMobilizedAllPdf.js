@@ -24,6 +24,7 @@ import PDFDocument from 'pdfkit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { C, PAGE, drawFullHeader, drawCompactHeader, drawFooters, drawKpis, nowBR } from './consartPdfTheme.js';
 
 /* ──────────────────────────────────────────────────────────────
    Helpers (ESM __dirname) + Remote base default (igual budgets)
@@ -386,7 +387,7 @@ function estimateRowHeightFromText({ baseDesc, extras }) {
 }
 
 function drawTableHeader(doc, x, y, cols) {
-  doc.save().rect(x, y, cols.totalWidth, cols.headerHeight).fill('#111827').restore();
+  doc.save().rect(x, y, cols.totalWidth, cols.headerHeight).fill(C.blue).restore();
 
   doc.font('Helvetica-Bold').fontSize(9).fillColor('#FFFFFF');
   const padY = 6;
@@ -395,9 +396,9 @@ function drawTableHeader(doc, x, y, cols) {
   doc.text('SKU', cols.sku.x, y + padY, { width: cols.sku.w, align: 'left' });
   doc.text('Descrição', cols.desc.x, y + padY, { width: cols.desc.w, align: 'left' });
   doc.text('Qtd', cols.qty.x, y + padY, { width: cols.qty.w, align: 'right' });
-  doc.text('Un.', cols.unit.x, y + padY, { width: cols.unit.w, align: 'left' });
+  doc.text('Un.', cols.unit.x + 6, y + padY, { width: cols.unit.w - 6, align: 'left' });
   doc.text('Unitário', cols.unitPrice.x, y + padY, { width: cols.unitPrice.w, align: 'right' });
-  doc.text('Total', cols.total.x, y + padY, { width: cols.total.w, align: 'right' });
+  doc.text('Total', cols.total.x, y + padY, { width: cols.total.w - 6, align: 'right' });
 
   doc.save()
     .moveTo(x, y + cols.headerHeight)
@@ -413,7 +414,7 @@ function drawTableHeader(doc, x, y, cols) {
 function drawRow(doc, item, cols, y, rowH, zebra, imageBuffer) {
   const x = cols.x;
 
-  if (zebra) doc.save().rect(x, y, cols.totalWidth, rowH).fill('#F9FAFB').restore();
+  if (zebra) doc.save().rect(x, y, cols.totalWidth, rowH).fill(C.zebra).restore();
 
   // Thumbnail
   const thumbPad = 4;
@@ -466,7 +467,7 @@ function drawRow(doc, item, cols, y, rowH, zebra, imageBuffer) {
     { width: cols.qty.w, align: 'right' }
   );
 
-  doc.text(item?.unit ?? '', cols.unit.x, y + 6);
+  doc.text(item?.unit ?? '', cols.unit.x + 6, y + 6);
 
   doc.text(item?.unit_price != null ? formatBRL(item.unit_price) : '', cols.unitPrice.x, y + 6, {
     width: cols.unitPrice.w,
@@ -474,7 +475,7 @@ function drawRow(doc, item, cols, y, rowH, zebra, imageBuffer) {
   });
 
   doc.text(item?.total_value != null ? formatBRL(item.total_value) : '', cols.total.x, y + 6, {
-    width: cols.total.w,
+    width: cols.total.w - 6,
     align: 'right',
   });
 
@@ -500,7 +501,7 @@ function drawRow(doc, item, cols, y, rowH, zebra, imageBuffer) {
     doc.save()
       .rect(bx + 2, boxesTop, bw - 4, boxH)
       .lineWidth(1)
-      .strokeColor('#EF4444')
+      .strokeColor(C.border)
       .stroke()
       .restore();
 
@@ -538,106 +539,33 @@ function drawMobilizedHeader(doc, { mobilized, company, globalTitle }) {
   const externalRef = safeStr(mobilized?.external_ref, 80);
   const sourceSystem = safeStr(mobilized?.source_system, 60);
 
-  doc.save().rect(0, 0, pageWidth, 78).fill('#F2F4F7').restore();
-
-  // Title
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(16)
-    .fillColor('#111827')
-    .text(title, left, 16, { width: pageWidth - left - right });
-
-  doc.font('Helvetica').fontSize(9).fillColor('#374151');
-
-  // Company + Global label line
   const companyName = safeStr(company?.name || company?.razao_social || company?.nome_fantasia, 120);
   const companyCnpj = safeStr(company?.cnpj, 30);
 
-  const line2 = [];
-  if (companyName) line2.push(companyName);
-  if (companyCnpj) line2.push(`CNPJ: ${companyCnpj}`);
-  if (globalTitle) line2.push(globalTitle);
-  if (line2.length) doc.text(line2.join(' • '), left, 36, { width: pageWidth - left - right });
+  const subtitle = [companyName, companyCnpj ? `CNPJ: ${companyCnpj}` : '', globalTitle].filter(Boolean).join(' · ');
 
-  // Meta line
-  const meta = [
-    mobilized?.mobilized_id != null ? `ID: ${mobilized.mobilized_id}` : null,
-    status ? `Status: ${status}` : null,
-    acquired ? `Aquisição: ${acquired}` : null,
-    sourceSystem ? `Origem: ${sourceSystem}` : null,
-    externalRef ? `Ref: ${externalRef}` : null,
+  const info = [
+    mobilized?.mobilized_id != null ? ['ID', String(mobilized.mobilized_id)] : null,
+    status ? ['Status', status] : null,
+    acquired ? ['Aquisição', acquired] : null,
+    sourceSystem || externalRef ? ['Origem / Ref', [sourceSystem, externalRef].filter(Boolean).join(' · ')] : null,
   ].filter(Boolean);
 
-  if (meta.length) doc.text(meta.join(' • '), left, 52, { width: pageWidth - left - right });
-
-  doc.save()
-    .moveTo(left, 82)
-    .lineTo(pageWidth - right, 82)
-    .lineWidth(1)
-    .strokeColor('#E5E7EB')
-    .stroke()
-    .restore();
+  let y = drawFullHeader(doc, { title, subtitle, info }) + 10;
 
   // Notes block
   const notes = safeStr(mobilized?.notes, 2000);
   if (notes) {
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#111827').text('Observações', left, 92);
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(C.navy).text('Observações', left, y);
     doc
       .font('Helvetica')
       .fontSize(9)
-      .fillColor('#374151')
-      .text(notes, left, 106, { width: pageWidth - left - right });
-    return Math.max(doc.y + 8, 132);
+      .fillColor(C.text)
+      .text(notes, left, y + 14, { width: pageWidth - left - right });
+    return Math.max(doc.y + 8, y + 36);
   }
 
-  return 96;
-}
-
-function drawFooter(doc, footerText) {
-  const { left, right, bottom } = doc.page.margins;
-  const usableW = doc.page.width - left - right;
-
-  // ✅ MUST be <= (page.height - bottom)
-  const bottomLimit = doc.page.height - bottom;
-  const footerY = bottomLimit - 12; // inside the printable area
-
-  // Preserve cursor position so footer doesn't affect flow
-  const oldY = doc.y;
-
-  doc.save();
-  doc.font('Helvetica').fontSize(8).fillColor('#6B7280');
-  doc.text(footerText, left, footerY, { width: usableW, align: 'center' });
-  doc.restore();
-
-  doc.y = oldY;
-}
-
-function drawGrandTotalBox(doc, { label = 'TOTAL GERAL', value = 0 }) {
-  const { left, right } = doc.page.margins;
-  const pageWidth = doc.page.width;
-  const boxW = 320;
-  const boxH = 42;
-  const x = pageWidth - right - boxW;
-  const y = doc.y + 12;
-
-  doc.save()
-    .rect(x, y, boxW, boxH)
-    .fill('#F9FAFB')
-    .strokeColor('#111827')
-    .lineWidth(1)
-    .stroke()
-    .restore();
-
-  doc.font('Helvetica-Bold').fontSize(10).fillColor('#374151');
-  doc.text(label, x + 12, y + 8, { width: boxW - 24 });
-
-  doc.font('Helvetica-Bold').fontSize(16).fillColor('#111827');
-  doc.text(formatBRL(value), x + 12, y + 22, {
-    width: boxW - 24,
-    align: 'right',
-  });
-
-  doc.y = y + boxH + 12;
+  return y;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -659,7 +587,8 @@ export async function generateMobilizedAllPdf({
   const doc = new PDFDocument({
     size: 'A4',
     layout: 'landscape',
-    margins: { top: 36, left: 36, right: 36, bottom: 36 },
+    margins: { top: 36, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 12 },
+    bufferPages: true,
     info: {
       Title: safeStr(title, 180),
       Author: safeStr(company?.name || company?.razao_social || 'CONSART ERP', 120),
@@ -667,9 +596,14 @@ export async function generateMobilizedAllPdf({
   });
 
   // footer on every page
-  const footerText = `Gerado em ${formatDateTimeBR(new Date())} • CONSART ERP`;
-  drawFooter(doc, footerText);
-  doc.on('pageAdded', () => drawFooter(doc, footerText));
+  // Rodapé padrão desenhado no fim (drawFooters). Páginas de continuação recebem o cabeçalho compacto.
+  const reportTitle = safeStr(title, 180);
+  const compactTop = PAGE.compactHeaderH + 16;
+  doc.on('pageAdded', () => {
+    drawCompactHeader(doc, { title: reportTitle, subtitle: 'Mobilizados (continuação)' });
+    doc.page.margins.top = compactTop;
+    doc.y = compactTop;
+  });
 
   const pageWidth = doc.page.width;
   const { left, right } = doc.page.margins;
@@ -796,8 +730,9 @@ export async function generateMobilizedAllPdf({
       globalTitle: `${safeStr(title, 60)} • Total de mobilizados: ${mobilizedList.length}`,
     });
 
-    doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827').text('Itens', left, startY + 6);
-    doc.y = startY + 22;
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.navy).text('Itens', left, startY + 6);
+    doc.rect(left, startY + 20, 34, 2).fill(C.teal);
+    doc.y = startY + 26;
 
     // Table header
     const tableHeaderY = doc.y;
@@ -848,7 +783,7 @@ export async function generateMobilizedAllPdf({
 
     const yLine = doc.y;
 
-    doc.font('Helvetica-Bold').fontSize(11).fillColor('#111827');
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(C.navy);
 
     // label (left)
     doc.text('Total do mobilizado', left, yLine, { width: 260 });
@@ -864,35 +799,22 @@ export async function generateMobilizedAllPdf({
   // ──────────────────────────────────────────────────────────────
   if (includeSummaryPage) {
     doc.addPage();
-    doc.y = doc.page.margins.top;
-
-    doc.font('Helvetica-Bold').fontSize(16).fillColor('#111827')
-      .text('Resumo Final', left, doc.y);
-
-    doc.y += 18;
-
-    doc.font('Helvetica').fontSize(11).fillColor('#374151');
-    doc.text(`Quantidade de mobilizados: ${mobilizedList.length}`, left, doc.y);
-    doc.y += 16;
-
     const totalItems = mobilizedList.reduce((acc, mob) => {
       const items = Array.isArray(mob?.items) ? mob.items : [];
       return acc + items.length;
     }, 0);
 
-    doc.text(`Quantidade total de itens: ${totalItems}`, left, doc.y);
-    doc.y += 18;
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(C.navy).text('Resumo Final', left, doc.y);
+    doc.rect(left, doc.y + 2, 34, 2).fill(C.teal);
 
-    drawGrandTotalBox(doc, {
-      label: 'TOTAL GERAL DOS MOBILIZADOS',
-      value: grandTotal,
-    });
-
-    doc.y += 10;
-
-    doc.font('Helvetica').fontSize(9).fillColor('#6B7280');
-    doc.text(`Gerado em ${formatDateTimeBR(new Date())}`, left, doc.y);
+    drawKpis(doc, doc.y + 14, [
+      { label: 'Mobilizados', value: String(mobilizedList.length), hint: 'Quantidade no relatório', color: C.blue },
+      { label: 'Itens', value: String(totalItems), hint: 'Quantidade total de itens', color: C.teal },
+      { label: 'Total geral', value: formatBRL(grandTotal), hint: 'Total geral dos mobilizados', color: C.amber },
+    ]);
   }
+
+  drawFooters(doc, { title: reportTitle, generatedAt: nowBR() });
 
   return buildBufferFromDoc(doc);
 }

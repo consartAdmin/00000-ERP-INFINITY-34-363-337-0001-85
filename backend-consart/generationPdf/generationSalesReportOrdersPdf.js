@@ -13,6 +13,10 @@
 
 import PDFDocument from 'pdfkit';
 import {
+  C, SERIES, PAGE,
+  drawFullHeader, autoCompactHeader, drawFooters, drawKpis, nowBR,
+} from './consartPdfTheme.js';
+import {
   getSalesSummary,
   getSalesOrders,
   getSalesOrderItems,
@@ -200,22 +204,10 @@ function groupRowsByOrder(rows = []) {
  * Título de seção com linha abaixo
  */
 function drawSectionTitle(doc, text) {
-  doc
-    .fontSize(12)
-    .font('Helvetica-Bold')
-    .fillColor('#111111')
-    .text(text, doc.page.margins.left, doc.y);
-
-  doc.moveDown(0.15);
-
-  doc
-    .moveTo(doc.page.margins.left, doc.y)
-    .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-    .strokeColor('#cbd5e1')
-    .lineWidth(0.6)
-    .stroke();
-
-  doc.moveDown(0.35);
+  doc.fontSize(11).font('Helvetica-Bold').fillColor(C.navy).text(text, doc.page.margins.left, doc.y);
+  doc.rect(doc.page.margins.left, doc.y + 1, 34, 2).fill(C.teal);
+  doc.y += 3;
+  doc.moveDown(0.45);
 }
 
 /**
@@ -237,12 +229,13 @@ function drawOrderHeader(doc, x, y, w, order, { cont = false } = {}) {
   const date = formatDateBR(order.issue_date ?? order.created_at ?? order.date ?? order.createdAt);
   const customer = order.customer_name || order.customerName || `(Cliente ID ${order.customer_id || '-'})`;
 
-  doc.rect(x, y, w, 22).fill('#eff6ff');
+  doc.rect(x, y, w, 22).fill(C.totalFill);
+  doc.rect(x, y, 3, 22).fill(C.teal);
 
   doc
     .font('Helvetica-Bold')
     .fontSize(11)
-    .fillColor('#0f172a')
+    .fillColor(C.navy)
     .text(
       `Pedido ${orderNo}${cont ? ' (cont.)' : ''}  •  ${date}  •  Cliente: ${customer}`,
       x + 10,
@@ -275,10 +268,11 @@ function drawOrderTotalsLine(doc, x, y, w, order) {
  * Header da tabela dentro do box
  */
 function drawItemsHeaderInside(doc, boxX, yTop, boxW, cols) {
-  doc.rect(boxX, yTop, boxW, 18).fill('#e5edf6');
+  doc.rect(boxX, yTop, boxW, 18).fill(C.blue);
 
-  doc.fontSize(9).font('Helvetica-Bold').fillColor('#111827');
-  cols.forEach((c) => doc.text(c.label, c.x, yTop + 4, { width: c.w }));
+  doc.fontSize(8).font('Helvetica-Bold').fillColor(C.white);
+  cols.forEach((c) => doc.text(c.label, c.x, yTop + 5, { width: c.w, lineBreak: false }));
+  doc.fillColor(C.text);
 
   doc
     .moveTo(boxX, yTop + 18)
@@ -457,7 +451,8 @@ export async function generateSalesReportOrdersPdf(filters = {}) {
   const doc = new PDFDocument({
     size: 'A4',
     layout: 'landscape',
-    margin: 40,
+    margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 20 },
+    bufferPages: true,
     info: {
       Title: 'Relatório de Vendas por Pedido - CONSART ERP',
       Author: 'CONSART ERP',
@@ -474,44 +469,24 @@ export async function generateSalesReportOrdersPdf(filters = {}) {
     const startX = doc.page.margins.left;
 
     // -------------------------------------------------------------------
-    // Cabeçalho geral
+    // Cabeçalho geral (layout padrão)
     // -------------------------------------------------------------------
-    doc
-      .fontSize(18)
-      .font('Helvetica-Bold')
-      .fillColor('#0f172a')
-      .text('CONSART ERP', startX, doc.page.margins.top - 20, { align: 'left' });
-
-    doc
-      .moveDown(0.1)
-      .fontSize(11)
-      .font('Helvetica')
-      .fillColor('#374151')
-      .text('Relatório de Vendas por Pedido');
-
+    const reportTitle = 'Relatório de Vendas por Pedido';
     const periodStart = filters.dateStart || 'Últimos 30 dias';
     const periodEnd = filters.dateEnd || '';
 
-    doc
-      .moveDown(0.4)
-      .fontSize(9)
-      .fillColor('#4b5563')
-      .text(
-        `Período: ${formatDateBR(periodStart)}${periodEnd ? ' até ' + formatDateBR(periodEnd) : ''}`,
-      );
+    const headerInfo = [
+      ['Período', `${formatDateBR(periodStart)}${periodEnd ? ' a ' + formatDateBR(periodEnd) : ''}`],
+    ];
+    if (filters.customerId) headerInfo.push(['Cliente ID', filters.customerId]);
+    if (filters.productId) headerInfo.push(['Produto', filters.productId]);
 
-    if (filters.customerId) doc.text(`Filtro Cliente ID: ${filters.customerId}`);
-    if (filters.productId) doc.text(`Filtro Produto (SKU/descrição): ${filters.productId}`);
-
-    doc.moveDown(0.5);
-    doc
-      .moveTo(doc.page.margins.left, doc.y)
-      .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-      .strokeColor('#cbd5e1')
-      .lineWidth(0.8)
-      .stroke();
-
-    doc.moveDown(0.8);
+    doc.y = drawFullHeader(doc, {
+      title: reportTitle,
+      subtitle: 'Vendas detalhadas por pedido',
+      info: headerInfo,
+    }) + 14;
+    autoCompactHeader(doc, { title: reportTitle, subtitle: 'Pedidos (continuação)' });
 
     // -------------------------------------------------------------------
     // Resumo rápido (KPI)
@@ -525,37 +500,20 @@ export async function generateSalesReportOrdersPdf(filters = {}) {
     const ticketMedio = totalPedidos > 0 ? somaValor / totalPedidos : 0;
     const margem = somaValor > 0 ? (somaLucro / somaValor) * 100 : 0;
 
-    drawSectionTitle(doc, 'Resumo Geral');
+    const kpiW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-    const cardW = 150;
-    const yCards = doc.y;
-    const gap = 10;
+    doc.y = drawKpis(doc, doc.y, [
+      { label: 'Total vendido', value: moneyBR(somaValor), hint: `${totalPedidos} pedido(s)`, color: SERIES[0] },
+      { label: 'Custo total', value: moneyBR(somaCusto), color: SERIES[2] },
+      { label: 'Lucro bruto', value: moneyBR(somaLucro), hint: 'Vendido - custo', color: SERIES[1] },
+      { label: 'Margem bruta', value: `${margem.toFixed(1)}%`, hint: 'Lucro / vendido', color: SERIES[3] },
+    ], { x: startX, width: kpiW }) + 10;
 
-    const cards = [
-      { label: 'Total vendido', value: moneyBR(somaValor) },
-      { label: 'Custo total', value: moneyBR(somaCusto) },
-      { label: 'Lucro bruto', value: moneyBR(somaLucro) },
-      { label: 'Margem bruta', value: `${margem.toFixed(1)}%` },
-      { label: 'Pedidos', value: String(totalPedidos) },
-      { label: 'Itens vendidos', value: String(somaItens) },
-      { label: 'Ticket médio', value: moneyBR(ticketMedio) },
-    ];
-
-    doc.font('Helvetica');
-    cards.forEach((c, idx) => {
-      const col = idx % 4;
-      const row = Math.floor(idx / 4);
-      const x = startX + col * (cardW + gap);
-      const y = yCards + row * 40;
-
-      doc.roundedRect(x, y, cardW, 34, 6).fillAndStroke('#f9fafb', '#e5e7eb');
-
-      doc.fontSize(8).fillColor('#6b7280').text(c.label, x + 8, y + 5, { width: cardW - 16 });
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#111827').text(c.value, x + 8, y + 16, { width: cardW - 16 });
-    });
-
-    doc.y = yCards + 80;
-    doc.moveDown(0.6);
+    doc.y = drawKpis(doc, doc.y, [
+      { label: 'Pedidos', value: String(totalPedidos), color: SERIES[5] },
+      { label: 'Itens vendidos', value: String(somaItens), color: SERIES[7] },
+      { label: 'Ticket médio', value: moneyBR(ticketMedio), hint: 'Vendido / pedidos', color: SERIES[0] },
+    ], { x: startX, width: kpiW, h: 50 }) + 16;
 
     // -------------------------------------------------------------------
     // PEDIDOS (BOXES)
@@ -582,14 +540,9 @@ export async function generateSalesReportOrdersPdf(filters = {}) {
     }
 
     // -------------------------------------------------------------------
-    // Rodapé
+    // Rodapé padrão em todas as páginas
     // -------------------------------------------------------------------
-    doc.moveDown(1.0);
-    doc
-      .fontSize(8)
-      .font('Helvetica-Oblique')
-      .fillColor('#6b7280')
-      .text(`Gerado em ${new Date().toLocaleString('pt-BR')} pelo CONSART ERP`, { align: 'right' });
+    drawFooters(doc, { title: reportTitle, generatedAt: nowBR() });
 
     doc.end();
   });

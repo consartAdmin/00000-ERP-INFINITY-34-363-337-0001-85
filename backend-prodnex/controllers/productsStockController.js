@@ -7,7 +7,10 @@
 // ║ ✅ PDF Sugestão de Compra                                               ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-import PDFDocument from 'pdfkit';
+import {
+  C, SERIES, PAGE, createThemedDoc, drawFullHeader, drawFooters, drawKpis, makeTable,
+  number as themeNumber, nowBR as themeNowBR,
+} from '../generationPdf/consartPdfTheme.js';
 
 import productsStockApi from '../repositories/productsStock/productsStock.manager.js';
 
@@ -219,12 +222,8 @@ export async function purchaseSuggestionPdf(req, res) {
       manufacturer_id: req.query.manufacturer_id,
     });
 
-    const doc = new PDFDocument({
-      size: 'A4',
-      layout: 'landscape',
-      margin: 28,
-      bufferPages: true,
-    });
+    const REPORT_TITLE = 'Sugestão de Compra';
+    const { doc } = createThemedDoc({ title: REPORT_TITLE, subject: 'Sugestão de compra (estoque x máximo)', collect: false });
 
     const filename = `sugestao_de_compra_${new Date().toISOString().slice(0, 10)}.pdf`;
 
@@ -233,117 +232,71 @@ export async function purchaseSuggestionPdf(req, res) {
 
     doc.pipe(res);
 
-    const pageW = doc.page.width;
-    const left = 28;
-    let y = 28;
+    const lines = rows.map((r) => ({ r, suggestion: Math.max(0, moneyNum(r.stock_max) - moneyNum(r.stock_qty)) }));
+    const totalSuggestion = lines.reduce((acc, l) => acc + l.suggestion, 0);
+    const zeroStock = lines.filter((l) => moneyNum(l.r.stock_qty) <= 0).length;
+    const belowMin = lines.filter((l) => moneyNum(l.r.stock_qty) < moneyNum(l.r.stock_min)).length;
 
-    doc
-      .fontSize(16)
-      .font('Helvetica-Bold')
-      .text('SUGESTÃO DE COMPRA', left, y);
+    const filters = [req.query.q ? `Busca: ${req.query.q}` : '', req.query.group_id ? `Grupo #${req.query.group_id}` : '',
+      req.query.subgroup_id ? `Subgrupo #${req.query.subgroup_id}` : '', req.query.manufacturer_id ? `Fabricante #${req.query.manufacturer_id}` : '']
+      .filter(Boolean).join(' · ');
 
-    y += 22;
+    let y = drawFullHeader(doc, {
+      title: REPORT_TITLE,
+      subtitle: 'Estoque atual x mínimo / máximo',
+      info: [
+        ['Filtro', filters || 'Nenhum'],
+        ['Itens', themeNumber(lines.length, 0)],
+      ],
+    }) + 14;
 
-    doc
-      .fontSize(9)
-      .font('Helvetica')
-      .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, left, y)
-      .text(`Total de itens sugeridos: ${rows.length}`, left + 260, y);
+    y = drawKpis(doc, y, [
+      { label: 'Itens sugeridos', value: themeNumber(lines.length, 0), hint: 'Produtos abaixo do máximo', color: SERIES[0] },
+      { label: 'Total a comprar', value: fmtQty(totalSuggestion), hint: 'Soma (máximo - atual)', color: SERIES[1] },
+      { label: 'Abaixo do mínimo', value: themeNumber(belowMin, 0), hint: 'Estoque atual < mínimo', color: belowMin ? C.amber : SERIES[7] },
+      { label: 'Sem estoque', value: themeNumber(zeroStock, 0), hint: 'Estoque atual zerado ou negativo', color: zeroStock ? C.red : SERIES[7] },
+    ]) + 16;
 
-    y += 24;
-
-    const cols = {
-      sku: left,
-      desc: left + 75,
-      grupo: left + 330,
-      atual: left + 500,
-      min: left + 570,
-      max: left + 640,
-      sug: left + 710,
-    };
-
-    function header() {
-      doc
-        .rect(left, y, pageW - 56, 18)
-        .fill('#f1f5f9')
-        .stroke('#d8dee9');
-
-      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(8);
-
-      doc.text('SKU', cols.sku, y + 5, { width: 65 });
-      doc.text('Produto', cols.desc, y + 5, { width: 240 });
-      doc.text('Grupo', cols.grupo, y + 5, { width: 150 });
-      doc.text('Atual', cols.atual, y + 5, { width: 60, align: 'right' });
-      doc.text('Mín.', cols.min, y + 5, { width: 60, align: 'right' });
-      doc.text('Máx.', cols.max, y + 5, { width: 60, align: 'right' });
-      doc.text('Comprar', cols.sug, y + 5, { width: 65, align: 'right' });
-
-      y += 20;
-    }
-
-    header();
-
-    let totalSuggestion = 0;
-
-    rows.forEach((r, index) => {
-      const suggestion = Math.max(0, moneyNum(r.stock_max) - moneyNum(r.stock_qty));
-      totalSuggestion += suggestion;
-
-      if (y > doc.page.height - 55) {
-        doc.addPage();
-        y = 28;
-        header();
-      }
-
-      if (index % 2 === 0) {
-        doc.rect(left, y - 2, pageW - 56, 18).fill('#fbfbfb');
-      }
-
-      doc.fillColor('#111827').font('Helvetica').fontSize(7.5);
-
-      doc.text(safe(r.product_code), cols.sku, y + 2, { width: 65 });
-      doc.text(safe(r.product_description), cols.desc, y + 2, { width: 240, ellipsis: true });
-      doc.text(safe(r.product_group_name), cols.grupo, y + 2, { width: 150, ellipsis: true });
-      doc.text(fmtQty(r.stock_qty), cols.atual, y + 2, { width: 60, align: 'right' });
-      doc.text(fmtQty(r.stock_min), cols.min, y + 2, { width: 60, align: 'right' });
-      doc.text(fmtQty(r.stock_max), cols.max, y + 2, { width: 60, align: 'right' });
-      doc.font('Helvetica-Bold').text(fmtQty(suggestion), cols.sug, y + 2, {
-        width: 65,
-        align: 'right',
-      });
-
-      y += 18;
+    const table = makeTable(doc, {
+      title: 'Produtos',
+      continuation: { title: REPORT_TITLE, subtitle: 'Produtos (continuação)' },
+      rowH: 17,
+      fontSize: 7.5,
+      columns: [
+        { label: 'SKU', w: 80 },
+        { label: 'Produto' },
+        { label: 'Grupo', w: 160 },
+        { label: 'Atual', w: 70, align: 'right' },
+        { label: 'Mín.', w: 70, align: 'right' },
+        { label: 'Máx.', w: 70, align: 'right' },
+        { label: 'Comprar', w: 80, align: 'right', bold: true },
+      ],
     });
 
-    y += 10;
+    y = table.section(y);
 
-    if (y > doc.page.height - 45) {
-      doc.addPage();
-      y = 28;
+    if (!lines.length) {
+      doc.font('Helvetica').fontSize(9).fillColor(C.muted)
+        .text('Nenhum produto com sugestão de compra.', PAGE.margin, y + 16, { width: table.width, align: 'center' });
     }
 
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(10)
-      .fillColor('#111827')
-      .text(`Total sugerido: ${fmtQty(totalSuggestion)}`, left, y);
+    lines.forEach(({ r, suggestion }, index) => {
+      y = table.row(y, [
+        safe(r.product_code),
+        safe(r.product_description),
+        safe(r.product_group_name),
+        { text: fmtQty(r.stock_qty), color: moneyNum(r.stock_qty) < moneyNum(r.stock_min) ? C.red : undefined },
+        fmtQty(r.stock_min),
+        fmtQty(r.stock_max),
+        fmtQty(suggestion),
+      ], { index });
+    });
 
-    const range = doc.bufferedPageRange();
-
-    for (let i = range.start; i < range.start + range.count; i++) {
-      doc.switchToPage(i);
-      doc
-        .fontSize(7)
-        .font('Helvetica')
-        .fillColor('#64748b')
-        .text(
-          `Página ${i + 1} de ${range.count}`,
-          left,
-          doc.page.height - 20,
-          { width: pageW - 56, align: 'right' }
-        );
+    if (lines.length) {
+      table.total(y, ['TOTAL', `${themeNumber(lines.length, 0)} item(ns)`, '', '', '', '', fmtQty(totalSuggestion)]);
     }
 
+    drawFooters(doc, { title: REPORT_TITLE, generatedAt: themeNowBR() });
     doc.end();
   } catch (err) {
     return fail(res, err, 500);

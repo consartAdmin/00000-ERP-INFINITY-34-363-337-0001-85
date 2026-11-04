@@ -1,6 +1,6 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ generationCashMovimentsPdf.js — Relatório de Caixa (A4 landscape)           ║
-// ║ CONSART ERP — PDFKit                                                ║
+// ║ generationCashMovimentsPdf.js — Relatório de Caixa (A4 landscape)    ║
+// ║ CONSART ERP — PDFKit — layout padrão (consartPdfTheme.js)            ║
 // ║ ✅ Categoria/Subcategoria removidas                                  ║
 // ║ ✅ Plano de Contas exibido no lugar                                  ║
 // ║ ✅ Dashboard por Plano de Contas                                     ║
@@ -9,16 +9,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import moment from 'moment';
-import PDFDocument from 'pdfkit';
 import { fileURLToPath } from 'node:url';
 import enterpriseApi from '../repositories/enterprise/enterprise.index.js';
+import {
+  C, SERIES, PAGE,
+  createThemedDoc, drawFullHeader, drawCompactHeader, drawFooters, drawKpis,
+  drawPanel, drawHorizontalBars, drawDonut, drawTotalsBox, makeTable,
+  contentWidth, contentBottom, resolveLogo, DEFAULT_LOGO_PATH, money, number, nowBR,
+} from './consartPdfTheme.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ============================================================================
 // Helpers de formatação
-const moneyBR = (n) => 'R$ ' + Number(n || 0).toFixed(2).replace('.', ',');
 
 const cleanText = (value) => String(value ?? '').trim();
 
@@ -36,29 +40,6 @@ function formatZipCode(value) {
 
 function joinNonEmpty(values, separator = ', ') {
   return values.map(cleanText).filter(Boolean).join(separator);
-}
-
-async function resolveLogoSource(value) {
-  const source = cleanText(value);
-  if (!source) return caminhoLogoDefault();
-
-  if (/^https?:\/\//i.test(source)) {
-    try {
-      const response = await fetch(source);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return Buffer.from(await response.arrayBuffer());
-    } catch (error) {
-      console.warn('[PDF Caixa] Não foi possível carregar logo_url:', error.message);
-      return caminhoLogoDefault();
-    }
-  }
-
-  if (source.startsWith('file://')) return fileURLToPath(source);
-  return path.isAbsolute(source) ? source : path.resolve(process.cwd(), source);
-}
-
-function canUseImage(source) {
-  return Buffer.isBuffer(source) || (typeof source === 'string' && fs.existsSync(source));
 }
 
 function buildCompanyHeader(enterprise = {}, legacyCompany = {}) {
@@ -94,107 +75,8 @@ function buildCompanyHeader(enterprise = {}, legacyCompany = {}) {
     site: digitalParts.join(' | ') || cleanText(legacyCompany.site),
     footer: cleanText(enterprise.pdf_footer),
     paperclipPath: legacyCompany.paperclipPath || null,
-    logoPath: cleanText(enterprise.logo_url) || legacyCompany.logoPath || caminhoLogoDefault(),
+    logoPath: cleanText(enterprise.logo_url) || legacyCompany.logoPath || '',
   };
-}
-
-// Tamanhos (pt)
-const BASE_FONT_SIZE = 6;
-const HEADER_FONT_SIZE = 8;
-const PLAN_FONT_SIZE = 6;
-
-// Ícone
-const PAPERCLIP_W = 9;
-const PAPERCLIP_H = 9;
-const GUTTER_INSET = 4;
-
-const ID_TEXT_PADDINGY = 3;
-
-// Caminhos default de imagens
-const caminhoLogoDefault = () => path.resolve(__dirname, '../../public/imagens/logoconsart.png');
-const caminhoPaperclipDefault = () =>
-  path.resolve(__dirname, '../public/imagens/paperclip.png');
-
-const vCenter = (y, h, fontSize) => y + (h - fontSize) / 2 - 0.5;
-
-function drawCell(doc, text, x, y, w, h, opts = {}) {
-  const { align = 'left', fontSize = BASE_FONT_SIZE, border = true, padding = 3 } = opts;
-
-  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !Number.isFinite(h)) {
-    console.warn('[PDF Caixa] drawCell ignorado por medida inválida:', { text, x, y, w, h });
-    return;
-  }
-
-  if (border) doc.rect(x, y, w, h).stroke();
-
-  doc.fontSize(fontSize).text(String(text ?? ''), x + padding, y + ID_TEXT_PADDINGY, {
-    width: Math.max(1, w - padding * 2),
-    height: Math.max(1, h - ID_TEXT_PADDINGY * 2),
-    align,
-  });
-}
-
-function headerBand(doc, x, y, w, h) {
-  doc.save();
-  doc.fillColor('#eef2ff').rect(x, y, w, h).fill();
-  doc.restore();
-}
-
-// ==== Ícones de clipe ========================================================
-function drawPaperclipPng(doc, xCenter, yCenter, paperclipPath) {
-  const file = paperclipPath || caminhoPaperclipDefault();
-  if (!fs.existsSync(file)) return false;
-
-  doc.save();
-  doc.image(file, xCenter - PAPERCLIP_W / 2, yCenter - PAPERCLIP_H / 2, {
-    width: PAPERCLIP_W,
-    height: PAPERCLIP_H
-  });
-  doc.restore();
-
-  return true;
-}
-
-function drawPaperclipVector(doc, xCenter, yCenter) {
-  const size = Math.max(PAPERCLIP_W, PAPERCLIP_H);
-  const w = size * 0.78;
-  const h = size * 1.20;
-  const r = Math.min(w, h) * 0.35;
-  const gap = Math.max(0.9, Math.min(w, h) * 0.22);
-
-  doc.save();
-  doc.lineWidth(1.2);
-  doc.lineCap('round');
-  doc.strokeColor('#111');
-  doc.translate(xCenter, yCenter);
-
-  doc.roundedRect(-w / 2, -h / 2, w, h, r).stroke();
-  doc.roundedRect(
-    -w / 2 + gap,
-    -h / 2 + gap,
-    w - 2 * gap,
-    h - 2 * gap,
-    Math.max(1, r - gap)
-  ).stroke();
-
-  doc.rect(w / 2 - gap * 0.8 - w / 2, -h / 2, gap * 1.6, h * 0.35).fill('#ffffff');
-  doc.restore();
-}
-
-function applyWatermark(doc, logoPath) {
-  try {
-    if (!canUseImage(logoPath)) return;
-
-    const largura = 360;
-    const x = (doc.page.width - largura) / 2;
-    const y = (doc.page.height - largura) / 2;
-
-    doc.save()
-      .opacity(0.07)
-      .image(logoPath, x, y, { width: largura })
-      .opacity(1)
-      .restore();
-  } catch { }
 }
 
 function getPlanoContas(r = {}) {
@@ -214,13 +96,31 @@ function getPlanoContas(r = {}) {
   );
 }
 
+
+const REPORT_TITLE = 'Relatório de Movimentações de Caixa';
+const PAPERCLIP_PATH = path.resolve(__dirname, '../public/imagens/paperclip.png');
+
+// "Período: 01/10/2026 a 31/10/2026" -> "01/10/2026 a 31/10/2026"
+const stripLabel = (value, label) => cleanText(value).replace(new RegExp(`^${label}\\s*:\\s*`, 'i'), '');
+
+function drawPaperclip(doc, x, y, size = 8) {
+  if (fs.existsSync(PAPERCLIP_PATH)) {
+    doc.image(PAPERCLIP_PATH, x, y, { width: size, height: size });
+    return;
+  }
+  doc.save().lineWidth(0.9).strokeColor(C.muted)
+    .roundedRect(x + 1.5, y, size * 0.55, size, 2).stroke().restore();
+}
+
+const isSaida = (r) => String(r.tipo_movimentacao || '').toUpperCase().startsWith('SAI');
+
 // ============================================================================
 // API principal
 export async function generateCaixaPdf(payload = {}, options = {}) {
   const {
     rows = [],
     company = {},
-    title = 'Relatório de Movimentações de Caixa',
+    title = REPORT_TITLE,
     periodLabel = '',
     filtersLabel = '',
   } = payload;
@@ -242,222 +142,27 @@ export async function generateCaixaPdf(payload = {}, options = {}) {
     throw new Error('Nenhuma empresa ativa foi encontrada para gerar o cabeçalho do PDF.');
   }
 
-  const resolvedLogo = await resolveLogoSource(
-    enterprise.logo_url || company.logoPath || caminhoLogoDefault()
-  );
-
-  const doc = new PDFDocument({
-    margin: 40,
-    size: 'A4',
-    layout: 'landscape',
-    bufferPages: true,
-  });
-
-  let fileStream = null;
-  const buffers = [];
-
-  if (output === 'response' && res) {
-    doc.on('data', buffers.push.bind(buffers));
-    doc.on('end', () => {
-      const pdfData = Buffer.concat(buffers);
-      res.writeHead(200, {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename.replace(/["\r\n]/g, '')}"`,
-        'Content-Length': pdfData.length
-      });
-      res.end(pdfData);
-    });
-  } else if (output === 'file') {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const full = path.join(dir, filename);
-    fileStream = fs.createWriteStream(full);
-    doc.pipe(fileStream);
-  } else if (output === 'buffer') {
-    doc.on('data', buffers.push.bind(buffers));
-  }
-
-  const startX = doc.page.margins.left;
-  const endX = doc.page.width - doc.page.margins.right;
-  const tableWidth = endX - startX;
-
   const comp = buildCompanyHeader(enterprise, company);
-  comp.logoPath = resolvedLogo;
+  const logo = await resolveLogo(comp.logoPath);
+  // logo da empresa vai num quadro branco; o brasão CONSART fica direto no azul
+  const logoTile = logo !== DEFAULT_LOGO_PATH;
 
-  applyWatermark(doc, comp.logoPath);
+  const { doc, done } = createThemedDoc({ title, subject: comp.name });
+  const generatedAt = nowBR();
 
-  // ╔══════════════════════════════════════════════════════════════╗
-  // ║ Card do cabeçalho                                            ║
-  // ╚══════════════════════════════════════════════════════════════╝
-  const headerCardX = startX;
-  const headerCardY = doc.y;
-  const headerCardW = tableWidth;
-  const headerCardH = 90;
-
-  doc.save();
-  doc.lineWidth(0.8)
-    .fillColor('#f8fafc')
-    .strokeColor('#cbd5e1')
-    .roundedRect(headerCardX, headerCardY, headerCardW, headerCardH, 6)
-    .fillAndStroke();
-  doc.restore();
-
-  doc.x = headerCardX;
-  doc.y = headerCardY + 8;
-
-  doc.fillColor('#111827')
-    .font('Helvetica-Bold')
-    .fontSize(14)
-    .text(comp.name, headerCardX, doc.y, {
-      align: 'center',
-      width: headerCardW,
-    });
-
-  doc.font('Helvetica')
-    .fontSize(10)
-    .text(joinNonEmpty([
-      comp.cnpj ? `CNPJ: ${comp.cnpj}` : '',
-      comp.stateRegistration ? `IE: ${comp.stateRegistration}` : '',
-      comp.corporateName && comp.corporateName !== comp.name
-        ? `Razão Social: ${comp.corporateName}`
-        : '',
-    ], ' | '), headerCardX, doc.y + 2, {
-      align: 'center',
-      width: headerCardW,
-    })
-    .text(comp.address, {
-      align: 'center',
-      width: headerCardW,
-    })
-    .text(comp.contacts, {
-      align: 'center',
-      width: headerCardW,
-    })
-    .text(comp.site, {
-      align: 'center',
-      width: headerCardW,
-    });
-
-  doc.font('Helvetica-Bold')
-    .fontSize(12)
-    .text(title, headerCardX, doc.y + 4, {
-      align: 'center',
-      width: headerCardW,
-    });
-
-  doc.y = headerCardY + headerCardH + 8;
-
-  // ╔══════ Cards de período + filtros ══════╗
-  {
-    const cardsY = doc.y;
-    const gap = 10;
-    const leftW = 260;
-    const rightW = tableWidth - leftW - gap;
-    const boxH = 24;
-
-    if (periodLabel) {
-      const xInfo = startX;
-      const yInfo = cardsY;
-
-      doc.save();
-      doc.lineWidth(0.5)
-        .fillColor('#f8fafc')
-        .strokeColor('#cbd5e1')
-        .roundedRect(xInfo, yInfo, leftW, boxH, 4)
-        .fillAndStroke();
-
-      const fontSizeInfo = 9;
-      const textY = yInfo + (boxH - fontSizeInfo) / 2 - 0.5;
-
-      doc.fillColor('#111827')
-        .font('Helvetica')
-        .fontSize(fontSizeInfo)
-        .text(periodLabel, xInfo + 8, textY, {
-          width: leftW - 16,
-          align: 'left',
-          lineBreak: false,
-        });
-
-      doc.restore();
-    }
-
-    if (filtersLabel) {
-      const xFiltros = startX + leftW + gap;
-      const yFiltros = cardsY;
-
-      doc.save();
-      doc.lineWidth(0.5)
-        .fillColor('#f8fafc')
-        .strokeColor('#cbd5e1')
-        .roundedRect(xFiltros, yFiltros, rightW, boxH, 4)
-        .fillAndStroke();
-
-      const fontSizeFiltros = 8;
-      const textY2 = yFiltros + (boxH - fontSizeFiltros) / 2 - 0.5;
-
-      doc.fillColor('#111827')
-        .font('Helvetica')
-        .fontSize(fontSizeFiltros)
-        .text(filtersLabel, xFiltros + 8, textY2, {
-          width: rightW - 16,
-          align: 'left',
-        });
-
-      doc.restore();
-    }
-
-    doc.y = cardsY + boxH + 8;
-  }
-
-  // ---------- Tabela ----------
-  const headers = [
-    'ID', 'Data', 'Tipo', 'Conta', 'Tipo Doc', 'Nº Doc',
-    'Plano de Contas', 'Fornecedor', 'Observação',
-    'Valor', 'Multa', 'Juros', 'Encargos', 'Total'
-  ];
-
-  const weights = [6, 6, 4, 5, 4, 5, 14, 11, 10, 5, 4, 4, 5, 6];
-
-  const sumW = weights.reduce((a, b) => a + b, 0);
-  const colWidths = weights.map(w => Math.floor((w / sumW) * tableWidth));
-
-  colWidths[colWidths.length - 1] += tableWidth - colWidths.reduce((a, b) => a + b, 0);
-
-  const rowHeight = 20;
-  const headerHeight = rowHeight;
-  let y = doc.y + 8;
-
-  function drawHeader() {
-    let x = startX;
-
-    headerBand(doc, x, y, tableWidth, headerHeight);
-
-    doc.font('Helvetica-Bold').fontSize(HEADER_FONT_SIZE);
-
-    headers.forEach((h, i) => {
-      drawCell(doc, h, x, y, colWidths[i], headerHeight, {
-        fontSize: HEADER_FONT_SIZE,
-        align: 'left'
-      });
-      x += colWidths[i];
-    });
-
-    y += headerHeight;
-    doc.font('Helvetica').fontSize(BASE_FONT_SIZE);
-  }
-
-  drawHeader();
-
-  // Totais
+  // ---------- Totais (antes de desenhar, para os KPIs) ----------
   let totalGeral = 0;
+  let totalEntradas = 0;
+  let totalSaidas = 0;
   let totalJuros = 0;
   let totalMulta = 0;
+  let totalEncargos = 0;
   // Transferências entre contas: listadas, mas fora dos totais e do dashboard
   let totalTransferencias = 0;
-
+  let comAnexo = 0;
   const totaisPorPlanoContas = {};
-  let rowIndex = 0;
 
-  for (const r of rows) {
+  const lines = rows.map((r) => {
     const valor = Number(r.valor || 0);
     const multa = Number(r.multa || 0);
     const juros = Number(r.juros || 0);
@@ -465,301 +170,207 @@ export async function generateCaixaPdf(payload = {}, options = {}) {
     const total = valor + multa + juros + encargos;
     const planoContas = getPlanoContas(r);
 
+    if (r.tem_anexo) comAnexo += 1;
+
     if (r.transfer_id) {
-      if (String(r.tipo_movimentacao || '').toUpperCase().startsWith('SAI')) totalTransferencias += total;
+      if (isSaida(r)) totalTransferencias += total;
     } else {
       totalGeral += total;
       totalJuros += juros;
       totalMulta += multa;
+      totalEncargos += encargos;
+      if (isSaida(r)) totalSaidas += total;
+      else totalEntradas += total;
       totaisPorPlanoContas[planoContas] = (totaisPorPlanoContas[planoContas] || 0) + total;
     }
 
-    if (y + rowHeight > doc.page.height - doc.page.margins.bottom) {
-      doc.addPage({ size: 'A4', layout: 'landscape' });
-      applyWatermark(doc, comp.logoPath);
-      y = doc.y + 8;
-      drawHeader();
-    }
+    return { r, valor, multa, juros, encargos, total, planoContas };
+  });
 
-    let x = startX;
+  // ---------- Cabeçalho ----------
+  const subtitle = joinNonEmpty([comp.name, comp.cnpj ? `CNPJ ${comp.cnpj}` : ''], '  ·  ');
+  const info = [
+    ['Período', stripLabel(periodLabel, 'Per[ií]odo') || 'Todos os períodos'],
+    ['Filtros', stripLabel(filtersLabel, 'Filtros') || 'Nenhum'],
+    ['Movimentações', number(rows.length, 0)],
+  ];
 
-    // ID
-    doc.rect(x, y, colWidths[0], rowHeight).stroke();
+  let y = drawFullHeader(doc, { title, subtitle, info, logo, logoTile }) + 14;
 
-    let idTextX = x + 3;
+  y = drawKpis(doc, y, [
+    { label: 'Movimentações', value: number(rows.length, 0), hint: `${number(comAnexo, 0)} com anexo`, color: SERIES[0] },
+    { label: 'Entradas', value: money(totalEntradas), hint: 'Sem transferências', color: SERIES[1] },
+    { label: 'Saídas', value: money(totalSaidas), hint: 'Sem transferências', color: C.red },
+    { label: 'Juros + multa', value: money(totalJuros + totalMulta), hint: `Juros ${money(totalJuros)} · Multa ${money(totalMulta)}`, color: SERIES[2] },
+    { label: 'Total', value: money(totalGeral), hint: totalTransferencias > 0 ? `Transferências fora: ${money(totalTransferencias)}` : 'Entradas + saídas', color: SERIES[5] },
+  ]) + 16;
 
-    if (r.tem_anexo) {
-      const clipX = x + 3;
-      const clipY = y + (rowHeight - PAPERCLIP_H) / 2;
+  // ---------- Tabela ----------
+  const continuation = { title, subtitle: 'Movimentações (continuação)', logo, logoTile };
+  const table = makeTable(doc, {
+    title: 'Movimentações',
+    continuation,
+    rowH: 16,
+    fontSize: 6.5,
+    headFontSize: 7,
+    columns: [
+      { label: 'ID', w: 44 },
+      { label: 'Data', w: 46 },
+      { label: 'Tipo', w: 40 },
+      { label: 'Conta', w: 50 },
+      { label: 'Tipo Doc', w: 38 },
+      { label: 'Nº Doc', w: 44 },
+      { label: 'Plano de Contas', w: 110 },
+      { label: 'Fornecedor' },
+      { label: 'Observação' },
+      { label: 'Valor', w: 54, align: 'right' },
+      { label: 'Multa', w: 40, align: 'right' },
+      { label: 'Juros', w: 40, align: 'right' },
+      { label: 'Encargos', w: 44, align: 'right' },
+      { label: 'Total', w: 58, align: 'right', bold: true },
+    ],
+  });
 
-      if (!drawPaperclipPng(doc, clipX + PAPERCLIP_W / 2, clipY + PAPERCLIP_H / 2, comp.paperclipPath)) {
-        drawPaperclipVector(doc, clipX + PAPERCLIP_W / 2, clipY + PAPERCLIP_H / 2);
-      }
+  y = table.section(y);
 
-      idTextX = clipX + PAPERCLIP_W + 3;
-    }
+  if (!rows.length) {
+    doc.font('Helvetica').fontSize(9).fillColor(C.muted)
+      .text('Nenhuma movimentação encontrada para o período/filtros informados.', PAGE.margin, y + 16, { width: table.width, align: 'center' });
+    y += 40;
+  }
 
-    doc.fontSize(BASE_FONT_SIZE).text(String(r.id ?? ''), idTextX, y + ID_TEXT_PADDINGY, {
-      width: Math.max(1, colWidths[0] - (idTextX - x) - 3),
-      height: rowHeight - ID_TEXT_PADDINGY * 2,
-      align: 'left',
-    });
+  let rowIndex = 0;
 
-    x += colWidths[0];
+  for (const line of lines) {
+    const { r } = line;
+    const saida = isSaida(r);
+    const tipoColor = r.transfer_id ? C.muted : (saida ? C.red : C.green);
 
-    const antes = [
+    y = table.row(y, [
+      r.tem_anexo ? `     ${r.id ?? ''}` : String(r.id ?? ''),
       r.data_hora ? moment(r.data_hora).format('DD/MM/YYYY') : '',
-      r.tipo_movimentacao || '',
+      { text: r.tipo_movimentacao || '', color: tipoColor, bold: true },
       r.conta_caixa || '',
       r.tipo_documento || '',
       r.numero_documento || '',
-    ];
+      line.planoContas,
+      r.fornecedor || '',
+      r.observacao || '',
+      money(line.valor),
+      line.multa ? money(line.multa) : '-',
+      line.juros ? money(line.juros) : '-',
+      line.encargos ? money(line.encargos) : '-',
+      money(line.total),
+    ], { index: rowIndex, color: r.transfer_id ? C.muted : C.text });
 
-    antes.forEach((val, i) => {
-      drawCell(doc, val, x, y, colWidths[i + 1], rowHeight, {
-        fontSize: BASE_FONT_SIZE,
-        align: 'left'
-      });
-      x += colWidths[i + 1];
-    });
+    if (r.tem_anexo) drawPaperclip(doc, PAGE.margin + 4, y - 16 + 4);
 
-    drawCell(doc, planoContas, x, y, colWidths[6], rowHeight, {
-      fontSize: PLAN_FONT_SIZE,
-      align: 'left'
-    });
-    x += colWidths[6];
-
-    [r.fornecedor || '', r.observacao || ''].forEach((val, idx) => {
-      drawCell(doc, val, x, y, colWidths[7 + idx], rowHeight, {
-        fontSize: BASE_FONT_SIZE,
-        align: 'left'
-      });
-      x += colWidths[7 + idx];
-    });
-
-    [
-      moneyBR(valor),
-      moneyBR(multa),
-      moneyBR(juros),
-      moneyBR(encargos),
-      moneyBR(total)
-    ].forEach((val, idx) => {
-      drawCell(doc, val, x, y, colWidths[9 + idx], rowHeight, {
-        fontSize: BASE_FONT_SIZE,
-        align: 'right'
-      });
-      x += colWidths[9 + idx];
-    });
-
-    y += rowHeight;
-
+    rowIndex += 1;
     if (onProgress) {
-      rowIndex += 1;
-      onProgress({ index: rowIndex, total: rows.length, row: r, rowTotal: total });
+      onProgress({ index: rowIndex, total: rows.length, row: r, rowTotal: line.total });
       // devolve o event loop para o progresso sair na resposta em stream
       await new Promise((resolve) => setImmediate(resolve));
     }
   }
 
-  // ================= Rodapé =================
-  {
-    const marginT = doc.page.margins.top;
-    const marginR = doc.page.margins.right;
-    const marginB = doc.page.margins.bottom;
-    const pageW = doc.page.width;
-    const pageH = doc.page.height;
-
-    const boxW = 220;
-    const boxH = 26;
-    const gapY = 6;
-    const padX = 8;
-    const padY = 6;
-
-    const boxes = [
-      { label: 'Total De Movimentações:', value: totalGeral },
-      { label: 'Total Juros:', value: totalJuros },
-      { label: 'Total Multa:', value: totalMulta },
-    ];
-    if (totalTransferencias > 0) {
-      boxes.push({ label: 'Transferências (fora):', value: totalTransferencias });
-    }
-
-    const totalStackH = (boxH * boxes.length) + (gapY * (boxes.length - 1));
-
-    let yStart = y + 10;
-
-    if (yStart + totalStackH + marginB > pageH) {
-      doc.addPage({ size: 'A4', layout: 'landscape' });
-      applyWatermark(doc, comp.logoPath);
-      yStart = marginT;
-    }
-
-    const xBox = pageW - marginR - boxW;
-
-    boxes.forEach((item, idx) => {
-      const yBox = yStart + (idx * (boxH + gapY));
-      const valStr = moneyBR(item.value);
-
-      doc.lineWidth(0.5).roundedRect(xBox, yBox, boxW, boxH, 4).stroke();
-
-      doc.font('Helvetica-Bold').fontSize(11);
-
-      const valueW = doc.widthOfString(valStr);
-      const xLabel = xBox + padX;
-      const xVal = xBox + boxW - padX - valueW;
-
-      doc.text(item.label, xLabel, yBox + padY, { lineBreak: false });
-      doc.text(valStr, xVal, yBox + padY, { lineBreak: false });
-    });
+  if (rows.length) {
+    y = table.total(y, [
+      'TOTAL', '', '', '', '', '', `${number(rows.length, 0)} movimentações`, '', '',
+      money(lines.reduce((s, l) => s + (l.r.transfer_id ? 0 : l.valor), 0)),
+      money(totalMulta), money(totalJuros), money(totalEncargos), money(totalGeral),
+    ]);
   }
 
-  // ================= Dashboard por Plano de Contas =================
-  doc.addPage({ size: 'A4', layout: 'landscape' });
-  applyWatermark(doc, comp.logoPath);
+  // ---------- Resumo ----------
+  const boxes = [
+    { label: 'Entradas', value: money(totalEntradas), color: C.green },
+    { label: 'Saídas', value: money(totalSaidas), color: C.red },
+    { label: 'Total juros', value: money(totalJuros) },
+    { label: 'Total multa', value: money(totalMulta) },
+  ];
+  if (totalTransferencias > 0) boxes.push({ label: 'Transferências (fora)', value: money(totalTransferencias) });
+  boxes.push({ label: 'Total de movimentações', value: money(totalGeral) });
 
-  const titleY = 40;
-
-  doc.font('Helvetica-Bold')
-    .fontSize(14)
-    .fillColor('#111827')
-    .text('Totais por Plano de Contas - Dashboard Visual', startX, titleY);
-
-  let yDash = titleY + 24;
-
-  const planoOrd = Object.entries(totaisPorPlanoContas).sort(([, a], [, b]) => b - a);
-  const maxValor = Math.max(1, ...planoOrd.map(([, v]) => v));
-
-  const cardW = tableWidth;
-  const cardPad = 12;
-  const dashHeaderH = 28;
-  const barH = 12;
-  const labelW = 180;
-  const barMaxW = 420;
-  const cardGap = 10;
-
-  function drawCardFrame(doc, x, y, w, h) {
-    doc.save();
-    doc.lineWidth(0.8)
-      .strokeColor('#e5e7eb')
-      .fillColor('#f8fafc')
-      .roundedRect(x, y, w, h, 8)
-      .fillAndStroke();
-    doc.restore();
+  const boxH = boxes.length * 18 + 12;
+  if (y + 12 + boxH > contentBottom(doc)) {
+    y = table.newPage();
+  } else {
+    y += 12;
   }
+  drawTotalsBox(doc, y, boxes);
 
-  function drawCardHeader(doc, x, y, w, h, titleText) {
-    doc.save();
-    doc.fillColor('#eef2ff')
-      .roundedRect(x, y, w, h, 8)
-      .fill();
+  // ---------- Dashboard por Plano de Contas ----------
+  const planoOrd = Object.entries(totaisPorPlanoContas)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
 
-    doc.fillColor('#0f172a')
-      .font('Helvetica-Bold')
-      .fontSize(11)
-      .text(titleText, x + cardPad, vCenter(y, h, 11), {
-        width: w - cardPad * 2,
-        lineBreak: false
-      });
+  doc.addPage();
+  y = drawCompactHeader(doc, { title, subtitle: 'Totais por Plano de Contas', logo, logoTile }) + 14;
 
-    doc.restore();
+  const fullW = contentWidth(doc);
+  const gap = 10;
+  const panelH = 220;
+  const w1 = fullW * 0.56;
+  const w2 = fullW - w1 - gap;
+
+  const topBars = planoOrd.slice(0, 9);
+  const a1 = drawPanel(doc, PAGE.margin, y, w1, panelH, 'Total por Plano de Contas', `Top ${topBars.length} por valor`);
+  drawHorizontalBars(doc, a1, topBars, { labelW: 150, valueW: 70 });
+
+  const topDonut = planoOrd.slice(0, 7);
+  if (planoOrd.length > 7) {
+    topDonut.push({ label: 'Outros', value: planoOrd.slice(7).reduce((s, d) => s + d.value, 0) });
   }
+  const a2 = drawPanel(doc, PAGE.margin + w1 + gap, y, w2, panelH, 'Participação no total', 'Percentual de cada plano de contas');
+  drawDonut(doc, a2, topDonut, 'total');
 
-  if (planoOrd.length === 0) {
-    doc.font('Helvetica').fontSize(10)
-      .text('Nenhuma movimentação encontrada para o período/filtros informados.', startX, yDash);
-  }
+  y += panelH + 16;
 
-  for (const [planoNome, valor] of planoOrd) {
-    const cardH = dashHeaderH + cardPad + 22;
+  const planTable = makeTable(doc, {
+    title: 'Totais por Plano de Contas',
+    continuation: { title, subtitle: 'Totais por Plano de Contas (continuação)', logo, logoTile },
+    columns: [
+      { label: 'Plano de Contas' },
+      { label: '% do total', w: 100, align: 'right' },
+      { label: 'Total', w: 140, align: 'right', bold: true },
+    ],
+  });
 
-    if (yDash + cardH > doc.page.height - doc.page.margins.bottom) {
-      doc.addPage({ size: 'A4', layout: 'landscape' });
-      applyWatermark(doc, comp.logoPath);
+  y = planTable.section(y);
 
-      doc.font('Helvetica-Bold')
-        .fontSize(14)
-        .fillColor('#111827')
-        .text('Totais por Plano de Contas - Continuação', startX, titleY);
+  planoOrd.forEach((p, i) => {
+    y = planTable.row(y, [
+      p.label,
+      `${number(totalGeral ? (p.value / totalGeral) * 100 : 0, 1)}%`,
+      money(p.value),
+    ], { index: i });
+  });
 
-      yDash = titleY + 24;
-    }
+  planTable.total(y, ['TOTAL', '100,0%', money(totalGeral)]);
 
-    const cardX = startX;
-    drawCardFrame(doc, cardX, yDash, cardW, cardH);
-    drawCardHeader(doc, cardX, yDash, cardW, dashHeaderH, planoNome);
-
-    const cx = cardX + cardPad;
-    const cy = yDash + dashHeaderH + cardPad;
-
-    const barX = cx + labelW;
-    const barW = Math.max(1, (valor / maxValor) * barMaxW);
-
-    doc.save();
-    doc.fillColor('#4285F4').rect(barX, cy, barW, barH).fill();
-
-    doc.fillColor('#0f172a')
-      .font('Helvetica')
-      .fontSize(9)
-      .text(moneyBR(valor), barX + barW + 8, vCenter(cy, barH, 9), {
-        lineBreak: false
-      });
-
-    doc.restore();
-
-    yDash += cardH + cardGap;
-  }
-
-  doc.font('Helvetica-Bold')
-    .fontSize(11)
-    .fillColor('#111827')
-    .text(`Total de Movimentações: ${moneyBR(totalGeral)}`, startX, yDash + 8, {
-      align: 'right',
-      width: tableWidth
-    });
-
-  // Marca d’água final sobre todas as páginas
-  try {
-    const logoPathFinal = comp.logoPath || caminhoLogoDefault();
-
-    if (canUseImage(logoPathFinal)) {
-      const range = doc.bufferedPageRange();
-
-      for (let i = range.start; i < range.start + range.count; i++) {
-        doc.switchToPage(i);
-
-        const largura = 360;
-        const x = (doc.page.width - largura) / 2;
-        const yMark = (doc.page.height - largura) / 2;
-
-        doc.save()
-          .opacity(0.03)
-          .image(logoPathFinal, x, yMark, { width: largura })
-          .opacity(1)
-          .restore();
-      }
-    }
-  } catch (e) {
-    console.error('[PDF Caixa] Erro ao aplicar marca d’água sobre o texto:', e.message);
-  }
-
+  drawFooters(doc, { title, generatedAt });
   doc.end();
 
-  if (output === 'file') {
-    const full = path.join(dir, filename);
+  const pdfData = await done;
 
-    await new Promise((resolve, reject) => {
-      fileStream.on('finish', resolve);
-      fileStream.on('error', reject);
+  if (output === 'response' && res) {
+    res.writeHead(200, {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename.replace(/["\r\n]/g, '')}"`,
+      'Content-Length': pdfData.length,
     });
+    res.end(pdfData);
+    return;
+  }
 
+  if (output === 'file') {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const full = path.join(dir, filename);
+    await fs.promises.writeFile(full, pdfData);
     return full;
   }
 
-  if (output === 'buffer') {
-    return await new Promise((resolve) => {
-      doc.on('end', () => resolve(Buffer.concat(buffers)));
-    });
-  }
+  if (output === 'buffer') return pdfData;
 
   return;
 }

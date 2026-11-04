@@ -9,6 +9,7 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { C, PAGE, drawFullHeader, drawCompactHeader, drawFooters, nowBR } from './consartPdfTheme.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,10 +19,6 @@ const LOGO_BH3_PATHS = [
   path.join(ROOT_DIR, 'public', 'imagens', 'logoBH3.png'),
   path.join(ROOT_DIR, 'public', 'imagens', 'bh3.png'),
   path.join(ROOT_DIR, 'public', 'imagens', 'logo-bh3.png'),
-];
-
-const LOGO_CONSART_PATHS = [
-  path.join(ROOT_DIR, 'public', 'imagens', 'logoConsart3D.png'),
 ];
 
 const COMPANY = {
@@ -91,145 +88,47 @@ export function getManufacturesOrderManufacturerPdfFilename(order = {}) {
   return sanitizeFilename(`pedido-fabricante-${number}.pdf`);
 }
 
-function drawCompanyInfo(doc) {
-  const x = 245;
-  const y = 22;
-  const w = 330;
+const REPORT_TITLE = 'Pedido para Fabricante';
 
-  doc
-    .fillColor('#0f172a')
-    .font('Helvetica-Bold')
-    .fontSize(9.5)
-    .text(COMPANY.name, x, y, {
-      width: w,
-      align: 'center',
-    });
-
-  doc
-    .font('Helvetica')
-    .fillColor('#475569')
-    .fontSize(7.7)
-    .text(COMPANY.cnpj, x, y + 16, {
-      width: w,
-      align: 'center',
-    })
-    .text(COMPANY.address1, x, y + 28, {
-      width: w,
-      align: 'center',
-    })
-    .text(COMPANY.address2, x, y + 40, {
-      width: w,
-      align: 'center',
-    })
-    .text(COMPANY.cep, x, y + 52, {
-      width: w,
-      align: 'center',
-    })
-    .text(COMPANY.phone, x, y + 64, {
-      width: w,
-      align: 'center',
-    })
-    .text(COMPANY.email, x, y + 76, {
-      width: w,
-      align: 'center',
-    });
-}
-
+// Cabeçalho padrão (consartPdfTheme) com o logo da BH3 e os dados da empresa logo abaixo
 function drawHeader(doc, order = {}) {
   const logoBh3 = findFirstExisting(LOGO_BH3_PATHS);
 
-  const logoX = 28;
-  const logoY = 12;
-  const logoW = 190;
-  const logoH = 92;
-
-  doc.rect(0, 0, doc.page.width, 118).fill('#ffffff');
-  doc.rect(0, 118, doc.page.width, 2).fill('#1e293b');
-
-  if (logoBh3) {
-    try {
-      doc.image(logoBh3, logoX, logoY, {
-        fit: [logoW, logoH],
-        align: 'center',
-        valign: 'center',
-      });
-    } catch {
-      doc
-        .fillColor('#0f172a')
-        .font('Helvetica-Bold')
-        .fontSize(22)
-        .text('BH3', logoX + 62, logoY + 35);
-    }
-  } else {
-    doc
-      .fillColor('#0f172a')
-      .font('Helvetica-Bold')
-      .fontSize(22)
-      .text('BH3', logoX + 62, logoY + 35);
-  }
-
-  drawCompanyInfo(doc);
-
-  doc
-    .fillColor('#0f172a')
-    .font('Helvetica-Bold')
-    .fontSize(17)
-    .text('PEDIDO PARA FABRICANTE', 585, 24, {
-      width: 230,
-      align: 'right',
-    });
+  const y = drawFullHeader(doc, {
+    title: REPORT_TITLE,
+    brand: COMPANY.name,
+    subtitle: COMPANY.cnpj,
+    info: [
+      ['Pedido Nº', safe(order.order_number)],
+      ['Data', dateBR(order.created_at)],
+      ['Fabricante', safe(order.manufacturer_name)],
+    ],
+    logo: logoBh3 || undefined,
+    logoTile: Boolean(logoBh3),
+  });
 
   doc
     .font('Helvetica')
-    .fontSize(9)
-    .fillColor('#475569')
-    .text(`Pedido Nº: ${safe(order.order_number)}`, 585, 50, {
-      width: 230,
-      align: 'right',
-    })
-    .text(`Data: ${dateBR(order.created_at)}`, 585, 65, {
-      width: 230,
-      align: 'right',
-    })
-    .text(`Fabricante: ${safe(order.manufacturer_name)}`, 585, 80, {
-      width: 230,
-      align: 'right',
-    });
+    .fontSize(7.7)
+    .fillColor(C.muted)
+    .text(
+      [COMPANY.address1, COMPANY.address2, COMPANY.cep, COMPANY.phone, COMPANY.email].join('  ·  '),
+      PAGE.margin,
+      y + 8,
+      { width: doc.page.width - PAGE.margin * 2, align: 'center', lineBreak: false },
+    );
+
+  return y + 26;
 }
 
-function drawFooter(doc) {
-  const logoConsart = findFirstExisting(LOGO_CONSART_PATHS);
-
-  const footerY = doc.page.height - 96;
-  const logoW = 190;
-  const logoH = 50;
-  const logoX = (doc.page.width / 2) - (logoW / 2);
-  const logoY = footerY + 28;
-
-  doc
-    .rect(28, footerY - 12, doc.page.width - 56, 1)
-    .fill('#e2e8f0');
-
-  doc
-    .fillColor('#64748b')
-    .font('Helvetica')
-    .fontSize(8)
-    .text('Pedido gerado pelo CONSART ERP', 28, footerY, {
-      width: doc.page.width - 56,
-      align: 'center',
-    });
-
-  if (logoConsart) {
-    try {
-      doc.image(logoConsart, logoX, logoY, {
-        fit: [logoW, logoH],
-        align: 'center',
-        valign: 'center',
-      });
-    } catch {
-      // não interrompe o PDF
-    }
-  }
+function drawContinuationHeader(doc, order = {}) {
+  const logoBh3 = findFirstExisting(LOGO_BH3_PATHS);
+  return drawCompactHeader(doc, {
+    title: `${REPORT_TITLE} Nº ${safe(order.order_number)}`,
+    subtitle: `${safe(order.manufacturer_name)} (continuação)`,
+    logo: logoBh3 || undefined,
+    logoTile: Boolean(logoBh3),
+  }) + 14;
 }
 
 function drawInfoBox(doc, order = {}, startY = 132) {
@@ -239,7 +138,7 @@ function drawInfoBox(doc, order = {}, startY = 132) {
 
   doc
     .roundedRect(x, startY, w, h, 8)
-    .strokeColor('#dbe4f0')
+    .strokeColor(C.border)
     .lineWidth(1)
     .stroke();
 
@@ -284,7 +183,7 @@ function drawTableHeader(doc, y) {
   const x = 28;
   const w = doc.page.width - 56;
 
-  doc.rect(x, y, w, 24).fill('#1e293b');
+  doc.rect(x, y, w, 24).fill(C.blue);
 
   doc
     .fillColor('#ffffff')
@@ -295,7 +194,7 @@ function drawTableHeader(doc, y) {
     .text('U.M', x + 500, y + 8, { width: 45, align: 'center' })
     .text('QTDE', x + 550, y + 8, { width: 55, align: 'right' })
     .text('UNITÁRIO', x + 620, y + 8, { width: 80, align: 'right' })
-    .text('TOTAL', x + 710, y + 8, { width: 80, align: 'right' });
+    .text('TOTAL', x + 706, y + 8, { width: 74, align: 'right' }); // termina dentro da faixa (antes passava 4pt)
 
   return y + 24;
 }
@@ -310,7 +209,7 @@ function drawTableRow(doc, item, y, index) {
   const total = qty * cost;
 
   if (index % 2 === 0) {
-    doc.rect(x, y, w, rowH).fill('#f8fafc');
+    doc.rect(x, y, w, rowH).fill(C.zebra);
   }
 
   doc
@@ -328,7 +227,7 @@ function drawTableRow(doc, item, y, index) {
     .text(safe(item.unit || item.um || item.unidade, 'UN'), x + 500, y + 8, { width: 45, align: 'center' })
     .text(String(qty), x + 550, y + 8, { width: 55, align: 'right' })
     .text(money(cost), x + 620, y + 8, { width: 80, align: 'right' })
-    .text(money(total), x + 710, y + 8, { width: 80, align: 'right' });
+    .text(money(total), x + 706, y + 8, { width: 74, align: 'right' });
 
   return {
     nextY: y + rowH,
@@ -341,7 +240,7 @@ function drawTotalBox(doc, y, total) {
   const boxH = 42;
   const x = doc.page.width - 28 - boxW;
 
-  doc.roundedRect(x, y, boxW, boxH, 8).fill('#1e293b');
+  doc.roundedRect(x, y, boxW, boxH, 8).fill(C.navy);
 
   doc
     .fillColor('#ffffff')
@@ -358,31 +257,27 @@ function drawTotalBox(doc, y, total) {
 }
 
 function addNewPage(doc, order) {
-  drawFooter(doc);
   doc.addPage();
-  drawHeader(doc, order);
-  return drawTableHeader(doc, 132);
+  return drawTableHeader(doc, drawContinuationHeader(doc, order));
 }
 
 export function buildManufacturesOrderManufacturerPdf(order = {}) {
   const doc = new PDFDocument({
     size: 'A4',
     layout: 'landscape',
-    margin: 28,
+    margins: { top: 28, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 12 },
     bufferPages: true,
   });
 
   const items = Array.isArray(order.items) ? order.items : [];
 
-  drawHeader(doc, order);
-
-  let y = drawInfoBox(doc, order, 132);
+  let y = drawInfoBox(doc, order, drawHeader(doc, order));
   y = drawTableHeader(doc, y);
 
   let grandTotal = 0;
 
   items.forEach((item, index) => {
-    if (y > doc.page.height - 120) {
+    if (y > doc.page.height - 70) {
       y = addNewPage(doc, order);
     }
 
@@ -392,14 +287,16 @@ export function buildManufacturesOrderManufacturerPdf(order = {}) {
     grandTotal += result.total;
   });
 
-  if (y > doc.page.height - 125) {
-    y = addNewPage(doc, order);
+  if (y > doc.page.height - 105) {
+    // só o total na página seguinte: cabeçalho compacto, sem repetir o cabeçalho da tabela
+    doc.addPage();
+    y = drawContinuationHeader(doc, order);
   }
 
   y += 18;
 
   drawTotalBox(doc, y, grandTotal);
-  drawFooter(doc);
+  drawFooters(doc, { title: `${REPORT_TITLE} Nº ${safe(order.order_number)}`, generatedAt: nowBR() });
 
   return doc;
 }

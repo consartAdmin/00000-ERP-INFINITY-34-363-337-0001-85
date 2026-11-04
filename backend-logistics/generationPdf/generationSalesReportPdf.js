@@ -12,6 +12,10 @@
 'use strict';
 
 import PDFDocument from 'pdfkit';
+import {
+  C, SERIES, PAGE,
+  drawFullHeader, autoCompactHeader, drawFooters, drawKpis, nowBR,
+} from './consartPdfTheme.js';
 import { getFullSalesReport } from '../repositories/salesReport/salesReport.index.js';
 
 // ----------------------------------------------------------------------
@@ -82,18 +86,10 @@ export function buildPdfFileSuffix({ mode = 'full', costMode = 'current' } = {})
  * Desenha um título de seção com linha abaixo
  */
 function drawSectionTitle(doc, text) {
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#111111').text(text);
-
-  doc.moveDown(0.2);
-
-  doc
-    .moveTo(doc.page.margins.left, doc.y)
-    .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-    .strokeColor('#cbd5e1')
-    .lineWidth(0.6)
-    .stroke();
-
-  doc.moveDown(0.4);
+  doc.fontSize(11).font('Helvetica-Bold').fillColor(C.navy).text(text, doc.page.margins.left);
+  doc.rect(doc.page.margins.left, doc.y + 1, 34, 2).fill(C.teal);
+  doc.y += 3;
+  doc.moveDown(0.5);
 }
 
 /**
@@ -103,19 +99,13 @@ function drawTableHeader(doc, headers) {
   const topY = doc.y;
   const fullWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-  doc.rect(doc.page.margins.left, topY - 2, fullWidth, 16).fill('#e5edf6');
+  doc.rect(doc.page.margins.left, topY - 3, fullWidth, 18).fill(C.blue);
 
-  doc.fontSize(9).font('Helvetica-Bold').fillColor('#111827');
-  headers.forEach((h) => doc.text(h.label, h.x, topY, { width: h.w }));
+  doc.fontSize(8).font('Helvetica-Bold').fillColor(C.white);
+  headers.forEach((h) => doc.text(h.label, h.x, topY + 1.5, { width: h.w, lineBreak: false }));
 
-  doc
-    .moveTo(doc.page.margins.left, topY + 16)
-    .lineTo(doc.page.width - doc.page.margins.right, topY + 16)
-    .strokeColor('#cbd5e1')
-    .lineWidth(0.4)
-    .stroke();
-
-  doc.y = topY + 18;
+  doc.fillColor(C.text);
+  doc.y = topY + 19;
 }
 
 /**
@@ -214,7 +204,7 @@ function drawBarChart(doc, data, opts = {}) {
     const barY = currentY - 2;
 
     // Fundo da barra
-    doc.roundedRect(barX, barY, Math.max(barW, 1), barHeight, 3).fill('#60a5fa');
+    doc.roundedRect(barX, barY, Math.max(barW, 1), barHeight, 3).fill(C.blue);
 
     // Texto do label
     if (labelInside) {
@@ -272,12 +262,13 @@ function drawOrderHeader(doc, x, y, w, order, opts = {}) {
   const date = formatDateBR(order.created_at || order.date || order.createdAt);
   const customer = order.customer_name || order.customerName || '-';
 
-  doc.rect(x, y, w, 22).fill('#eff6ff');
+  doc.rect(x, y, w, 22).fill(C.totalFill);
+  doc.rect(x, y, 3, 22).fill(C.teal);
 
   doc
     .font('Helvetica-Bold')
     .fontSize(11)
-    .fillColor('#0f172a')
+    .fillColor(C.navy)
     .text(
       `Pedido ${orderNo}${cont ? ' (cont.)' : ''}  •  ${date}  •  Cliente: ${customer}`,
       x + 10,
@@ -374,10 +365,11 @@ function renderOrderBlock(doc, order, items, opts = {}) {
   const bottom = () => doc.page.height - doc.page.margins.bottom;
 
   function drawTableHeaderInside(boxX, boxW, yHeader) {
-    doc.rect(boxX, yHeader, boxW, 18).fill('#e5edf6');
+    doc.rect(boxX, yHeader, boxW, 18).fill(C.blue);
 
-    doc.fontSize(9).font('Helvetica-Bold').fillColor('#111827');
-    col.forEach((c) => doc.text(c.label, c.x, yHeader + 4, { width: c.w }));
+    doc.fontSize(8).font('Helvetica-Bold').fillColor(C.white);
+    col.forEach((c) => doc.text(c.label, c.x, yHeader + 5, { width: c.w, lineBreak: false }));
+    doc.fillColor(C.text);
 
     doc
       .moveTo(boxX, yHeader + 18)
@@ -512,7 +504,8 @@ export async function generateSalesReportPdf(filters = {}, mode = 'full') {
   const doc = new PDFDocument({
     size: 'A4',
     layout: 'landscape',
-    margin: 40,
+    margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 20 },
+    bufferPages: true,
     info: {
       Title: 'Relatório de Vendas - CONSART ERP',
       Author: 'CONSART ERP',
@@ -530,48 +523,30 @@ export async function generateSalesReportPdf(filters = {}, mode = 'full') {
     const startX = doc.page.margins.left;
 
     // -------------------------------------------------------------------
-    // Cabeçalho
+    // Cabeçalho (layout padrão)
     // -------------------------------------------------------------------
-    doc
-      .fontSize(18)
-      .font('Helvetica-Bold')
-      .fillColor('#0f172a')
-      .text('CONSART ERP', startX, doc.page.margins.top - 20, { align: 'left' });
-
-    let subtitle = 'Relatório de Vendas';
-    if (modeSafe === 'products') subtitle = 'Relatório de Vendas por Produto';
-    if (modeSafe === 'customers') subtitle = 'Relatório de Vendas por Cliente';
-    if (modeSafe === 'orders') subtitle = 'Relatório de Vendas por Pedido';
-
-    doc.moveDown(0.1).fontSize(11).font('Helvetica').fillColor('#374151').text(subtitle);
+    let reportTitle = 'Relatório de Vendas';
+    if (modeSafe === 'products') reportTitle = 'Relatório de Vendas por Produto';
+    if (modeSafe === 'customers') reportTitle = 'Relatório de Vendas por Cliente';
+    if (modeSafe === 'orders') reportTitle = 'Relatório de Vendas por Pedido';
 
     const periodStart = filters.dateStart || 'Últimos 30 dias';
     const periodEnd = filters.dateEnd || '';
 
-    doc
-      .moveDown(0.4)
-      .fontSize(9)
-      .fillColor('#4b5563')
-      .text(`Período: ${formatDateBR(periodStart)}${periodEnd ? ' até ' + formatDateBR(periodEnd) : ''}`);
+    const headerInfo = [
+      ['Período', `${formatDateBR(periodStart)}${periodEnd ? ' a ' + formatDateBR(periodEnd) : ''}`],
+      ['Modo de custo', getCostModeLabel(filters.costMode)],
+    ];
+    if (filters.sellerId) headerInfo.push(['Vendedor ID', filters.sellerId]);
+    if (filters.customerId) headerInfo.push(['Cliente ID', filters.customerId]);
+    if (filters.productId) headerInfo.push(['Produto', filters.productId]);
 
-    // filtros no cabeçalho
-    if (filters.sellerId) doc.text(`Filtro Vendedor ID: ${filters.sellerId}`);
-    if (filters.customerId) doc.text(`Filtro Cliente ID: ${filters.customerId}`);
-    if (filters.productId) doc.text(`Filtro Produto (SKU/descrição): ${filters.productId}`);
-
-    // modo de custo
-    doc.text(`Modo de Custo: ${getCostModeLabel(filters.costMode)}`);
-
-    doc.moveDown(0.5);
-
-    doc
-      .moveTo(doc.page.margins.left, doc.y)
-      .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-      .strokeColor('#cbd5e1')
-      .lineWidth(0.8)
-      .stroke();
-
-    doc.moveDown(0.8);
+    doc.y = drawFullHeader(doc, {
+      title: reportTitle,
+      subtitle: 'Pedidos e itens vendidos',
+      info: headerInfo,
+    }) + 14;
+    autoCompactHeader(doc, { title: reportTitle, subtitle: 'Continuação' });
 
     // -------------------------------------------------------------------
     // KPIs / Resumo
@@ -590,42 +565,23 @@ export async function generateSalesReportPdf(filters = {}, mode = 'full') {
     const ticket = ordersCount > 0 ? totalAmount / ordersCount : 0;
     const grossMargin = totalAmount > 0 ? (grossProfit / totalAmount) * 100 : 0;
 
-    drawSectionTitle(doc, 'Resumo Geral');
+    const kpiW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-    const cardW = 150;
-    const yCards = doc.y;
-    const gap = 10;
+    doc.y = drawKpis(doc, doc.y, [
+      { label: 'Total vendido', value: moneyBR(totalAmount), hint: `${ordersCount} pedido(s)`, color: SERIES[0] },
+      { label: 'Custo total', value: moneyBR(totalCost), hint: `Custo ${getCostModeLabel(filters.costMode).toLowerCase()}`, color: SERIES[2] },
+      { label: 'Lucro bruto', value: moneyBR(grossProfit), hint: 'Vendido - custo', color: SERIES[1] },
+      { label: 'Margem bruta', value: `${grossMargin.toFixed(1)}%`, hint: 'Lucro / vendido', color: SERIES[3] },
+    ], { x: startX, width: kpiW }) + 10;
 
-    const cards = [
-      { label: 'Total vendido', value: moneyBR(totalAmount) },
-      { label: 'Custo total', value: moneyBR(totalCost) },
-      { label: 'Lucro bruto', value: moneyBR(grossProfit) },
-      { label: 'Margem bruta', value: `${grossMargin.toFixed(1)}%` },
-      { label: 'Pedidos', value: String(ordersCount) },
-      { label: 'Itens vendidos', value: String(itemsCount) },
-      { label: 'Ticket médio', value: moneyBR(ticket) },
-    ];
+    doc.y = drawKpis(doc, doc.y, [
+      { label: 'Pedidos', value: String(ordersCount), color: SERIES[5] },
+      { label: 'Itens vendidos', value: String(itemsCount), color: SERIES[7] },
+      { label: 'Ticket médio', value: moneyBR(ticket), hint: 'Vendido / pedidos', color: SERIES[0] },
+    ], { x: startX, width: kpiW, h: 50 }) + 16;
 
-    doc.font('Helvetica');
-    cards.forEach((c, idx) => {
-      const col = idx % 4;
-      const row = Math.floor(idx / 4);
-      const x = startX + col * (cardW + gap);
-      const y = yCards + row * 40;
-
-      doc.roundedRect(x, y, cardW, 34, 6).fillAndStroke('#f9fafb', '#e5e7eb');
-
-      doc.fontSize(8).fillColor('#6b7280').text(c.label, x + 8, y + 5, { width: cardW - 16 });
-
-      doc
-        .fontSize(11)
-        .font('Helvetica-Bold')
-        .fillColor('#111827')
-        .text(c.value, x + 8, y + 16, { width: cardW - 16 });
-    });
-
-    doc.y = yCards + 80;
-    doc.moveDown(0.8);
+    // os gráficos lado a lado começam na mesma altura
+    const yCharts = doc.y;
 
     // ===================================================================
     // GRÁFICOS
@@ -655,7 +611,7 @@ export async function generateSalesReportPdf(filters = {}, mode = 'full') {
       });
 
       const yAfterFirst = doc.y;
-      doc.y = yCards + 80;
+      doc.y = yCharts;
 
       // Gráfico 2: Top Clientes
       drawBarChart(doc, byCustomer, {
@@ -931,15 +887,8 @@ export async function generateSalesReportPdf(filters = {}, mode = 'full') {
       }
     }
 
-    // Rodapé
-    doc.moveDown(1.0);
-    doc
-      .fontSize(8)
-      .font('Helvetica-Oblique')
-      .fillColor('#6b7280')
-      .text(`Gerado em ${new Date().toLocaleString('pt-BR')} pelo CONSART ERP`, {
-        align: 'right',
-      });
+    // Rodapé padrão em todas as páginas
+    drawFooters(doc, { title: reportTitle, generatedAt: nowBR() });
 
     doc.end();
   });
