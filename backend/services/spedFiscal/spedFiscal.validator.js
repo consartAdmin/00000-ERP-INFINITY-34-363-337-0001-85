@@ -79,6 +79,16 @@ export function validateSpedContext(ctx) {
       });
     }
 
+    if (!String(p.cod_mun || '').trim()) {
+      pushIssue(issues, {
+        type: 'alerta',
+        bloco: '0',
+        registro: '0150',
+        chave_ref: `${p.codigo || ''} ${p.nome || ''}`.trim(),
+        mensagem: 'Participante sem código IBGE do município (confira cidade/UF no cadastro).',
+      });
+    }
+
     if (!p.cnpj && !p.cpf) {
       pushIssue(issues, {
         type: 'alerta',

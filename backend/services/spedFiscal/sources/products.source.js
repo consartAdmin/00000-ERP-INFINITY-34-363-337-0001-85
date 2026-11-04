@@ -76,7 +76,8 @@ export async function getProductsSource(enterpriseId = null) {
         pf.fiscal_classification_id,
         pf.version
       FROM public."productsFiscalV2" pf
-      WHERE pf.product_code::text = p.product_code::text
+      WHERE NULLIF(ltrim(pf.product_code::text, '0'), '')
+          = NULLIF(ltrim(p.product_code::text, '0'), '')
         AND pf.is_current = true
         AND pf.is_active = true
       ORDER BY

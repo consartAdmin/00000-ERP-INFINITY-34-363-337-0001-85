@@ -3,7 +3,8 @@
 // ║ Documentos de entrada para o SPED Fiscal — inboundInvoices          ║
 // ║ CONSART ERP                                                         ║
 // ║ ✅ Schema real inboundInvoices / inboundInvoiceItems                 ║
-// ║ ✅ Fiscal via "productsFiscalV2" usando product_code                 ║
+// ║ ✅ Chaves reais: inbound_id / inbound_item_id                       ║
+// ║ ✅ Valores fiscais do XML (icms_value, pis_value, ...) por item     ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
@@ -37,8 +38,8 @@ function normalizeInboundCfop(value) {
     : cfop;
 }
 
-async function getInboundItems(invoiceId) {
-  if (!invoiceId) return [];
+async function getInboundItems(inboundId) {
+  if (!inboundId) return [];
 
   try {
     const { rows } = await pool.query(
@@ -46,6 +47,14 @@ async function getInboundItems(invoiceId) {
         WITH item_fiscal AS (
           SELECT
             ii.*,
+
+            -- Produto do ERP: primeiro pelo vínculo (product_id), depois pelo código.
+            COALESCE(
+              linked_product.product_code::text,
+              NULLIF(ii.product_code::text, ''),
+              NULLIF(ii.nf_product_code::text, '')
+            ) AS resolved_product_code,
+            linked_product.description AS product_description,
 
             NULLIF(
               regexp_replace(
@@ -58,25 +67,37 @@ async function getInboundItems(invoiceId) {
             ) AS normalized_icms_code,
 
             COALESCE(
+              NULLIF(regexp_replace(COALESCE(ii.icms_origin::text, ''), '\\D+', '', 'g'), ''),
               NULLIF(regexp_replace(COALESCE(fp.origin_code, ''), '\\D+', '', 'g'), ''),
               '0'
             ) AS normalized_origin_code,
 
             fp.cfop_entry,
             fp.icms_rate AS profile_icms_rate,
-            fp.pis_cst,
-            fp.pis_rate,
-            fp.cofins_cst,
-            fp.cofins_rate
+            fp.pis_cst AS profile_pis_cst,
+            fp.cofins_cst AS profile_cofins_cst
 
           FROM public."inboundInvoiceItems" ii
+
+          LEFT JOIN LATERAL (
+            SELECT p.product_code, p.description
+            FROM public.products p
+            WHERE (ii.product_id IS NOT NULL AND p.product_id = ii.product_id)
+               OR (
+                 ii.product_id IS NULL
+                 AND NULLIF(ltrim(p.product_code::text, '0'), '')
+                   = NULLIF(ltrim(ii.product_code::text, '0'), '')
+               )
+            ORDER BY p.product_id
+            LIMIT 1
+          ) linked_product ON true
 
           LEFT JOIN LATERAL (
             SELECT
               pf.fiscal_classification_id
             FROM public."productsFiscalV2" pf
             WHERE NULLIF(ltrim(pf.product_code::text, '0'), '')
-                = NULLIF(ltrim(ii.product_code::text, '0'), '')
+                = NULLIF(ltrim(COALESCE(linked_product.product_code::text, ii.product_code::text), '0'), '')
               AND pf.is_current = true
               AND pf.is_active = true
             ORDER BY
@@ -91,19 +112,27 @@ async function getInboundItems(invoiceId) {
           LEFT JOIN public."fiscalProfileV2" fp
             ON fp.fiscal_profile_id = fc.fiscal_profile_id
 
-          WHERE ii.invoice_id = $1
+          WHERE ii.inbound_id = $1
         )
 
         SELECT
-          item_fiscal.product_code::text AS codigo_produto,
-          COALESCE(item_fiscal.description, p.description, '') AS descricao,
+          item_fiscal.resolved_product_code AS codigo_produto,
+          COALESCE(
+            NULLIF(item_fiscal.description, ''),
+            item_fiscal.product_description,
+            ''
+          ) AS descricao,
           COALESCE(item_fiscal.quantity, 0) AS quantidade,
-          COALESCE(item_fiscal.unit, 'UN') AS unidade,
+          COALESCE(NULLIF(item_fiscal.unit, ''), 'UN') AS unidade,
 
-          COALESCE(item_fiscal.total_price, 0) AS valor_item,
-          0::numeric AS valor_desconto,
+          -- VL_ITEM = valor bruto do item (qtd x unitário), como no XML (vProd).
+          COALESCE(item_fiscal.gross_total, item_fiscal.total_price, 0) AS valor_item,
+          COALESCE(item_fiscal.discount_value, 0) AS valor_desconto,
+          COALESCE(item_fiscal.freight_value, 0) AS valor_frete,
+          COALESCE(item_fiscal.insurance_value, 0) AS valor_seguro,
+          COALESCE(item_fiscal.other_expenses, 0) AS outras_despesas,
 
-          '1'::text AS movimenta_estoque,
+          '0'::text AS movimenta_estoque,
 
           CASE
             WHEN item_fiscal.normalized_icms_code IN (
@@ -125,102 +154,78 @@ async function getInboundItems(invoiceId) {
           END::text AS csosn,
 
           COALESCE(
-            NULLIF(item_fiscal.cfop, ''),
+            NULLIF(item_fiscal.cfop::text, ''),
             item_fiscal.cfop_entry,
             ''
           )::text AS cfop,
 
           ''::text AS codigo_natureza,
 
+          -- Valores fiscais vêm do XML da nota (gravados no item).
+          COALESCE(item_fiscal.icms_value, item_fiscal.icms, 0) AS valor_icms,
           COALESCE(
             item_fiscal.icms_base,
             CASE
-              WHEN COALESCE(item_fiscal.icms, 0) > 0
-                THEN item_fiscal.total_price
+              WHEN COALESCE(item_fiscal.icms_value, item_fiscal.icms, 0) > 0
+                THEN COALESCE(item_fiscal.total_price, 0)
               ELSE 0
-            END,
-            0
+            END
           ) AS valor_bc_icms,
-
           COALESCE(
             item_fiscal.icms_rate,
-            item_fiscal.profile_icms_rate,
             CASE
-              WHEN COALESCE(item_fiscal.total_price, 0) > 0
+              WHEN COALESCE(item_fiscal.icms_base, 0) > 0
                 THEN ROUND(
-                  (COALESCE(item_fiscal.icms, 0) / item_fiscal.total_price) * 100,
-                  4
+                  COALESCE(item_fiscal.icms_value, item_fiscal.icms, 0)
+                    / item_fiscal.icms_base * 100,
+                  2
                 )
               ELSE 0
-            END,
-            0
+            END
           ) AS aliq_icms,
-
-          COALESCE(item_fiscal.icms, 0) AS valor_icms,
 
           COALESCE(item_fiscal.icms_st_base, 0) AS valor_bc_icms_st,
           COALESCE(item_fiscal.icms_st_rate, 0) AS aliq_st,
           COALESCE(item_fiscal.icms_st_value, 0) AS valor_icms_st,
 
           ''::text AS apuracao_ipi,
-          ''::text AS cst_ipi,
+          COALESCE(item_fiscal.ipi_cst, '')::text AS cst_ipi,
           ''::text AS cod_enq,
+          COALESCE(
+            item_fiscal.ipi_base,
+            CASE
+              WHEN COALESCE(item_fiscal.ipi_value, item_fiscal.ipi, 0) > 0
+                THEN COALESCE(item_fiscal.total_price, 0)
+              ELSE 0
+            END
+          ) AS valor_bc_ipi,
+          COALESCE(item_fiscal.ipi_rate, 0) AS aliq_ipi,
+          COALESCE(item_fiscal.ipi_value, item_fiscal.ipi, 0) AS valor_ipi,
 
-          CASE
-            WHEN COALESCE(item_fiscal.ipi, 0) > 0
-              THEN COALESCE(item_fiscal.total_price, 0)
-            ELSE 0
-          END AS valor_bc_ipi,
-
-          CASE
-            WHEN COALESCE(item_fiscal.total_price, 0) > 0
-              THEN ROUND(
-                (COALESCE(item_fiscal.ipi, 0) / item_fiscal.total_price) * 100,
-                4
-              )
-            ELSE 0
-          END AS aliq_ipi,
-
-          COALESCE(item_fiscal.ipi, 0) AS valor_ipi,
-
-          COALESCE(item_fiscal.pis_cst, '')::text AS cst_pis,
-          COALESCE(item_fiscal.total_price, 0) AS valor_bc_pis,
+          COALESCE(NULLIF(item_fiscal.pis_cst, ''), item_fiscal.profile_pis_cst, '')::text AS cst_pis,
+          COALESCE(item_fiscal.pis_base, 0) AS valor_bc_pis,
           COALESCE(item_fiscal.pis_rate, 0) AS aliq_pis,
           0::numeric AS quant_bc_pis,
           0::numeric AS aliq_pis_reais,
-          ROUND(
-            COALESCE(item_fiscal.total_price, 0)
-            * COALESCE(item_fiscal.pis_rate, 0)
-            / 100,
-            2
-          ) AS valor_pis,
+          COALESCE(item_fiscal.pis_value, 0) AS valor_pis,
 
-          COALESCE(item_fiscal.cofins_cst, '')::text AS cst_cofins,
-          COALESCE(item_fiscal.total_price, 0) AS valor_bc_cofins,
+          COALESCE(NULLIF(item_fiscal.cofins_cst, ''), item_fiscal.profile_cofins_cst, '')::text AS cst_cofins,
+          COALESCE(item_fiscal.cofins_base, 0) AS valor_bc_cofins,
           COALESCE(item_fiscal.cofins_rate, 0) AS aliq_cofins,
           0::numeric AS quant_bc_cofins,
           0::numeric AS aliq_cofins_reais,
-          ROUND(
-            COALESCE(item_fiscal.total_price, 0)
-            * COALESCE(item_fiscal.cofins_rate, 0)
-            / 100,
-            2
-          ) AS valor_cofins,
+          COALESCE(item_fiscal.cofins_value, 0) AS valor_cofins,
 
           ''::text AS cod_cta,
           0::numeric AS valor_reducao_bc
 
         FROM item_fiscal
 
-        LEFT JOIN public.products p
-          ON NULLIF(ltrim(p.product_code::text, '0'), '')
-           = NULLIF(ltrim(item_fiscal.product_code::text, '0'), '')
-
         ORDER BY
-          COALESCE(item_fiscal.nfe_item_seq, item_fiscal.id),
-          item_fiscal.id
+          COALESCE(item_fiscal.nfe_item_seq, item_fiscal.inbound_item_id),
+          item_fiscal.inbound_item_id
       `,
-      [invoiceId],
+      [inboundId],
     );
 
     return rows.map(item => ({
@@ -230,6 +235,9 @@ async function getInboundItems(invoiceId) {
       quantidade: toNumber(item.quantidade),
       valor_item: toNumber(item.valor_item),
       valor_desconto: toNumber(item.valor_desconto),
+      valor_frete: toNumber(item.valor_frete),
+      valor_seguro: toNumber(item.valor_seguro),
+      outras_despesas: toNumber(item.outras_despesas),
 
       valor_bc_icms: toNumber(item.valor_bc_icms),
       aliq_icms: toNumber(item.aliq_icms),
@@ -255,7 +263,7 @@ async function getInboundItems(invoiceId) {
     }));
   } catch (error) {
     console.error('[SPED Fiscal] getInboundItems V2 error.', {
-      invoice_id: invoiceId,
+      inbound_id: inboundId,
       message: error.message,
       code: error.code || null,
       detail: error.detail || null,
@@ -265,38 +273,31 @@ async function getInboundItems(invoiceId) {
       stack: error.stack || null,
     });
 
-    return [];
+    // Não esconder o erro: um SPED sem as notas de entrada sai errado.
+    throw error;
   }
 }
 
 export async function getInboundDocumentsSource({ period }) {
   try {
+    /*
+     * Período das entradas = data de criação (lançamento) da nota no ERP,
+     * o mesmo filtro da tela de NF-e de entrada. DT_DOC = data de emissão
+     * do XML (issue_date); DT_E_S = data do lançamento, que cai sempre
+     * dentro do período do arquivo.
+     */
     const { rows } = await pool.query(
       `
         SELECT
-          n.id,
+          n.inbound_id AS id,
           n.invoice_number::text AS numero,
-          COALESCE(n.series::text, '1') AS serie,
+          COALESCE(NULLIF(n.series::text, ''), '1') AS serie,
           COALESCE(n.access_key::text, '') AS chave,
 
-          n.created_at AS data_emissao,
-          n.created_at AS data_entrada_saida,
+          COALESCE(n.issue_date::date, n.created_at::date) AS data_emissao,
+          n.created_at::date AS data_entrada_saida,
 
           COALESCE(n.total_amount, 0) AS valor_total,
-
-          0::numeric AS valor_mercadorias,
-          0::numeric AS valor_frete,
-          0::numeric AS valor_seguro,
-          0::numeric AS outras_despesas,
-          0::numeric AS valor_desconto,
-
-          0::numeric AS valor_bc_icms,
-          0::numeric AS valor_icms,
-          0::numeric AS valor_bc_icms_st,
-          0::numeric AS valor_icms_st,
-          0::numeric AS valor_ipi,
-          0::numeric AS valor_pis,
-          0::numeric AS valor_cofins,
 
           '55'::text AS cod_mod,
           '00'::text AS cod_sit,
@@ -304,8 +305,8 @@ export async function getInboundDocumentsSource({ period }) {
           '1'::text AS ind_emit,
 
           CASE
-            WHEN s.supplier_id IS NULL THEN ''
-            ELSE 'F' || s.supplier_id::text
+            WHEN supplier.supplier_id IS NULL THEN ''
+            ELSE 'F' || supplier.supplier_id::text
           END AS participante_codigo,
           '0'::text AS ind_pgto,
           '9'::text AS ind_frt,
@@ -316,13 +317,19 @@ export async function getInboundDocumentsSource({ period }) {
 
         FROM public."inboundInvoices" n
 
-        LEFT JOIN public.suppliers s
-          ON regexp_replace(COALESCE(s.tax_id, ''), '\\D+', '', 'g')
-           = regexp_replace(COALESCE(n.issuer, ''), '\\D+', '', 'g')
+        LEFT JOIN LATERAL (
+          SELECT s.supplier_id
+          FROM public.suppliers s
+          WHERE regexp_replace(COALESCE(s.tax_id, ''), '\\D+', '', 'g')
+              = regexp_replace(COALESCE(n.issuer, ''), '\\D+', '', 'g')
+            AND regexp_replace(COALESCE(n.issuer, ''), '\\D+', '', 'g') <> ''
+          ORDER BY s.supplier_id
+          LIMIT 1
+        ) supplier ON true
 
         WHERE n.created_at::date >= $1::date
           AND n.created_at::date <= $2::date
-          AND UPPER(COALESCE(n.status, 'AUTORIZADA')) NOT IN (
+          AND UPPER(COALESCE(n.status, '')) NOT IN (
             'CANCELADA',
             'CANCELADO',
             'CANCELLED',
@@ -333,7 +340,7 @@ export async function getInboundDocumentsSource({ period }) {
             'REJECTED'
           )
 
-        ORDER BY n.created_at ASC, n.id ASC
+        ORDER BY n.created_at ASC, n.inbound_id ASC
       `,
       [period.dateStart, period.dateEnd],
     );
@@ -343,31 +350,21 @@ export async function getInboundDocumentsSource({ period }) {
     for (const doc of rows) {
       const items = await getInboundItems(doc.id);
 
-      const itemTotal = sumBy(items, 'valor_item');
-      const itemDiscount = sumBy(items, 'valor_desconto');
-      const itemIcmsBase = sumBy(items, 'valor_bc_icms');
-      const itemIcms = sumBy(items, 'valor_icms');
-      const itemIcmsStBase = sumBy(items, 'valor_bc_icms_st');
-      const itemIcmsSt = sumBy(items, 'valor_icms_st');
-      const itemIpi = sumBy(items, 'valor_ipi');
-      const itemPis = sumBy(items, 'valor_pis');
-      const itemCofins = sumBy(items, 'valor_cofins');
-
       normalized.push({
         ...doc,
         valor_total: toNumber(doc.valor_total),
-        valor_mercadorias: itemTotal || toNumber(doc.valor_total),
-        valor_frete: 0,
-        valor_seguro: 0,
-        outras_despesas: 0,
-        valor_desconto: itemDiscount,
-        valor_bc_icms: itemIcmsBase,
-        valor_icms: itemIcms,
-        valor_bc_icms_st: itemIcmsStBase,
-        valor_icms_st: itemIcmsSt,
-        valor_ipi: itemIpi,
-        valor_pis: itemPis,
-        valor_cofins: itemCofins,
+        valor_mercadorias: sumBy(items, 'valor_item') || toNumber(doc.valor_total),
+        valor_frete: sumBy(items, 'valor_frete'),
+        valor_seguro: sumBy(items, 'valor_seguro'),
+        outras_despesas: sumBy(items, 'outras_despesas'),
+        valor_desconto: sumBy(items, 'valor_desconto'),
+        valor_bc_icms: sumBy(items, 'valor_bc_icms'),
+        valor_icms: sumBy(items, 'valor_icms'),
+        valor_bc_icms_st: sumBy(items, 'valor_bc_icms_st'),
+        valor_icms_st: sumBy(items, 'valor_icms_st'),
+        valor_ipi: sumBy(items, 'valor_ipi'),
+        valor_pis: sumBy(items, 'valor_pis'),
+        valor_cofins: sumBy(items, 'valor_cofins'),
         source_type: 'inbound',
         items,
       });
@@ -376,6 +373,9 @@ export async function getInboundDocumentsSource({ period }) {
     console.info('[SPED Fiscal] inbound documents V2 loaded.', {
       document_count: normalized.length,
       item_count: normalized.reduce((acc, doc) => acc + doc.items.length, 0),
+      documents_without_participant: normalized.filter(
+        doc => !doc.participante_codigo,
+      ).length,
     });
 
     return normalized;
@@ -390,7 +390,8 @@ export async function getInboundDocumentsSource({ period }) {
       stack: error.stack || null,
     });
 
-    return [];
+    // Antes devolvia [] e a prévia mostrava "Entradas 0" sem nenhum aviso.
+    throw new Error(`SPED Fiscal: falha ao ler as notas de entrada (${error.message}).`);
   }
 }
 

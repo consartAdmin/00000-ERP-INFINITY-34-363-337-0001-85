@@ -87,7 +87,8 @@ async function getSuppliers() {
         COALESCE(s.name, '') AS nome,
         s.tax_id AS documento,
         s.state_registration AS ie,
-        ''::text AS cod_mun,
+        -- Fornecedor não guarda o código IBGE: resolve pela cidade/UF.
+        COALESCE(il.ibge_code::text, '') AS cod_mun,
         COALESCE(s.address_street, s.address, '') AS endereco,
         s.address_number AS numero,
         s.address_complement AS complemento,
@@ -96,6 +97,14 @@ async function getSuppliers() {
         s.state,
         ''::text AS suframa
       FROM suppliers s
+      LEFT JOIN LATERAL (
+        SELECT l.ibge_code
+        FROM public."ibgeLocations" l
+        WHERE UPPER(l.state) = UPPER(TRIM(COALESCE(s.state, '')))
+          AND LOWER(l.city) = LOWER(TRIM(COALESCE(s.city, '')))
+        ORDER BY l.status DESC, l.ibge_location_id ASC
+        LIMIT 1
+      ) il ON true
       ORDER BY COALESCE(s.name, ''), s.supplier_id
     `);
 

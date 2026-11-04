@@ -16,11 +16,15 @@ function sumNumber(list = [], field) {
   return list.reduce((acc, item) => acc + toNumber(item?.[field]), 0);
 }
 
-export async function getApuracaoSource(params) {
-  const [outboundDocs, inboundDocs] = await Promise.all([
-    getOutboundDocumentsSource(params),
-    getInboundDocumentsSource(params)
-  ]);
+export async function getApuracaoSource(params = {}) {
+  // O serviço já carregou as notas: reaproveita para não ler tudo de novo.
+  const [outboundDocs, inboundDocs] = Array.isArray(params.outboundDocuments)
+    && Array.isArray(params.inboundDocuments)
+    ? [params.outboundDocuments, params.inboundDocuments]
+    : await Promise.all([
+      getOutboundDocumentsSource(params),
+      getInboundDocumentsSource(params)
+    ]);
 
   const totalDebitos = sumNumber(outboundDocs, 'valor_icms');
   const totalCreditos = sumNumber(inboundDocs, 'valor_icms');
