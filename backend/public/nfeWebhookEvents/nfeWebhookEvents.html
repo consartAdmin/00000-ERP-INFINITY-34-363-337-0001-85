@@ -23,15 +23,6 @@
 
 <body class="consart-body">
       <!-- 🔹 Barra de título (topGradientBar) – markup fixo -->
-  <header class="top-gradient-bar">
-    <div class="top-gradient-bar__inner">
-      <div class="top-gradient-bar__titles">
-        <h1 class="top-gradient-bar__title">Comissões de Vendas</h1>
-        <p class="top-gradient-bar__subtitle">
-        </p>
-      </div>
-    </div>
-  </header>
 
 
   <main class="wh-root">
@@ -185,14 +176,7 @@
   </main>
 
   <!-- 🔹 Top gradient bar: apenas atualiza o texto se precisar -->
-<script type="module">
-import { initTopGradientBar } from '/public/includes/js/topGradientBar.js';
-
-initTopGradientBar({
-    title: 'GESTÃO DE NOTAS FISCAIS WEBHOOK PLUGNOTAS',
-    subtitle: 'Acompanhar emissão, erros etc...',
-});
-</script>
+<!-- Barra de título: automática (topGradientBar.js via core.js, título + breadcrumb do menu) -->
 
   <script type="module" src="/public/includes/js/core.js"></script>
   
