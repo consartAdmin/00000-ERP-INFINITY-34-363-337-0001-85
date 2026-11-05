@@ -16,6 +16,7 @@ import {
   C, SERIES, PAGE,
   drawFullHeader, autoCompactHeader, drawFooters, drawKpis, nowBR,
 } from './consartPdfTheme.js';
+import { topN, topWithOthers, dailySeries, drawDashboardRow } from './salesPdfDashboard.js';
 import { getFullSalesReport } from '../repositories/salesReport/salesReport.index.js';
 
 // ----------------------------------------------------------------------
@@ -35,20 +36,6 @@ function formatDateBR(d) {
     return date.toLocaleDateString('pt-BR');
   } catch {
     return String(d);
-  }
-}
-
-// ✅ melhor label do "byDay" para gráfico (não estoura largura)
-function formatDayShort(d) {
-  if (!d) return '-';
-  try {
-    const dt = new Date(d);
-    if (Number.isNaN(dt.getTime())) return String(d).slice(0, 10);
-    const dd = String(dt.getDate()).padStart(2, '0');
-    const mm = String(dt.getMonth() + 1).padStart(2, '0');
-    return `${dd}/${mm}`;
-  } catch {
-    return String(d).slice(0, 10);
   }
 }
 
@@ -108,140 +95,6 @@ function drawTableHeader(doc, headers) {
   doc.y = topY + 19;
 }
 
-/**
- * Gráfico de barras simples (horizontal)
- * - labelInside = true -> escreve o label dentro da barra
- */
-function drawBarChart(doc, data, opts = {}) {
-  const {
-    x = doc.page.margins.left,
-    y = doc.y,
-    width = 400,
-    height = 160,
-    valueKey = 'total_amount',
-    labelKey = 'label',
-    maxBars = 8,
-    title = '',
-    valueFormatter = (v) => moneyBR(v),
-    labelWidth = 40,
-    labelInside = false,
-    labelFormatter = (raw) => String(raw ?? ''),
-  } = opts;
-
-  const rows = (data || [])
-    .slice()
-    .filter((r) => Number(r[valueKey] || 0) > 0)
-    .sort((a, b) => Number(b[valueKey] || 0) - Number(a[valueKey] || 0))
-    .slice(0, maxBars);
-
-  if (!rows.length) {
-    doc
-      .fontSize(9)
-      .font('Helvetica-Oblique')
-      .fillColor('#6b7280')
-      .text('Sem dados suficientes para o gráfico.', x, y);
-    doc.moveDown(0.4);
-    return;
-  }
-
-  const chartTop = y + 18;
-  let chartLeft;
-  let chartWidth;
-
-  if (labelInside) {
-    chartLeft = x + 10;
-    chartWidth = width - 30;
-  } else {
-    chartLeft = x + labelWidth + 10;
-    chartWidth = width - (labelWidth + 30);
-  }
-
-  const chartHeight = height - 40;
-
-  // Título do gráfico
-  doc.fontSize(10).font('Helvetica-Bold').fillColor('#111827').text(title, x, y, {
-    width,
-    align: 'left',
-  });
-
-  // Moldura
-  doc
-    .roundedRect(chartLeft, chartTop, chartWidth, chartHeight, 4)
-    .strokeColor('#cbd5e1')
-    .lineWidth(0.6)
-    .stroke();
-
-  const maxVal = Math.max(...rows.map((r) => Number(r[valueKey] || 0))) || 1;
-  const barGap = 6;
-  const barAreaHeight = chartHeight - 20;
-  const barHeight = Math.max(6, (barAreaHeight - barGap * (rows.length - 1)) / rows.length);
-
-  // Grid vertical leve
-  const gridLines = 4;
-  for (let i = 1; i <= gridLines; i++) {
-    const gx = chartLeft + (chartWidth / gridLines) * i;
-    doc
-      .moveTo(gx, chartTop)
-      .lineTo(gx, chartTop + chartHeight)
-      .strokeColor('#e5e7eb')
-      .lineWidth(0.3)
-      .dash(2, { space: 2 })
-      .stroke()
-      .undash();
-  }
-
-  // Barras
-  let currentY = chartTop + 10;
-  rows.forEach((r) => {
-    const raw = labelFormatter(r[labelKey]);
-    const rawLabel = String(raw ?? '').trim() || '-';
-
-    const value = Number(r[valueKey] || 0);
-    const ratio = value / maxVal;
-    const barW = ratio * (chartWidth - 80);
-
-    const barX = chartLeft + 4;
-    const barY = currentY - 2;
-
-    // Fundo da barra
-    doc.roundedRect(barX, barY, Math.max(barW, 1), barHeight, 3).fill(C.blue);
-
-    // Texto do label
-    if (labelInside) {
-      const minForInside = 60;
-      if (barW >= minForInside) {
-        const maxChars = Math.max(5, Math.floor((barW - 10) / 4));
-        let labelText = rawLabel;
-        if (labelText.length > maxChars) labelText = labelText.slice(0, maxChars - 1) + '…';
-
-        doc.font('Helvetica').fontSize(8).fillColor('#ffffff').text(labelText, barX + 4, currentY - 1, {
-          width: barW - 8,
-        });
-      } else {
-        doc.font('Helvetica').fontSize(8).fillColor('#111827').text(rawLabel, barX + barW + 4, currentY - 1, {
-          width: chartWidth - barW - 10,
-        });
-      }
-    } else {
-      doc.font('Helvetica').fontSize(8).fillColor('#111827').text(rawLabel, x, currentY - 1, {
-        width: labelWidth,
-        align: 'right',
-        lineBreak: false,
-      });
-    }
-
-    // Valor no final da barra
-    doc.fillColor('#0f172a').fontSize(7.5).text(valueFormatter(value), barX + barW + 4, currentY - 1, {
-      width: 70,
-      align: 'left',
-    });
-
-    currentY += barHeight + barGap;
-  });
-
-  doc.y = chartTop + chartHeight + 8;
-}
-
 // ----------------------------------------------------------------------
 // Orders BOX (cada pedido em um “container”)
 // ----------------------------------------------------------------------
@@ -259,7 +112,7 @@ function drawOrderHeader(doc, x, y, w, order, opts = {}) {
     order.id ||
     '-';
 
-  const date = formatDateBR(order.created_at || order.date || order.createdAt);
+  const date = formatDateBR(order.issued_date || order.created_at || order.date || order.createdAt);
   const customer = order.customer_name || order.customerName || '-';
 
   doc.rect(x, y, w, 22).fill(C.totalFill);
@@ -568,101 +421,30 @@ export async function generateSalesReportPdf(filters = {}, mode = 'full') {
     const kpiW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
     doc.y = drawKpis(doc, doc.y, [
-      { label: 'Total vendido', value: moneyBR(totalAmount), hint: `${ordersCount} pedido(s)`, color: SERIES[0] },
+      { label: 'Total vendido', value: moneyBR(totalAmount), hint: `${ordersCount} venda(s) no período`, color: SERIES[0] },
       { label: 'Custo total', value: moneyBR(totalCost), hint: `Custo ${getCostModeLabel(filters.costMode).toLowerCase()}`, color: SERIES[2] },
       { label: 'Lucro bruto', value: moneyBR(grossProfit), hint: 'Vendido - custo', color: SERIES[1] },
-      { label: 'Margem bruta', value: `${grossMargin.toFixed(1)}%`, hint: 'Lucro / vendido', color: SERIES[3] },
-    ], { x: startX, width: kpiW }) + 10;
-
-    doc.y = drawKpis(doc, doc.y, [
-      { label: 'Pedidos', value: String(ordersCount), color: SERIES[5] },
-      { label: 'Itens vendidos', value: String(itemsCount), color: SERIES[7] },
-      { label: 'Ticket médio', value: moneyBR(ticket), hint: 'Vendido / pedidos', color: SERIES[0] },
-    ], { x: startX, width: kpiW, h: 50 }) + 16;
-
-    // os gráficos lado a lado começam na mesma altura
-    const yCharts = doc.y;
+      { label: 'Margem bruta', value: `${grossMargin.toFixed(1).replace('.', ',')}%`, hint: 'Lucro / vendido', color: SERIES[3] },
+      { label: 'Ticket médio', value: moneyBR(ticket), hint: `${itemsCount.toLocaleString('pt-BR')} itens vendidos`, color: SERIES[5] },
+    ], { x: startX, width: kpiW }) + 12;
 
     // ===================================================================
-    // GRÁFICOS
+    // DASHBOARD (modelo Comissões por NF-e)
     // ===================================================================
     const byDay = data.byDay || [];
     const byCustomer = data.byCustomer || [];
-    const byProductRaw = data.byProduct || [];
-    const byProduct = byProductRaw.map((r) => ({
-      ...r,
-      product_label: `${r.product_description || ''}${r.product_unit ? ` (${r.product_unit})` : ''}`.trim(),
-    }));
+    const byProduct = data.byProduct || [];
 
-    if (modeSafe === 'full') {
-      // Gráfico 1: Vendas por Dia
-      drawBarChart(doc, byDay, {
-        x: startX,
-        y: doc.y,
-        width: 360,
-        height: 170,
-        valueKey: 'total_amount',
-        labelKey: 'day',
-        title: 'Vendas por Dia',
-        valueFormatter: (v) => moneyBR(v),
-        labelWidth: 50,
-        labelInside: false,
-        labelFormatter: (d) => formatDayShort(d),
-      });
+    const customersChart = topN(byCustomer.map((r) => ({ label: r.customer_name || '(Sem nome)', value: r.total_amount })), 5);
+    const productsChart = topWithOthers(byProduct.map((r) => ({ label: r.product_description || r.product_sku || 'Produto', value: r.total_amount })), 4);
+    const daysChart = dailySeries(byDay);
 
-      const yAfterFirst = doc.y;
-      doc.y = yCharts;
-
-      // Gráfico 2: Top Clientes
-      drawBarChart(doc, byCustomer, {
-        x: startX + 380,
-        y: doc.y,
-        width: 360,
-        height: 170,
-        valueKey: 'total_amount',
-        labelKey: 'customer_name',
-        title: 'Top Clientes (por faturamento)',
-        valueFormatter: (v) => moneyBR(v),
-        labelWidth: 90,
-        labelInside: false,
-      });
-
-      doc.y = Math.max(yAfterFirst, doc.y) + 10;
-    } else if (modeSafe === 'customers') {
-      drawBarChart(doc, byCustomer, {
-        x: startX,
-        y: doc.y,
-        width: 500,
-        height: 190,
-        valueKey: 'total_amount',
-        labelKey: 'customer_name',
-        title: 'Top Clientes (por faturamento)',
-        valueFormatter: (v) => moneyBR(v),
-        labelWidth: 120,
-        labelInside: false,
-      });
-      doc.moveDown(0.6);
-    } else if (modeSafe === 'products') {
-      const byProductForChart = (byProduct || []).map((r) => ({
-        ...r,
-        label_for_chart: `${r.product_description || 'Produto'}${r.product_unit ? ` (${r.product_unit})` : ''}`,
-      }));
-
-      drawBarChart(doc, byProductForChart, {
-        x: startX,
-        y: doc.y,
-        width: 500,
-        height: 190,
-        valueKey: 'total_amount',
-        labelKey: 'label_for_chart',
-        title: 'Top Produtos (por faturamento)',
-        valueFormatter: (v) => moneyBR(v),
-        labelInside: true,
-        labelFormatter: (s) => String(s ?? ''),
-      });
-
-      doc.moveDown(0.6);
-    }
+    doc.y = drawDashboardRow(doc, doc.y, [
+      { type: 'bars', title: 'Vendas por cliente', subtitle: 'Top 5 por valor vendido', data: customersChart },
+      { type: 'donut', title: 'Vendas por produto', subtitle: 'Participação no total vendido (top 4 + outros)', data: productsChart, centerLabel: 'vendido' },
+      { type: 'columns', title: 'Vendas por dia', subtitle: 'Evolução pela data de emissão', data: daysChart },
+    ]) + 18;
+    doc.x = startX;
 
     if (doc.y > doc.page.height - 180) doc.addPage();
     else doc.moveDown(0.5);
@@ -687,15 +469,8 @@ export async function generateSalesReportPdf(filters = {}, mode = 'full') {
         });
       }
 
-      // Rodapé
-      doc.moveDown(0.8);
-      doc
-        .fontSize(8)
-        .font('Helvetica-Oblique')
-        .fillColor('#6b7280')
-        .text(`Gerado em ${new Date().toLocaleString('pt-BR')} pelo CONSART ERP`, {
-          align: 'right',
-        });
+      // Rodapé padrão em todas as páginas
+      drawFooters(doc, { title: reportTitle, generatedAt: nowBR() });
 
       doc.end();
       return; // ✅ não cai nas tabelas normais

@@ -12,6 +12,7 @@ import {
   C, SERIES, PAGE,
   drawFullHeader, autoCompactHeader, drawFooters, drawKpis, nowBR,
 } from './consartPdfTheme.js';
+import { topN, topWithOthers, dailySeries, drawDashboardRow } from './salesPdfDashboard.js';
 import { getPdvSalesReportData } from '../repositories/pdvSalesReport/pdvSalesReport.index.js';
 import pool from '../config/db.js';
 
@@ -247,7 +248,32 @@ export async function generatePdvSalesReportPdf(filters = {}, mode = 'full') {
       { label: 'Itens vendidos', value: String(itemsCount), color: SERIES[7] },
       { label: 'Ticket médio', value: moneyBR(ticket), hint: 'Vendido / cupons', color: SERIES[2] },
       { label: 'Lucro bruto', value: moneyBR(grossProfit), hint: 'Estimado pelo custo do produto', color: SERIES[1] },
-    ], { x: startX, width: doc.page.width - doc.page.margins.left - doc.page.margins.right }) + 16;
+    ], { x: startX, width: doc.page.width - doc.page.margins.left - doc.page.margins.right }) + 12;
+
+    // ===================================================================
+    // DASHBOARD (modelo Comissões por NF-e)
+    // ===================================================================
+    const productTotals = new Map();
+    itemsFlat.forEach((it) => {
+      const key = String(it.description || it.sku || 'Produto').trim();
+      productTotals.set(key, (productTotals.get(key) || 0) + Number(it.total || 0));
+    });
+
+    doc.y = drawDashboardRow(doc, doc.y, [
+      {
+        type: 'bars', title: 'Vendas por cliente', subtitle: 'Top 5 por valor vendido',
+        data: topN(detailByCustomer.map((r) => ({ label: r.customer || 'CONSUMIDOR FINAL', value: r.total })), 5),
+      },
+      {
+        type: 'donut', title: 'Vendas por produto', subtitle: 'Participação no total vendido (top 4 + outros)', centerLabel: 'vendido',
+        data: topWithOthers([...productTotals].map(([label, value]) => ({ label, value })), 4),
+      },
+      {
+        type: 'columns', title: 'Vendas por dia', subtitle: 'Evolução pela data do cupom',
+        data: dailySeries(detailByDay, { dayKey: 'date', valueKey: 'total' }),
+      },
+    ]) + 18;
+    doc.x = startX;
 
     // ===================================================================
     // TABELAS
