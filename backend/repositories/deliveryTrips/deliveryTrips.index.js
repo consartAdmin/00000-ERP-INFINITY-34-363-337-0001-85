@@ -16,3 +16,4 @@ export {
   deleteStop,
   reorderStops,
 } from './deliveryTripsStops.repository.js';
+export { getStopImage, getStopItems, getDriverForUser } from './deliveryTripsCanhoto.repository.js';

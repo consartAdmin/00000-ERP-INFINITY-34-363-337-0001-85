@@ -85,5 +85,19 @@ export const deleteTrip = handle('deleteTrip', (req) => tripsApi.deleteTrip(req.
 export const addStops = handle('addStops', (req) => tripsApi.addStops(req.params.id, req.body), 201);
 export const reorderStops = handle('reorderStops', (req) => tripsApi.reorderStops(req.params.id, req.body?.stop_ids));
 export const updateStop = handle('updateStop', (req) => tripsApi.updateStop(req.params.stopId, req.body));
-export const setStopStatus = handle('setStopStatus', (req) => tripsApi.setStopStatus(req.params.stopId, req.body));
+export const setStopStatus = handle('setStopStatus', (req) => tripsApi.setStopStatus(req.params.stopId, req.body, req.user?.user_id));
+export const getStopItems = handle('getStopItems', (req) => tripsApi.getStopItems(req.params.stopId));
+export const getMyDriver = handle('getMyDriver', (req) => tripsApi.getDriverForUser(req.user?.user_id));
+
+/** GET /stops/:stopId/signature.png | /stops/:stopId/photo.jpg — imagem do canhoto */
+export const getStopImage = (kind) => async (req, res) => {
+  try {
+    const img = await tripsApi.getStopImage(req.params.stopId, kind);
+    res.set('Content-Type', kind === 'photo' ? 'image/jpeg' : 'image/png');
+    res.set('Cache-Control', 'private, max-age=300');
+    return res.send(img);
+  } catch (err) {
+    return fail(res, err, 'getStopImage');
+  }
+};
 export const deleteStop = handle('deleteStop', (req) => tripsApi.deleteStop(req.params.stopId));

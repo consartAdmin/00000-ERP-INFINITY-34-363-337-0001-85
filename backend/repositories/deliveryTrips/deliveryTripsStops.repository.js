@@ -9,6 +9,7 @@ import { assertTripEditable, pickStopFields } from './deliveryTrips.sanitizers.j
 import { withTransaction, lockTrip, lockStop } from './deliveryTripsLock.repository.js';
 import { assertNotScheduled, insertStops } from './deliveryTripsStopBuilder.repository.js';
 import { getTrip } from './deliveryTripsQuery.repository.js';
+import { pickProofFields, syncNfeReceipt } from './deliveryTripsCanhoto.repository.js';
 
 /* ─────────────────────────── Paradas ─────────────────────────── */
 
@@ -43,10 +44,11 @@ export async function updateStop(stopId, data = {}) {
   return getTrip(tripId);
 }
 
-export async function setStopStatus(stopId, data = {}) {
+export async function setStopStatus(stopId, data = {}, userId = null) {
   const id = toInt(stopId);
   const next = toEnum(data.status, STOP_STATUS, 'INVALID_STATUS');
-  const tripId = await withTransaction(async (client) => {
+  const proof = pickProofFields(data, next);
+  const { tripId, invoiceId } = await withTransaction(async (client) => {
     const stop = await lockStop(client, id);
     assertTripEditable({ status: stop.trip_status });
 
@@ -62,15 +64,29 @@ export async function setStopStatus(stopId, data = {}) {
       failure_reason = cleanText(data.failure_reason);
       if (!failure_reason) throw httpError('FAILURE_REASON_REQUIRED', 400);
     }
+    const closed = ['CONCLUIDA', 'FALHOU'].includes(next);
     await client.query(
       `UPDATE ${STOPS}
           SET status = $2::varchar, received_by = $3, failure_reason = $4,
-              completed_at = CASE WHEN $2::varchar IN ('CONCLUIDA','FALHOU') THEN now() ELSE NULL END
+              completed_at = CASE WHEN $2::varchar IN ('CONCLUIDA','FALHOU') THEN now() ELSE NULL END,
+              receiver_document = $5, signature_png = $6, photo_jpeg = $7,
+              delivered_lat = $8, delivered_lng = $9, gps_accuracy_m = $10,
+              completed_by = $11
         WHERE stop_id = $1`,
-      [id, next, received_by, failure_reason]
+      [
+        id, next, received_by, failure_reason,
+        proof.receiver_document, proof.signature_png, proof.photo_jpeg,
+        proof.delivered_lat, proof.delivered_lng, proof.gps_accuracy_m,
+        closed ? toInt(userId) : null,
+      ]
     );
-    return stop.trip_id;
+    return { tripId: stop.trip_id, invoiceId: stop.invoice_id };
   });
+
+  // Parada com NF-e: replica a assinatura no canhoto da NF-e (melhor esforço)
+  if (next === 'CONCLUIDA' && invoiceId && proof.signature_png) {
+    await syncNfeReceipt(invoiceId, data, proof);
+  }
   return getTrip(tripId);
 }
 
