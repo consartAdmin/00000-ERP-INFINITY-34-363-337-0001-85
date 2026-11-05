@@ -1173,6 +1173,8 @@ export async function listLotsFefo(product_stock_id, product_grade_id = null) {
   const where = [
     `l.product_stock_id = $1`,
     `(l.qty_on_hand - l.qty_reserved) > 0`,
+    // Lote bloqueado na tela Estoque por Lote não é sugerido (to_jsonb: funciona antes da coluna existir)
+    `(to_jsonb(l)->>'blocked_at') IS NULL`,
   ];
 
   if (product_grade_id !== undefined && product_grade_id !== null && product_grade_id !== '') {
@@ -1207,6 +1209,8 @@ export async function listAvailableLotsByProduct(product_stock_id, product_grade
   const where = [
     `l.product_stock_id = $1`,
     `(l.qty_on_hand - l.qty_reserved) > 0`,
+    // Lote bloqueado na tela Estoque por Lote não é sugerido (to_jsonb: funciona antes da coluna existir)
+    `(to_jsonb(l)->>'blocked_at') IS NULL`,
   ];
 
   if (product_grade_id !== undefined && product_grade_id !== null && product_grade_id !== '') {
