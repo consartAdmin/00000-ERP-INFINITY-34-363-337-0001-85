@@ -21,6 +21,7 @@ import {
   options,            // ✅ NEW
   listByProductCode,  // ✅ manter
 } from '../controllers/productsStockLotsController.js';
+import panelController from '../controllers/productsStockLotsPanelController.js';
 
 const router = Router();
 
@@ -38,6 +39,19 @@ router.get('/available/:product_stock_id', available);
 // - Param opcional: /options/641
 router.get('/options', options);
 router.get('/options/:product_stock_id', options);
+
+// ✅ Painel de lotes e validades (tela Estoque por Lote)
+router.get('/panel', panelController.panel);
+router.get('/panel/export', panelController.exportPanel);
+router.get('/product-lookup', panelController.productLookup);
+router.get('/alert-settings', panelController.getAlertSettings);
+router.put('/alert-settings', panelController.saveAlertSettings);
+router.get('/:id/panel', panelController.lotPanel);
+router.get('/:id/kardex', panelController.kardex);
+router.put('/:id/extras', panelController.saveExtras);
+router.post('/:id/block', panelController.block);
+router.post('/:id/unblock', panelController.unblock);
+router.post('/:id/move', panelController.move);
 
 // list lots (query: product_stock_id, q, onlyAvailable, page, limit, orderBy, dir)
 router.get('/', list);

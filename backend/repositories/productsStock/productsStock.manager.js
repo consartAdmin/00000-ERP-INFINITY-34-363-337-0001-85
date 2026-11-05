@@ -117,7 +117,7 @@ function modeError(message, code, modeConfig, statusCode = 422) {
   return error;
 }
 
-async function requireLotMode(options = {}) {
+export async function requireLotMode(options = {}) {
   const modeConfig = await resolveProductsStockMode(options);
 
   if (!modeConfig.isWithLot) {
