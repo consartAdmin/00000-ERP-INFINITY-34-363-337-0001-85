@@ -78,7 +78,9 @@ export const STOP_COLS = `
   s.stop_id, s.trip_id, s.stop_order, s.movement_type, s.source_type, s.order_id, s.budget_id,
   s.invoice_id, inv.nfe_number, inv.nfe_key, s.customer_id, s.recipient_name, s.tax_id, s.contact_phone, s.address, s.neighborhood,
   s.city, s.state, s.postal_code, s.volumes, s.gross_weight, s.document_amount, s.status,
-  s.received_by, s.failure_reason, s.completed_at, s.notes, s.created_at, s.updated_at`;
+  s.received_by, s.failure_reason, s.completed_at, s.notes, s.created_at, s.updated_at,
+  s.receiver_document, s.delivered_lat, s.delivered_lng, s.gps_accuracy_m, s.completed_by,
+  (s.signature_png IS NOT NULL) AS has_signature, (s.photo_jpeg IS NOT NULL) AS has_photo`;
 
 /**
  * SELECT de documentos no formato de parada.

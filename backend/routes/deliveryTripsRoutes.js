@@ -36,6 +36,7 @@ router.use(c.ensureReady);
 
 // Motoristas
 router.get('/drivers/eligible-employees', c.listEligibleEmployees);
+router.get('/drivers/me', c.getMyDriver);
 router.get('/drivers', c.listDrivers);
 router.get('/drivers/:id', c.getDriver);
 router.post('/drivers', c.createDriver);
@@ -55,6 +56,9 @@ router.get('/sources', c.listSources);
 // Paradas (rotas estáticas antes de /:id)
 router.put('/stops/:stopId', c.updateStop);
 router.patch('/stops/:stopId/status', c.setStopStatus);
+router.get('/stops/:stopId/items', c.getStopItems);
+router.get('/stops/:stopId/signature.png', c.getStopImage('signature'));
+router.get('/stops/:stopId/photo.jpg', c.getStopImage('photo'));
 router.delete('/stops/:stopId', c.deleteStop);
 
 // Rotas

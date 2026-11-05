@@ -144,6 +144,15 @@ BEGIN
 END $$;
 CREATE INDEX IF NOT EXISTS "deliveryTripStops_invoice_idx" ON public."deliveryTripStops" (invoice_id) WHERE invoice_id IS NOT NULL;
 
+-- Migração: canhoto digital (app CONSART Entregas)
+ALTER TABLE public."deliveryTripStops" ADD COLUMN IF NOT EXISTS receiver_document VARCHAR(32);
+ALTER TABLE public."deliveryTripStops" ADD COLUMN IF NOT EXISTS signature_png     BYTEA;
+ALTER TABLE public."deliveryTripStops" ADD COLUMN IF NOT EXISTS photo_jpeg        BYTEA;
+ALTER TABLE public."deliveryTripStops" ADD COLUMN IF NOT EXISTS delivered_lat     NUMERIC(10,7);
+ALTER TABLE public."deliveryTripStops" ADD COLUMN IF NOT EXISTS delivered_lng     NUMERIC(10,7);
+ALTER TABLE public."deliveryTripStops" ADD COLUMN IF NOT EXISTS gps_accuracy_m    NUMERIC(10,2);
+ALTER TABLE public."deliveryTripStops" ADD COLUMN IF NOT EXISTS completed_by      INTEGER;
+
 DO $$
 DECLARE t TEXT;
 BEGIN
