@@ -462,11 +462,11 @@ function arcPath(cx, cy, rOuter, rInner, a0, a1) {
     ].join(' ');
 }
 
-export function drawDonut(doc, area, data, centerLabel, { format = moneyShort } = {}) {
+export function drawDonut(doc, area, data, centerLabel, { format = moneyShort, maxR = 58 } = {}) {
     const total = data.reduce((s, d) => s + Math.max(0, d.value), 0);
     if (!data.length || total <= 0) return drawEmpty(doc, area);
 
-    const r = Math.min(area.ch / 2, 58);
+    const r = Math.min(area.ch / 2, maxR);
     const cx = area.cx + r + 2;
     const cy = area.cy + area.ch / 2;
 

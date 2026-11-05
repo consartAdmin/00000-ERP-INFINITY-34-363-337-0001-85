@@ -16,8 +16,12 @@ import {
   C, SERIES, PAGE,
   drawFullHeader, autoCompactHeader, drawFooters, drawKpis, nowBR,
 } from './consartPdfTheme.js';
+import { topN, topWithOthers, dailySeries, drawDashboardRow } from './salesPdfDashboard.js';
 import {
   getSalesSummary,
+  getSalesByDay,
+  getSalesByCustomer,
+  getSalesByProduct,
   getSalesOrders,
   getSalesOrderItems,
 } from '../repositories/salesReport/salesReport.index.js';
@@ -414,8 +418,13 @@ function renderOrderAsBoxes(doc, order, cols) {
  * @param {Object} filters { dateStart, dateEnd, customerId, productId }
  */
 export async function generateSalesReportOrdersPdf(filters = {}) {
-  const summary = await getSalesSummary(filters);
-  const baseOrders = await getSalesOrders(filters);
+  const [summary, baseOrders, byDay, byCustomer, byProduct] = await Promise.all([
+    getSalesSummary(filters),
+    getSalesOrders(filters),
+    getSalesByDay(filters),
+    getSalesByCustomer(filters),
+    getSalesByProduct(filters),
+  ]);
 
   const orders = [];
 
@@ -506,14 +515,25 @@ export async function generateSalesReportOrdersPdf(filters = {}) {
       { label: 'Total vendido', value: moneyBR(somaValor), hint: `${totalPedidos} pedido(s)`, color: SERIES[0] },
       { label: 'Custo total', value: moneyBR(somaCusto), color: SERIES[2] },
       { label: 'Lucro bruto', value: moneyBR(somaLucro), hint: 'Vendido - custo', color: SERIES[1] },
-      { label: 'Margem bruta', value: `${margem.toFixed(1)}%`, hint: 'Lucro / vendido', color: SERIES[3] },
-    ], { x: startX, width: kpiW }) + 10;
+      { label: 'Margem bruta', value: `${margem.toFixed(1).replace('.', ',')}%`, hint: 'Lucro / vendido', color: SERIES[3] },
+      { label: 'Ticket médio', value: moneyBR(ticketMedio), hint: `${somaItens.toLocaleString('pt-BR')} itens vendidos`, color: SERIES[5] },
+    ], { x: startX, width: kpiW }) + 12;
 
-    doc.y = drawKpis(doc, doc.y, [
-      { label: 'Pedidos', value: String(totalPedidos), color: SERIES[5] },
-      { label: 'Itens vendidos', value: String(somaItens), color: SERIES[7] },
-      { label: 'Ticket médio', value: moneyBR(ticketMedio), hint: 'Vendido / pedidos', color: SERIES[0] },
-    ], { x: startX, width: kpiW, h: 50 }) + 16;
+    // -------------------------------------------------------------------
+    // Dashboard (modelo Comissões por NF-e)
+    // -------------------------------------------------------------------
+    doc.y = drawDashboardRow(doc, doc.y, [
+      {
+        type: 'bars', title: 'Vendas por cliente', subtitle: 'Top 5 por valor vendido',
+        data: topN((byCustomer || []).map((r) => ({ label: r.customer_name || '(Sem nome)', value: r.total_amount })), 5),
+      },
+      {
+        type: 'donut', title: 'Vendas por produto', subtitle: 'Participação no total vendido (top 4 + outros)', centerLabel: 'vendido',
+        data: topWithOthers((byProduct || []).map((r) => ({ label: r.product_description || r.product_sku || 'Produto', value: r.total_amount })), 4),
+      },
+      { type: 'columns', title: 'Vendas por dia', subtitle: 'Evolução pela data de emissão', data: dailySeries(byDay || []) },
+    ]) + 18;
+    doc.x = startX;
 
     // -------------------------------------------------------------------
     // PEDIDOS (BOXES)
