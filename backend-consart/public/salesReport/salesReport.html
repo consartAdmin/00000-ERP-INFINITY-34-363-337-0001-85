@@ -138,29 +138,27 @@
             ♻️ Limpar
           </button>
 
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="sel-report-export">Exportar</label>
+            <select id="sel-report-export">
+              <option value="" selected>Selecione…</option>
+              <option value="pdf-full">🧾 PDF Completo</option>
+              <option value="pdf-products">📦 PDF Produto</option>
+              <option value="pdf-orders">📄 PDF Pedido</option>
+              <option value="excel">⬇️ Excel</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="sel-cost-mode">Custo</label>
+            <select id="sel-cost-mode">
+              <option value="current">Atual</option>
+              <option value="saleDay">Dia da Venda</option>
+            </select>
+          </div>
+
         </div>
 
-        <div class="btn-inline">
-          <button id="btn-pdf-full" class="btn btn-toolbar btn-sm" type="button">
-            🧾 PDF Completo
-          </button>
-
-          <button id="btn-pdf-products" class="btn btn-toolbar btn-sm" type="button">
-            📦 PDF Produto
-          </button>
-
-          <button id="btn-pdf-orders" class="btn btn-toolbar btn-sm" type="button">
-            📄 PDF Pedido
-          </button>
-
-          <button id="btn-export-csv" class="btn btn-toolbar btn-sm" type="button">
-            ⬇️ Excel
-          </button>
-
-          <button id="btn-cost-mode" class="btn btn-toolbar btn-sm" type="button" aria-pressed="false">
-            🧾 Custo: Atual
-          </button>
-        </div>
       </div>
     </section>
 

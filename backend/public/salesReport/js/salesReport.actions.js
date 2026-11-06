@@ -2,7 +2,7 @@
 
 import { buildPdfUrl, fetchSalesReport } from './salesReport.api.js';
 import { resetFilters } from './salesReport.filters.js';
-import { getFiltersFromDOM, toggleCostMode } from './salesReport.form.js';
+import { getCostMode, getFiltersFromDOM, setCostMode } from './salesReport.form.js';
 import { showMessage } from './salesReport.modal.js';
 import {
   renderActiveTable,
@@ -86,6 +86,26 @@ function openPdf(mode) {
   window.open(buildPdfUrl(getFiltersFromDOM(), mode), '_blank', 'noopener');
 }
 
+// Select "Exportar": gera o PDF/Excel escolhido e volta para "Selecione…".
+function handleExport(event) {
+  const select = event.currentTarget;
+  const action = select.value;
+  select.value = '';
+  if (action === 'excel') return exportCurrentTableToCsv();
+  if (action === 'pdf-full') return openPdf('full');
+  if (action === 'pdf-products') return openPdf('products');
+  if (action === 'pdf-orders') return openPdf('orders');
+}
+
+// Select "Custo": Atual / Dia da Venda (salvo no navegador) e recarrega o relatório.
+async function handleCostModeChange(event) {
+  const mode = event.currentTarget.value;
+  if (mode === getCostMode()) return;
+  setCostMode(mode);
+  updateCostModeUI();
+  await loadAndRenderSalesReport();
+}
+
 export function bindActions() {
   dom.btnBack?.addEventListener('click', () => window.history.back());
   dom.btnApply?.addEventListener('click', () => loadAndRenderSalesReport());
@@ -93,15 +113,8 @@ export function bindActions() {
     resetFilters();
     await loadAndRenderSalesReport({ initial: true });
   });
-  dom.btnExportCsv?.addEventListener('click', exportCurrentTableToCsv);
-  dom.btnPdfFull?.addEventListener('click', () => openPdf('full'));
-  dom.btnPdfProducts?.addEventListener('click', () => openPdf('products'));
-  dom.btnPdfOrders?.addEventListener('click', () => openPdf('orders'));
-  dom.btnCostMode?.addEventListener('click', async () => {
-    toggleCostMode();
-    updateCostModeUI();
-    await loadAndRenderSalesReport();
-  });
+  dom.reportExport?.addEventListener('change', handleExport);
+  dom.costModeSelect?.addEventListener('change', handleCostModeChange);
   dom.btnPreviousPage?.addEventListener('click', () => {
     if (state.page <= 1) return;
     state.page -= 1;
