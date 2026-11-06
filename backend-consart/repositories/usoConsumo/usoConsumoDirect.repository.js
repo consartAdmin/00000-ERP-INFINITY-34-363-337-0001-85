@@ -12,7 +12,7 @@ import { safeText, safeNumber } from './usoConsumo.sanitizers.js';
 import { getById } from './usoConsumoQuery.repository.js';
 import { ensureUsoConsumoSchema } from './usoConsumoSchema.repository.js';
 import { resolveProductsStockMode } from '../productsStock/productsStock.manager.js';
-import { factorsBySkus } from '../productsUnits/productsUnitsLookup.repository.js';
+import { getFactorsByProductCodes } from '../productsBarCode/productsBarCodeQuery.repository.js';
 
 const TB_PRODUCTS = 'public.products';
 const TB_STOCK = 'public."productsStock"';
@@ -120,7 +120,8 @@ export async function productInfo(productCode, { productGradeId = null } = {}) {
 
   const [stockMode, units, gradesResult] = await Promise.all([
     resolveProductsStockMode(),
-    factorsBySkus([product.product_code]),
+    // U.M. e fatores por produto ficam em productsBarCode (mesma fonte do Orçamento).
+    getFactorsByProductCodes(pool, [product.product_code]).catch(() => []),
     pool.query(
       `
         SELECT pg.product_grade_id, g.grade, g.description
@@ -138,6 +139,15 @@ export async function productInfo(productCode, { productGradeId = null } = {}) {
     ? await loadLots(product.product_stock_id, positiveInt(productGradeId))
     : [];
 
+  const unitList = (units || [])
+    .filter((u) => String(u.unit || '').trim())
+    .map((u) => ({
+      unit: String(u.unit).trim().toUpperCase(),
+      factor: Number(u.factor ?? u.fator ?? 1) || 1,
+      standard: Boolean(u.standard),
+    }))
+    .sort((a, b) => Number(b.standard) - Number(a.standard) || a.factor - b.factor);
+
   return {
     product_code: product.product_code,
     product_id: product.product_id,
@@ -146,9 +156,7 @@ export async function productInfo(productCode, { productGradeId = null } = {}) {
     stock_qty: Number(product.stock_qty || 0),
     stock_mode: stockMode.mode,
     require_lot: Boolean(stockMode.requireLot),
-    units: units.length
-      ? units.map((u) => ({ unit: u.unit, factor: u.factor, standard: u.standard }))
-      : [{ unit: 'UN', factor: 1, standard: true }],
+    units: unitList.length ? unitList : [{ unit: 'UN', factor: 1, standard: true }],
     grades: gradesResult.rows.map((g) => ({
       product_grade_id: g.product_grade_id,
       label: safeText(g.description || g.grade) || String(g.grade || ''),
