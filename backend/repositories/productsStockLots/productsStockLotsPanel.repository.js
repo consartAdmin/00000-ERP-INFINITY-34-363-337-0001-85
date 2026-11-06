@@ -500,6 +500,88 @@ export async function setLotBlocked(lotId, blocked, reason = null) {
   return res.rows[0] || null;
 }
 
+/* ──────────────────────────────────────────────────────────────
+   Dashboard da home (Início → Estoque · Validade dos lotes)
+   Só lotes com saldo (qty_on_hand > 0), ativos.
+────────────────────────────────────────────────────────────── */
+export async function getDashboard({ upcomingLimit = 8, months = 6 } = {}) {
+  await ensurePanelSchema();
+  const settings = await getAlertSettings();
+  const cte = buildBaseCte(settings);
+  const valueSql = 'r.qty_on_hand * COALESCE(r.cost_unit, r.product_cost_price, 0)';
+  const monthsN = Math.max(1, Math.min(12, Math.trunc(Number(months) || 6)));
+  const limitN = Math.max(1, Math.min(50, Math.trunc(Number(upcomingLimit) || 8)));
+
+  const [summaryRes, upcomingRes, expiredRes, monthsRes, extraRes] = await Promise.all([
+    pool.query(`${cte}
+      SELECT r.situation, COUNT(*)::int AS lots,
+             COALESCE(SUM(r.qty_on_hand), 0)::numeric AS qty,
+             COALESCE(SUM(${valueSql}), 0)::numeric AS value
+        FROM ranked r WHERE r.qty_on_hand > 0 GROUP BY r.situation`),
+    pool.query(`${cte}
+      SELECT r.lot_id, r.lot_code, r.expires_at, r.days_left, r.situation, r.fefo_rank,
+             r.product_code, r.product_description, r.qty_available, r.qty_on_hand,
+             (${valueSql})::numeric AS value, r.blocked_at
+        FROM ranked r
+       WHERE r.qty_on_hand > 0 AND r.days_left >= 0
+       ORDER BY r.expires_at ASC, r.lot_id ASC
+       LIMIT ${limitN}`),
+    pool.query(`${cte}
+      SELECT COUNT(*)::int AS lots, COALESCE(SUM(${valueSql}), 0)::numeric AS value
+        FROM ranked r WHERE r.qty_on_hand > 0 AND r.days_left < 0`),
+    pool.query(`${cte}
+      SELECT to_char(date_trunc('month', r.expires_at), 'YYYY-MM') AS month,
+             r.situation,
+             COUNT(*)::int AS lots,
+             COALESCE(SUM(${valueSql}), 0)::numeric AS value
+        FROM ranked r
+       WHERE r.qty_on_hand > 0
+         AND r.expires_at >= date_trunc('month', CURRENT_DATE)
+         AND r.expires_at < date_trunc('month', CURRENT_DATE) + interval '${monthsN} months'
+       GROUP BY 1, 2`),
+    pool.query(`${cte}
+      SELECT COUNT(*) FILTER (WHERE r.blocked_at IS NOT NULL)::int AS blocked_lots,
+             COUNT(*)::int AS lots_with_balance
+        FROM ranked r WHERE r.qty_on_hand > 0`),
+  ]);
+
+  const byKey = new Map(summaryRes.rows.map((row) => [row.situation, row]));
+  const situations = describeSituations(settings).map((s) => ({
+    ...s,
+    lots: Number(byKey.get(s.key)?.lots || 0),
+    qty: Number(byKey.get(s.key)?.qty || 0),
+    value: Number(byKey.get(s.key)?.value || 0),
+  }));
+
+  const today = new Date();
+  const monthList = Array.from({ length: monthsN }, (_, i) => {
+    const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + i, 1));
+    return d.toISOString().slice(0, 7);
+  });
+  const byMonth = monthList.map((month) => {
+    const rows = monthsRes.rows.filter((row) => row.month === month);
+    return {
+      month,
+      lots: rows.reduce((sum, row) => sum + Number(row.lots || 0), 0),
+      value: rows.reduce((sum, row) => sum + Number(row.value || 0), 0),
+      bySituation: Object.fromEntries(rows.map((row) => [row.situation, Number(row.value || 0)])),
+    };
+  });
+
+  return {
+    enabled: settings.notify_dashboard !== false,
+    situations,
+    upcoming: upcomingRes.rows,
+    expired: {
+      lots: Number(expiredRes.rows[0]?.lots || 0),
+      value: Number(expiredRes.rows[0]?.value || 0),
+    },
+    blockedLots: Number(extraRes.rows[0]?.blocked_lots || 0),
+    lotsWithBalance: Number(extraRes.rows[0]?.lots_with_balance || 0),
+    byMonth,
+  };
+}
+
 /** Lote com dados do produto + situação, para validar operações da tela. */
 export async function getLotPanelRow(lotId) {
   await ensurePanelSchema();
@@ -584,6 +666,7 @@ export async function lookupProduct(code) {
 }
 
 export default {
+  getDashboard,
   lookupProduct,
   ensurePanelSchema,
   getAlertSettings,
