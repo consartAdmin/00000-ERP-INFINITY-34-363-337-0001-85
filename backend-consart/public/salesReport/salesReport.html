@@ -63,6 +63,46 @@
       display: none !important;
     }
 
+    /* Título com ícone SVG de linha (mesmo estilo dos actionIcons) */
+    .page-sales-report .sr-title-icon {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .page-sales-report .sr-title-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: #174a7e;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Lupa ao passar o mouse nos campos que abrem modal de busca */
+    .page-sales-report .sr-modal-input {
+      cursor: pointer;
+      padding-right: 22px;
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      background-size: 13px 13px;
+    }
+
+    .page-sales-report .sr-modal-input:hover,
+    .page-sales-report .sr-modal-input:focus {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23174a7e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+    }
+
+    /* Rodapé: indicadores ocupam o espaço livre; paginação e "Mostrar" à direita */
+    .page-sales-report .table-footer {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .page-sales-report .table-footer .table-footer__info--totals .summary-pill {
+      padding: 0 10px;
+    }
+
     .page-sales-report .sr-filter-hint {
       margin: 0;
       align-self: center;
@@ -77,8 +117,12 @@
          ║ FILTROS                                                     ║
          ╚══════════════════════════════════════════════════════════════╝ -->
     <section class="table-layout-integrated" aria-labelledby="sales-filters-title">
+      <div class="tabs">
       <div class="table-layout-integrated__filter">
-        <h2 class="sr-section-title" id="sales-filters-title">Filtros</h2>
+        <h2 class="sr-section-title sr-title-icon" id="sales-filters-title">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5Z"/></svg>
+          Filtros
+        </h2>
 
         <div class="fields fields-inline fields-gap-3">
           <div class="fields fields-w-14 fields-h-6 fields-font-3">
@@ -88,19 +132,19 @@
 
           <div class="fields fields-h-6 fields-w-12 fields-font-3">
             <label for="filter-seller-id">Vendedor</label>
-            <input id="filter-seller-id" class="sr-modal-input" type="text" placeholder="Clique para selecionar"
+            <input id="filter-seller-id" class="sr-modal-input" type="text" placeholder="Buscar…"
               autocomplete="off" readonly />
           </div>
 
           <div class="fields fields-h-6 fields-w-12 fields-font-3">
             <label for="filter-customer-id">Cliente</label>
-            <input id="filter-customer-id" class="sr-modal-input" type="text" placeholder="Clique para selecionar"
+            <input id="filter-customer-id" class="sr-modal-input" type="text" placeholder="Buscar…"
               autocomplete="off" readonly />
           </div>
 
           <div class="fields fields-h-6 fields-w-12 fields-font-3">
             <label for="filter-product-id">Produto</label>
-            <input id="filter-product-id" class="sr-modal-input" type="text" placeholder="Clique para selecionar"
+            <input id="filter-product-id" class="sr-modal-input" type="text" placeholder="Buscar…"
               autocomplete="off" readonly />
           </div>
 
@@ -138,7 +182,7 @@
             ♻️ Limpar
           </button>
 
-          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
             <label for="sel-report-type">Tipo de Relatório</label>
             <select id="sel-report-type">
               <option value="full">Completo</option>
@@ -147,7 +191,7 @@
             </select>
           </div>
 
-          <div class="fields fields-h-6 fields-w-6 fields-font-3">
+          <div class="fields fields-h-6 fields-w-5 fields-font-3">
             <label for="sel-report-format">PDF / Excel</label>
             <select id="sel-report-format">
               <option value="pdf">PDF</option>
@@ -155,7 +199,7 @@
             </select>
           </div>
 
-          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
             <label for="sel-cost-mode">Custo</label>
             <select id="sel-cost-mode">
               <option value="current">Atual</option>
@@ -168,48 +212,6 @@
           </button>
 
         </div>
-
-      </div>
-    </section>
-
-    <!-- ╔══════════════════════════════════════════════════════════════╗
-         ║ INDICADORES E DETALHAMENTO                                  ║
-         ╚══════════════════════════════════════════════════════════════╝ -->
-    <section class="table-layout-integrated" aria-labelledby="sales-details-title">
-      <div class="tabs">
-        <div class="table-layout-integrated__filter">
-          <section aria-labelledby="sales-summary-title">
-            <h2 class="sr-section-title" id="sales-summary-title">Indicadores</h2>
-
-            <div class="summary summary--left summary-gap-8 summary--mobile-full">
-              <div class="summary-pill summary-pill--success summary-width-7 summary-height-5">
-                Total vendido:&nbsp;
-                <strong id="summary-total">R$ 0,00</strong>
-              </div>
-
-              <div class="summary-pill summary-pill--info summary-width-5 summary-height-5">
-                Pedidos:&nbsp;
-                <strong id="summary-orders">0</strong>
-              </div>
-
-              <div class="summary-pill summary-pill--info summary-width-6 summary-height-5">
-                Itens vendidos:&nbsp;
-                <strong id="summary-items">0</strong>
-              </div>
-
-              <div class="summary-pill summary-pill--warning summary-width-7 summary-height-5">
-                Ticket médio:&nbsp;
-                <strong id="summary-ticket">R$ 0,00</strong>
-              </div>
-
-              <div class="summary-pill summary-pill--success summary-width-8 summary-height-5">
-                Lucro bruto:&nbsp;
-                <strong id="summary-gross-profit">R$ 0,00</strong>
-              </div>
-            </div>
-          </section>
-
-          <h2 class="sr-section-title" id="sales-details-title">Detalhamento</h2>
 
           <nav class="tab-list" role="tablist" aria-label="Visualização do relatório de vendas">
             <button class="tab is-active" id="tab-day" type="button" role="tab" data-tab="day" aria-selected="true"
@@ -227,7 +229,7 @@
               📦 Por produto
             </button>
           </nav>
-        </div>
+      </div>
 
         <!-- ABA: POR DIA -->
         <div class="tab-panel is-active" id="tab-panel-day" role="tabpanel" data-panel="day" aria-labelledby="tab-day"
@@ -311,9 +313,34 @@
 
         <!-- Rodapé único compartilhado pelas três abas -->
         <footer class="table-footer">
-          <div class="table-footer__info">
+          <div class="table-footer__info table-footer__info--totals">
             <div class="summary-pill summary-pill--success summary-width-5 summary-left-space-3">
               <span id="apTableInfo">0 registros encontrados</span>
+            </div>
+
+            <div class="summary-pill">
+              <span>Total vendido:&nbsp;</span>
+              <strong id="summary-total" class="table-footer__total--success">R$ 0,00</strong>
+            </div>
+
+            <div class="summary-pill">
+              <span>Pedidos:&nbsp;</span>
+              <strong id="summary-orders" class="table-footer__total--info">0</strong>
+            </div>
+
+            <div class="summary-pill">
+              <span>Itens vendidos:&nbsp;</span>
+              <strong id="summary-items" class="table-footer__total--info">0</strong>
+            </div>
+
+            <div class="summary-pill">
+              <span>Ticket médio:&nbsp;</span>
+              <strong id="summary-ticket" class="table-footer__total--info">R$ 0,00</strong>
+            </div>
+
+            <div class="summary-pill">
+              <span>Lucro bruto:&nbsp;</span>
+              <strong id="summary-gross-profit" class="table-footer__total--success">R$ 0,00</strong>
             </div>
           </div>
 
