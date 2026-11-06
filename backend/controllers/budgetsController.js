@@ -1678,10 +1678,13 @@ export async function copyBudget(req, res) {
       ? req.body.item_ids
       : null;
 
+    // items (optional): [{ budget_item_id, quantity, unit_code, lot_id }] edited in the modal
+    const items = Array.isArray(req.body?.items) ? req.body.items : null;
+
     const out = await budgetsApi.copyFromBudget(
       id,
       getBudgetApiContext(req, userId),
-      { itemIds }
+      { itemIds, items }
     );
 
     if (!out?.ok) {
@@ -1703,6 +1706,34 @@ export async function copyBudget(req, res) {
     });
   } catch (err) {
     console.error('[budgetsController.copyBudget] erro:', err);
+    return res.status(500).json(errorPayload(err));
+  }
+}
+
+// Copy modal: source items + available lots (FEFO) + suggested lot
+export async function getBudgetCopyOptions(req, res) {
+  setNoCache(res);
+
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ ok: false, error: 'ID inválido' });
+    }
+
+    const userId = getUserIdFromReq(req);
+    if (!userId) {
+      return res.status(401).json({ ok: false, error: 'UNAUTHORIZED' });
+    }
+
+    const out = await budgetsApi.getCopyOptions(id, getBudgetApiContext(req, userId));
+
+    if (!out?.ok) {
+      return res.status(out?.error === 'NOT_FOUND' ? 404 : 400).json(out);
+    }
+
+    return res.json(out);
+  } catch (err) {
+    console.error('[budgetsController.getBudgetCopyOptions] erro:', err);
     return res.status(500).json(errorPayload(err));
   }
 }

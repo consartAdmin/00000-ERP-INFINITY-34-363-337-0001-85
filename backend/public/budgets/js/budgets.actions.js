@@ -1543,7 +1543,39 @@ function fmtCopyQty(value) {
   });
 }
 
+function fmtCopyDate(value) {
+  if (!value) return '';
+  const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(value);
+}
+
+function parseCopyQty(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return NaN;
+  // Accepts 1.234,5 (pt-BR) and 1234.5
+  const normalized = raw.includes(',')
+    ? raw.replace(/\./g, '').replace(',', '.')
+    : raw;
+  return Number(normalized);
+}
+
+// Items of the source budget + available lots (FEFO) and the suggested lot.
+// Falls back to the plain budget items when the API is older.
 async function fetchBudgetItemsForCopy(budgetId) {
+  const opts = await fetchSafe(ROUTES.copyBudgetOptions(budgetId), {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+
+  if (opts.ok && Array.isArray(opts.json?.items)) {
+    return {
+      withLot: !!opts.json.with_lot,
+      items: opts.json.items.filter((it) => Number(it?.budget_item_id) > 0),
+    };
+  }
+
+  if (!opts.ok && handleAuthFail(opts.status, opts.text)) return null;
+
   const out = await fetchSafe(ROUTES.budgetById(budgetId), {
     method: 'GET',
     headers: authHeaders(),
@@ -1556,7 +1588,10 @@ async function fetchBudgetItemsForCopy(budgetId) {
   }
 
   const items = Array.isArray(out.json?.items) ? out.json.items : [];
-  return items.filter((it) => Number(it?.budget_item_id) > 0);
+  return {
+    withLot: false,
+    items: items.filter((it) => Number(it?.budget_item_id) > 0),
+  };
 }
 
 // Built on demand and appended to <body>: in budgets.html the markup
@@ -1573,12 +1608,12 @@ function ensureCopyBudgetModal() {
     <div class="modal__backdrop" data-modal-close></div>
 
     <div class="modal__dialog">
-      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true"
+      <section class="modal__panel modal-width-10" role="dialog" aria-modal="true"
         aria-labelledby="copyBudgetModalTitle" tabindex="-1">
         <header class="modal__header modal-header-color-3">
           <div>
             <h2 id="copyBudgetModalTitle" class="modal__title">Copiar orçamento</h2>
-            <p class="modal__subtitle">Marque os produtos que irão para o novo orçamento.</p>
+            <p class="modal__subtitle" id="copyBudgetModalSubtitle">Marque os produtos que irão para o novo orçamento.</p>
           </div>
           <button type="button" class="modal__close" data-modal-close
             title="Fechar" aria-label="Fechar">&times;</button>
@@ -1595,7 +1630,8 @@ function ensureCopyBudgetModal() {
                   </th>
                   <th>Código</th>
                   <th>Descrição</th>
-                  <th class="num">Qtd</th>
+                  <th class="num copy-budget-col-qty">Qtd / U.M.</th>
+                  <th class="copy-budget-col-lot">Lote</th>
                   <th class="num">Vlr. unit.</th>
                   <th class="num">Total</th>
                 </tr>
@@ -1603,7 +1639,10 @@ function ensureCopyBudgetModal() {
               <tbody id="copyBudgetItemsBody"></tbody>
             </table>
           </div>
-          <p class="copy-budget-summary" id="copyBudgetSummary"></p>
+          <div class="copy-budget-foot">
+            <p class="copy-budget-summary" id="copyBudgetSummary"></p>
+            <p class="copy-budget-total" id="copyBudgetTotal"></p>
+          </div>
         </div>
 
         <footer class="modal__footer modal-footer-color-3">
@@ -1618,21 +1657,94 @@ function ensureCopyBudgetModal() {
   return modal;
 }
 
-// Resolves with the checked budget_item_id list, or null when cancelled.
-function pickItemsToCopy(budgetId, items) {
+function copyItemUnits(it) {
+  const current = String(it.unit_code ?? it.unit ?? 'UN').trim().toUpperCase() || 'UN';
+  const list = (Array.isArray(it.units) ? it.units : [])
+    .map((u) => ({
+      unit: String(u.unit ?? '').trim().toUpperCase(),
+      fator: Number(u.fator ?? u.factor ?? 1) || 1,
+    }))
+    .filter((u) => u.unit);
+
+  if (!list.some((u) => u.unit === current)) {
+    list.unshift({ unit: current, fator: Number(it.conversion_factor || 1) || 1 });
+  }
+
+  return { current, list };
+}
+
+function renderCopyUnit(it) {
+  const { current, list } = copyItemUnits(it);
+
+  if (list.length <= 1) {
+    return `<span class="copy-budget-unit" data-unit="${escapeCopyHtml(current)}"
+      data-fator="${list[0]?.fator || 1}">${escapeCopyHtml(current)}</span>`;
+  }
+
+  const options = list.map((u) => `
+    <option value="${escapeCopyHtml(u.unit)}" data-fator="${u.fator}"
+      ${u.unit === current ? 'selected' : ''}>${escapeCopyHtml(u.unit)}${u.fator !== 1 ? ` (${fmtCopyQty(u.fator)})` : ''}</option>
+  `).join('');
+
+  return `<select class="copy-budget-um" aria-label="U.M. de ${escapeCopyHtml(it.description)}">${options}</select>`;
+}
+
+function renderCopyLotSelect(it) {
+  const lots = Array.isArray(it.lots) ? it.lots : [];
+  const suggested = Number(it.suggested_lot_id) || null;
+
+  if (!lots.length) {
+    return `<span class="copy-budget-no-lot">Sem lote com saldo</span>`;
+  }
+
+  const options = lots.map((lot) => {
+    const id = Number(lot.lot_id);
+    const label = [
+      lot.lot_code || `Lote ${id}`,
+      lot.expires_at ? `val. ${fmtCopyDate(lot.expires_at)}` : 'sem validade',
+      `saldo ${fmtCopyQty(lot.qty_available)}`,
+    ].join(' • ');
+
+    return `<option value="${id}" data-available="${Number(lot.qty_available || 0)}"
+      ${id === suggested ? 'selected' : ''}>${escapeCopyHtml(label)}</option>`;
+  }).join('');
+
+  return `
+    <select class="copy-budget-lot" aria-label="Lote de ${escapeCopyHtml(it.description)}">
+      ${suggested ? '' : '<option value="">Automático (FEFO)</option>'}
+      ${options}
+    </select>
+  `;
+}
+
+// Resolves with [{ budget_item_id, quantity, unit_code, lot_id }] for the checked
+// rows, or null when cancelled.
+function pickItemsToCopy(budgetId, items, withLot = false) {
   const modal = ensureCopyBudgetModal();
   const body = $('#copyBudgetItemsBody');
   const selectAll = $('#copyBudgetSelectAll');
   const summary = $('#copyBudgetSummary');
+  const totalEl = $('#copyBudgetTotal');
   const confirmBtn = $('#btnCopyBudgetConfirm');
   const title = $('#copyBudgetModalTitle');
+  const subtitle = $('#copyBudgetModalSubtitle');
 
   if (!modal || !body || !selectAll || !confirmBtn) {
     const ok = window.confirm(`Deseja copiar o orçamento #${budgetId}?`);
-    return Promise.resolve(ok ? items.map((it) => Number(it.budget_item_id)) : null);
+    return Promise.resolve(ok
+      ? items.map((it) => ({ budget_item_id: Number(it.budget_item_id), quantity: Number(it.quantity || 0), lot_id: null }))
+      : null);
   }
 
   if (title) title.textContent = `Copiar orçamento #${budgetId}`;
+  if (subtitle) {
+    subtitle.textContent = withLot
+      ? 'Marque os produtos, ajuste a quantidade, a U.M. e o lote. O lote sugerido segue o FEFO (vence primeiro).'
+      : 'Marque os produtos e ajuste a quantidade e a U.M. do novo orçamento.';
+  }
+  modal.classList.toggle('copy-budget-no-lots', !withLot);
+
+  const byId = new Map(items.map((it) => [Number(it.budget_item_id), it]));
 
   body.innerHTML = items.map((it) => {
     const qty = Number(it.quantity || 0);
@@ -1646,22 +1758,95 @@ function pickItemsToCopy(budgetId, items) {
             aria-label="Copiar ${escapeCopyHtml(it.description)}" />
         </td>
         <td>${escapeCopyHtml(it.product_code ?? it.sku ?? '')}</td>
-        <td>${escapeCopyHtml(it.description)}</td>
-        <td class="num">${fmtCopyQty(qty)} ${escapeCopyHtml(it.unit_code ?? '')}</td>
-        <td class="num">${fmtMoney(unitPrice)}</td>
-        <td class="num">${fmtMoney(total)}</td>
+        <td class="copy-budget-desc">${escapeCopyHtml(it.description)}</td>
+        <td class="num copy-budget-col-qty">
+          <div class="copy-budget-qty-wrap">
+            <input type="text" inputmode="decimal" class="copy-budget-qty"
+              value="${fmtCopyQty(qty)}" aria-label="Quantidade de ${escapeCopyHtml(it.description)}" />
+            ${renderCopyUnit(it)}
+          </div>
+        </td>
+        <td class="copy-budget-col-lot">${withLot ? renderCopyLotSelect(it) : ''}</td>
+        <td class="num copy-budget-unit-price">${fmtMoney(unitPrice)}</td>
+        <td class="num copy-budget-line-total">${fmtMoney(total)}</td>
       </tr>
     `;
   }).join('');
 
   const getChecks = () => [...body.querySelectorAll('.copy-budget-item-check')];
 
+  const rowQty = (row) => parseCopyQty(row.querySelector('.copy-budget-qty')?.value);
+
+  // Selected U.M. of the row: { unit, fator }
+  const rowUnit = (row) => {
+    const sel = row.querySelector('.copy-budget-um');
+    if (sel) {
+      const opt = sel.selectedOptions?.[0];
+      return { unit: sel.value, fator: Number(opt?.dataset.fator || 1) || 1 };
+    }
+    const span = row.querySelector('.copy-budget-unit');
+    return {
+      unit: span?.dataset.unit || '',
+      fator: Number(span?.dataset.fator || 1) || 1,
+    };
+  };
+
+  // Line total (discount proportional to the quantity, as the backend does)
+  // + lot balance warning.
+  const refreshRow = (row) => {
+    const it = byId.get(Number(row.dataset.itemId));
+    if (!it) return 0;
+
+    const qty = rowQty(row);
+    const validQty = Number.isFinite(qty) && qty > 0;
+    const srcQty = Number(it.quantity || 0);
+    const srcPrice = Number(it.unit_price || 0);
+    const srcFactor = Number(it.conversion_factor || 1) || 1;
+    const { fator } = rowUnit(row);
+
+    // Same rule as the editor: base price x unit factor.
+    const unitPrice = fator === srcFactor ? srcPrice : (srcPrice / srcFactor) * fator;
+    const srcGross = srcQty * srcPrice;
+    const gross = validQty ? qty * unitPrice : 0;
+    const discount = srcGross > 0 ? Number(it.discount_value || 0) * (gross / srcGross) : 0;
+    const total = Math.max(0, gross - discount);
+
+    row.querySelector('.copy-budget-qty')?.classList.toggle('is-invalid', !validQty);
+    const priceCell = row.querySelector('.copy-budget-unit-price');
+    if (priceCell) priceCell.textContent = fmtMoney(unitPrice);
+    const totalCell = row.querySelector('.copy-budget-line-total');
+    if (totalCell) totalCell.textContent = fmtMoney(total);
+
+    const sel = row.querySelector('.copy-budget-lot');
+    if (sel) {
+      const opt = sel.selectedOptions?.[0];
+      const available = opt && opt.value ? Number(opt.dataset.available || 0) : null;
+      // Lot balance is in the base unit.
+      const short = available != null && validQty && qty * fator > available;
+      sel.classList.toggle('is-short', short);
+      sel.title = short
+        ? `Saldo do lote (${fmtCopyQty(available)}) menor que a quantidade.`
+        : '';
+    }
+
+    return total;
+  };
+
   const refresh = () => {
     const checks = getChecks();
     const checkedCount = checks.filter((c) => c.checked).length;
+    let sum = 0;
 
     checks.forEach((c) => {
-      c.closest('tr')?.classList.toggle('is-unchecked', !c.checked);
+      const row = c.closest('tr');
+      row?.classList.toggle('is-unchecked', !c.checked);
+      if (row) {
+        row.querySelectorAll('.copy-budget-qty, .copy-budget-um, .copy-budget-lot').forEach((el) => {
+          el.disabled = !c.checked;
+        });
+        const lineTotal = refreshRow(row);
+        if (c.checked) sum += lineTotal;
+      }
     });
 
     selectAll.checked = checkedCount === checks.length;
@@ -1670,6 +1855,11 @@ function pickItemsToCopy(budgetId, items) {
 
     if (summary) {
       summary.textContent = `${checkedCount} de ${checks.length} produto(s) selecionado(s).`;
+    }
+    if (totalEl) {
+      totalEl.textContent = checkedCount
+        ? `Total dos produtos: R$ ${fmtMoney(sum)}`
+        : '';
     }
   };
 
@@ -1685,7 +1875,10 @@ function pickItemsToCopy(budgetId, items) {
       const row = e.target.closest('tr[data-item-id]');
       if (!row) return;
 
-      // Clicking anywhere on the row toggles its checkbox.
+      // Editing quantity / lot must not toggle the row.
+      if (e.target.closest('input.copy-budget-qty, select.copy-budget-um, select.copy-budget-lot')) return;
+
+      // Clicking anywhere else on the row toggles its checkbox.
       if (!e.target.classList.contains('copy-budget-item-check')) {
         const check = row.querySelector('.copy-budget-item-check');
         if (check) check.checked = !check.checked;
@@ -1694,24 +1887,50 @@ function pickItemsToCopy(budgetId, items) {
       refresh();
     };
 
-    const onConfirm = () => {
-      const ids = getChecks()
-        .filter((c) => c.checked)
-        .map((c) => Number(c.closest('tr')?.dataset.itemId))
-        .filter((v) => Number.isFinite(v) && v > 0);
+    const onBodyInput = (e) => {
+      if (e.target.closest('.copy-budget-qty, .copy-budget-um, .copy-budget-lot')) refresh();
+    };
 
-      if (!ids.length) {
+    const onConfirm = () => {
+      const rows = getChecks()
+        .filter((c) => c.checked)
+        .map((c) => c.closest('tr'))
+        .filter(Boolean);
+
+      if (!rows.length) {
         toast.warn('Atenção', 'Selecione ao menos um produto para copiar.');
         return;
       }
 
-      result = ids;
+      const picked = [];
+      for (const row of rows) {
+        const id = Number(row.dataset.itemId);
+        const qty = rowQty(row);
+
+        if (!Number.isFinite(qty) || qty <= 0) {
+          toast.warn('Atenção', `Informe uma quantidade válida para ${byId.get(id)?.description || 'o produto'}.`);
+          row.querySelector('.copy-budget-qty')?.focus();
+          return;
+        }
+
+        const lotVal = row.querySelector('.copy-budget-lot')?.value;
+        picked.push({
+          budget_item_id: id,
+          quantity: qty,
+          unit_code: rowUnit(row).unit || null,
+          lot_id: lotVal ? Number(lotVal) : null,
+        });
+      }
+
+      result = picked;
       Modal.close(modal);
     };
 
     const onClose = () => {
       selectAll.removeEventListener('change', onSelectAll);
       body.removeEventListener('click', onBodyClick);
+      body.removeEventListener('input', onBodyInput);
+      body.removeEventListener('change', onBodyInput);
       confirmBtn.removeEventListener('click', onConfirm);
       modal.removeEventListener('modal:close', onClose);
       body.innerHTML = '';
@@ -1720,6 +1939,8 @@ function pickItemsToCopy(budgetId, items) {
 
     selectAll.addEventListener('change', onSelectAll);
     body.addEventListener('click', onBodyClick);
+    body.addEventListener('input', onBodyInput);
+    body.addEventListener('change', onBodyInput);
     confirmBtn.addEventListener('click', onConfirm);
     modal.addEventListener('modal:close', onClose);
 
@@ -1735,14 +1956,15 @@ export async function copyBudget(id) {
     return toast.error('Erro', 'ID do orçamento inválido.');
   }
 
-  const items = await fetchBudgetItemsForCopy(budgetId);
-  if (!items) return;
+  const loaded = await fetchBudgetItemsForCopy(budgetId);
+  if (!loaded) return;
 
-  let itemIds = null;
+  const { items, withLot } = loaded;
+  let picked = null;
 
   if (items.length) {
-    itemIds = await pickItemsToCopy(budgetId, items);
-    if (!itemIds) return;
+    picked = await pickItemsToCopy(budgetId, items, withLot);
+    if (!picked) return;
   } else {
     const confirmed = window.confirm(`Deseja copiar o orçamento #${budgetId}?`);
     if (!confirmed) return;
@@ -1760,7 +1982,11 @@ export async function copyBudget(id) {
       'x-budget-key': key,
       'x-budget-copy-key': key,
     }),
-    body: JSON.stringify(itemIds ? { key, item_ids: itemIds } : { key }),
+    body: JSON.stringify(
+      picked
+        ? { key, item_ids: picked.map((p) => p.budget_item_id), items: picked }
+        : { key }
+    ),
   });
 
   if (!out.ok) {

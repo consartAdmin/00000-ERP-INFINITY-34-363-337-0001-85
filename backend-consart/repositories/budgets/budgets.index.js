@@ -18,7 +18,7 @@ import { create } from './budgetsCreate.repository.js';
 import { update } from './budgetsUpdate.repository.js';
 import { remove } from './budgetsRemove.repository.js';
 import { getTotals } from './budgetsTotals.repository.js';
-import { copyFromBudget } from './budgetsCopy.repository.js';
+import { copyFromBudget, getCopyOptions } from './budgetsCopy.repository.js';
 
 export {
   ensureTables,
@@ -30,6 +30,7 @@ export {
   remove,
   getTotals,
   copyFromBudget,
+  getCopyOptions,
 };
 
 // ----------------------------------------------------------------------
@@ -45,6 +46,7 @@ const budgetsApi = {
   remove,
   getTotals,
   copyFromBudget,
+  getCopyOptions,
 };
 
 export default budgetsApi;
