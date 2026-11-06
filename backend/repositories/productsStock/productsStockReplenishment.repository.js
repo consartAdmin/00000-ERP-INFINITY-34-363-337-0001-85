@@ -228,7 +228,7 @@ export async function getSettings() {
 
 export async function listSuppliersReplenishment() {
   await ensureReplenishmentSchema();
-  // Fornecedores com produto vinculado (por qualquer origem) ou com prazo/pedido mínimo já informado
+  // Todos os fornecedores ativos (com a quantidade de produtos vinculados por qualquer origem)
   const { rows } = await pool.query(`
     WITH ${supplierLinkCtes()},
     counts AS (
@@ -243,7 +243,8 @@ export async function listSuppliersReplenishment() {
            s.lead_time_days, s.min_order_value, COALESCE(c.products, 0)::int AS products
       FROM ${TB_SUPPLIERS} s
       LEFT JOIN counts c ON c.supplier_id = s.supplier_id
-     WHERE c.products > 0 OR s.lead_time_days IS NOT NULL OR s.min_order_value IS NOT NULL
+     WHERE COALESCE((to_jsonb(s)->>'is_active')::boolean, true) = true
+        OR c.products > 0 OR s.lead_time_days IS NOT NULL OR s.min_order_value IS NOT NULL
      ORDER BY COALESCE(c.products, 0) DESC, 2 ASC
   `);
   const { rows: none } = await pool.query(`
@@ -430,6 +431,13 @@ function buildFilters(filters = {}, startIndex) {
       where.push(`r.${col} = $${idx++}`);
       values.push(id);
     }
+  }
+
+  // Nome digitado no campo Fornecedor (parte do nome)
+  const supplierQ = String(filters.supplier_q || '').trim();
+  if (supplierQ) {
+    where.push(`r.supplier_name ILIKE $${idx++}`);
+    values.push(`%${supplierQ}%`);
   }
 
   const supplier = String(filters.supplier_id ?? '').trim();

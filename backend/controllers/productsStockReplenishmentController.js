@@ -39,6 +39,7 @@ function filtersFrom(query = {}) {
     group_id: query.group_id,
     subgroup_id: query.subgroup_id,
     supplier_id: query.supplier_id,
+    supplier_q: query.supplier_q,
     with_sales: query.with_sales,
     sort: query.sort,
     dir: query.dir,
