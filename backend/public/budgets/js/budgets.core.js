@@ -94,6 +94,7 @@ export const ROUTES = Object.freeze({
   printPdf: (id) => `${API_BASE}/api/budgets/${encodeURIComponent(id)}/pdf`,
   toOrder: (id) => `${API_BASE}/api/budgets/${encodeURIComponent(id)}/to-order`,
   copyBudget: (id) => `${API_BASE}/api/budgets/${encodeURIComponent(id)}/copy`,
+  copyBudgetOptions: (id) => `${API_BASE}/api/budgets/${encodeURIComponent(id)}/copy-options`,
 
   customersSearch: (q) =>
     `${API_BASE}/api/customers/search?q=${encodeURIComponent(q || '')}&limit=10`,

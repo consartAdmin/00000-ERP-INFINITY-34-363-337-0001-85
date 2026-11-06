@@ -19,6 +19,7 @@ import {
   transformBudgetToOrder,
   getBudgetPdf,
   copyBudget,
+  getBudgetCopyOptions,
   validateStockOverride,
   validateStockOverrideBatch,
   getStockOverrideStatus,
@@ -58,6 +59,7 @@ router.get('/api/budgets/search', requireAuth, noCache(searchBudgets));
 router.get('/api/budgets', requireAuth, noCache(listBudgets));
 router.get('/api/budgets/stock-override-status', requireAuth, noCache(getStockOverrideStatus));
 router.get('/api/customers/:customer_id/status', requireAuth, noCache(getCustomerStatus));
+router.get('/api/budgets/:id/copy-options', requireAuth, noCache(getBudgetCopyOptions));
 router.get('/api/budgets/:id', requireAuth, noCache(getBudgetById));
 router.get('/api/budgets/:id/pdf', requireAuth, noCache(getBudgetPdf));
 

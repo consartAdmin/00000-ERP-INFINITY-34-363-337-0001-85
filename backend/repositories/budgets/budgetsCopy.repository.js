@@ -4,73 +4,191 @@
 
 import { getById } from './budgetsGetById.repository.js';
 import { create } from './budgetsCreate.repository.js';
+import pool from '../../config/db.js';
 import productsStockManager from '../productsStock/productsStock.manager.js';
 
 // ----------------------------------------------------------------------
-// Copy
-// ----------------------------------------------------------------------
-// ----------------------------------------------------------------------
 // Lots: the copy gets fresh lots from current stock (FEFO, same order as
 // the lot select in the editor), not the lots of the source budget.
-// Prefers the first lot whose free balance covers the quantity, then the
+// The copy modal can pick the lot of each item; when it does not, the
+// first lot whose free balance covers the quantity is used, then the
 // first lot with any balance; items sharing a lot consume its balance.
+// Blocked / inactive / deleted lots are never offered (to_jsonb keeps the
+// query valid on databases that do not have those columns yet).
 // ----------------------------------------------------------------------
-async function assignLotsForCopy(items, ctx = {}) {
-  let mode = null;
-
+async function resolveWithLot(ctx = {}) {
   try {
-    mode = await productsStockManager.resolveProductsStockMode(ctx);
+    const mode = await productsStockManager.resolveProductsStockMode(ctx);
+    return !!mode?.isWithLot;
   } catch (err) {
     console.warn('[budgetsApi.copyFromBudget] stock mode:', err?.message || err);
-    return;
+    return false;
   }
+}
 
-  if (!mode?.isWithLot) return;
+async function fetchLotsByProductCode(code) {
+  const { rows } = await pool.query(
+    `
+      SELECT
+        psl.lot_id,
+        psl.product_grade_id,
+        pg.grade_id,
+        psl.lot_code,
+        psl.expires_at,
+        (COALESCE(psl.qty_on_hand, 0) - COALESCE(psl.qty_reserved, 0)) AS qty_available
+      FROM public.products p
+      JOIN public."productsStockLots" psl
+        ON psl.product_stock_id = p.product_stock_id
+      LEFT JOIN public."productsGrades" pg
+        ON pg.product_grade_id = psl.product_grade_id
+      WHERE p.product_code = $1
+        AND NULLIF(to_jsonb(psl)->>'blocked_at', '') IS NULL
+        AND NULLIF(to_jsonb(psl)->>'deleted_at', '') IS NULL
+        AND COALESCE(to_jsonb(psl)->>'is_active', 'true') <> 'false'
+      ORDER BY
+        psl.expires_at NULLS LAST,
+        psl.lot_code ASC,
+        psl.lot_id ASC
+    `,
+    [code]
+  );
 
+  return rows.map((r) => ({
+    lot_id: Number(r.lot_id),
+    product_grade_id: r.product_grade_id != null ? Number(r.product_grade_id) : null,
+    grade_id: r.grade_id != null ? Number(r.grade_id) : null,
+    lot_code: r.lot_code ?? '',
+    expires_at: r.expires_at ?? null,
+    qty_available: Number(r.qty_available || 0),
+  }));
+}
+
+async function loadLotsForItems(items) {
   const lotsByCode = new Map();
-  const usedByLot = new Map();
 
   for (const it of items) {
     const code = String(it.product_code || '').trim();
-    if (!code) continue;
+    if (!code || lotsByCode.has(code)) continue;
 
-    if (!lotsByCode.has(code)) {
-      try {
-        lotsByCode.set(
-          code,
-          await productsStockManager.getProductsStockLotsByProductCode(code, null, ctx)
-        );
-      } catch (err) {
-        console.warn(`[budgetsApi.copyFromBudget] lots ${code}:`, err?.message || err);
-        lotsByCode.set(code, []);
-      }
+    try {
+      lotsByCode.set(code, await fetchLotsByProductCode(code));
+    } catch (err) {
+      console.warn(`[budgetsApi.copyFromBudget] lots ${code}:`, err?.message || err);
+      lotsByCode.set(code, []);
+    }
+  }
+
+  return lotsByCode;
+}
+
+function lotsForItem(it, lotsByCode) {
+  const code = String(it.product_code || '').trim();
+  const gradeId = it.grade_id != null && it.grade_id !== '' ? Number(it.grade_id) : null;
+
+  return (lotsByCode.get(code) || []).filter(
+    (lot) =>
+      gradeId == null ||
+      lot.grade_id === gradeId ||
+      lot.product_grade_id === gradeId
+  );
+}
+
+function pickFefoLot(lots, qty, usedByLot) {
+  const candidates = lots
+    .map((lot) => ({
+      lot_id: lot.lot_id,
+      free: lot.qty_available - (usedByLot.get(lot.lot_id) || 0),
+    }))
+    .filter((lot) => lot.free > 0);
+
+  return (
+    candidates.find((lot) => lot.free >= qty) ||
+    candidates[0] ||
+    null
+  );
+}
+
+function consumeLot(usedByLot, lotId, qty) {
+  usedByLot.set(lotId, (usedByLot.get(lotId) || 0) + Math.max(0, qty));
+}
+
+// it.requested_lot_id (from the modal) wins when it is a valid lot of the
+// product; otherwise FEFO.
+async function assignLotsForCopy(items, ctx = {}) {
+  if (!(await resolveWithLot(ctx))) return;
+
+  const lotsByCode = await loadLotsForItems(items);
+  const usedByLot = new Map();
+
+  for (const it of items) {
+    const lots = lotsForItem(it, lotsByCode);
+    const qty = Number(it.quantity || 0);
+    const requested = Number(it.requested_lot_id);
+
+    const manual = Number.isFinite(requested) && requested > 0
+      ? lots.find((lot) => lot.lot_id === requested)
+      : null;
+
+    if (manual) {
+      it.lot_id = manual.lot_id;
+      consumeLot(usedByLot, manual.lot_id, qty);
+      continue;
     }
 
-    const gradeId = it.grade_id != null ? Number(it.grade_id) : null;
-    const candidates = (lotsByCode.get(code) || [])
-      .filter((lot) => gradeId == null || Number(lot.grade_id) === gradeId)
-      .map((lot) => ({
-        lot_id: Number(lot.lot_id),
-        free:
-          Number(lot.qty_available || 0) -
-          (usedByLot.get(Number(lot.lot_id)) || 0),
-      }))
-      .filter((lot) => lot.free > 0);
-
-    const qty = Number(it.quantity || 0);
-    const chosen =
-      candidates.find((lot) => lot.free >= qty) ||
-      candidates[0] ||
-      null;
-
+    const chosen = pickFefoLot(lots, qty, usedByLot);
     if (!chosen) continue;
 
     it.lot_id = chosen.lot_id;
-    usedByLot.set(
-      chosen.lot_id,
-      (usedByLot.get(chosen.lot_id) || 0) + Math.min(qty, chosen.free)
-    );
+    consumeLot(usedByLot, chosen.lot_id, Math.min(qty, chosen.free));
   }
+}
+
+// ----------------------------------------------------------------------
+// Copy modal data: items of the source budget + available lots (FEFO)
+// and the suggested lot of each item.
+// ----------------------------------------------------------------------
+export async function getCopyOptions(sourceBudgetId, ctx = {}) {
+  const bid = Number(sourceBudgetId);
+  if (!Number.isFinite(bid) || bid <= 0) {
+    return { ok: false, error: 'BAD_REQUEST' };
+  }
+
+  const source = await getById(bid);
+  if (!source?.ok || !source?.header) {
+    return { ok: false, error: source?.error || 'NOT_FOUND' };
+  }
+
+  const items = (Array.isArray(source.items) ? source.items : [])
+    .filter((it) => Number(it?.budget_item_id) > 0);
+
+  const withLot = await resolveWithLot(ctx);
+  const lotsByCode = withLot ? await loadLotsForItems(items) : new Map();
+  const usedByLot = new Map();
+
+  return {
+    ok: true,
+    budget_id: bid,
+    with_lot: withLot,
+    items: items.map((it) => {
+      const qty = Number(it.quantity || 0);
+      const lots = withLot ? lotsForItem(it, lotsByCode) : [];
+      const suggested = withLot ? pickFefoLot(lots, qty, usedByLot) : null;
+      if (suggested) consumeLot(usedByLot, suggested.lot_id, Math.min(qty, suggested.free));
+
+      return {
+          budget_item_id: Number(it.budget_item_id),
+          product_code: it.product_code ?? it.sku ?? '',
+          description: it.description ?? '',
+          grade_id: it.grade_id ?? null,
+          unit_code: it.unit_code ?? it.unit ?? '',
+          quantity: qty,
+          unit_price: Number(it.unit_price || 0),
+          discount_value: Number(it.discount_value || 0),
+          lots,
+          suggested_lot_id: suggested ? suggested.lot_id : null,
+      };
+    }),
+  };
 }
 
 // options.itemIds: budget_item_id list chosen in the copy modal. When it is
@@ -78,6 +196,28 @@ async function assignLotsForCopy(items, ctx = {}) {
 // ----------------------------------------------------------------------
 function roundMoney(value) {
   return Math.round(Number(value || 0) * 100) / 100;
+}
+
+// options.items: [{ budget_item_id, quantity, lot_id }] edited in the copy
+// modal. Returns Map(budget_item_id -> { quantity, lot_id }).
+function normalizeItemOverrides(raw) {
+  if (!Array.isArray(raw)) return null;
+
+  const map = new Map();
+  for (const row of raw) {
+    const id = Number(row?.budget_item_id);
+    if (!Number.isFinite(id) || id <= 0) continue;
+
+    const qty = Number(String(row?.quantity ?? '').replace(',', '.'));
+    const lotId = Number(row?.lot_id);
+
+    map.set(id, {
+      quantity: Number.isFinite(qty) && qty > 0 ? qty : null,
+      lot_id: Number.isFinite(lotId) && lotId > 0 ? lotId : null,
+    });
+  }
+
+  return map.size ? map : null;
 }
 
 function normalizeItemIds(raw) {
@@ -115,7 +255,10 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}, options = {}) {
       ? source.items
       : [];
 
-    const selectedIds = normalizeItemIds(options?.itemIds);
+    const overrides = normalizeItemOverrides(options?.items);
+    const selectedIds = overrides
+      ? new Set(overrides.keys())
+      : normalizeItemIds(options?.itemIds);
     const srcItems = selectedIds
       ? allSrcItems.filter((it) => selectedIds.has(Number(it.budget_item_id)))
       : allSrcItems;
@@ -209,7 +352,22 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}, options = {}) {
     // ================================================================
     // ITEMS
     // ================================================================
-    const newItems = srcItems.map((it) => ({
+    let quantityChanged = false;
+
+    const newItems = srcItems.map((it) => {
+      const override = overrides?.get(Number(it.budget_item_id)) || null;
+      const srcQty = Number(it.quantity || 0);
+      const qty = override?.quantity ?? srcQty;
+      const srcDiscount = Number(it.discount_value || 0);
+
+      // Item discount is a value: keep it proportional to the new quantity.
+      const discount = qty !== srcQty
+        ? (srcQty > 0 ? roundMoney(srcDiscount * (qty / srcQty)) : 0)
+        : srcDiscount;
+
+      if (qty !== srcQty) quantityChanged = true;
+
+      return {
       product_code: it.product_code ?? null,
       barcode_id: it.barcode_id ?? null,
 
@@ -228,14 +386,12 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}, options = {}) {
       unit_code: it.unit_code ?? it.unit ?? 'UN',
       conversion_factor: Number(it.conversion_factor || 1),
 
-      quantity:
-        Number(it.quantity || 0),
+      quantity: qty,
 
       unit_price:
         Number(it.unit_price || 0),
 
-      discount_value:
-        Number(it.discount_value || 0),
+      discount_value: discount,
 
       price_id:
         it.price_id ??
@@ -246,17 +402,19 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}, options = {}) {
 
       // Lot is not inherited; assignLotsForCopy() picks one from stock
       lot_id: null,
+      requested_lot_id: override?.lot_id ?? null,
 
       override_stock: false,
       override_token: null,
-    }));
+      };
+    });
 
     // ================================================================
-    // TOTALS — only part of the items was copied, so recompute from them
+    // TOTALS — part of the items was copied or quantities changed, so recompute
     // (same rule as recalcTotals() in public/budgets/js/budgets.items.js;
     // freight is not copied).
     // ================================================================
-    if (selectedIds && srcItems.length !== allSrcItems.length) {
+    if (quantityChanged || (selectedIds && srcItems.length !== allSrcItems.length)) {
       const subtotal = newItems.reduce(
         (sum, it) => sum + Math.max(0, it.quantity) * Math.max(0, it.unit_price),
         0
@@ -285,6 +443,7 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}, options = {}) {
     }
 
     await assignLotsForCopy(newItems, ctx);
+    newItems.forEach((it) => { delete it.requested_lot_id; });
 
     // ================================================================
     // VALIDATION
