@@ -2,10 +2,12 @@
 // ║ salesTaxes.js — Dashboard: Impostos sobre Vendas                   ║
 // ║ CONSART ERP                                                        ║
 // ║                                                                      ║
-// ║ ✅ Impostos por tipo (ICMS, ICMS-ST, FCP, PIS, COFINS, IS...)       ║
-// ║ ✅ Impostos por produto                                             ║
-// ║ ✅ Total de impostos e carga tributária sobre o faturamento         ║
-// ║ ✅ Mesmo filtro de período do dashboard de Vendas                   ║
+// ║ ✅ Impostos por tipo (tabela) + composição em rosca com legenda     ║
+// ║ ✅ Impostos por produto (tabela, carga colorida por faixa)          ║
+// ║ ✅ Evolução mensal (6 meses) por imposto + carga %                  ║
+// ║ ✅ KPIs comparados com o período anterior                          ║
+// ║ ✅ Períodos: mês atual/anterior, trimestre, ano, personalizado      ║
+// ║ ✅ Exportar Excel / PDF                                             ║
 // ║                                                                      ║
 // ║ Fonte: snapshot fiscal por item gravado na emissão da NF-e.         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -14,6 +16,29 @@ import {
     moneyBR,
     fetchDashboard,
 } from './dashboardUtils.js';
+
+import {
+    PERIOD_OPTIONS_HTML,
+    bindPeriodFilter,
+    readPeriod,
+    periodQuery,
+    previousRange,
+    formatDateBR,
+    comparisonHtml,
+    setKpiHint,
+    buildColorMap,
+    colorFor,
+    donutSvg,
+    legendHtml,
+    monthlyColumnsSvg,
+    monthTitle,
+    downloadFile,
+    escapeHtml,
+    formatPercentage,
+    formatInteger,
+} from './taxDashboardShared.js';
+
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 
 // ======================================================================
@@ -26,31 +51,12 @@ const DASHBOARD_KEY =
 const ENDPOINT =
     '/api/dashboard/sales-taxes';
 
-const PRODUCT_RANKING_LIMIT =
-    20;
+// Rows shown before "Ver todos".
+const PRODUCT_PREVIEW = 8;
 
-const PIE_LIMIT =
-    5;
+const HISTORY_MONTHS = 6;
 
-const PRODUCT_LABEL_LENGTH =
-    40;
-
-// Same 520 × 260 view box as the Vendas pies so both slides size alike.
-const PIE = Object.freeze({
-    width: 520,
-    height: 260,
-    centerX: 260,
-    centerY: 130,
-    radius: 118,
-});
-
-const PIE_GRADIENTS = Object.freeze([
-    ['#1d4ed8', '#60a5fa'],
-    ['#0891b2', '#67e8f9'],
-    ['#38bdf8', '#bae6fd'],
-    ['#7e22ce', '#d8b4fe'],
-    ['#27272a', '#71717a'],
-]);
+const RATE_LINE_COLOR = '#f97316';
 
 
 // ======================================================================
@@ -80,8 +86,7 @@ export const salesTaxesDashboard = {
                 <label class="sales-analytics__period-field">
                   <span>Período</span>
                   <select data-tax-filter="periodMode">
-                    <option value="current-month">Mês atual</option>
-                    <option value="custom">Escolher período</option>
+                    ${PERIOD_OPTIONS_HTML}
                   </select>
                 </label>
 
@@ -103,6 +108,18 @@ export const salesTaxesDashboard = {
 
                 <span class="sales-taxes__coverage" data-tax-coverage></span>
                 <span class="sales-taxes__regime" data-tax-regime></span>
+
+                <div class="tax-assessment__export" aria-label="Baixar impostos sobre vendas">
+                  <button type="button" class="tax-assessment__export-btn is-xlsx" data-tax-export="xlsx"
+                    title="Baixar os impostos do período em Excel">
+                    Excel
+                  </button>
+                  <button type="button" class="tax-assessment__export-btn is-pdf" data-tax-export="pdf"
+                    title="Baixar os impostos do período em PDF">
+                    PDF
+                  </button>
+                </div>
+
                 <span class="sales-analytics__period-caption" data-tax-period-caption></span>
               </section>
 
@@ -117,46 +134,28 @@ export const salesTaxesDashboard = {
                   <header class="analytics-chart__header">
                     <h3>IMPOSTOS POR TIPO</h3>
                   </header>
-                  <div
-                    class="analytics-chart__body"
-                    data-tax-list="byTax"
-                    aria-label="Impostos por tipo"
-                  ></div>
+                  <div class="analytics-chart__body tax-panel__scroll" data-tax-list="byTax" aria-label="Impostos por tipo"></div>
                 </section>
 
                 <section class="analytics-chart analytics-chart--abc">
                   <header class="analytics-chart__header">
-                    <h3>GRÁFICO: IMPOSTOS</h3>
+                    <h3>COMPOSIÇÃO DOS IMPOSTOS</h3>
                   </header>
-                  <div
-                    class="analytics-chart__body analytics-product-pie-host"
-                    data-tax-chart="byTaxPie"
-                    role="img"
-                    aria-label="Gráfico em pizza dos impostos por tipo"
-                  ></div>
+                  <div class="analytics-chart__body tax-donut" data-tax-chart="byTaxDonut"></div>
                 </section>
 
                 <section class="analytics-chart analytics-chart--abc analytics-chart--ranking">
                   <header class="analytics-chart__header">
                     <h3>IMPOSTOS POR PRODUTO</h3>
                   </header>
-                  <div
-                    class="analytics-chart__body"
-                    data-tax-list="byProduct"
-                    aria-label="Impostos por produto"
-                  ></div>
+                  <div class="analytics-chart__body tax-panel__scroll" data-tax-list="byProduct" aria-label="Impostos por produto"></div>
                 </section>
 
                 <section class="analytics-chart analytics-chart--abc">
                   <header class="analytics-chart__header">
-                    <h3>GRÁFICO: PRODUTOS</h3>
+                    <h3>EVOLUÇÃO MENSAL (${HISTORY_MONTHS} MESES)</h3>
                   </header>
-                  <div
-                    class="analytics-chart__body analytics-product-pie-host"
-                    data-tax-chart="byProductPie"
-                    role="img"
-                    aria-label="Gráfico em pizza dos impostos por produto"
-                  ></div>
+                  <div class="analytics-chart__body tax-columns" data-tax-chart="history"></div>
                 </section>
 
               </section>
@@ -171,21 +170,25 @@ export const salesTaxesDashboard = {
                 <div class="analytics-kpi analytics-kpi--revenue kpi-w-20 kpi-h-2 kpi-p-1 kpi-radius-6">
                   <span class="analytics-kpi__label">TOTAL FATURAMENTO</span>
                   <strong class="analytics-kpi__value" data-tax-field="revenue">R$ 0,00</strong>
+                  <small class="tax-kpi-hint" data-tax-compare="revenue" hidden></small>
                 </div>
 
                 <div class="analytics-kpi analytics-kpi--taxes kpi-w-20 kpi-h-2 kpi-p-1 kpi-radius-6">
                   <span class="analytics-kpi__label">TOTAL IMPOSTOS</span>
                   <strong class="analytics-kpi__value" data-tax-field="totalTaxes">R$ 0,00</strong>
+                  <small class="tax-kpi-hint" data-tax-compare="totalTaxes" hidden></small>
                 </div>
 
                 <div class="analytics-kpi analytics-kpi--invoices kpi-w-20 kpi-h-2 kpi-p-1 kpi-radius-6">
                   <span class="analytics-kpi__label">CARGA TRIBUTÁRIA SOBRE FATURAMENTO</span>
                   <strong class="analytics-kpi__value" data-tax-field="effectiveRate">0,00%</strong>
+                  <small class="tax-kpi-hint" data-tax-compare="effectiveRate" hidden></small>
                 </div>
 
                 <div class="analytics-kpi analytics-kpi--ticket kpi-w-20 kpi-h-2 kpi-p-1 kpi-radius-6">
                   <span class="analytics-kpi__label">LÍQUIDO APÓS IMPOSTOS</span>
                   <strong class="analytics-kpi__value" data-tax-field="netAfterTaxes">R$ 0,00</strong>
+                  <small class="tax-kpi-hint" data-tax-compare="netAfterTaxes" hidden></small>
                 </div>
 
               </section>
@@ -207,7 +210,9 @@ export const salesTaxesDashboard = {
         if (!card) return;
 
         try {
-            bindPeriodFilter(card);
+            bindPeriodFilter(card, 'tax', () => loadSalesTaxes(card), warn);
+            bindExport(card);
+            bindProductToggle(card);
             await loadSalesTaxes(card);
         } catch (error) {
             console.error('[dashboard][sales-taxes] Failed to load:', error);
@@ -226,37 +231,47 @@ function getCard(root) {
 }
 
 
+function warn(message, variant = 'warning') {
+    showCenterModal({ variant, title: variant === 'error' ? 'Erro' : 'Período', message: escapeHtml(message) });
+}
+
+
 async function loadSalesTaxes(card) {
-    const data = await fetchDashboard(buildEndpoint(card));
+    const period = readPeriod(card, 'tax');
+    const data = await fetchDashboard(`${ENDPOINT}?${periodQuery(period)}`);
 
     console.log('[dashboard][sales-taxes] Response:', data);
 
     const summary = data?.summary || {};
+    const filters = data?.filters || {};
+
+    // Exports use the period on screen, not dates typed but not applied yet.
+    card.dataset.taxStartDate = filters.startDate || '';
+    card.dataset.taxEndDate = filters.endDate || '';
 
     updateSummary(card, summary);
     updateCoverage(card, summary, data?.sourcesAvailable !== false, data?.regime);
     updateRegime(card, data?.regime);
+    updatePeriodCaption(card, filters);
 
     const byTax = (Array.isArray(data?.byTax) ? data.byTax : [])
         .filter((tax) => Number(tax?.value || 0) > 0);
+    const counted = byTax.filter((tax) => !tax.informative);
 
-    renderTaxRanking(card, byTax);
-    renderPie(
-        card.querySelector('[data-tax-chart="byTaxPie"]'),
-        byTax.filter((tax) => !tax.informative),
-        'tax-type'
-    );
+    // One color per tax, shared by table, donut and monthly chart.
+    const colors = buildColorMap(counted.map((tax) => tax.key));
+    card._taxColors = colors;
 
-    const byProduct = Array.isArray(data?.byProduct) ? data.byProduct : [];
+    renderTaxTable(card, byTax, summary, colors);
+    renderTaxDonut(card, counted, summary, colors);
+    renderProductTable(card, Array.isArray(data?.byProduct) ? data.byProduct : []);
 
-    renderProductRanking(card, byProduct);
-    renderPie(
-        card.querySelector('[data-tax-chart="byProductPie"]'),
-        byProduct,
-        'tax-product'
-    );
+    // Secondary data: never blocks the main panels.
+    const token = String(Date.now());
+    card.dataset.taxLoadToken = token;
 
-    updatePeriodCaption(card, data?.filters);
+    loadComparison(card, period, filters, summary, token);
+    loadHistory(card, filters, colors, token);
 }
 
 
@@ -269,130 +284,328 @@ function renderError(card) {
 
 
 // ======================================================================
-// PERIOD FILTER
+// PERIOD CAPTION
 // ======================================================================
 
-function getCurrentMonthRange() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const monthIndex = now.getMonth();
-    const month = String(monthIndex + 1).padStart(2, '0');
-    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-
-    return {
-        startDate: `${year}-${month}-01`,
-        endDate: `${year}-${month}-${String(lastDay).padStart(2, '0')}`,
-    };
+function updatePeriodCaption(card, filters = {}) {
+    const caption = card.querySelector('[data-tax-period-caption]');
+    if (caption) caption.textContent = `${formatDateBR(filters.startDate)} até ${formatDateBR(filters.endDate)}`;
 }
 
 
-function bindPeriodFilter(card) {
-    if (card.dataset.periodFilterBound === 'true') return;
+// ======================================================================
+// SUMMARY + COMPARISON
+// ======================================================================
 
-    const mode = card.querySelector('[data-tax-filter="periodMode"]');
-    const start = card.querySelector('[data-tax-filter="startDate"]');
-    const end = card.querySelector('[data-tax-filter="endDate"]');
-    const custom = card.querySelector('[data-tax-period-custom]');
-    const apply = card.querySelector('[data-tax-action="applyPeriod"]');
-    const currentMonth = getCurrentMonthRange();
-
-    if (!mode || !start || !end || !custom || !apply) return;
-
-    start.value = currentMonth.startDate;
-    end.value = currentMonth.endDate;
-    start.max = currentMonth.endDate;
-    end.max = currentMonth.endDate;
-
-    mode.addEventListener('change', async () => {
-        const isCustom = mode.value === 'custom';
-        custom.hidden = !isCustom;
-
-        if (!isCustom) {
-            const range = getCurrentMonthRange();
-            start.value = range.startDate;
-            end.value = range.endDate;
-            await reloadSalesTaxes(card, apply);
-        }
-    });
-
-    apply.addEventListener('click', async () => {
-        if (!start.value || !end.value) {
-            window.alert('Informe a data inicial e a data final.');
-            return;
-        }
-
-        if (start.value > end.value) {
-            window.alert('A data inicial não pode ser maior que a data final.');
-            return;
-        }
-
-        await reloadSalesTaxes(card, apply);
-    });
-
-    card.dataset.periodFilterBound = 'true';
+function netAfterTaxes(summary) {
+    return summary?.netAfterTaxes != null
+        ? Number(summary.netAfterTaxes)
+        : Number(summary?.coveredRevenue || 0) - Number(summary?.totalTaxes || 0);
 }
 
+function updateSummary(card, summary) {
+    setText(card, 'revenue', moneyBR(Number(summary?.totalRevenue || 0)));
+    setText(card, 'totalTaxes', moneyBR(Number(summary?.totalTaxes || 0)));
+    setText(card, 'effectiveRate', formatPercentage(summary?.effectiveRate));
+    setText(card, 'netAfterTaxes', moneyBR(netAfterTaxes(summary)));
 
-async function reloadSalesTaxes(card, button) {
-    button.disabled = true;
-    button.textContent = 'Carregando...';
+    ['revenue', 'totalTaxes', 'effectiveRate', 'netAfterTaxes'].forEach((field) => {
+        setKpiHint(card, `[data-tax-compare="${field}"]`, '');
+    });
+}
+
+async function loadComparison(card, period, filters, summary, token) {
+    const previous = previousRange(period.mode, filters.startDate, filters.endDate);
+    if (!previous) return;
 
     try {
-        await loadSalesTaxes(card);
+        const data = await fetchDashboard(`${ENDPOINT}?${periodQuery(previous)}`);
+        if (card.dataset.taxLoadToken !== token) return;
+
+        const before = data?.summary || {};
+        const label = previous.label;
+
+        setKpiHint(card, '[data-tax-compare="revenue"]',
+            comparisonHtml(summary.totalRevenue, before.totalRevenue, label));
+        setKpiHint(card, '[data-tax-compare="totalTaxes"]',
+            comparisonHtml(summary.totalTaxes, before.totalTaxes, label, { invert: true }));
+        setKpiHint(card, '[data-tax-compare="effectiveRate"]',
+            `<span class="tax-kpi-delta is-flat" title="${formatDateBR(previous.startDate)} até ${formatDateBR(previous.endDate)}">` +
+            `${escapeHtml(label)}: ${formatPercentage(before.effectiveRate)}</span>`);
+        setKpiHint(card, '[data-tax-compare="netAfterTaxes"]',
+            comparisonHtml(netAfterTaxes(summary), netAfterTaxes(before), label));
     } catch (error) {
-        console.error('[dashboard][sales-taxes] Failed to apply period:', error);
-        window.alert('Não foi possível carregar o período selecionado.');
-    } finally {
-        button.disabled = false;
-        button.textContent = 'Aplicar';
+        console.warn('[dashboard][sales-taxes] Comparison unavailable:', error);
     }
 }
 
 
-function buildEndpoint(card) {
-    const start = card.querySelector('[data-tax-filter="startDate"]')?.value || '';
-    const end = card.querySelector('[data-tax-filter="endDate"]')?.value || '';
-    const params = new URLSearchParams();
+// ======================================================================
+// IMPOSTOS POR TIPO
+// ======================================================================
 
-    if (start) params.set('startDate', start);
-    if (end) params.set('endDate', end);
-
-    return `${ENDPOINT}?${params.toString()}`;
+function cleanInformativeLabel(label) {
+    return String(label || '').replace(/\s*\(INFORMATIVO[^)]*\)\s*/i, '').trim();
 }
 
+function renderTaxTable(card, items, summary, colors) {
+    const container = card.querySelector('[data-tax-list="byTax"]');
+    if (!container) return;
 
-function updatePeriodCaption(card, filters = {}) {
-    const caption = card.querySelector('[data-tax-period-caption]');
-    if (!caption) return;
+    const counted = items.filter((tax) => !tax.informative);
+    const informative = items.filter((tax) => tax.informative);
 
-    const format = (value) => {
-        if (!value) return '—';
-        const [year, month, day] = String(value).split('-');
-        return `${day}/${month}/${year}`;
-    };
+    if (!items.length) {
+        container.innerHTML = '<div class="analytics-abc-ranking__empty">Sem impostos no período.</div>';
+        return;
+    }
 
-    caption.textContent = `${format(filters.startDate)} até ${format(filters.endDate)}`;
+    const rows = counted.map((tax) => {
+        const title = `${tax.label} — ${moneyBR(tax.value)} — ${formatPercentage(tax.rateOverRevenue)} do faturamento — ` +
+            `${formatPercentage(tax.percentage, 1)} dos impostos` +
+            (tax.estimated ? ' — estimado pelo Regime Tributário cadastrado' : '');
+
+        return `
+          <tr title="${escapeHtml(title)}"${tax.estimated ? ' class="is-estimated"' : ''}>
+            <td><i class="tax-dot" style="background:${colorFor(colors, tax.key)}"></i>${escapeHtml(tax.label)}</td>
+            <td>${moneyBR(tax.value)}</td>
+            <td>${formatPercentage(tax.rateOverRevenue)}</td>
+            <td><strong>${formatPercentage(tax.percentage, 1)}</strong></td>
+          </tr>`;
+    }).join('');
+
+    const informativeBlock = informative.length ? `
+      <div class="tax-informative" title="Valores informativos: não entram no total de impostos.">
+        <div class="tax-informative__title">Reforma tributária · informativo, fora do total</div>
+        ${informative.map((tax) => `
+          <div class="tax-informative__row">
+            <span>${escapeHtml(cleanInformativeLabel(tax.label))} (${formatPercentage(tax.rateOverRevenue)})</span>
+            <strong>${moneyBR(tax.value)}</strong>
+          </div>`).join('')}
+      </div>` : '';
+
+    container.innerHTML = `
+      <table class="tax-table">
+        <thead>
+          <tr><th>Imposto</th><th>Valor</th><th>% fatur.</th><th>% impostos</th></tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr><td colspan="4" class="tax-table__empty">Sem impostos somados no período.</td></tr>'}
+        </tbody>
+        ${counted.length ? `
+        <tfoot>
+          <tr>
+            <td>TOTAL</td>
+            <td>${moneyBR(summary?.totalTaxes)}</td>
+            <td>${formatPercentage(summary?.effectiveRate)}</td>
+            <td>100%</td>
+          </tr>
+        </tfoot>` : ''}
+      </table>
+      ${informativeBlock}
+    `;
 }
 
 
 // ======================================================================
-// SUMMARY
+// COMPOSIÇÃO (ROSCA)
 // ======================================================================
 
-function updateSummary(card, summary) {
-    const revenue = Number(summary?.totalRevenue || 0);
-    const coveredRevenue = Number(summary?.coveredRevenue || 0);
-    const totalTaxes = Number(summary?.totalTaxes || 0);
-    const effectiveRate = Number(summary?.effectiveRate || 0);
+function renderTaxDonut(card, counted, summary, colors) {
+    const container = card.querySelector('[data-tax-chart="byTaxDonut"]');
+    if (!container) return;
 
-    setText(card, 'revenue', moneyBR(revenue));
-    setText(card, 'totalTaxes', moneyBR(totalTaxes));
-    setText(card, 'effectiveRate', formatPercentage(effectiveRate));
-    setText(card, 'netAfterTaxes', moneyBR(
-        summary?.netAfterTaxes != null ? Number(summary.netAfterTaxes) : coveredRevenue - totalTaxes
-    ));
+    if (!counted.length) {
+        container.innerHTML = '<div class="analytics-product-pie__empty">Sem dados para exibir.</div>';
+        return;
+    }
+
+    const items = counted.map((tax) => ({
+        label: tax.label,
+        value: Number(tax.value || 0),
+        color: colorFor(colors, tax.key),
+    }));
+
+    container.innerHTML = `
+      <div class="tax-donut__chart">
+        ${donutSvg(items, { centerLabel: 'Total', centerValue: moneyBR(summary?.totalTaxes) })}
+      </div>
+      ${legendHtml(items)}
+    `;
 }
 
+
+// ======================================================================
+// IMPOSTOS POR PRODUTO
+// ======================================================================
+
+function rateTone(rate) {
+    const value = Number(rate || 0);
+    if (value > 20) return 'high';
+    if (value > 10) return 'mid';
+    return 'low';
+}
+
+function renderProductTable(card, items) {
+    const container = card.querySelector('[data-tax-list="byProduct"]');
+    if (!container) return;
+
+    if (!items.length) {
+        container.innerHTML = '<div class="analytics-abc-ranking__empty">Sem impostos no período.</div>';
+        return;
+    }
+
+    const expanded = card.dataset.taxProductsExpanded === 'true';
+    const visible = expanded ? items : items.slice(0, PRODUCT_PREVIEW);
+
+    container.classList.toggle('is-expanded', expanded);
+    container.innerHTML = `
+      <table class="tax-table tax-table--products">
+        <thead>
+          <tr><th>Produto</th><th class="tax-col--sold">Vendido</th><th>Imposto</th><th>Carga</th></tr>
+        </thead>
+        <tbody>
+          ${visible.map((item) => `
+            <tr title="${escapeHtml(item.label)} — impostos ${moneyBR(item.value)} sobre ${moneyBR(item.netTotal)} vendidos — carga ${formatPercentage(item.effectiveRate)}">
+              <td class="tax-table__product">${escapeHtml(item.label)}</td>
+              <td class="tax-col--sold">${moneyBR(item.netTotal)}</td>
+              <td><strong>${moneyBR(item.value)}</strong></td>
+              <td><span class="tax-rate tax-rate--${rateTone(item.effectiveRate)}">${formatPercentage(item.effectiveRate)}</span></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="tax-table__footer">
+        <span class="tax-rate-legend">Carga:
+          <span class="tax-rate tax-rate--low">até 10%</span>
+          <span class="tax-rate tax-rate--mid">10–20%</span>
+          <span class="tax-rate tax-rate--high">acima de 20%</span>
+        </span>
+        ${items.length > PRODUCT_PREVIEW ? `
+          <button type="button" class="tax-link" data-tax-action="toggleProducts">
+            ${expanded ? 'Ver menos' : `Ver todos (${formatInteger(items.length)})`}
+          </button>` : ''}
+      </div>
+    `;
+
+    card._taxProducts = items;
+}
+
+function bindProductToggle(card) {
+    if (card.dataset.productToggleBound === 'true') return;
+
+    card.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-tax-action="toggleProducts"]')) return;
+
+        card.dataset.taxProductsExpanded = card.dataset.taxProductsExpanded === 'true' ? 'false' : 'true';
+        renderProductTable(card, card._taxProducts || []);
+    });
+
+    card.dataset.productToggleBound = 'true';
+}
+
+
+// ======================================================================
+// EVOLUÇÃO MENSAL
+// ======================================================================
+
+async function loadHistory(card, filters, colors, token) {
+    const container = card.querySelector('[data-tax-chart="history"]');
+    if (!container) return;
+
+    container.innerHTML = '<div class="analytics-product-pie__empty">Carregando evolução...</div>';
+
+    try {
+        const params = new URLSearchParams({ months: String(HISTORY_MONTHS) });
+        if (filters.endDate) params.set('endDate', filters.endDate);
+
+        const data = await fetchDashboard(`${ENDPOINT}/history?${params.toString()}`);
+        if (card.dataset.taxLoadToken !== token) return;
+
+        renderHistory(container, Array.isArray(data?.months) ? data.months : [], colors);
+    } catch (error) {
+        console.warn('[dashboard][sales-taxes] History unavailable:', error);
+        if (card.dataset.taxLoadToken === token) {
+            container.innerHTML = '<div class="analytics-product-pie__empty">Evolução indisponível.</div>';
+        }
+    }
+}
+
+function renderHistory(container, months, colors) {
+    if (!months.length || !months.some((month) => Number(month.totalTaxes) > 0)) {
+        container.innerHTML = '<div class="analytics-product-pie__empty">Sem impostos nos últimos meses.</div>';
+        return;
+    }
+
+    // Series ordered by the total of the whole window, biggest at the bottom.
+    const totals = new Map();
+    const labels = new Map();
+    months.forEach((month) => (month.byTax || []).forEach((tax) => {
+        totals.set(tax.key, (totals.get(tax.key) || 0) + Number(tax.value || 0));
+        labels.set(tax.key, tax.label);
+    }));
+
+    const keys = [...totals.keys()].sort((a, b) => totals.get(b) - totals.get(a));
+    const series = keys.map((key) => ({
+        label: labels.get(key),
+        color: colorFor(colors, key),
+        values: months.map((month) => Number((month.byTax || []).find((tax) => tax.key === key)?.value || 0)),
+    }));
+
+    const monthInfo = months.map((month) => ({ ...month, title: monthTitle(month) }));
+    const partial = months.find((month) => month.partial);
+
+    container.innerHTML = `
+      ${monthlyColumnsSvg({
+        months: monthInfo,
+        series,
+        mode: 'stacked',
+        line: {
+            label: 'Carga',
+            color: RATE_LINE_COLOR,
+            values: months.map((month) => Number(month.effectiveRate || 0)),
+            format: (value) => formatPercentage(value),
+        },
+    })}
+      <ul class="tax-legend tax-legend--inline">
+        ${series.map((item) => `<li><i style="background:${item.color}"></i><span class="tax-legend__name">${escapeHtml(item.label)}</span></li>`).join('')}
+        <li><i class="is-line" style="background:${RATE_LINE_COLOR}"></i><span class="tax-legend__name">Carga %</span></li>
+      </ul>
+      ${partial ? `<p class="tax-columns__note">* ${escapeHtml(partial.label)} até ${formatDateBR(partial.endDate)}</p>` : ''}
+    `;
+}
+
+
+// ======================================================================
+// EXPORT
+// ======================================================================
+
+function bindExport(card) {
+    if (card.dataset.exportBound === 'true') return;
+
+    card.querySelectorAll('[data-tax-export]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const format = button.dataset.taxExport;
+            const params = new URLSearchParams({ format });
+
+            if (card.dataset.taxStartDate) params.set('startDate', card.dataset.taxStartDate);
+            if (card.dataset.taxEndDate) params.set('endDate', card.dataset.taxEndDate);
+
+            try {
+                await downloadFile(`${ENDPOINT}/export?${params.toString()}`, button, `impostos_vendas.${format}`);
+            } catch (error) {
+                console.error('[dashboard][sales-taxes] Failed to export:', error);
+                warn('Não foi possível gerar o arquivo de impostos.', 'error');
+            }
+        });
+    });
+
+    card.dataset.exportBound = 'true';
+}
+
+
+// ======================================================================
+// CHIPS (REGIME / COBERTURA)
+// ======================================================================
 
 function updateRegime(card, regime) {
     const element = card.querySelector('[data-tax-regime]');
@@ -462,237 +675,4 @@ function updateCoverage(card, summary, sourcesAvailable, regime) {
 function setText(card, field, value) {
     const element = card.querySelector(`[data-tax-field="${field}"]`);
     if (element) element.textContent = value;
-}
-
-
-// ======================================================================
-// RANKINGS
-// ======================================================================
-
-function renderTaxRanking(card, items) {
-    const container = card.querySelector('[data-tax-list="byTax"]');
-    if (!container) return;
-
-    if (!items.length) {
-        container.innerHTML = '<div class="analytics-abc-ranking__empty">Sem impostos no período.</div>';
-        return;
-    }
-
-    const maxValue = Math.max(...items.map((item) => Number(item.value || 0)), 1);
-
-    container.innerHTML = `
-      <div class="analytics-abc-ranking">
-        ${items.map((item) => {
-        const value = Number(item.value || 0);
-        const width = Math.max(2, Math.min(100, (value / maxValue) * 100));
-        const tone = item.informative ? 'c' : (item.estimated ? 'b' : 'a');
-        const badge = formatPercentage(item.rateOverRevenue);
-        const title = item.informative
-            ? `${item.label} — ${moneyBR(value)} — informativo, não somado ao total`
-            : `${item.label} — ${moneyBR(value)} — ${formatPercentage(item.percentage)} dos impostos — ${badge} do faturamento` +
-            (item.estimated ? ' — estimado pelo Regime Tributário cadastrado' : '');
-
-        return `
-              <div class="analytics-abc-ranking__row${item.informative ? ' sales-taxes__row--informative' : ''}" title="${escapeHtml(title)}">
-                <div class="analytics-abc-ranking__head">
-                  <span class="analytics-abc-ranking__name">${escapeHtml(item.label)}</span>
-                  <span class="analytics-abc-ranking__value">${moneyBR(value)}</span>
-                  <span class="analytics-abc-ranking__class analytics-abc-ranking__class--${tone} sales-taxes__rate">${badge}</span>
-                </div>
-                <div class="analytics-abc-ranking__track" aria-hidden="true">
-                  <span class="analytics-abc-ranking__bar analytics-abc-ranking__bar--${tone}" style="width:${width.toFixed(2)}%"></span>
-                </div>
-              </div>
-            `;
-    }).join('')}
-      </div>
-    `;
-}
-
-
-function renderProductRanking(card, items) {
-    const container = card.querySelector('[data-tax-list="byProduct"]');
-    if (!container) return;
-
-    const visibleItems = items.slice(0, PRODUCT_RANKING_LIMIT);
-
-    if (!visibleItems.length) {
-        container.innerHTML = '<div class="analytics-abc-ranking__empty">Sem impostos no período.</div>';
-        return;
-    }
-
-    const maxValue = Math.max(...visibleItems.map((item) => Number(item.value || 0)), 1);
-
-    container.innerHTML = `
-      <div class="analytics-abc-ranking">
-        ${visibleItems.map((item) => {
-        const value = Number(item.value || 0);
-        const width = Math.max(2, Math.min(100, (value / maxValue) * 100));
-        const rawClass = String(item.class || 'C').trim().toUpperCase();
-        const abcClass = ['A', 'B', 'C'].includes(rawClass) ? rawClass : 'C';
-        const rate = formatPercentage(item.effectiveRate);
-
-        return `
-              <div class="analytics-abc-ranking__row" title="${escapeHtml(item.label)} — impostos ${moneyBR(value)} sobre ${moneyBR(item.netTotal)} vendidos — carga ${rate}">
-                <div class="analytics-abc-ranking__head">
-                  <span class="analytics-abc-ranking__name">${escapeHtml(truncateText(item.label, PRODUCT_LABEL_LENGTH))}</span>
-                  <span class="analytics-abc-ranking__value">${moneyBR(value)}</span>
-                  <span class="analytics-abc-ranking__class analytics-abc-ranking__class--${abcClass.toLowerCase()} sales-taxes__rate">${rate}</span>
-                </div>
-                <div class="analytics-abc-ranking__track" aria-hidden="true">
-                  <span class="analytics-abc-ranking__bar analytics-abc-ranking__bar--${abcClass.toLowerCase()}" style="width:${width.toFixed(2)}%"></span>
-                </div>
-              </div>
-            `;
-    }).join('')}
-      </div>
-    `;
-}
-
-
-// ======================================================================
-// PIE (same exploded SVG pie as the Vendas dashboard)
-// ======================================================================
-
-function renderPie(container, items, gradientPrefix) {
-    if (!container) return;
-
-    const sorted = (Array.isArray(items) ? items : [])
-        .filter((item) => Number(item?.value || 0) > 0)
-        .sort((a, b) => Number(b.value) - Number(a.value));
-
-    if (!sorted.length) {
-        container.innerHTML = '<div class="analytics-product-pie__empty">Sem dados para exibir.</div>';
-        return;
-    }
-
-    // Keep the pie readable: top slices plus one "OUTROS" slice.
-    const visibleItems = sorted.slice(0, PIE_LIMIT);
-
-    if (sorted.length > PIE_LIMIT) {
-        const othersValue = sorted
-            .slice(PIE_LIMIT - 1)
-            .reduce((sum, item) => sum + Number(item.value || 0), 0);
-
-        visibleItems.splice(PIE_LIMIT - 1, 1, { label: 'OUTROS', value: othersValue });
-    }
-
-    const total = visibleItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
-
-    const gradientDefinitions = PIE_GRADIENTS.map(([startColor, endColor], index) => `
-      <linearGradient id="${gradientPrefix}-gradient-${index}" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${startColor}"></stop>
-        <stop offset="100%" stop-color="${endColor}"></stop>
-      </linearGradient>
-    `).join('');
-
-    let startAngle = -90;
-
-    const slices = visibleItems.map((item, index) => {
-        const value = Number(item.value || 0);
-        const percentage = total > 0 ? (value / total) * 100 : 0;
-        const sweep = (percentage / 100) * 360;
-        const endAngle = startAngle + sweep;
-        const middleAngle = startAngle + (sweep / 2);
-        const explode = polarPoint(5, middleAngle);
-        const labelPoint = polarPoint(PIE.radius * 0.66, middleAngle);
-        const path = describePieSlice(PIE.centerX, PIE.centerY, PIE.radius, startAngle, endAngle);
-
-        startAngle = endAngle;
-
-        return `
-          <g class="analytics-product-pie__slice" transform="translate(${explode.x.toFixed(2)} ${explode.y.toFixed(2)})">
-            <path d="${path}" fill="url(#${gradientPrefix}-gradient-${index % PIE_GRADIENTS.length})" stroke="#ffffff" stroke-width="2">
-              <title>${escapeHtml(item.label)} — ${moneyBR(value)} — ${formatPercentage(percentage)}</title>
-            </path>
-            ${percentage >= 7 ? `
-              <text
-                x="${(PIE.centerX + labelPoint.x).toFixed(2)}"
-                y="${(PIE.centerY + labelPoint.y).toFixed(2)}"
-                text-anchor="middle"
-                dominant-baseline="middle"
-              >${Math.round(percentage)}%</text>
-            ` : ''}
-          </g>
-        `;
-    });
-
-    container.innerHTML = `
-      <div class="analytics-product-pie">
-        <svg viewBox="0 0 ${PIE.width} ${PIE.height}" aria-hidden="true" focusable="false">
-          <defs>${gradientDefinitions}</defs>
-          ${slices.join('')}
-        </svg>
-      </div>
-    `;
-}
-
-
-function polarPoint(radius, angleInDegrees) {
-    const radians = (angleInDegrees - 90) * Math.PI / 180;
-    return {
-        x: radius * Math.cos(radians),
-        y: radius * Math.sin(radians),
-    };
-}
-
-
-function describePieSlice(centerX, centerY, radius, startAngle, endAngle) {
-    if (endAngle - startAngle >= 359.999) {
-        return [
-            `M ${centerX} ${centerY - radius}`,
-            `A ${radius} ${radius} 0 1 0 ${centerX} ${centerY + radius}`,
-            `A ${radius} ${radius} 0 1 0 ${centerX} ${centerY - radius}`,
-            'Z',
-        ].join(' ');
-    }
-
-    const start = polarPoint(radius, endAngle);
-    const end = polarPoint(radius, startAngle);
-    const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
-
-    return [
-        `M ${centerX} ${centerY}`,
-        `L ${centerX + start.x} ${centerY + start.y}`,
-        `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${centerX + end.x} ${centerY + end.y}`,
-        'Z',
-    ].join(' ');
-}
-
-
-// ======================================================================
-// FORMAT
-// ======================================================================
-
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-}
-
-
-function formatInteger(value) {
-    return Number(value || 0).toLocaleString('pt-BR', {
-        maximumFractionDigits: 0,
-    });
-}
-
-
-function formatPercentage(value) {
-    return Number(value || 0).toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }) + '%';
-}
-
-
-function truncateText(value, maxLength = 30) {
-    const text = String(value || '');
-
-    return text.length <= maxLength
-        ? text
-        : `${text.slice(0, maxLength - 1)}…`;
 }

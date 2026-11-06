@@ -4343,3 +4343,477 @@
         margin-left: 0;
     }
 }
+
+
+/* ======================================================================
+   IMPOSTOS / APURAÇÃO — TABELAS, ROSCA, EVOLUÇÃO MENSAL, COMPARAÇÃO
+   (taxDashboardShared.js, salesTaxes.js, taxAssessment.js)
+   ====================================================================== */
+
+#includeDashBoard .tax-panel__scroll {
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+}
+
+#includeDashBoard .tax-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+    font-size: 11.5px;
+    color: #1e293b;
+}
+
+#includeDashBoard .tax-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 4px 6px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 750;
+    text-align: right;
+    white-space: nowrap;
+}
+
+#includeDashBoard .tax-table td {
+    padding: 6px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+    white-space: nowrap;
+}
+
+#includeDashBoard .tax-table th:first-child,
+#includeDashBoard .tax-table td:first-child {
+    text-align: left;
+    font-weight: 700;
+}
+
+#includeDashBoard .tax-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+#includeDashBoard .tax-table tr.is-estimated td:first-child {
+    font-style: italic;
+}
+
+#includeDashBoard .tax-table tfoot td {
+    background: #f1f5f9;
+    border-bottom: 0;
+    color: #0f2a5c;
+    font-weight: 800;
+}
+
+#includeDashBoard .tax-table__empty {
+    color: #64748b;
+    text-align: center !important;
+    font-weight: 500 !important;
+}
+
+#includeDashBoard .tax-table--products td:first-child {
+    font-weight: 600;
+}
+
+#includeDashBoard .tax-table__product {
+    max-width: 0;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#includeDashBoard .tax-table__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 8px 2px 2px;
+    font-size: 10.5px;
+    color: #64748b;
+}
+
+#includeDashBoard .tax-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 6px;
+    border-radius: 2px;
+    vertical-align: baseline;
+}
+
+#includeDashBoard .tax-rate {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+#includeDashBoard .tax-rate--low {
+    background: #dcfce7;
+    color: #166534;
+}
+
+#includeDashBoard .tax-rate--mid {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+#includeDashBoard .tax-rate--high {
+    background: #ffe4e6;
+    color: #be123c;
+}
+
+#includeDashBoard .tax-rate-legend .tax-rate {
+    margin-left: 2px;
+    font-size: 9.5px;
+}
+
+#includeDashBoard .tax-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #1d4ed8;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+#includeDashBoard .tax-link:hover {
+    text-decoration: underline;
+}
+
+#includeDashBoard .tax-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+#includeDashBoard .tax-status--pay {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+#includeDashBoard .tax-status--credit {
+    background: #dcfce7;
+    color: #166534;
+}
+
+#includeDashBoard .tax-status--neutral {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+#includeDashBoard .tax-debit {
+    color: #be123c;
+}
+
+#includeDashBoard .tax-credit {
+    color: #047857;
+}
+
+#includeDashBoard .tax-informative {
+    margin-top: 12px;
+    padding: 8px 10px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+#includeDashBoard .tax-informative__title {
+    margin-bottom: 4px;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+#includeDashBoard .tax-informative__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 1px 0;
+}
+
+#includeDashBoard .tax-panel__note {
+    margin: 8px 2px 0;
+    font-size: 10.5px;
+    color: #64748b;
+}
+
+/* ---------------- Rosca + legenda ---------------- */
+
+#includeDashBoard .tax-donut {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    overflow-y: auto !important;
+}
+
+#includeDashBoard .tax-donut__chart {
+    display: flex;
+    justify-content: center;
+    min-height: 0;
+}
+
+#includeDashBoard .tax-donut__svg {
+    width: 100%;
+    max-width: 190px;
+    height: auto;
+    max-height: 190px;
+}
+
+#includeDashBoard .tax-donut__center-label {
+    font-size: 10px;
+    fill: #64748b;
+}
+
+#includeDashBoard .tax-donut__center-value {
+    font-size: 15px;
+    font-weight: 800;
+    fill: #0f2a5c;
+}
+
+#includeDashBoard .tax-legend {
+    margin: 0;
+    padding: 0 10px;
+    list-style: none;
+}
+
+#includeDashBoard .tax-legend li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 2px 0;
+    font-size: 11.5px;
+    color: #334155;
+}
+
+#includeDashBoard .tax-legend i {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+
+#includeDashBoard .tax-legend i.is-line {
+    height: 3px;
+    border-radius: 2px;
+}
+
+#includeDashBoard .tax-legend__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#includeDashBoard .tax-legend strong {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+#includeDashBoard .tax-legend--inline {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 14px;
+}
+
+#includeDashBoard .tax-donut--compact {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    flex: 0 0 auto;
+    overflow: visible !important;
+}
+
+#includeDashBoard .tax-donut--compact .tax-donut__chart {
+    flex: 0 0 42%;
+}
+
+#includeDashBoard .tax-donut--compact .tax-legend {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0;
+}
+
+/* ---------------- Colunas mensais ---------------- */
+
+#includeDashBoard .tax-columns {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+#includeDashBoard .tax-columns__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
+#includeDashBoard .tax-columns__total {
+    font-size: 10px;
+    font-weight: 800;
+    fill: #0f2a5c;
+}
+
+#includeDashBoard .tax-columns__month {
+    font-size: 11px;
+    fill: #475569;
+}
+
+#includeDashBoard .tax-columns__note {
+    margin: 0;
+    text-align: center;
+    font-size: 10px;
+    color: #64748b;
+}
+
+#includeDashBoard .tax-subsection-title {
+    margin: 8px 0 2px;
+    padding-top: 8px;
+    border-top: 1px solid #eef2f7;
+    color: #0f2a5c;
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 0.04em;
+}
+
+/* ---------------- Gráfico débito × crédito ---------------- */
+
+#includeDashBoard .tax-dc__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+#includeDashBoard .tax-dc__label {
+    font-size: 12px;
+    font-weight: 700;
+    fill: #334155;
+}
+
+#includeDashBoard .tax-dc__value {
+    font-size: 10.5px;
+    font-weight: 700;
+}
+
+/* ---------------- Resultado estimado ---------------- */
+
+#includeDashBoard .tax-assessment__result-line.is-final {
+    padding: 6px 8px;
+    border-bottom: 0;
+    border-radius: 6px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-weight: 800;
+}
+
+#includeDashBoard .tax-assessment__result-line small {
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* ---------------- KPI: comparação com o período anterior ---------------- */
+
+#includeDashBoard .tax-kpi-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 10.5px;
+    line-height: 1.2;
+}
+
+#includeDashBoard .tax-kpi-hint[hidden] {
+    display: none;
+}
+
+#includeDashBoard .tax-kpi-delta {
+    font-weight: 700;
+    color: #64748b;
+}
+
+#includeDashBoard .tax-kpi-delta.is-good {
+    color: #047857;
+}
+
+#includeDashBoard .tax-kpi-delta.is-bad {
+    color: #be123c;
+}
+
+#includeDashBoard .tax-donut__side {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#includeDashBoard .tax-donut--compact .tax-donut__side .tax-legend {
+    padding: 0;
+}
+
+#includeDashBoard .tax-stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 2px;
+    overflow-y: auto !important;
+}
+
+#includeDashBoard .tax-donut--compact .tax-donut__chart {
+    flex: 0 0 120px;
+}
+
+#includeDashBoard .tax-donut--compact .tax-donut__svg {
+    max-width: 120px;
+    max-height: 120px;
+}
+
+#includeDashBoard .tax-stack .tax-columns {
+    flex: 0 0 auto;
+}
+
+#includeDashBoard .tax-stack .tax-subsection-title {
+    margin-top: 4px;
+    padding-top: 6px;
+}
+
+#includeDashBoard .tax-stack .tax-columns__svg {
+    max-height: 120px;
+}
+
+#includeDashBoard .tax-dc__svg {
+    max-height: 100%;
+}
+
+#includeDashBoard .tax-balance--pay {
+    color: #1e3a8a;
+}
+
+#includeDashBoard .tax-balance--credit {
+    color: #047857;
+}
+
+/* Telas menores: menos colunas para os nomes caberem. */
+@media (max-width: 1600px) {
+    #includeDashBoard .tax-col--status,
+    #includeDashBoard .tax-col--sold {
+        display: none;
+    }
+
+    #includeDashBoard .tax-table {
+        font-size: 11px;
+    }
+}

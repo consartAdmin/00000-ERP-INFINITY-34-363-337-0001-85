@@ -9,6 +9,7 @@ import { requireAuth } from '../middleware/authMiddleware.js';
 import {
     getTaxAssessmentDashboard,
     exportTaxAssessment,
+    getTaxAssessmentHistory,
 } from '../controllers/taxAssessmentDashboardController.js';
 
 const router = Router();
@@ -18,5 +19,8 @@ router.get('/', requireAuth, getTaxAssessmentDashboard);
 
 // GET /api/dashboard/tax-assessment/export?format=xlsx|pdf&startDate=...&endDate=...
 router.get('/export', requireAuth, exportTaxAssessment);
+
+// GET /api/dashboard/tax-assessment/history?endDate=YYYY-MM-DD&months=6
+router.get('/history', requireAuth, getTaxAssessmentHistory);
 
 export default router;
