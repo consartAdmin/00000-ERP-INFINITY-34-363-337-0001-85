@@ -57,6 +57,8 @@ const ROUTES = Object.freeze({
     `${API_BASE}/api/products-subgroups`,
     `${API_BASE}/api/productsSubgroups`,
   ],
+  // 3º nível: Grupo → Subgrupo → Família
+  families: `${API_BASE}/api/products-families`,
   // Combos de fabricante/fornecedor são carregados (com paginação) em tabDadosGerais.js
   // Obs.: /api/products-manufacturers é atendida antes pela tabela legada "productsManufactures" (vazia).
   fabricantes: `${API_BASE}/api/manufacturers`,
@@ -666,6 +668,57 @@ function setupGroupSubgroupLink({ FIELDS }) {
 }
 
 // ──────────────────────────────────────────────────────────────
+// Subgrupo → Família (3º nível). A família só lista as opções do
+// subgrupo escolhido; sem subgrupo o select fica desabilitado.
+// ──────────────────────────────────────────────────────────────
+async function loadFamiliesForSubgroup(fam, subgroupId, selectedId = null) {
+  if (!fam) return;
+  fam.disabled = true;
+
+  if (!subgroupId) {
+    fam.innerHTML = '<option value="">Selecione um subgrupo primeiro...</option>';
+    return;
+  }
+
+  fam.innerHTML = '<option value="">Carregando...</option>';
+  try {
+    const resp = await jfetch(
+      `${ROUTES.families}?subgroup_id=${encodeURIComponent(subgroupId)}&limit=500`,
+    );
+    const rows = extractRows(resp) || [];
+    const selected = selectedId != null && selectedId !== '' ? String(selectedId) : '';
+
+    fam.innerHTML = `<option value="">${rows.length ? 'Selecione...' : 'Nenhuma família cadastrada'}</option>`;
+    rows.forEach((r) => {
+      // Inativas só aparecem se já forem a família do produto
+      if (r.is_active === false && String(r.product_family_id) !== selected) return;
+      const opt = document.createElement('option');
+      opt.value = r.product_family_id;
+      opt.textContent = r.name ?? `Família #${r.product_family_id}`;
+      fam.appendChild(opt);
+    });
+
+    if (selected) fam.value = selected;
+    fam.disabled = false;
+  } catch (err) {
+    fam.innerHTML = '<option value="">Erro ao carregar famílias</option>';
+    console.error('Erro (subgrupo→família):', err);
+  }
+}
+
+function setupSubgroupFamilyLink({ FIELDS }) {
+  const grp = $(FIELDS.product_group_id);
+  const sub = $(FIELDS.product_subgroup_id);
+  const fam = $(FIELDS.product_family_id);
+  if (!sub || !fam) return;
+
+  loadFamiliesForSubgroup(fam, null);
+  sub.addEventListener('change', () => loadFamiliesForSubgroup(fam, Number(sub.value) || null));
+  // Trocar o grupo recarrega os subgrupos: a família volta a depender do subgrupo
+  grp?.addEventListener('change', () => loadFamiliesForSubgroup(fam, null));
+}
+
+// ──────────────────────────────────────────────────────────────
 // helpers bootstrap
 // ──────────────────────────────────────────────────────────────
 function waitFor(fn, { timeoutMs = 4000, intervalMs = 60 } = {}) {
@@ -782,6 +835,8 @@ const ctx = Object.freeze({
   ProductsLocationsApi, // ✅ AGORA SIM: disponível para tabDadosGerais.js
   carregarCombos,
   setupGroupSubgroupLink,
+  setupSubgroupFamilyLink,
+  loadFamiliesForSubgroup,
   waitFor,
 
   // ✅ opcional: as abas podem ler ctx.state.product
@@ -809,6 +864,7 @@ async function boot() {
     // combos + link grupo->subgrupo (depende do FIELDS da aba geral)
     await ctx.carregarCombos({ FIELDS: geral.FIELDS });
     ctx.setupGroupSubgroupLink({ FIELDS: geral.FIELDS });
+    ctx.setupSubgroupFamilyLink({ FIELDS: geral.FIELDS });
     initQuickCreate(ctx, { FIELDS: geral.FIELDS });
 
     // carrega produto (dados gerais)
@@ -860,6 +916,13 @@ async function boot() {
       sub.disabled = false;
       if (produto.product_subgroup_id) sub.value = String(produto.product_subgroup_id);
     }
+
+    // Família (3º nível) depende do subgrupo já restaurado acima
+    await ctx.loadFamiliesForSubgroup(
+      ctx.$(geral.FIELDS.product_family_id),
+      Number(sub?.value) || null,
+      produto.product_family_id ?? null,
+    );
 
     // carrega box por produto (se existir endpoint)
     if (productCode) await geral.carregarBoxDoProduto(productCode).catch(() => { });

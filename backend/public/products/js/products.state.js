@@ -22,5 +22,6 @@ export const state = {
     supplier_id: '',
     group_id: '',
     subgroup_id: '',
+    family_id: '',
   },
 };

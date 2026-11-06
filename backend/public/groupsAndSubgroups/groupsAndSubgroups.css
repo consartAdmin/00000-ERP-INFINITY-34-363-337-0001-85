@@ -167,3 +167,26 @@
   .gs-search input{ width: 100%; }
   .gs-panel-head__actions{ justify-content: flex-start; }
 }
+
+/* ── 3 colunas: Grupos | Subgrupos | Famílias ───────────────────────── */
+.consart-lr.gs-3cols{
+  grid-template-columns: repeat(3, minmax(360px, 1fr));
+}
+@media (max-width: 1280px){
+  .consart-lr.gs-3cols{ grid-template-columns: repeat(2, minmax(360px, 1fr)); }
+}
+@media (max-width: 980px){
+  .consart-lr.gs-3cols{ grid-template-columns: 1fr; }
+}
+.gs-3cols .gs-search input{ width: min(220px, 30vw); }
+.gs-3cols .gs-field{ min-width: 160px; }
+.gs-3cols .gs-field--grow{ flex: 1 1 180px; }
+#subgroupsTableBody tr[data-id]{ cursor: pointer; }
+
+/* Com 3 colunas, a tabela cabe no painel (sem rolagem lateral escondendo as Ações) */
+.gs-3cols .gs-table{ min-width: 0; table-layout: fixed; }
+.gs-3cols .gs-col-id{ width: 52px; }
+.gs-3cols .gs-col-status{ width: 84px; }
+.gs-3cols .gs-col-actions{ width: 124px; }
+.gs-3cols .gs-table td{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gs-3cols .gs-table-actions .btn{ padding-left: 6px; padding-right: 6px; }

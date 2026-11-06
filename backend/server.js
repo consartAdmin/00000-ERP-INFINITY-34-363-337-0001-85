@@ -15,6 +15,7 @@ import dns from "dns"; // (pode ser usado em checks futuros)
 import { AsyncLocalStorage } from "node:async_hooks";
 import { erpCompanyContext } from './utils/erpCompanyContext.js';
 import { runZeroStockLots20261025 } from './services/oneTime/zeroStockLots20261025.js';
+import { ensureProductsFamiliesTable } from './repositories/productsFamilies/productsFamilies.index.js';
 import { queueErrorEmail, sendErrorEmail } from "./errorEmailReporter.js";
 
 import jwt from "jsonwebtoken";
@@ -1260,6 +1261,12 @@ app.use('/api/products-kits', productsKitsRoutes);
 import productsSubgroupsRoutes from './routes/productsSubgroupsRoutes.js';
 app.use('/api', productsSubgroupsRoutes);
 
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║ API — Famílias de Produtos (3º nível: Grupo → Subgrupo → Família)         ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+import productsFamiliesRoutes from './routes/productsFamiliesRoutes.js';
+app.use('/api', productsFamiliesRoutes);
+
 // Layout de tabelas por usuário (colunas visíveis, largura, alinhamento)
 import userTablePreferencesRoutes from './routes/userTablePreferencesRoutes.js';
 app.use('/api/user-table-preferences', userTablePreferencesRoutes);
@@ -1683,6 +1690,8 @@ async function runStartupJobs() {
    console.log("[boot] Inicializando módulos assíncronos...");
 
    const jobs = [
+      // Primeiro: cria "productsFamilies" e products.product_family_id (usada no RETURNING de produtos)
+      { name: "ensureProductsFamiliesTable", fn: () => ensureProductsFamiliesTable() },
       { name: "initNfeInboxController", fn: () => initNfeInboxController() },
       { name: "initEcommerceOrdersController", fn: () => ecommerceOrdersController.initEcommerceOrdersController() },
       { name: "initOrdersBillingController", fn: () => initOrdersBillingController() },

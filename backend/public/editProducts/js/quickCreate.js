@@ -1,7 +1,7 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ quickCreate.js — Botões "+" da aba Dados Gerais (Editar Produto)     ║
 // ║ CONSART ERP — ESM                                                   ║
-// ║ - Grupo / Subgrupo / Fabricante: modal rápido (somente nome)         ║
+// ║ - Grupo / Subgrupo / Família / Fabricante: modal rápido (nome)       ║
 // ║ - Fornecedor: modal completo de cadastro (suppliers.quickModal.js)   ║
 // ║ - Após criar: adiciona a opção no <select> e já seleciona            ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -199,7 +199,39 @@ export function initQuickCreate(ctx, { FIELDS }) {
       }
 
       selectOption(sub, created.product_subgroup_id ?? created.id, created.name);
+      // novo subgrupo ainda não tem famílias: recarrega o select da família
+      sub?.dispatchEvent(new Event('change'));
       ctx.toast(`Subgrupo "${created.name}" cadastrado.`, 'success');
+    },
+
+    async family() {
+      const sub = ctx.$(FIELDS.product_subgroup_id);
+      const fam = ctx.$(FIELDS.product_family_id);
+      const subgroupId = Number(sub?.value);
+
+      if (!subgroupId) {
+        ctx.toast('Selecione um subgrupo antes de cadastrar a família.', 'warning');
+        return;
+      }
+
+      const subgroupName = sub.options[sub.selectedIndex]?.textContent || '';
+
+      const created = await openNameModal({
+        title: 'Nova Família',
+        label: 'Nome da família',
+        maxLength: 100,
+        subtitle: `Subgrupo: ${subgroupName}`,
+        onSave: (name) => post('/api/products-families', { name, subgroup_id: subgroupId }),
+      });
+      if (!created) return;
+
+      if (fam && fam.options.length === 1 && fam.options[0].value === '') {
+        fam.options[0].textContent = 'Selecione...';
+      }
+
+      selectOption(fam, created.product_family_id ?? created.id, created.name);
+      if (fam) fam.disabled = false;
+      ctx.toast(`Família "${created.name}" cadastrada.`, 'success');
     },
 
     async manufacturer() {

@@ -532,7 +532,8 @@
                   </div>
                 </div>
 
-                <div class="fields-inline fields-gap-3">
+                <!-- flex-wrap: com a Família (3º nível) a linha quebra em telas menores -->
+                <div class="fields-inline fields-gap-3" style="flex-wrap: wrap;">
                   <div class="fields fields-h-6 fields-w-16">
                     <span>Grupo
                       <button type="button" class="quick-add-btn" data-quick-add="group"
@@ -547,6 +548,14 @@
                         title="Cadastrar novo subgrupo" aria-label="Cadastrar novo subgrupo">+</button>
                     </span>
                     <select id="product_subgroup_id" name="product_subgroup_id"></select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-w-16">
+                    <span>Família
+                      <button type="button" class="quick-add-btn" data-quick-add="family"
+                        title="Cadastrar nova família" aria-label="Cadastrar nova família">+</button>
+                    </span>
+                    <select id="product_family_id" name="product_family_id"></select>
                   </div>
 
                   <div class="fields fields-h-6 fields-w-16">

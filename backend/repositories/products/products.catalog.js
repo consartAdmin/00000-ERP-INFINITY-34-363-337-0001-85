@@ -41,6 +41,9 @@ const columns = [
   { name: 'created_at', type: 'TIMESTAMP', default: 'NOW()' },
   { name: 'updated_at', type: 'TIMESTAMP', default: 'NOW()' },
   { name: 'is_active', type: 'BOOLEAN', default: 'TRUE' },
+  // 3º nível (Grupo → Subgrupo → Família). Coluna criada no boot por
+  // ensureProductsFamiliesTable (ALTER TABLE ... ADD COLUMN IF NOT EXISTS).
+  { name: 'product_family_id', type: 'INTEGER' },
 ];
 
 // ----------------------------------------------------------------------
@@ -60,6 +63,7 @@ export const PRODUCTS_INSERT_COLUMNS = Object.freeze([
   'manufacturer_id',
   'product_imagem_id',
   'is_active',
+  'product_family_id',
 ]);
 
 export const PRODUCTS_UPDATE_COLUMNS = PRODUCTS_INSERT_COLUMNS;
@@ -88,6 +92,7 @@ Object.assign(inputMap, {
   cost_price: ['cost_price', 'cost', 'preco_custo', 'valor_custo'],
   product_group_id: ['product_group_id', 'group_id', 'grupo_id'],
   product_subgroup_id: ['product_subgroup_id', 'subgroup_id', 'subgrupo_id'],
+  product_family_id: ['product_family_id', 'family_id', 'familia_id'],
   product_stock_id: ['product_stock_id', 'stock_id', 'estoque_id'],
   product_location_id: ['product_location_id', 'location_id', 'localizacao_id'],
   supplier_id: ['supplier_id', 'fornecedor_id'],
@@ -117,6 +122,7 @@ export const PRODUCTS_SCHEMA = {
     { name: 'idx_products_product_location_id', on: ['product_location_id'] },
     { name: 'idx_products_product_stock_id', on: ['product_stock_id'] },
     { name: 'idx_products_product_subgroup_id', on: ['product_subgroup_id'] },
+    { name: 'idx_products_product_family_id', on: ['product_family_id'] },
     { name: 'idx_products_supplier_id', on: ['supplier_id'] },
   ],
   foreignKeys: [
@@ -245,6 +251,7 @@ function prepare(payload, insert) {
   const integerFields = [
     'product_group_id',
     'product_subgroup_id',
+    'product_family_id',
     'product_stock_id',
     'product_location_id',
     'supplier_id',
