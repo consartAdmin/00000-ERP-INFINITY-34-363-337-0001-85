@@ -94,11 +94,6 @@
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23174a7e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
     }
 
-    /* Filtros: não encolher quando os campos quebram em duas linhas */
-    .page-sales-report .sr-filters-section {
-      flex: 0 0 auto;
-    }
-
     /* Rodapé: indicadores ocupam o espaço livre; paginação e "Mostrar" à direita */
     .page-sales-report .table-footer {
       grid-template-columns: minmax(0, 1fr) auto auto;
@@ -121,7 +116,8 @@
     <!-- ╔══════════════════════════════════════════════════════════════╗
          ║ FILTROS                                                     ║
          ╚══════════════════════════════════════════════════════════════╝ -->
-    <section class="table-layout-integrated sr-filters-section" aria-labelledby="sales-filters-title">
+    <section class="table-layout-integrated" aria-labelledby="sales-filters-title">
+      <div class="tabs">
       <div class="table-layout-integrated__filter">
         <h2 class="sr-section-title sr-title-icon" id="sales-filters-title">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5Z"/></svg>
@@ -217,18 +213,6 @@
 
         </div>
 
-      </div>
-    </section>
-
-    <!-- ╔══════════════════════════════════════════════════════════════╗
-         ║ INDICADORES E DETALHAMENTO                                  ║
-         ╚══════════════════════════════════════════════════════════════╝ -->
-    <section class="table-layout-integrated" aria-labelledby="sales-details-title">
-      <div class="tabs">
-        <div class="table-layout-integrated__filter">
-
-          <h2 class="sr-section-title" id="sales-details-title">Detalhamento</h2>
-
           <nav class="tab-list" role="tablist" aria-label="Visualização do relatório de vendas">
             <button class="tab is-active" id="tab-day" type="button" role="tab" data-tab="day" aria-selected="true"
               aria-controls="tab-panel-day" tabindex="0">
@@ -245,7 +229,7 @@
               📦 Por produto
             </button>
           </nav>
-        </div>
+      </div>
 
         <!-- ABA: POR DIA -->
         <div class="tab-panel is-active" id="tab-panel-day" role="tabpanel" data-panel="day" aria-labelledby="tab-day"
