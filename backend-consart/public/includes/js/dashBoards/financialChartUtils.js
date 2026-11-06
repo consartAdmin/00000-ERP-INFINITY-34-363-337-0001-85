@@ -1,14 +1,16 @@
 import { fetchDashboard, moneyBR } from './dashboardUtils.js';
 
 const ENDPOINT = '/api/dashboard/fluxo-financeiro';
-let pendingRequest = null;
+// Both charts ask for the same period at once: one request serves both.
+const pendingRequests = new Map();
 
-export function loadFinancialFlow() {
-  if (!pendingRequest) {
-    pendingRequest = fetchDashboard(ENDPOINT)
-      .finally(() => window.setTimeout(() => { pendingRequest = null; }, 500));
+export function loadFinancialFlow(query = '') {
+  if (!pendingRequests.has(query)) {
+    const request = fetchDashboard(query ? `${ENDPOINT}?${query}` : ENDPOINT)
+      .finally(() => window.setTimeout(() => pendingRequests.delete(query), 500));
+    pendingRequests.set(query, request);
   }
-  return pendingRequest;
+  return pendingRequests.get(query);
 }
 
 function escapeHtml(value) {

@@ -15,10 +15,10 @@ import { dailyPayablesDashboard }
   from './dailyPayables.js';
 
 import { monthlyReceivablesDashboard }
-  from './monthlyReceivables.js';
+  from './monthlyReceivables.js?v=20261106-1';
 
 import { monthlyPayablesDashboard }
-  from './monthlyPayables.js';
+  from './monthlyPayables.js?v=20261106-1';
 
 import { totalReceivablesDashboard }
   from './totalReceivables.js?v=20260914-1';
@@ -27,16 +27,16 @@ import { totalPayablesDashboard }
   from './totalPayables.js?v=20260914-1';
 
 import { customerOverdueDashboard }
-  from './customerOverdue.js';
+  from './customerOverdue.js?v=20261106-1';
 
 import { overdueExpensesDashboard }
-  from './overdueExpenses.js';
+  from './overdueExpenses.js?v=20261106-1';
 
 import * as receivablesChartModule
-  from './receivablesChart.js?v=20260914-2';
+  from './receivablesChart.js?v=20261106-1';
 
 import * as payablesChartModule
-  from './payablesChart.js?v=20260914-2';
+  from './payablesChart.js?v=20261106-1';
 
 import { salesAnalyticsDashboard }
   from './salesAnalytics.js';
@@ -45,6 +45,13 @@ import { salesTaxesDashboard }
   from './salesTaxes.js';
 import { taxAssessmentDashboard }
   from './taxAssessment.js';
+import {
+  renderFinancialPeriodPicker,
+  bindFinancialPeriodPicker,
+  onFinancialPeriodChange,
+} from './dashboardPeriod.js?v=20261106-1';
+import { showCenterModal }
+  from '/public/includes/js/centerAlertModal.js';
 
 const receivablesChartDashboard =
   receivablesChartModule.receivablesChartDashboard ??
@@ -157,11 +164,45 @@ const DASHBOARD_PAGES = Object.freeze([
   },
 ]);
 
+// Cards that follow the period picker of the Financeiro page.
+// "Dia" and the open totals stay as a snapshot of today.
+const FINANCIAL_PERIOD_KEYS = new Set([
+  'monthly-receivables',
+  'monthly-payables',
+  'receivables-chart',
+  'payables-chart',
+  'customer-overdue',
+  'overdue-expenses',
+]);
+
+function bindFinancialPeriodReload(root, dashboards, signal) {
+  const periodDashboards = (Array.isArray(dashboards) ? dashboards : [])
+    .filter((dashboard) => FINANCIAL_PERIOD_KEYS.has(dashboard?.key) && typeof dashboard.load === 'function');
+
+  if (!periodDashboards.length) return;
+
+  let running = 0;
+
+  onFinancialPeriodChange(async () => {
+    running += 1;
+    root.dataset.financialPeriodLoading = '1';
+
+    try {
+      await Promise.all(periodDashboards.map((dashboard) => dashboard.load(root).catch((error) => {
+        console.error(`[includeDashboard] Failed to reload "${dashboard.key}" for the period:`, error);
+      })));
+    } finally {
+      running -= 1;
+      if (!running) delete root.dataset.financialPeriodLoading;
+    }
+  }, { signal });
+}
+
 function getDashboardPageByKey(key) {
   return DASHBOARD_PAGES.find((page) => page.keys.has(key))?.id || 'analytics';
 }
 
-function initDashboardPagination(root, userId) {
+function initDashboardPagination(root, userId, dashboards = []) {
   const grid = root.querySelector('.dash-grid');
   if (!grid) return;
 
@@ -185,6 +226,7 @@ function initDashboardPagination(root, userId) {
       <strong data-dashboard-page-title></strong>
       <span data-dashboard-page-description></span>
     </div>
+    ${renderFinancialPeriodPicker()}
     <div class="dashboard-page-dots" role="tablist" aria-label="Selecionar página">
       ${DASHBOARD_PAGES.map((page, index) => `
         <button type="button" class="dashboard-page-dot" role="tab"
@@ -195,6 +237,13 @@ function initDashboardPagination(root, userId) {
     <button class="dashboard-page-arrow" type="button" data-dashboard-next aria-label="Próxima página">›</button>
   `;
   root.insertBefore(navigation, grid);
+
+  const periodPicker = navigation.querySelector('[data-financial-period-picker]');
+  bindFinancialPeriodPicker(navigation, {
+    signal: paginationAbort.signal,
+    onError: (message) => showCenterModal({ variant: 'warning', title: 'Período', message }),
+  });
+  bindFinancialPeriodReload(root, dashboards, paginationAbort.signal);
 
   const storageKey = `consart.dashboard.activePage.${userId}`;
   let activeIndex = Number(localStorage.getItem(storageKey));
@@ -221,6 +270,8 @@ function initDashboardPagination(root, userId) {
     });
 
     root.dataset.dashboardPage = activePage.id;
+    if (periodPicker) periodPicker.hidden = activePage.id !== 'financial';
+    navigation.classList.toggle('has-period', activePage.id === 'financial');
     localStorage.setItem(storageKey, String(activeIndex));
     window.dispatchEvent(new Event('resize'));
   };
@@ -818,7 +869,7 @@ async function initIncludeDashboard() {
       authorizedDashboards
     );
 
-    initDashboardPagination(root, userId);
+    initDashboardPagination(root, userId, authorizedDashboards);
 
     // ------------------------------------------------------------------
     // SHOW DASHBOARD
