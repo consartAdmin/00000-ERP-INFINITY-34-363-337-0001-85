@@ -12,7 +12,7 @@
   <title>ESTOQUE POR LOTE | CONSART ERP</title>
   <link rel="icon" type="image/png" sizes="32x32" href="/public/imagens/brasaoConsartInfinity.png">
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="./productsStockLots.css?v=lots-02" />
+  <link rel="stylesheet" href="./productsStockLots.css?v=lots-css-04" />
 </head>
 
 <body class="page consart-theme p-page pw-page--full ph-page--xr">
@@ -121,10 +121,16 @@
         </table>
       </div>
 
-      <footer class="table-footer">
-        <div class="table-footer__info">
-          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+      <footer class="table-footer lots-footer">
+        <div class="table-footer__info table-footer__info--totals">
+          <div class="summary-pill summary-pill--success">
             <span id="tableInfo">0 lotes encontrados</span>
+          </div>
+          <div id="tableCostPill" class="summary-pill summary-pill--primary">
+            <span>Custo total&nbsp;<b id="tableCost" class="table-footer__total--info">R$ 0,00</b></span>
+          </div>
+          <div id="tableQtyPill" class="summary-pill summary-pill--info">
+            <span>Em mãos&nbsp;<b id="tableQty" class="table-footer__total--success">0 un.</b></span>
           </div>
         </div>
         <div class="table-footer__pagination">
@@ -405,7 +411,7 @@
   </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="./productsStockLots.js?v=lots-03"></script>
+  <script type="module" src="./productsStockLots.js?v=lots-04"></script>
 </body>
 
 </html>

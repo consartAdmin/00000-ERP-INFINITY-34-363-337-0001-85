@@ -172,6 +172,7 @@ async function load() {
     const data = await api(`/panel?${queryString({ page: state.page, limit: state.limit })}`);
     state.rows = data.rows || [];
     state.total = Number(data.total || 0);
+    state.totals = data.totals || null;
     state.situations = data.situations || [];
     state.settings = data.settings || null;
     fillSituationSelect();
@@ -249,6 +250,13 @@ function renderRows() {
 function renderFooter() {
   const pages = Math.max(1, Math.ceil(state.total / state.limit));
   $('tableInfo').textContent = `${state.total} ${state.total === 1 ? 'lote encontrado' : 'lotes encontrados'}`;
+  const t = state.totals || {};
+  const qtyShort = (v) => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+  $('tableCost').textContent = fmtMoney(t.cost_total);
+  $('tableQty').textContent = `${qtyShort(t.qty_on_hand)} un.`;
+  $('tableCostPill').title = 'Soma de todos os lotes filtrados (todas as páginas): qtd em mãos × custo do lote, ou custo do produto quando o lote não tem custo.'
+    + (t.without_cost ? ` ${t.without_cost} lote(s) sem custo cadastrado.` : '');
+  $('tableQtyPill').title = `Disponível: ${qtyShort(t.qty_available)} un. (em mãos menos reservado)`;
   $('pageInfo').textContent = `Página ${state.page} de ${pages}`;
   $('btnPrev').disabled = state.page <= 1;
   $('btnNext').disabled = state.page >= pages;
