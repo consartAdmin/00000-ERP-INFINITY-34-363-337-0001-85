@@ -7,6 +7,7 @@
 import { getFullSalesReport } from '../repositories/salesReport/salesReport.index.js';
 import { generateSalesReportPdf } from '../generationPdf/generationSalesReportPdf.js';
 import { generateSalesReportOrdersPdf } from '../generationPdf/generationSalesReportOrdersPdf.js';
+import { generateSalesReportExcel } from '../generationExcel/generationSalesReportExcel.js';
 
 const MODES = new Set(['full', 'products', 'customers', 'orders']);
 
@@ -113,7 +114,7 @@ function buildFiltersFromQuery(query = {}) {
   };
 }
 
-function makeSalesReportFilename({ mode, costMode, dateStart, dateEnd }) {
+function makeSalesReportFilename({ mode, costMode, dateStart, dateEnd, ext = 'pdf' }) {
   const modeLabels = {
     full: 'completo',
     products: 'produtos',
@@ -128,7 +129,7 @@ function makeSalesReportFilename({ mode, costMode, dateStart, dateEnd }) {
     safeFilenamePart(dateStart || 'inicio'),
     'a',
     safeFilenamePart(dateEnd || 'fim'),
-  ].join('-') + '.pdf';
+  ].join('-') + `.${ext}`;
 }
 
 export async function handleGetSalesReport(req, res) {
@@ -169,6 +170,34 @@ export async function handleGetSalesReportPdf(req, res) {
     res.setHeader('Cache-Control', 'no-store, max-age=0');
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     return res.end(pdfBuffer);
+  } catch (error) {
+    if (res.headersSent) return res.end();
+    return sendError(res, error);
+  }
+}
+
+// Excel por tipo de relatório: full (Resumo + por dia/cliente/produto), products, orders.
+export async function handleGetSalesReportExcel(req, res) {
+  try {
+    const filters = buildFiltersFromQuery(req.query || {});
+    const requested = normalizeMode(req.query?.mode);
+    const mode = requested === 'products' || requested === 'orders' ? requested : 'full';
+    const buffer = await generateSalesReportExcel(filters, mode);
+
+    const filename = makeSalesReportFilename({
+      mode,
+      costMode: filters.costMode,
+      dateStart: filters.dateStart,
+      dateEnd: filters.dateEnd,
+      ext: 'xlsx',
+    });
+
+    res.status(200);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Length', String(buffer.length));
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.end(buffer);
   } catch (error) {
     if (res.headersSent) return res.end();
     return sendError(res, error);

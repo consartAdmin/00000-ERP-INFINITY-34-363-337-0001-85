@@ -1,6 +1,6 @@
 'use strict';
 
-import { SALES_REPORT_ENDPOINT, SALES_REPORT_PDF_ENDPOINT } from './salesReport.config.js';
+import { SALES_REPORT_ENDPOINT, SALES_REPORT_PDF_ENDPOINT, SALES_REPORT_XLSX_ENDPOINT } from './salesReport.config.js';
 import { buildQuery } from './salesReport.utils.js';
 
 export async function fetchSalesReport(filters = {}) {
@@ -21,4 +21,9 @@ export async function fetchSalesReport(filters = {}) {
 export function buildPdfUrl(filters = {}, mode = 'full') {
   const query = buildQuery(filters, { mode });
   return `${SALES_REPORT_PDF_ENDPOINT}${query ? `?${query}` : ''}`;
+}
+
+export function buildXlsxUrl(filters = {}, mode = 'full') {
+  const query = buildQuery(filters, { mode });
+  return `${SALES_REPORT_XLSX_ENDPOINT}${query ? `?${query}` : ''}`;
 }

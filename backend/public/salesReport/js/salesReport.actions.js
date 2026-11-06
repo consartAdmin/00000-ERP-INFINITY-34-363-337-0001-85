@@ -1,8 +1,8 @@
 'use strict';
 
-import { buildPdfUrl, fetchSalesReport } from './salesReport.api.js';
+import { buildPdfUrl, buildXlsxUrl, fetchSalesReport } from './salesReport.api.js';
 import { resetFilters } from './salesReport.filters.js';
-import { getFiltersFromDOM, toggleCostMode } from './salesReport.form.js';
+import { getCostMode, getFiltersFromDOM, setCostMode } from './salesReport.form.js';
 import { showMessage } from './salesReport.modal.js';
 import {
   renderActiveTable,
@@ -86,6 +86,31 @@ function openPdf(mode) {
   window.open(buildPdfUrl(getFiltersFromDOM(), mode), '_blank', 'noopener');
 }
 
+function downloadXlsx(mode) {
+  const link = document.createElement('a');
+  link.href = buildXlsxUrl(getFiltersFromDOM(), mode);
+  link.download = '';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+// Botão "Gerar": usa Tipo de Relatório + PDF/Excel (+ custo e filtros atuais).
+function generateReport() {
+  const mode = dom.reportType?.value || 'full';
+  if (dom.reportFormat?.value === 'xlsx') return downloadXlsx(mode);
+  return openPdf(mode);
+}
+
+// Select "Custo": Atual / Dia da Venda (salvo no navegador) e recarrega o relatório.
+async function handleCostModeChange(event) {
+  const mode = event.currentTarget.value;
+  if (mode === getCostMode()) return;
+  setCostMode(mode);
+  updateCostModeUI();
+  await loadAndRenderSalesReport();
+}
+
 export function bindActions() {
   dom.btnBack?.addEventListener('click', () => window.history.back());
   dom.btnApply?.addEventListener('click', () => loadAndRenderSalesReport());
@@ -93,15 +118,8 @@ export function bindActions() {
     resetFilters();
     await loadAndRenderSalesReport({ initial: true });
   });
-  dom.btnExportCsv?.addEventListener('click', exportCurrentTableToCsv);
-  dom.btnPdfFull?.addEventListener('click', () => openPdf('full'));
-  dom.btnPdfProducts?.addEventListener('click', () => openPdf('products'));
-  dom.btnPdfOrders?.addEventListener('click', () => openPdf('orders'));
-  dom.btnCostMode?.addEventListener('click', async () => {
-    toggleCostMode();
-    updateCostModeUI();
-    await loadAndRenderSalesReport();
-  });
+  dom.btnGenerateReport?.addEventListener('click', generateReport);
+  dom.costModeSelect?.addEventListener('change', handleCostModeChange);
   dom.btnPreviousPage?.addEventListener('click', () => {
     if (state.page <= 1) return;
     state.page -= 1;

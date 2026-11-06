@@ -122,10 +122,7 @@ export function renderReport(data = {}) {
 export function updateCostModeUI() {
   const saleDay = getCostMode() === COST_MODES.SALE_DAY;
   const label = saleDay ? 'Dia da Venda' : 'Atual';
-  if (dom.btnCostMode) {
-    dom.btnCostMode.textContent = `🧾 Custo: ${label}`;
-    dom.btnCostMode.setAttribute('aria-pressed', String(saleDay));
-  }
+  if (dom.costModeSelect) dom.costModeSelect.value = saleDay ? COST_MODES.SALE_DAY : COST_MODES.CURRENT;
   if (dom.averageCostHeader) dom.averageCostHeader.textContent = `Custo méd. unit. (${label})`;
 }
 

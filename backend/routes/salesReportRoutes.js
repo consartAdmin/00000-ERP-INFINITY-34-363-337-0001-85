@@ -8,6 +8,7 @@ import { Router } from 'express';
 import {
   handleGetSalesReport,
   handleGetSalesReportPdf,
+  handleGetSalesReportExcel,
 } from '../controllers/salesReportController.js';
 
 const router = Router();
@@ -16,5 +17,6 @@ const router = Router();
 // app.use('/api/reports', salesReportRoutes);
 router.get('/sales', handleGetSalesReport);
 router.get('/sales/pdf', handleGetSalesReportPdf);
+router.get('/sales/xlsx', handleGetSalesReportExcel);
 
 export default router;
