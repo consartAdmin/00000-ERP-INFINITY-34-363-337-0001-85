@@ -7,8 +7,10 @@ import pool from '../../config/db.js';
 import { TB_USO, TB_USO_ITEMS } from './usoConsumo.constants.js';
 import { safeText, safeNumber } from './usoConsumo.sanitizers.js';
 import { getById } from './usoConsumoQuery.repository.js';
+import { ensureUsoConsumoSchema } from './usoConsumoSchema.repository.js';
 
 export async function finishBudgetAsUsoConsumo(budgetId, payload = {}) {
+  await ensureUsoConsumoSchema();
   const client = await pool.connect();
 
   try {
@@ -42,6 +44,18 @@ export async function finishBudgetAsUsoConsumo(budgetId, payload = {}) {
     }
 
     const budgetRealId = Number(budget.budget_id);
+
+    // Trava: o mesmo orçamento não pode baixar o estoque duas vezes.
+    const duplicate = await client.query(
+      `SELECT number FROM ${TB_USO} WHERE budget_id = $1 LIMIT 1`,
+      [budgetRealId]
+    );
+
+    if (duplicate.rows[0]) {
+      throw new Error(
+        `Orçamento ${budgetRealId} já possui o uso e consumo ${duplicate.rows[0].number}.`
+      );
+    }
 
     /*
      * Itens vindos de budgetsItems (tabela ATUAL). Antes lia a legada
@@ -106,9 +120,11 @@ export async function finishBudgetAsUsoConsumo(budgetId, payload = {}) {
         reason,
         cfop,
         status,
-        total_amount
+        total_amount,
+        origin,
+        finished_at
       )
-      VALUES ($1,$2,$3,$4,$5,$6,'FINALIZADO',$7)
+      VALUES ($1,$2,$3,$4,$5,$6,'FINALIZADO',$7,'ORCAMENTO',NOW())
       RETURNING *
     `;
 

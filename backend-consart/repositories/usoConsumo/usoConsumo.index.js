@@ -8,3 +8,4 @@ export { emitNfe, retryNfe } from './usoConsumoNfeEmission.repository.js';
 export { finishBudgetAsUsoConsumo } from './usoConsumoFinishBudget.repository.js';
 export { refreshNfeStatus } from './usoConsumoNfeStatus.repository.js';
 export { generateDanfeConsart } from './usoConsumoDanfe.repository.js';
+export { productInfo, saveDraft, finish, remove } from './usoConsumoDirect.repository.js';
