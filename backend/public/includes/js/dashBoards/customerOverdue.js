@@ -13,6 +13,12 @@ import {
   fetchDashboard,
 } from './dashboardUtils.js';
 
+import {
+  getFinancialPeriod,
+  financialPeriodQuery,
+  financialPeriodLabel,
+} from './dashboardPeriod.js?v=20261106-1';
+
 
 // ======================================================================
 // CONFIG
@@ -58,7 +64,7 @@ export const customerOverdueDashboard = {
 
           <span
             class="tooltip-icon"
-            data-tip="Somatório de todos os títulos VENCIDOS (status OVERDUE) sem filtro de período."
+            data-tip="Somatório dos títulos VENCIDOS (status OVERDUE) com vencimento dentro do período escolhido no topo da página."
             title="Informações"
           >
             ⓘ
@@ -106,9 +112,12 @@ export const customerOverdueDashboard = {
       // FETCH API
       // ---------------------------------------------------------------
 
+      const period =
+        getFinancialPeriod();
+
       const data =
         await fetchDashboard(
-          ENDPOINT
+          `${ENDPOINT}?${financialPeriodQuery(period)}`
         );
 
 
@@ -164,7 +173,7 @@ export const customerOverdueDashboard = {
 
       if (infoElement) {
         infoElement.textContent =
-          `${quantity} título(s) em aberto`;
+          `${quantity} título(s) vencido(s) · ${financialPeriodLabel(period)}`;
       }
 
 

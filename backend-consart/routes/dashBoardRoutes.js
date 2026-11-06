@@ -56,6 +56,12 @@ function resolverPeriodo(req) {
   return { startDate, endDate };
 }
 
+// Período opcional: sem datas na URL a rota mantém o comportamento antigo (sem filtro).
+function resolverPeriodoOpcional(req) {
+  if (!req.query?.startDate && !req.query?.endDate) return null;
+  return resolverPeriodo(req);
+}
+
 // Status de NF-e que NÃO entram na venda
 const NFE_EXCLUIR = [
   'CANCELADO',
@@ -302,7 +308,8 @@ router.get('/vendas-mes', async (req, res) => {
  * ------------------------------------------------------------------- */
 router.get('/total-receber-mes', async (req, res) => {
   try {
-    const { ano, mes } = hojeYM();
+    // startDate/endDate do cabeçalho da home; padrão = mês atual.
+    const { startDate, endDate } = resolverPeriodo(req);
 
     const sql = `
       SELECT 
@@ -316,15 +323,14 @@ router.get('/total-receber-mes', async (req, res) => {
           ),
         0) AS valor
       FROM public."accountsReceivable"
-      WHERE EXTRACT(YEAR FROM due_date) = $1
-        AND EXTRACT(MONTH FROM due_date) = $2
+      WHERE due_date BETWEEN $1::date AND $2::date
     `;
 
-    const { rows } = await pool.query(sql, [ano, mes]);
-    return res.json({ ok: true, valor: rows[0].valor });
+    const { rows } = await pool.query(sql, [startDate, endDate]);
+    return res.json({ ok: true, valor: rows[0].valor, period: { startDate, endDate } });
   } catch (err) {
     console.error('[DASHBOARD] total-receber-mes error:', err);
-    res.status(500).json({
+    res.status(Number(err?.status) || 500).json({
       ok: false,
       error: 'Erro ao calcular Total à Receber do mês',
     });
@@ -336,7 +342,8 @@ router.get('/total-receber-mes', async (req, res) => {
  * ------------------------------------------------------------------- */
 router.get('/total-pagar-mes', async (req, res) => {
   try {
-    const { ano, mes } = hojeYM();
+    // startDate/endDate do cabeçalho da home; padrão = mês atual.
+    const { startDate, endDate } = resolverPeriodo(req);
 
     const sql = `
       SELECT 
@@ -350,15 +357,14 @@ router.get('/total-pagar-mes', async (req, res) => {
           ),
         0) AS valor
       FROM public."accountsPayable"
-      WHERE EXTRACT(YEAR FROM due_date) = $1
-        AND EXTRACT(MONTH FROM due_date) = $2
+      WHERE due_date BETWEEN $1::date AND $2::date
     `;
 
-    const { rows } = await pool.query(sql, [ano, mes]);
-    return res.json({ ok: true, valor: rows[0].valor });
+    const { rows } = await pool.query(sql, [startDate, endDate]);
+    return res.json({ ok: true, valor: rows[0].valor, period: { startDate, endDate } });
   } catch (err) {
     console.error('[DASHBOARD] total-pagar-mes error:', err);
-    res.status(500).json({
+    res.status(Number(err?.status) || 500).json({
       ok: false,
       error: 'Erro ao calcular Total à Pagar do mês',
     });
@@ -370,15 +376,17 @@ router.get('/total-pagar-mes', async (req, res) => {
  * ------------------------------------------------------------------- */
 router.get('/inadimplencia', async (req, res) => {
   try {
+    const periodo = resolverPeriodoOpcional(req);
     const sql = `
       SELECT
         COALESCE(SUM(value), 0) AS total_aberto,
         COUNT(*)                AS titulos_abertos
       FROM public."accountsReceivable"
       WHERE status = 'OVERDUE'
+        ${periodo ? 'AND due_date BETWEEN $1::date AND $2::date' : ''}
     `;
 
-    const { rows } = await pool.query(sql);
+    const { rows } = await pool.query(sql, periodo ? [periodo.startDate, periodo.endDate] : []);
     const row = rows[0] || {};
 
     const totalAberto = Number(row.total_aberto) || 0;
@@ -391,7 +399,7 @@ router.get('/inadimplencia', async (req, res) => {
     });
   } catch (err) {
     console.error('[DASHBOARD][INADIMPLENCIA]', err);
-    return res.status(500).json({
+    return res.status(Number(err?.status) || 500).json({
       ok: false,
       message: 'Erro ao calcular Total Inadimplências',
       error: err.message,
@@ -404,14 +412,16 @@ router.get('/inadimplencia', async (req, res) => {
  * ------------------------------------------------------------------- */
 router.get('/inadimplencia-despesas', async (req, res) => {
   try {
+    const periodo = resolverPeriodoOpcional(req);
     const sql = `
       SELECT
         COUNT(*) FILTER (WHERE status IN ('OVERDUE')) AS atrasados,
         COUNT(*) AS total
       FROM public."accountsPayable"
+      ${periodo ? 'WHERE due_date BETWEEN $1::date AND $2::date' : ''}
     `;
 
-    const { rows } = await pool.query(sql);
+    const { rows } = await pool.query(sql, periodo ? [periodo.startDate, periodo.endDate] : []);
     const atrasados = Number(rows[0].atrasados || 0);
     const total = Number(rows[0].total || 0);
 
@@ -424,7 +434,7 @@ router.get('/inadimplencia-despesas', async (req, res) => {
     });
   } catch (err) {
     console.error('[DASHBOARD] inadimplencia-despesas error:', err);
-    res.status(500).json({
+    res.status(Number(err?.status) || 500).json({
       ok: false,
       error: 'Erro ao calcular inadimplência de despesas',
     });

@@ -11,6 +11,12 @@ import {
   fetchDashboard,
 } from './dashboardUtils.js';
 
+import {
+  getFinancialPeriod,
+  financialPeriodQuery,
+  financialPeriodLabel,
+} from './dashboardPeriod.js?v=20261106-1';
+
 
 // ======================================================================
 // CONFIG
@@ -96,9 +102,12 @@ export const overdueExpensesDashboard = {
       // FETCH API
       // ---------------------------------------------------------------
 
+      const period =
+        getFinancialPeriod();
+
       const data =
         await fetchDashboard(
-          ENDPOINT
+          `${ENDPOINT}?${financialPeriodQuery(period)}`
         );
 
 
@@ -154,7 +163,7 @@ export const overdueExpensesDashboard = {
 
       if (infoElement) {
         infoElement.textContent =
-          `${quantity} título(s) em atraso`;
+          `${quantity} título(s) em atraso · ${financialPeriodLabel(period)}`;
       }
 
 

@@ -1,4 +1,5 @@
-import { loadFinancialFlow, renderFinancialChart } from './financialChartUtils.js';
+import { loadFinancialFlow, renderFinancialChart } from './financialChartUtils.js?v=20261106-1';
+import { financialPeriodQuery } from './dashboardPeriod.js?v=20261106-1';
 
 const DASHBOARD_KEY = 'payables-chart';
 
@@ -18,7 +19,7 @@ export const payablesChartDashboard = {
   },
 
   async load(root) {
-    const data = await loadFinancialFlow();
+    const data = await loadFinancialFlow(financialPeriodQuery());
     const card = root.querySelector(`[data-dashboard-key="${DASHBOARD_KEY}"]`);
     renderFinancialChart(card?.querySelector('[data-chart="payables"]'), data?.payables, {
       id: 'payables',
