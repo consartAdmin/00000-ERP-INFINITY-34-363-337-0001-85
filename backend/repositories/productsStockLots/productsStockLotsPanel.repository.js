@@ -428,7 +428,14 @@ export async function listPanel(filters = {}) {
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const countRes = await pool.query(
-    `${cte} SELECT COUNT(*)::bigint AS total FROM ranked r ${whereSql}`,
+    `${cte}
+     SELECT
+       COUNT(*)::bigint AS total,
+       COALESCE(SUM(r.qty_on_hand), 0)::numeric AS qty_on_hand,
+       COALESCE(SUM(r.qty_available), 0)::numeric AS qty_available,
+       COALESCE(SUM(r.qty_on_hand * COALESCE(r.cost_unit, r.product_cost_price, 0)), 0)::numeric AS cost_total,
+       COUNT(*) FILTER (WHERE COALESCE(r.cost_unit, r.product_cost_price, 0) = 0)::int AS without_cost
+     FROM ranked r ${whereSql}`,
     params,
   );
 
@@ -469,6 +476,13 @@ export async function listPanel(filters = {}) {
     page,
     limit,
     total: Number(countRes.rows[0]?.total || 0),
+    // Totais de todos os lotes filtrados (todas as páginas), custo = qtd em mãos × custo do lote (ou cost_price do produto)
+    totals: {
+      qty_on_hand: Number(countRes.rows[0]?.qty_on_hand || 0),
+      qty_available: Number(countRes.rows[0]?.qty_available || 0),
+      cost_total: Number(countRes.rows[0]?.cost_total || 0),
+      without_cost: Number(countRes.rows[0]?.without_cost || 0),
+    },
     rows: rowsRes.rows,
     situations,
     settings,
