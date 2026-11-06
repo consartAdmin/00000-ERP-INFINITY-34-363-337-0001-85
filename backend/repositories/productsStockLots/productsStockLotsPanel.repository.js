@@ -400,7 +400,10 @@ function buildFilters(filters, { skipSituation = false } = {}) {
   }
 
   const situation = String(filters.situation || '').toUpperCase();
-  if (!skipSituation && /^(EXPIRED|OK|NONE|B[0-7])$/.test(situation)) {
+  if (!skipSituation && situation === 'WITH_EXPIRY') {
+    // "Com data de vencimento": todos os lotes que têm validade (esconde os sem validade)
+    where.push(`r.situation <> 'NONE'`);
+  } else if (!skipSituation && /^(EXPIRED|OK|NONE|B[0-7])$/.test(situation)) {
     params.push(situation);
     where.push(`r.situation = $${params.length}`);
   }

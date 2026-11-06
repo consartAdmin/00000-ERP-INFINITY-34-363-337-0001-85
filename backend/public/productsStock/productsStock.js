@@ -30,8 +30,9 @@ const state = {
   settings: null,
   sort: '',
   dir: 'asc',
-  filters: { q: '', situation: '', supplier_id: '', group_id: '', subgroup_id: '', with_sales: '' },
+  filters: { q: '', situation: '', supplier_id: '', supplier_q: '', group_id: '', subgroup_id: '', with_sales: '' },
   selected: new Set(),
+  suppliers: [],
   editing: null,
   orders: [],
 };
@@ -129,7 +130,7 @@ function badge(key) {
 function readMainFilters() {
   state.filters.q = $('fQ').value.trim();
   state.filters.situation = $('fSituation').value;
-  state.filters.supplier_id = $('fSupplier').value;
+  readSupplierFilter();
 }
 
 function moreFiltersCount() {
@@ -154,12 +155,26 @@ function fillSituationSelect() {
   select.value = current;
 }
 
+const NO_SUPPLIER = 'Sem fornecedor';
+
+/** Campo Fornecedor: nome igual ao da lista = filtra pelo id; texto parcial = filtra pelo nome. */
+function readSupplierFilter() {
+  const text = $('fSupplier').value.trim();
+  const norm = text.toLowerCase();
+  state.filters.supplier_id = '';
+  state.filters.supplier_q = '';
+  if (!text) return;
+  if (norm === NO_SUPPLIER.toLowerCase()) { state.filters.supplier_id = 'none'; return; }
+  const exact = state.suppliers.filter((o) => String(o.name || '').trim().toLowerCase() === norm);
+  if (exact.length === 1) state.filters.supplier_id = String(exact[0].id);
+  else state.filters.supplier_q = text;
+}
+
 function fillSupplierSelect(list) {
-  const current = $('fSupplier').value;
-  const opts = (list || []).filter((o) => o.products > 0)
-    .map((o) => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
-  $('fSupplier').innerHTML = `<option value="">Todos</option><option value="none">Sem fornecedor</option>${opts}`;
-  $('fSupplier').value = current;
+  state.suppliers = list || [];
+  const opt = (name, hint) => `<option value="${esc(name)}">${esc(hint)}</option>`;
+  $('supplierOptions').innerHTML = opt(NO_SUPPLIER, 'produtos sem fornecedor') + state.suppliers
+    .map((o) => opt(o.name, `${fmtInt(o.products)} produto(s)`)).join('');
 }
 
 async function loadFilterOptions() {
@@ -587,6 +602,8 @@ function bind() {
   $('fQ').addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
   $('fSituation').addEventListener('change', search);
   $('fSupplier').addEventListener('change', search);
+  $('fSupplier').addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
+  $('fSupplier').addEventListener('search', () => { if (!$('fSupplier').value) search(); });
 
   $('kpis').addEventListener('click', (e) => {
     const card = e.target.closest('[data-situation]');

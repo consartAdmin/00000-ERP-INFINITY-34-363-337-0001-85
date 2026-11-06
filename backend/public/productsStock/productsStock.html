@@ -42,9 +42,10 @@
               <label for="fSituation"><b>Reposição</b></label>
               <select id="fSituation"><option value="">Todas</option></select>
             </div>
-            <div class="fields fields-h-6 fields-w-10 fields-font-4">
+            <div class="fields fields-h-6 fields-w-15 fields-font-4">
               <label for="fSupplier"><b>Fornecedor</b></label>
-              <select id="fSupplier"><option value="">Todos</option></select>
+              <input id="fSupplier" type="search" list="supplierOptions" placeholder="Todos · digite o nome..." autocomplete="off">
+              <datalist id="supplierOptions"></datalist>
             </div>
             <div class="lots-filter-actions">
               <button id="btnFilter" class="btn btn-new btn-sm" type="button">🔎 Filtrar</button>
@@ -397,7 +398,7 @@
   </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="./productsStock.js?v=rep-02"></script>
+  <script type="module" src="./productsStock.js?v=rep-03"></script>
 </body>
 
 </html>

@@ -295,7 +295,8 @@ export async function exportPanel(req, res) {
       { key: 'origin', label: 'Origem', w: 110, width: 30 },
     ];
 
-    const situationLabel = labelBy.get(String(req.query.situation || '').toUpperCase());
+    const situationKey = String(req.query.situation || '').toUpperCase();
+    const situationLabel = situationKey === 'WITH_EXPIRY' ? 'Com data de vencimento' : labelBy.get(situationKey);
     const info = [
       ['Busca', String(req.query.q || '').trim() || 'Todos'],
       ['Situação', situationLabel || 'Todas'],
