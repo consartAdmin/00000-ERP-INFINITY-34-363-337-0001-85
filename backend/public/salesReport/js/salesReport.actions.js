@@ -1,6 +1,6 @@
 'use strict';
 
-import { buildPdfUrl, fetchSalesReport } from './salesReport.api.js';
+import { buildPdfUrl, buildXlsxUrl, fetchSalesReport } from './salesReport.api.js';
 import { resetFilters } from './salesReport.filters.js';
 import { getCostMode, getFiltersFromDOM, setCostMode } from './salesReport.form.js';
 import { showMessage } from './salesReport.modal.js';
@@ -86,15 +86,20 @@ function openPdf(mode) {
   window.open(buildPdfUrl(getFiltersFromDOM(), mode), '_blank', 'noopener');
 }
 
-// Select "Exportar": gera o PDF/Excel escolhido e volta para "Selecione…".
-function handleExport(event) {
-  const select = event.currentTarget;
-  const action = select.value;
-  select.value = '';
-  if (action === 'excel') return exportCurrentTableToCsv();
-  if (action === 'pdf-full') return openPdf('full');
-  if (action === 'pdf-products') return openPdf('products');
-  if (action === 'pdf-orders') return openPdf('orders');
+function downloadXlsx(mode) {
+  const link = document.createElement('a');
+  link.href = buildXlsxUrl(getFiltersFromDOM(), mode);
+  link.download = '';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+// Botão "Gerar": usa Tipo de Relatório + PDF/Excel (+ custo e filtros atuais).
+function generateReport() {
+  const mode = dom.reportType?.value || 'full';
+  if (dom.reportFormat?.value === 'xlsx') return downloadXlsx(mode);
+  return openPdf(mode);
 }
 
 // Select "Custo": Atual / Dia da Venda (salvo no navegador) e recarrega o relatório.
@@ -113,7 +118,7 @@ export function bindActions() {
     resetFilters();
     await loadAndRenderSalesReport({ initial: true });
   });
-  dom.reportExport?.addEventListener('change', handleExport);
+  dom.btnGenerateReport?.addEventListener('click', generateReport);
   dom.costModeSelect?.addEventListener('change', handleCostModeChange);
   dom.btnPreviousPage?.addEventListener('click', () => {
     if (state.page <= 1) return;

@@ -138,24 +138,34 @@
             ♻️ Limpar
           </button>
 
-          <div class="fields fields-h-6 fields-w-12 fields-font-3">
-            <label for="sel-report-export">Exportar</label>
-            <select id="sel-report-export">
-              <option value="" selected>Selecione…</option>
-              <option value="pdf-full">🧾 PDF Completo</option>
-              <option value="pdf-products">📦 PDF Produto</option>
-              <option value="pdf-orders">📄 PDF Pedido</option>
-              <option value="excel">⬇️ Excel</option>
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <label for="sel-report-type">Tipo de Relatório</label>
+            <select id="sel-report-type">
+              <option value="full">Completo</option>
+              <option value="products">Produto</option>
+              <option value="orders">Pedido</option>
             </select>
           </div>
 
-          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+          <div class="fields fields-h-6 fields-w-6 fields-font-3">
+            <label for="sel-report-format">PDF / Excel</label>
+            <select id="sel-report-format">
+              <option value="pdf">PDF</option>
+              <option value="xlsx">Excel</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
             <label for="sel-cost-mode">Custo</label>
             <select id="sel-cost-mode">
               <option value="current">Atual</option>
               <option value="saleDay">Dia da Venda</option>
             </select>
           </div>
+
+          <button id="btn-generate-report" class="btn btn-toolbar btn-sm" type="button">
+            ⬇️ Gerar
+          </button>
 
         </div>
 

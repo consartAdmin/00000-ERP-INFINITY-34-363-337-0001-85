@@ -2,6 +2,7 @@
 
 export const SALES_REPORT_ENDPOINT = '/api/reports/sales';
 export const SALES_REPORT_PDF_ENDPOINT = '/api/reports/sales/pdf';
+export const SALES_REPORT_XLSX_ENDPOINT = '/api/reports/sales/xlsx';
 export const COST_MODE_KEY = 'salesReport.costMode';
 
 export const COST_MODES = Object.freeze({
