@@ -1,7 +1,7 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ productsStock.js — Estoque mínimo e máximo (reposição) | ESM         ║
 // ║ API: /api/productsStock/replenishment                                ║
-// ║   /           lista + cards      /settings   parâmetros + fabricantes║
+// ║   /           lista + cards      /settings   parâmetros + fornecedors║
 // ║   /orders     pedido mínimo      /params     salva mín./máx./prazo   ║
 // ║   /product/:id cálculo           /export, /pdf                       ║
 // ╚══════════════════════════════════════════════════════════════════════╝
@@ -30,7 +30,7 @@ const state = {
   settings: null,
   sort: '',
   dir: 'asc',
-  filters: { q: '', situation: '', manufacturer_id: '', group_id: '', subgroup_id: '', with_sales: '' },
+  filters: { q: '', situation: '', supplier_id: '', group_id: '', subgroup_id: '', with_sales: '' },
   selected: new Set(),
   editing: null,
   orders: [],
@@ -129,7 +129,7 @@ function badge(key) {
 function readMainFilters() {
   state.filters.q = $('fQ').value.trim();
   state.filters.situation = $('fSituation').value;
-  state.filters.manufacturer_id = $('fManufacturer').value;
+  state.filters.supplier_id = $('fSupplier').value;
 }
 
 function moreFiltersCount() {
@@ -154,11 +154,19 @@ function fillSituationSelect() {
   select.value = current;
 }
 
+function fillSupplierSelect(list) {
+  const current = $('fSupplier').value;
+  const opts = (list || []).filter((o) => o.products > 0)
+    .map((o) => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
+  $('fSupplier').innerHTML = `<option value="">Todos</option><option value="none">Sem fornecedor</option>${opts}`;
+  $('fSupplier').value = current;
+}
+
 async function loadFilterOptions() {
   try {
-    const data = await api('/filter-options', { base: ROOT() });
+    const [data, sup] = await Promise.all([api('/filter-options', { base: ROOT() }), api('/settings')]);
     const opt = (list) => (list || []).map((o) => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
-    $('fManufacturer').innerHTML = `<option value="">Todos</option><option value="none">Sem fabricante</option>${opt(data.manufacturers)}`;
+    fillSupplierSelect(sup.suppliers);
     $('fGroup').innerHTML = `<option value="">Todos</option>${opt(data.groups)}`;
     $('fSubgroup').innerHTML = `<option value="">Todos</option>${opt(data.subgroups)}`;
   } catch (error) {
@@ -219,7 +227,7 @@ function coverageHtml(r) {
     <b style="color:${esc(s.color)}">${days} ${days === 1 ? 'dia' : 'dias'}</b><i><span style="width:${pct}%;background:${esc(s.color)}"></span></i></div>`;
 }
 
-const LEAD_SOURCE = { PRODUCT: 'do produto', MANUFACTURER: 'fabricante', DEFAULT: 'padrão' };
+const LEAD_SOURCE = { PRODUCT: 'do produto', SUPPLIER: 'fornecedor', DEFAULT: 'padrão' };
 
 function renderRows() {
   if (!state.rows.length) {
@@ -237,7 +245,7 @@ function renderRows() {
       <td><input type="checkbox" data-chk="${r.product_id}"${checked}></td>
       <td class="l ps-prod"><b title="${esc(r.product_description)}">${esc(r.product_description || '—')}</b><small>SKU ${esc(r.product_code || '—')}</small></td>
       <td title="${esc(r.product_group_name || '')}"><small>${esc(r.product_group_name || '—')}</small></td>
-      <td title="${esc(r.manufacturer_name || '')}">${esc(r.manufacturer_name || '—')}</td>
+      <td title="${esc(r.supplier_name || '')}">${esc(r.supplier_name || '—')}</td>
       <td class="ps-lead">${r.lead_days} d<small>${LEAD_SOURCE[r.lead_source] || ''}</small></td>
       <td title="${esc(fmtQty(r.qty_out))} saídas em ${state.settings?.consumption_days ?? 90} dias">${r.daily > 0 ? fmtDaily(r.daily) : '—'}</td>
       <td class="num"><b class="${r.stock_qty <= 0 && r.daily > 0 ? 'ps-zero' : ''}">${fmtQty(r.stock_qty)}</b></td>
@@ -301,7 +309,7 @@ function calcText(row, lead, min, max) {
 function editLead() {
   const row = state.editing;
   const v = $('eLead').value.trim();
-  return v === '' ? (row.lead_time_manufacturer ?? state.settings?.default_lead_time_days ?? 0) : Number(v);
+  return v === '' ? (row.lead_time_supplier ?? state.settings?.default_lead_time_days ?? 0) : Number(v);
 }
 
 function refreshCalc() {
@@ -315,13 +323,13 @@ async function openEdit(productId) {
     const { row } = await api(`/product/${productId}`);
     state.editing = row;
     $('editSub').textContent = `${row.product_description || ''} · SKU ${row.product_code || '—'}`;
-    $('eManufacturer').value = row.manufacturer_name || 'Sem fabricante';
+    $('eManufacturer').value = row.supplier_name || 'Sem fornecedor';
     $('eLead').value = row.lead_time_product ?? '';
-    const base = row.lead_time_manufacturer ?? row.settings?.default_lead_time_days;
+    const base = row.lead_time_supplier ?? row.settings?.default_lead_time_days;
     $('eLead').placeholder = String(base ?? '');
-    $('eLeadHelp').textContent = row.lead_time_manufacturer !== null
-      ? `Do fabricante: ${row.lead_time_manufacturer} d. Preencha só se este produto for diferente.`
-      : `Padrão: ${row.settings?.default_lead_time_days} d (fabricante sem prazo). Preencha só se este produto for diferente.`;
+    $('eLeadHelp').textContent = row.lead_time_supplier !== null
+      ? `Do fornecedor: ${row.lead_time_supplier} d. Preencha só se este produto for diferente.`
+      : `Padrão: ${row.settings?.default_lead_time_days} d (fornecedor sem prazo). Preencha só se este produto for diferente.`;
     $('eMin').value = row.stock_min;
     $('eMax').value = row.stock_max;
     $('btnCalc').textContent = `🧮 Calcular pelo consumo dos últimos ${row.settings?.consumption_days ?? 90} dias`;
@@ -441,18 +449,18 @@ async function openKardex(productId) {
   }
 }
 
-/* ───────────────────────── Pedidos por fabricante ───────────────────────── */
+/* ───────────────────────── Pedidos por fornecedor ───────────────────────── */
 function orderRowHtml(o, index) {
   const hasMin = o.min_order_value > 0;
   const pct = hasMin ? Math.min(100, o.percent || 0) : 0;
   const color = !hasMin ? '#64748b' : o.reached ? '#16a34a' : '#d97706';
   const label = !hasMin ? 'Sem pedido mínimo' : o.reached ? `${o.percent}% · Atinge o mínimo` : `${o.percent}% · Faltam ${fmtMoney(o.missing)}`;
-  const action = hasMin && !o.reached && o.manufacturer_id
+  const action = hasMin && !o.reached && o.supplier_id
     ? `<button class="btn btn-toolbar btn-sm" type="button" data-complete="${index}">➕ Completar</button>`
-    : `<button class="btn btn-new btn-sm" type="button" data-order-pdf="${index}" title="Sugestão de compra deste fabricante em PDF">🛒 Gerar pedido</button>`;
+    : `<button class="btn btn-new btn-sm" type="button" data-order-pdf="${index}" title="Sugestão de compra deste fornecedor em PDF">🛒 Gerar pedido</button>`;
   const noCost = o.items_without_cost ? ` <small title="Itens sem custo não entram no total" style="color:#d97706">(${o.items_without_cost} sem custo)</small>` : '';
   return `<div class="ord-row">
-    <b>${esc(o.manufacturer_name)}</b>
+    <b>${esc(o.supplier_name)}</b>
     <span class="n">${o.lead_days} d</span>
     <span class="n">${o.items}${noCost}</span>
     <span class="n"><b>${fmtMoney(o.total)}</b></span>
@@ -464,12 +472,12 @@ function orderRowHtml(o, index) {
 
 function completeHtml(o, index) {
   if (!o.complete?.length) {
-    return `<div class="ord-tip"><b>➕ ${esc(o.manufacturer_name)} (faltam ${fmtMoney(o.missing)}):</b> nenhum outro item deste fabricante tem consumo e custo para antecipar.
+    return `<div class="ord-tip"><b>➕ ${esc(o.supplier_name)} (faltam ${fmtMoney(o.missing)}):</b> nenhum outro item deste fornecedor tem consumo e custo para antecipar.
       <div class="ord-actions" style="margin-top:6px"><button class="btn btn-toolbar btn-sm" type="button" data-order-pdf="${index}">🛒 Gerar pedido assim mesmo</button></div></div>`;
   }
   const lines = o.complete.map((c) => `${esc(c.product_description)} · chega ao ponto em ${c.days_to_reorder ?? '—'} dias · +${fmtQty(c.qty)} un. × ${fmtMoney(c.cost_price)} = ${fmtMoney(c.value)}`).join('<br>');
   const total = o.total + o.complete_total;
-  return `<div class="ord-tip"><b>➕ Completar ${esc(o.manufacturer_name)} (faltam ${fmtMoney(o.missing)}):</b> antecipe os itens que vão chegar ao ponto de pedido mais cedo.<br>
+  return `<div class="ord-tip"><b>➕ Completar ${esc(o.supplier_name)} (faltam ${fmtMoney(o.missing)}):</b> antecipe os itens que vão chegar ao ponto de pedido mais cedo.<br>
     ${lines} → <b>total ${fmtMoney(total)}${o.complete_reaches ? ', atinge o mínimo' : ', ainda abaixo do mínimo'}</b>
     <div class="ord-actions" style="margin-top:6px"><button class="btn btn-new btn-sm" type="button" data-order-pdf="${index}" data-with-complete="1">🛒 Gerar pedido com os itens</button></div></div>`;
 }
@@ -500,10 +508,10 @@ function onOrdersClick(e) {
   if (pdf) {
     const o = state.orders[Number(pdf.dataset.orderPdf)];
     if (!o) return;
-    const mf = o.manufacturer_id ?? 'none';
-    const params = new URLSearchParams({ manufacturer_id: mf });
+    const mf = o.supplier_id ?? 'none';
+    const params = new URLSearchParams({ supplier_id: mf });
     if (pdf.dataset.withComplete) params.set('complete', '1');
-    const slug = String(o.manufacturer_name || 'fabricante').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const slug = String(o.supplier_name || 'fornecedor').toLowerCase().replace(/[^a-z0-9]+/g, '-');
     download(`/pdf?${params}`, `pedido-${slug}-${new Date().toISOString().slice(0, 10)}.pdf`, pdf);
   }
 }
@@ -523,12 +531,13 @@ async function openSettings() {
     $('sSource').value = s.consumption_source;
     $('sCover').value = s.max_cover_days;
     const money = (v) => (v === null || v === undefined ? '' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    $('mfList').innerHTML = (data.manufacturers || []).map((m) => `<div class="mf-row" data-mf="${m.id}">
+    $('mfList').innerHTML = (data.suppliers || []).map((m) => `<div class="mf-row" data-mf="${m.id}">
         <span title="${esc(m.name)}">${esc(m.name)}</span>
         <input type="number" min="0" max="365" step="1" data-lead value="${m.lead_time_days ?? ''}" placeholder="padrão">
         <input type="text" inputmode="decimal" data-min value="${money(m.min_order_value)}" placeholder="sem mínimo">
         <span>${fmtInt(m.products)}</span>
-      </div>`).join('') + `<div class="mf-row"><span>Sem fabricante</span><input type="text" value="padrão" disabled><input type="text" value="—" disabled><span>${fmtInt(data.without_manufacturer)}</span></div>`;
+      </div>`).join('') + `<div class="mf-row"><span>Sem fornecedor</span><input type="text" value="padrão" disabled><input type="text" value="—" disabled><span>${fmtInt(data.without_supplier)}</span></div>`;
+    $('mfSearch').value = '';
     Modal.open('settingsModal');
   } catch (error) {
     alertError('Não foi possível abrir os parâmetros', error);
@@ -536,7 +545,7 @@ async function openSettings() {
 }
 
 async function saveSettings() {
-  const manufacturers = [...document.querySelectorAll('#mfList [data-mf]')].map((row) => ({
+  const suppliers = [...document.querySelectorAll('#mfList [data-mf]')].map((row) => ({
     id: Number(row.dataset.mf),
     lead_time_days: row.querySelector('[data-lead]').value.trim(),
     min_order_value: parseMoney(row.querySelector('[data-min]').value),
@@ -552,7 +561,7 @@ async function saveSettings() {
         soon_days: Number($('sSoon').value || 0),
         consumption_source: $('sSource').value,
         max_cover_days: Number($('sCover').value || 30),
-        manufacturers,
+        suppliers,
       },
     });
     Modal.close('settingsModal');
@@ -577,7 +586,7 @@ function bind() {
   $('btnFilter').addEventListener('click', search);
   $('fQ').addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
   $('fSituation').addEventListener('change', search);
-  $('fManufacturer').addEventListener('change', search);
+  $('fSupplier').addEventListener('change', search);
 
   $('kpis').addEventListener('click', (e) => {
     const card = e.target.closest('[data-situation]');
@@ -656,6 +665,12 @@ function bind() {
 
   $('btnSettings').addEventListener('click', openSettings);
   $('btnSaveSettings').addEventListener('click', saveSettings);
+  $('mfSearch').addEventListener('input', () => {
+    const term = $('mfSearch').value.trim().toLowerCase();
+    document.querySelectorAll('#mfList .mf-row').forEach((row) => {
+      row.hidden = !!term && !row.textContent.toLowerCase().includes(term);
+    });
+  });
 
   $('btnPdf').addEventListener('click', (e) => {
     readMainFilters();

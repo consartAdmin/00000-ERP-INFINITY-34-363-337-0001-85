@@ -3,7 +3,9 @@
 // ║ Tela: public/productsStock (Estoque mínimo e máximo) + card da home  ║
 // ║                                                                      ║
 // ║ - Parâmetros: public."productsStockReplenishmentSettings"            ║
-// ║ - Fabricante: productsManufactures.lead_time_days / min_order_value  ║
+// ║ - Fornecedor: suppliers.lead_time_days / min_order_value             ║
+// ║   (fornecedor do produto: products.supplier_id → productsSuppliers   ║
+// ║    → productsLmRef da NF-e de entrada)                               ║
 // ║ - Produto:    productsStock.lead_time_days (prazo próprio, opcional) ║
 // ║                                                                      ║
 // ║ Cálculo (consumo = saídas dos últimos N dias, em productMovements):  ║
@@ -20,7 +22,17 @@ import pool from '../../config/db.js';
 const TB_SETTINGS = 'public."productsStockReplenishmentSettings"';
 const TB_STOCK = 'public."productsStock"';
 const TB_PRODUCTS = 'public."products"';
-const TB_MANUFACTURERS = 'public."productsManufactures"';
+const TB_SUPPLIERS = 'public."suppliers"';
+const TB_PRODUCTS_SUPPLIERS = 'public."productsSuppliers"';
+const TB_LM_REF = 'public."productsLmRef"';
+
+// Tabelas de vínculo produto x fornecedor que existem neste banco (lidas no ensure)
+const linkTables = { productsSuppliers: false, lmRef: false };
+
+const SUPPLIER_NAME_SQL = (a) => `COALESCE(
+  NULLIF(to_jsonb(${a})->>'trade_name', ''), NULLIF(to_jsonb(${a})->>'fantasy_name', ''),
+  NULLIF(to_jsonb(${a})->>'name', ''), NULLIF(to_jsonb(${a})->>'company_name', ''),
+  NULLIF(to_jsonb(${a})->>'corporate_name', ''), 'Fornecedor ' || ${a}.supplier_id)`;
 const TB_MOVEMENTS = 'public."productMovements"';
 
 export const DEFAULT_REPLENISHMENT_SETTINGS = Object.freeze({
@@ -68,7 +80,7 @@ async function runEnsure() {
       ON ${TB_SETTINGS} (scope_key);
   `);
   await pool.query(`
-    ALTER TABLE IF EXISTS ${TB_MANUFACTURERS}
+    ALTER TABLE IF EXISTS ${TB_SUPPLIERS}
       ADD COLUMN IF NOT EXISTS lead_time_days integer NULL,
       ADD COLUMN IF NOT EXISTS min_order_value numeric(14,2) NULL;
   `);
@@ -76,6 +88,40 @@ async function runEnsure() {
     ALTER TABLE IF EXISTS ${TB_STOCK}
       ADD COLUMN IF NOT EXISTS lead_time_days integer NULL;
   `);
+  const { rows } = await pool.query(`
+    SELECT to_regclass('public."productsSuppliers"') IS NOT NULL AS ps,
+           to_regclass('public."productsLmRef"') IS NOT NULL AS lm
+  `);
+  linkTables.productsSuppliers = !!rows[0]?.ps;
+  linkTables.lmRef = !!rows[0]?.lm;
+}
+
+/** CTEs que resolvem o fornecedor de cada produto (1º products.supplier_id, 2º vínculo, 3º NF-e). */
+function supplierLinkCtes() {
+  const parts = [];
+  parts.push(linkTables.productsSuppliers
+    ? `psu AS (
+        SELECT DISTINCT ON (x.product_id) x.product_id, x.supplier_id
+          FROM ${TB_PRODUCTS_SUPPLIERS} x
+         ORDER BY x.product_id, x.is_primary DESC, x.created_at DESC
+      )`
+    : `psu AS (SELECT NULL::text AS product_id, NULL::int AS supplier_id WHERE FALSE)`);
+  parts.push(linkTables.lmRef
+    ? `lmr AS (
+        SELECT DISTINCT ON (x.product_code) x.product_code, x.supplier_id
+          FROM ${TB_LM_REF} x
+         WHERE COALESCE(x.is_active, true) = true AND x.product_code IS NOT NULL
+         ORDER BY x.product_code, (to_jsonb(x)->>'updated_at') DESC NULLS LAST, x.product_lm_ref_id DESC
+      )`
+    : `lmr AS (SELECT NULL::text AS product_code, NULL::int AS supplier_id WHERE FALSE)`);
+  parts.push(`prod_sup AS (
+      SELECT p.product_id,
+             COALESCE(NULLIF(to_jsonb(p)->>'supplier_id', '')::int, psu.supplier_id, lmr.supplier_id) AS supplier_id
+        FROM ${TB_PRODUCTS} p
+        LEFT JOIN psu ON psu.product_id = p.product_id::text
+        LEFT JOIN lmr ON lmr.product_code = p.product_code
+    )`);
+  return parts.join(',\n');
 }
 
 export function ensureReplenishmentSchema() {
@@ -144,8 +190,8 @@ function rowToModel(r) {
     product_group_name: r.product_group_name,
     product_subgroup_id: r.product_subgroup_id,
     product_subgroup_name: r.product_subgroup_name,
-    manufacturer_id: r.product_manufacturer_id,
-    manufacturer_name: r.manufacturer_name,
+    supplier_id: r.product_supplier_id,
+    supplier_name: r.supplier_name,
     product_stock_id: r.product_stock_id,
     stock_qty: Number(r.stock_qty || 0),
     stock_min: Number(r.stock_min || 0),
@@ -153,7 +199,7 @@ function rowToModel(r) {
     lead_days: Number(r.lead_days || 0),
     lead_source: r.lead_source,
     lead_time_product: num(r.lead_time_product),
-    lead_time_manufacturer: num(r.lead_time_manufacturer),
+    lead_time_supplier: num(r.lead_time_supplier),
     min_order_value: num(r.min_order_value),
     cost_price: Number(r.cost_price || 0),
     qty_out: Number(r.qty_out || 0),
@@ -180,27 +226,43 @@ export async function getSettings() {
   return normalizeSettings(rows[0] || DEFAULT_REPLENISHMENT_SETTINGS);
 }
 
-export async function listManufacturersReplenishment() {
+export async function listSuppliersReplenishment() {
   await ensureReplenishmentSchema();
+  // Fornecedores com produto vinculado (por qualquer origem) ou com prazo/pedido mínimo já informado
   const { rows } = await pool.query(`
-    SELECT pm.product_manufacturer_id AS id, pm.name, pm.lead_time_days, pm.min_order_value,
-           COUNT(p.product_id)::int AS products
-      FROM ${TB_MANUFACTURERS} pm
-      LEFT JOIN ${TB_PRODUCTS} p ON p.manufacturer_id = pm.product_manufacturer_id
-     WHERE COALESCE(pm.is_active, true) = true
-     GROUP BY pm.product_manufacturer_id, pm.name, pm.lead_time_days, pm.min_order_value
-     ORDER BY COUNT(p.product_id) DESC, pm.name ASC
+    WITH ${supplierLinkCtes()},
+    counts AS (
+      SELECT ps2.supplier_id, COUNT(*)::int AS products
+        FROM prod_sup ps2
+        JOIN ${TB_PRODUCTS} p ON p.product_id = ps2.product_id
+       WHERE ps2.supplier_id IS NOT NULL
+         AND COALESCE((to_jsonb(p)->>'is_active')::boolean, true) = true
+       GROUP BY ps2.supplier_id
+    )
+    SELECT s.supplier_id AS id, ${SUPPLIER_NAME_SQL('s')} AS name,
+           s.lead_time_days, s.min_order_value, COALESCE(c.products, 0)::int AS products
+      FROM ${TB_SUPPLIERS} s
+      LEFT JOIN counts c ON c.supplier_id = s.supplier_id
+     WHERE c.products > 0 OR s.lead_time_days IS NOT NULL OR s.min_order_value IS NOT NULL
+     ORDER BY COALESCE(c.products, 0) DESC, 2 ASC
   `);
-  const { rows: none } = await pool.query(`SELECT COUNT(*)::int AS products FROM ${TB_PRODUCTS} WHERE manufacturer_id IS NULL`);
+  const { rows: none } = await pool.query(`
+    WITH ${supplierLinkCtes()}
+    SELECT COUNT(*)::int AS products
+      FROM prod_sup ps2
+      JOIN ${TB_PRODUCTS} p ON p.product_id = ps2.product_id
+     WHERE ps2.supplier_id IS NULL
+       AND COALESCE((to_jsonb(p)->>'is_active')::boolean, true) = true
+  `);
   return {
-    manufacturers: rows.map((r) => ({
+    suppliers: rows.map((r) => ({
       id: r.id,
       name: r.name,
       lead_time_days: num(r.lead_time_days),
       min_order_value: num(r.min_order_value),
       products: r.products,
     })),
-    without_manufacturer: none[0]?.products ?? 0,
+    without_supplier: none[0]?.products ?? 0,
   };
 }
 
@@ -224,16 +286,16 @@ export async function saveSettings(payload = {}, userId = null) {
         updated_at = now()
     `, [s.consumption_days, s.default_lead_time_days, s.soon_days, s.consumption_source, s.max_cover_days, userId]);
 
-    const manufacturers = Array.isArray(payload.manufacturers) ? payload.manufacturers : [];
-    for (const m of manufacturers) {
+    const suppliers = Array.isArray(payload.suppliers) ? payload.suppliers : [];
+    for (const m of suppliers) {
       const id = Math.trunc(Number(m?.id));
       if (!Number.isSafeInteger(id) || id <= 0) continue;
       const lead = numOrNull(m.lead_time_days);
       const minOrder = numOrNull(m.min_order_value);
-      if (lead !== null && (lead < 0 || lead > 365)) throw badRequest('Prazo do fabricante deve ficar entre 0 e 365 dias.');
+      if (lead !== null && (lead < 0 || lead > 365)) throw badRequest('Prazo do fornecedor deve ficar entre 0 e 365 dias.');
       if (minOrder !== null && minOrder < 0) throw badRequest('Pedido mínimo não pode ser negativo.');
       await client.query(
-        `UPDATE ${TB_MANUFACTURERS} SET lead_time_days = $1, min_order_value = $2 WHERE product_manufacturer_id = $3`,
+        `UPDATE ${TB_SUPPLIERS} SET lead_time_days = $1, min_order_value = $2 WHERE supplier_id = $3`,
         [lead === null ? null : Math.trunc(lead), minOrder, id],
       );
     }
@@ -259,7 +321,8 @@ function buildCte(settings) {
   return {
     params: [settings.consumption_days, settings.default_lead_time_days, settings.soon_days],
     sql: `
-      WITH cons AS (
+      WITH ${supplierLinkCtes()},
+      cons AS (
         SELECT m.product_code,
                SUM(CASE WHEN m.movement_type = 'SAIDA' THEN ABS(COALESCE(m.quantity, 0))
                         ELSE -ABS(COALESCE(m.quantity, 0)) END) AS qty_out
@@ -280,17 +343,17 @@ function buildCte(settings) {
           pg.name AS product_group_name,
           p.product_subgroup_id,
           psg.name AS product_subgroup_name,
-          p.manufacturer_id AS product_manufacturer_id,
-          pm.name AS manufacturer_name,
+          pf.supplier_id AS product_supplier_id,
+          CASE WHEN pm.supplier_id IS NOT NULL THEN ${SUPPLIER_NAME_SQL('pm')} END AS supplier_name,
           COALESCE(ps.product_stock_id, p.product_stock_id) AS product_stock_id,
           COALESCE(ps.stock_qty, 0)::numeric AS stock_qty,
           COALESCE(ps.stock_min, 0)::numeric AS stock_min,
           COALESCE(ps.stock_max, 0)::numeric AS stock_max,
           ps.lead_time_days AS lead_time_product,
-          pm.lead_time_days AS lead_time_manufacturer,
+          pm.lead_time_days AS lead_time_supplier,
           COALESCE(ps.lead_time_days, pm.lead_time_days, $2::int) AS lead_days,
           CASE WHEN ps.lead_time_days IS NOT NULL THEN 'PRODUCT'
-               WHEN pm.lead_time_days IS NOT NULL THEN 'MANUFACTURER'
+               WHEN pm.lead_time_days IS NOT NULL THEN 'SUPPLIER'
                ELSE 'DEFAULT' END AS lead_source,
           pm.min_order_value,
           COALESCE(p.cost_price, 0)::numeric AS cost_price,
@@ -300,14 +363,15 @@ function buildCte(settings) {
         LEFT JOIN ${TB_STOCK} ps ON ps.product_stock_id = p.product_stock_id
         LEFT JOIN public."productsGroups" pg ON pg.product_group_id = p.product_group_id
         LEFT JOIN public."productsSubgroups" psg ON psg.product_subgroup_id = p.product_subgroup_id
-        LEFT JOIN ${TB_MANUFACTURERS} pm ON pm.product_manufacturer_id = p.manufacturer_id
+        LEFT JOIN prod_sup pf ON pf.product_id = p.product_id
+        LEFT JOIN ${TB_SUPPLIERS} pm ON pm.supplier_id = pf.supplier_id
         LEFT JOIN cons c ON c.product_code = p.product_code
         WHERE COALESCE((to_jsonb(p)->>'is_active')::boolean, true) = true
       ),
       calc AS (
         SELECT b.*,
                b.stock_min + b.daily * b.lead_days AS reorder_point,
-               CASE WHEN b.daily > 0 THEN b.stock_qty / b.daily END AS coverage_days
+               CASE WHEN b.daily > 0 THEN GREATEST(b.stock_qty, 0) / b.daily END AS coverage_days
           FROM base b
       ),
       sit AS (
@@ -368,13 +432,13 @@ function buildFilters(filters = {}, startIndex) {
     }
   }
 
-  const manufacturer = String(filters.manufacturer_id ?? '').trim();
-  if (manufacturer === 'none') {
-    where.push('r.product_manufacturer_id IS NULL');
-  } else if (manufacturer) {
-    const id = Math.trunc(Number(manufacturer));
+  const supplier = String(filters.supplier_id ?? '').trim();
+  if (supplier === 'none') {
+    where.push('r.product_supplier_id IS NULL');
+  } else if (supplier) {
+    const id = Math.trunc(Number(supplier));
     if (Number.isSafeInteger(id) && id > 0) {
-      where.push(`r.product_manufacturer_id = $${idx++}`);
+      where.push(`r.product_supplier_id = $${idx++}`);
       values.push(id);
     }
   }
@@ -394,7 +458,7 @@ const SORTS = {
   product: 'r.product_description',
   code: 'r.product_code',
   group: 'r.product_group_name',
-  manufacturer: 'r.manufacturer_name',
+  supplier: 'r.supplier_name',
   lead: 'r.lead_days',
   daily: 'r.daily',
   qty: 'r.stock_qty',
@@ -604,8 +668,8 @@ export async function saveParams(items = []) {
         const row = calcRows.get(productId);
         if (!row || !(row.daily > 0)) { skipped += 1; continue; }
         const leadDays = leadProvided
-          ? (lead ?? row.lead_time_manufacturer ?? settings.default_lead_time_days)
-          : (row.lead_time_product ?? row.lead_time_manufacturer ?? settings.default_lead_time_days);
+          ? (lead ?? row.lead_time_supplier ?? settings.default_lead_time_days)
+          : (row.lead_time_product ?? row.lead_time_supplier ?? settings.default_lead_time_days);
         const s = suggestParams({ ...row, lead_days: leadDays }, settings);
         min = s.stock_min;
         max = s.stock_max;
@@ -644,30 +708,30 @@ export async function saveParams(items = []) {
 /* ──────────────────────────────────────────────────────────────
    Pedidos por fabricante + pedido mínimo
 ────────────────────────────────────────────────────────────── */
-export async function listManufacturerOrders({ withComplete = true, manufacturer_id = null } = {}) {
+export async function listSupplierOrders({ withComplete = true, supplier_id = null } = {}) {
   const settings = await getSettings();
   const cte = buildCte(settings);
   const params = [...cte.params];
   let mfFilter = '';
-  if (manufacturer_id === 'none') {
-    mfFilter = 'AND r.product_manufacturer_id IS NULL';
-  } else if (manufacturer_id) {
-    params.push(Math.trunc(Number(manufacturer_id)));
-    mfFilter = `AND r.product_manufacturer_id = $${params.length}`;
+  if (supplier_id === 'none') {
+    mfFilter = 'AND r.product_supplier_id IS NULL';
+  } else if (supplier_id) {
+    params.push(Math.trunc(Number(supplier_id)));
+    mfFilter = `AND r.product_supplier_id = $${params.length}`;
   }
 
   const { rows } = await pool.query(`
     ${cte.sql}
-    SELECT r.product_manufacturer_id AS manufacturer_id,
-           COALESCE(MAX(r.manufacturer_name), 'Sem fabricante') AS manufacturer_name,
-           COALESCE(MAX(r.lead_time_manufacturer), $2::int) AS lead_days,
+    SELECT r.product_supplier_id AS supplier_id,
+           COALESCE(MAX(r.supplier_name), 'Sem fornecedor') AS supplier_name,
+           COALESCE(MAX(r.lead_time_supplier), $2::int) AS lead_days,
            MAX(r.min_order_value) AS min_order_value,
            COUNT(*)::int AS items,
            SUM(r.suggestion * r.cost_price)::numeric AS total,
            COUNT(*) FILTER (WHERE r.cost_price <= 0)::int AS items_without_cost
       FROM rep r
      WHERE r.situation IN ('BUY', 'ZERO_SALES') AND r.suggestion > 0 ${mfFilter}
-     GROUP BY r.product_manufacturer_id
+     GROUP BY r.product_supplier_id
      ORDER BY SUM(r.suggestion * r.cost_price) DESC
   `, params);
 
@@ -676,8 +740,8 @@ export async function listManufacturerOrders({ withComplete = true, manufacturer
     const minOrder = r.min_order_value === null ? null : Number(r.min_order_value);
     const reached = minOrder === null || minOrder <= 0 || total >= minOrder;
     return {
-      manufacturer_id: r.manufacturer_id,
-      manufacturer_name: r.manufacturer_name,
+      supplier_id: r.supplier_id,
+      supplier_name: r.supplier_name,
       lead_days: r.lead_days === null ? settings.default_lead_time_days : Number(r.lead_days),
       min_order_value: minOrder,
       items: r.items,
@@ -692,28 +756,28 @@ export async function listManufacturerOrders({ withComplete = true, manufacturer
   });
 
   if (withComplete) {
-    const pending = orders.filter((o) => !o.reached && o.manufacturer_id);
+    const pending = orders.filter((o) => !o.reached && o.supplier_id);
     if (pending.length) {
-      const ids = pending.map((o) => o.manufacturer_id);
+      const ids = pending.map((o) => o.supplier_id);
       const { rows: cand } = await pool.query(`
         ${cte.sql}
         SELECT r.* FROM rep r
-         WHERE r.product_manufacturer_id = ANY($4::int[])
+         WHERE r.product_supplier_id = ANY($4::int[])
            AND r.situation IN ('SOON', 'OK')
            AND r.daily > 0 AND r.cost_price > 0 AND r.suggestion_now > 0
-         ORDER BY r.product_manufacturer_id, r.days_to_reorder ASC NULLS LAST, r.coverage_days ASC NULLS LAST
+         ORDER BY r.product_supplier_id, r.days_to_reorder ASC NULLS LAST, r.coverage_days ASC NULLS LAST
       `, [...cte.params, ids]);
 
       const byMf = new Map();
       cand.forEach((r) => {
-        const list = byMf.get(r.product_manufacturer_id) || [];
+        const list = byMf.get(r.product_supplier_id) || [];
         list.push(rowToModel(r));
-        byMf.set(r.product_manufacturer_id, list);
+        byMf.set(r.product_supplier_id, list);
       });
 
       pending.forEach((order) => {
         let acc = 0;
-        for (const r of byMf.get(order.manufacturer_id) || []) {
+        for (const r of byMf.get(order.supplier_id) || []) {
           if (acc >= order.missing) break;
           const value = r.suggestion_now * r.cost_price;
           order.complete.push({
@@ -773,7 +837,7 @@ export async function getReplenishmentDashboard({ limit = 6 } = {}) {
         FROM rep r
        WHERE r.daily > 0 OR (r.situation <> 'NO_PARAMS' AND r.stock_qty <= 0)
     `, cte.params),
-    listManufacturerOrders({ withComplete: false }),
+    listSupplierOrders({ withComplete: false }),
   ]);
 
   const c = coverage.rows[0] || {};
@@ -800,13 +864,13 @@ export default {
   ensureReplenishmentSchema,
   getSettings,
   saveSettings,
-  listManufacturersReplenishment,
+  listSuppliersReplenishment,
   listReplenishment,
   listAllReplenishment,
   getReplenishmentRow,
   listProductMovements,
   saveParams,
-  listManufacturerOrders,
+  listSupplierOrders,
   getReplenishmentDashboard,
   SITUATIONS,
 };

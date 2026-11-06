@@ -6,7 +6,7 @@
 /* ───────── Tabela ───────── */
 .ps-table { width: 100%; table-layout: fixed; }
 .ps-table .c-chk { width: 36px; }
-.ps-table .c-prod { width: 270px; }
+.ps-table .c-prod { width: 250px; }
 .ps-table .c-group { width: 120px; }
 .ps-table .c-mf { width: 110px; }
 .ps-table .c-lead { width: 78px; }
@@ -38,6 +38,7 @@
 .calc b { color: #0f172a; }
 
 /* ───────── Parâmetros: fabricantes ───────── */
+.mf-search { width: 100%; height: 30px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 8px; margin-bottom: 6px; box-sizing: border-box; font-size: 12px; }
 .mf-list { max-height: 46vh; overflow: auto; }
 .mf-row {
   display: grid; grid-template-columns: 1.5fr .8fr 1.1fr .7fr; gap: 10px; align-items: center;
@@ -67,3 +68,4 @@
 }
 .ord-tip + .ord-tip { margin-top: 8px; }
 .ord-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.mf-row[hidden] { display: none; }

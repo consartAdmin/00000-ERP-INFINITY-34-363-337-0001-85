@@ -48,7 +48,7 @@ import { taxAssessmentDashboard }
 import { stockLotsExpiryDashboard }
   from './stockLotsExpiry.js?v=20261106-1';
 import { stockReplenishmentDashboard }
-  from './stockReplenishment.js?v=20261106-1';
+  from './stockReplenishment.js?v=20261106-2';
 import {
   renderFinancialPeriodPicker,
   bindFinancialPeriodPicker,
