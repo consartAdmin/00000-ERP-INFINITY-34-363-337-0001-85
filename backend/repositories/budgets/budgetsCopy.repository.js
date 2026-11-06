@@ -6,6 +6,7 @@ import { getById } from './budgetsGetById.repository.js';
 import { create } from './budgetsCreate.repository.js';
 import pool from '../../config/db.js';
 import productsStockManager from '../productsStock/productsStock.manager.js';
+import { getActiveUnitsByProductCode } from '../productsBarCode/productsBarCodeQuery.repository.js';
 
 // ----------------------------------------------------------------------
 // Lots: the copy gets fresh lots from current stock (FEFO, same order as
@@ -93,6 +94,68 @@ function lotsForItem(it, lotsByCode) {
   );
 }
 
+// ----------------------------------------------------------------------
+// Units (U.M.): active barcodes of the product, same source as the unit
+// select in the editor (/api/barcodes/active-units). Price follows the
+// editor rule: base price x unit factor.
+// ----------------------------------------------------------------------
+function normalizeUnitCode(value) {
+  return String(value ?? '').trim().toUpperCase();
+}
+
+async function loadUnitsForItems(items) {
+  const unitsByCode = new Map();
+
+  for (const it of items) {
+    const code = String(it.product_code || '').trim();
+    if (!code || unitsByCode.has(code)) continue;
+
+    try {
+      const rows = await getActiveUnitsByProductCode(pool, code);
+      const seen = new Set();
+      const units = [];
+
+      for (const r of rows || []) {
+        const unit = normalizeUnitCode(r.unit);
+        if (!unit || seen.has(unit)) continue;
+        seen.add(unit);
+
+        units.push({
+          unit,
+          fator: Number(r.fator ?? r.factor ?? 1) || 1,
+          barcode_id: r.barcode_id != null ? Number(r.barcode_id) : null,
+          standard: !!r.standard,
+        });
+      }
+
+      unitsByCode.set(code, units);
+    } catch (err) {
+      console.warn(`[budgetsApi.copyFromBudget] units ${code}:`, err?.message || err);
+      unitsByCode.set(code, []);
+    }
+  }
+
+  return unitsByCode;
+}
+
+function unitsForItem(it, unitsByCode) {
+  const code = String(it.product_code || '').trim();
+  const list = [...(unitsByCode.get(code) || [])];
+  const current = normalizeUnitCode(it.unit_code ?? it.unit ?? 'UN') || 'UN';
+
+  // The unit of the source item is always offered, even if it was deactivated.
+  if (!list.some((u) => u.unit === current)) {
+    list.unshift({
+      unit: current,
+      fator: Number(it.conversion_factor || 1) || 1,
+      barcode_id: it.barcode_id != null ? Number(it.barcode_id) : null,
+      standard: false,
+    });
+  }
+
+  return list;
+}
+
 function pickFefoLot(lots, qty, usedByLot) {
   const candidates = lots
     .map((lot) => ({
@@ -122,7 +185,8 @@ async function assignLotsForCopy(items, ctx = {}) {
 
   for (const it of items) {
     const lots = lotsForItem(it, lotsByCode);
-    const qty = Number(it.quantity || 0);
+    // Lot balance is in the base unit.
+    const qty = Number(it.quantity || 0) * (Number(it.conversion_factor || 1) || 1);
     const requested = Number(it.requested_lot_id);
 
     const manual = Number.isFinite(requested) && requested > 0
@@ -163,6 +227,7 @@ export async function getCopyOptions(sourceBudgetId, ctx = {}) {
 
   const withLot = await resolveWithLot(ctx);
   const lotsByCode = withLot ? await loadLotsForItems(items) : new Map();
+  const unitsByCode = await loadUnitsForItems(items);
   const usedByLot = new Map();
 
   return {
@@ -171,21 +236,25 @@ export async function getCopyOptions(sourceBudgetId, ctx = {}) {
     with_lot: withLot,
     items: items.map((it) => {
       const qty = Number(it.quantity || 0);
+      const factor = Number(it.conversion_factor || 1) || 1;
+      const baseQty = qty * factor;
       const lots = withLot ? lotsForItem(it, lotsByCode) : [];
-      const suggested = withLot ? pickFefoLot(lots, qty, usedByLot) : null;
-      if (suggested) consumeLot(usedByLot, suggested.lot_id, Math.min(qty, suggested.free));
+      const suggested = withLot ? pickFefoLot(lots, baseQty, usedByLot) : null;
+      if (suggested) consumeLot(usedByLot, suggested.lot_id, Math.min(baseQty, suggested.free));
 
       return {
-          budget_item_id: Number(it.budget_item_id),
-          product_code: it.product_code ?? it.sku ?? '',
-          description: it.description ?? '',
-          grade_id: it.grade_id ?? null,
-          unit_code: it.unit_code ?? it.unit ?? '',
-          quantity: qty,
-          unit_price: Number(it.unit_price || 0),
-          discount_value: Number(it.discount_value || 0),
-          lots,
-          suggested_lot_id: suggested ? suggested.lot_id : null,
+        budget_item_id: Number(it.budget_item_id),
+        product_code: it.product_code ?? it.sku ?? '',
+        description: it.description ?? '',
+        grade_id: it.grade_id ?? null,
+        unit_code: normalizeUnitCode(it.unit_code ?? it.unit ?? 'UN') || 'UN',
+        conversion_factor: factor,
+        units: unitsForItem(it, unitsByCode),
+        quantity: qty,
+        unit_price: Number(it.unit_price || 0),
+        discount_value: Number(it.discount_value || 0),
+        lots,
+        suggested_lot_id: suggested ? suggested.lot_id : null,
       };
     }),
   };
@@ -198,8 +267,8 @@ function roundMoney(value) {
   return Math.round(Number(value || 0) * 100) / 100;
 }
 
-// options.items: [{ budget_item_id, quantity, lot_id }] edited in the copy
-// modal. Returns Map(budget_item_id -> { quantity, lot_id }).
+// options.items: [{ budget_item_id, quantity, unit_code, lot_id }] edited in the copy
+// modal. Returns Map(budget_item_id -> { quantity, lot_id, unit_code }).
 function normalizeItemOverrides(raw) {
   if (!Array.isArray(raw)) return null;
 
@@ -214,6 +283,7 @@ function normalizeItemOverrides(raw) {
     map.set(id, {
       quantity: Number.isFinite(qty) && qty > 0 ? qty : null,
       lot_id: Number.isFinite(lotId) && lotId > 0 ? lotId : null,
+      unit_code: normalizeUnitCode(row?.unit_code) || null,
     });
   }
 
@@ -354,58 +424,93 @@ export async function copyFromBudget(sourceBudgetId, ctx = {}, options = {}) {
     // ================================================================
     let quantityChanged = false;
 
+    // Units are only looked up when the modal changed one.
+    const unitChangeItems = overrides
+      ? srcItems.filter((it) => {
+        const o = overrides.get(Number(it.budget_item_id));
+        return o?.unit_code &&
+          o.unit_code !== normalizeUnitCode(it.unit_code ?? it.unit ?? 'UN');
+      })
+      : [];
+    const unitsByCode = unitChangeItems.length
+      ? await loadUnitsForItems(unitChangeItems)
+      : new Map();
+
     const newItems = srcItems.map((it) => {
       const override = overrides?.get(Number(it.budget_item_id)) || null;
       const srcQty = Number(it.quantity || 0);
       const qty = override?.quantity ?? srcQty;
-      const srcDiscount = Number(it.discount_value || 0);
+      const srcPrice = Number(it.unit_price || 0);
+      const srcFactor = Number(it.conversion_factor || 1) || 1;
+      const srcUnit = normalizeUnitCode(it.unit_code ?? it.unit ?? 'UN') || 'UN';
 
-      // Item discount is a value: keep it proportional to the new quantity.
-      const discount = qty !== srcQty
-        ? (srcQty > 0 ? roundMoney(srcDiscount * (qty / srcQty)) : 0)
+      // U.M. chosen in the modal: factor/barcode from the product's active
+      // units; price = source base price x new factor (editor rule).
+      let unitCode = srcUnit;
+      let factor = srcFactor;
+      let barcodeId = it.barcode_id ?? null;
+      let unitPrice = srcPrice;
+
+      if (override?.unit_code && override.unit_code !== srcUnit) {
+        const unit = unitsForItem(it, unitsByCode)
+          .find((u) => u.unit === override.unit_code);
+
+        if (unit) {
+          unitCode = unit.unit;
+          factor = unit.fator;
+          barcodeId = unit.barcode_id ?? null;
+          unitPrice = Math.round((srcPrice / srcFactor) * factor * 10000) / 10000;
+        }
+      }
+
+      // Item discount is a value: keep it proportional to the new line value.
+      const srcGross = srcQty * srcPrice;
+      const gross = qty * unitPrice;
+      const srcDiscount = Number(it.discount_value || 0);
+      const discount = gross !== srcGross
+        ? (srcGross > 0 ? roundMoney(srcDiscount * (gross / srcGross)) : 0)
         : srcDiscount;
 
-      if (qty !== srcQty) quantityChanged = true;
+      if (gross !== srcGross) quantityChanged = true;
 
       return {
-      product_code: it.product_code ?? null,
-      barcode_id: it.barcode_id ?? null,
+        product_code: it.product_code ?? null,
+        barcode_id: barcodeId,
 
-      manufacturer_ref:
-        it.manufacturer_ref ??
-        null,
+        manufacturer_ref:
+          it.manufacturer_ref ??
+          null,
 
-      description:
-        it.description ??
-        '',
+        description:
+          it.description ??
+          '',
 
-      grade_id:
-        it.grade_id ??
-        null,
+        grade_id:
+          it.grade_id ??
+          null,
 
-      unit_code: it.unit_code ?? it.unit ?? 'UN',
-      conversion_factor: Number(it.conversion_factor || 1),
+        unit_code: unitCode,
+        conversion_factor: factor,
 
-      quantity: qty,
+        quantity: qty,
 
-      unit_price:
-        Number(it.unit_price || 0),
+        unit_price: unitPrice,
 
-      discount_value: discount,
+        discount_value: discount,
 
-      price_id:
-        it.price_id ??
-        null,
+        price_id:
+          it.price_id ??
+          null,
 
-      // Do not inherit commission from original budget
-      commission_id: null,
+        // Do not inherit commission from original budget
+        commission_id: null,
 
-      // Lot is not inherited; assignLotsForCopy() picks one from stock
-      lot_id: null,
-      requested_lot_id: override?.lot_id ?? null,
+        // Lot is not inherited; assignLotsForCopy() picks one from stock
+        lot_id: null,
+        requested_lot_id: override?.lot_id ?? null,
 
-      override_stock: false,
-      override_token: null,
+        override_stock: false,
+        override_token: null,
       };
     });
 

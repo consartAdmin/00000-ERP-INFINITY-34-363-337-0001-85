@@ -1630,7 +1630,7 @@ function ensureCopyBudgetModal() {
                   </th>
                   <th>Código</th>
                   <th>Descrição</th>
-                  <th class="num copy-budget-col-qty">Qtd</th>
+                  <th class="num copy-budget-col-qty">Qtd / U.M.</th>
                   <th class="copy-budget-col-lot">Lote</th>
                   <th class="num">Vlr. unit.</th>
                   <th class="num">Total</th>
@@ -1655,6 +1655,38 @@ function ensureCopyBudgetModal() {
 
   document.body.appendChild(modal);
   return modal;
+}
+
+function copyItemUnits(it) {
+  const current = String(it.unit_code ?? it.unit ?? 'UN').trim().toUpperCase() || 'UN';
+  const list = (Array.isArray(it.units) ? it.units : [])
+    .map((u) => ({
+      unit: String(u.unit ?? '').trim().toUpperCase(),
+      fator: Number(u.fator ?? u.factor ?? 1) || 1,
+    }))
+    .filter((u) => u.unit);
+
+  if (!list.some((u) => u.unit === current)) {
+    list.unshift({ unit: current, fator: Number(it.conversion_factor || 1) || 1 });
+  }
+
+  return { current, list };
+}
+
+function renderCopyUnit(it) {
+  const { current, list } = copyItemUnits(it);
+
+  if (list.length <= 1) {
+    return `<span class="copy-budget-unit" data-unit="${escapeCopyHtml(current)}"
+      data-fator="${list[0]?.fator || 1}">${escapeCopyHtml(current)}</span>`;
+  }
+
+  const options = list.map((u) => `
+    <option value="${escapeCopyHtml(u.unit)}" data-fator="${u.fator}"
+      ${u.unit === current ? 'selected' : ''}>${escapeCopyHtml(u.unit)}${u.fator !== 1 ? ` (${fmtCopyQty(u.fator)})` : ''}</option>
+  `).join('');
+
+  return `<select class="copy-budget-um" aria-label="U.M. de ${escapeCopyHtml(it.description)}">${options}</select>`;
 }
 
 function renderCopyLotSelect(it) {
@@ -1685,7 +1717,7 @@ function renderCopyLotSelect(it) {
   `;
 }
 
-// Resolves with [{ budget_item_id, quantity, lot_id }] for the checked
+// Resolves with [{ budget_item_id, quantity, unit_code, lot_id }] for the checked
 // rows, or null when cancelled.
 function pickItemsToCopy(budgetId, items, withLot = false) {
   const modal = ensureCopyBudgetModal();
@@ -1707,8 +1739,8 @@ function pickItemsToCopy(budgetId, items, withLot = false) {
   if (title) title.textContent = `Copiar orçamento #${budgetId}`;
   if (subtitle) {
     subtitle.textContent = withLot
-      ? 'Marque os produtos, ajuste a quantidade e escolha o lote. O lote sugerido segue o FEFO (vence primeiro).'
-      : 'Marque os produtos e ajuste a quantidade do novo orçamento.';
+      ? 'Marque os produtos, ajuste a quantidade, a U.M. e o lote. O lote sugerido segue o FEFO (vence primeiro).'
+      : 'Marque os produtos e ajuste a quantidade e a U.M. do novo orçamento.';
   }
   modal.classList.toggle('copy-budget-no-lots', !withLot);
 
@@ -1731,11 +1763,11 @@ function pickItemsToCopy(budgetId, items, withLot = false) {
           <div class="copy-budget-qty-wrap">
             <input type="text" inputmode="decimal" class="copy-budget-qty"
               value="${fmtCopyQty(qty)}" aria-label="Quantidade de ${escapeCopyHtml(it.description)}" />
-            <span class="copy-budget-unit">${escapeCopyHtml(it.unit_code ?? '')}</span>
+            ${renderCopyUnit(it)}
           </div>
         </td>
         <td class="copy-budget-col-lot">${withLot ? renderCopyLotSelect(it) : ''}</td>
-        <td class="num">${fmtMoney(unitPrice)}</td>
+        <td class="num copy-budget-unit-price">${fmtMoney(unitPrice)}</td>
         <td class="num copy-budget-line-total">${fmtMoney(total)}</td>
       </tr>
     `;
@@ -1744,6 +1776,20 @@ function pickItemsToCopy(budgetId, items, withLot = false) {
   const getChecks = () => [...body.querySelectorAll('.copy-budget-item-check')];
 
   const rowQty = (row) => parseCopyQty(row.querySelector('.copy-budget-qty')?.value);
+
+  // Selected U.M. of the row: { unit, fator }
+  const rowUnit = (row) => {
+    const sel = row.querySelector('.copy-budget-um');
+    if (sel) {
+      const opt = sel.selectedOptions?.[0];
+      return { unit: sel.value, fator: Number(opt?.dataset.fator || 1) || 1 };
+    }
+    const span = row.querySelector('.copy-budget-unit');
+    return {
+      unit: span?.dataset.unit || '',
+      fator: Number(span?.dataset.fator || 1) || 1,
+    };
+  };
 
   // Line total (discount proportional to the quantity, as the backend does)
   // + lot balance warning.
@@ -1754,13 +1800,20 @@ function pickItemsToCopy(budgetId, items, withLot = false) {
     const qty = rowQty(row);
     const validQty = Number.isFinite(qty) && qty > 0;
     const srcQty = Number(it.quantity || 0);
-    const srcDiscount = Number(it.discount_value || 0);
-    const discount = validQty && srcQty > 0 ? srcDiscount * (qty / srcQty) : 0;
-    const total = validQty
-      ? Math.max(0, qty * Number(it.unit_price || 0) - discount)
-      : 0;
+    const srcPrice = Number(it.unit_price || 0);
+    const srcFactor = Number(it.conversion_factor || 1) || 1;
+    const { fator } = rowUnit(row);
+
+    // Same rule as the editor: base price x unit factor.
+    const unitPrice = fator === srcFactor ? srcPrice : (srcPrice / srcFactor) * fator;
+    const srcGross = srcQty * srcPrice;
+    const gross = validQty ? qty * unitPrice : 0;
+    const discount = srcGross > 0 ? Number(it.discount_value || 0) * (gross / srcGross) : 0;
+    const total = Math.max(0, gross - discount);
 
     row.querySelector('.copy-budget-qty')?.classList.toggle('is-invalid', !validQty);
+    const priceCell = row.querySelector('.copy-budget-unit-price');
+    if (priceCell) priceCell.textContent = fmtMoney(unitPrice);
     const totalCell = row.querySelector('.copy-budget-line-total');
     if (totalCell) totalCell.textContent = fmtMoney(total);
 
@@ -1768,7 +1821,8 @@ function pickItemsToCopy(budgetId, items, withLot = false) {
     if (sel) {
       const opt = sel.selectedOptions?.[0];
       const available = opt && opt.value ? Number(opt.dataset.available || 0) : null;
-      const short = available != null && validQty && qty > available;
+      // Lot balance is in the base unit.
+      const short = available != null && validQty && qty * fator > available;
       sel.classList.toggle('is-short', short);
       sel.title = short
         ? `Saldo do lote (${fmtCopyQty(available)}) menor que a quantidade.`
@@ -1787,7 +1841,7 @@ function pickItemsToCopy(budgetId, items, withLot = false) {
       const row = c.closest('tr');
       row?.classList.toggle('is-unchecked', !c.checked);
       if (row) {
-        row.querySelectorAll('.copy-budget-qty, .copy-budget-lot').forEach((el) => {
+        row.querySelectorAll('.copy-budget-qty, .copy-budget-um, .copy-budget-lot').forEach((el) => {
           el.disabled = !c.checked;
         });
         const lineTotal = refreshRow(row);
@@ -1822,7 +1876,7 @@ function pickItemsToCopy(budgetId, items, withLot = false) {
       if (!row) return;
 
       // Editing quantity / lot must not toggle the row.
-      if (e.target.closest('input.copy-budget-qty, select.copy-budget-lot')) return;
+      if (e.target.closest('input.copy-budget-qty, select.copy-budget-um, select.copy-budget-lot')) return;
 
       // Clicking anywhere else on the row toggles its checkbox.
       if (!e.target.classList.contains('copy-budget-item-check')) {
@@ -1834,7 +1888,7 @@ function pickItemsToCopy(budgetId, items, withLot = false) {
     };
 
     const onBodyInput = (e) => {
-      if (e.target.closest('.copy-budget-qty, .copy-budget-lot')) refresh();
+      if (e.target.closest('.copy-budget-qty, .copy-budget-um, .copy-budget-lot')) refresh();
     };
 
     const onConfirm = () => {
@@ -1863,6 +1917,7 @@ function pickItemsToCopy(budgetId, items, withLot = false) {
         picked.push({
           budget_item_id: id,
           quantity: qty,
+          unit_code: rowUnit(row).unit || null,
           lot_id: lotVal ? Number(lotVal) : null,
         });
       }

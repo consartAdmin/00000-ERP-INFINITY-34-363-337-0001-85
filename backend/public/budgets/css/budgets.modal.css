@@ -195,7 +195,7 @@ flex-direction:column;
   white-space:nowrap;
 }
 .copy-budget-modal .copy-budget-col-qty{
-  width:150px;
+  width:190px;
 }
 .copy-budget-modal .copy-budget-col-lot{
   width:290px;
@@ -223,10 +223,29 @@ flex-direction:column;
   background:#fff;
 }
 .copy-budget-modal .copy-budget-unit{
-  min-width:34px;
+  min-width:86px;
   text-align:left;
   font-size:12px;
   color:#475569;
+}
+.copy-budget-modal .copy-budget-um{
+  width:86px;
+  height:30px;
+  padding:2px 4px;
+  border:1px solid #cbd5e1;
+  border-radius:6px;
+  font:inherit;
+  font-size:12px;
+  background:#fff;
+  cursor:pointer;
+}
+.copy-budget-modal .copy-budget-um:focus{
+  outline:none;
+  border-color:#2563eb;
+  box-shadow:0 0 0 2px rgba(37,99,235,.18);
+}
+.copy-budget-modal tbody tr.is-unchecked .copy-budget-um{
+  opacity:.5;
 }
 .copy-budget-modal .copy-budget-lot{
   width:100%;

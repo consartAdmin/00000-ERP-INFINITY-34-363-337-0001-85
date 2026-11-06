@@ -1678,7 +1678,7 @@ export async function copyBudget(req, res) {
       ? req.body.item_ids
       : null;
 
-    // items (optional): [{ budget_item_id, quantity, lot_id }] edited in the modal
+    // items (optional): [{ budget_item_id, quantity, unit_code, lot_id }] edited in the modal
     const items = Array.isArray(req.body?.items) ? req.body.items : null;
 
     const out = await budgetsApi.copyFromBudget(
