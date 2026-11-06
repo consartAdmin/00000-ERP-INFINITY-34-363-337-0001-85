@@ -159,10 +159,10 @@ function queryString(extra = {}) {
 function fillSituationSelect() {
   const select = $('fSituation');
   const current = state.filters.situation;
-  select.innerHTML = '<option value="">Todas</option>' + state.situations
+  select.innerHTML = '<option value="">Todas</option><option value="WITH_EXPIRY">Com data de vencimento</option>' + state.situations
     .map((s) => `<option value="${esc(s.key)}">${esc(s.label)}</option>`)
     .join('');
-  select.value = state.situations.some((s) => s.key === current) ? current : '';
+  select.value = current === 'WITH_EXPIRY' || state.situations.some((s) => s.key === current) ? current : '';
 }
 
 /* ───────────────────────── Lista ───────────────────────── */
