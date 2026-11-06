@@ -356,7 +356,10 @@ export function legendHtml(items, { showShare = true } = {}) {
  * mode: 'stacked' | 'grouped'
  * line:  { label, color, values: number[], format(v) } (own scale, optional)
  */
-export function monthlyColumnsSvg({ months, series, mode = 'stacked', line = null, height = 210 }) {
+export function monthlyColumnsSvg({ months, series, mode = 'stacked', line = null, height = 210, format = null }) {
+    // format: opcional, para valores que não são dinheiro (ex.: contagem de produtos)
+    const fmtValue = format || moneyBR;
+    const fmtTotal = format || shortMoney;
     const width = 420;
     const top = 18;
     const bottom = 24;
@@ -383,7 +386,7 @@ export function monthlyColumnsSvg({ months, series, mode = 'stacked', line = nul
                 if (h <= 0) return;
                 y -= h;
                 bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barGroup.toFixed(1)}" height="${h.toFixed(1)}" fill="${item.color}"${month.partial ? ' fill-opacity="0.75"' : ''}>
-                  <title>${escapeHtml(month.title || month.label)} — ${escapeHtml(item.label)}: ${moneyBR(value)}</title></rect>`;
+                  <title>${escapeHtml(month.title || month.label)} — ${escapeHtml(item.label)}: ${escapeHtml(fmtValue(value))}</title></rect>`;
             });
         } else {
             const each = barGroup / series.length;
@@ -391,14 +394,14 @@ export function monthlyColumnsSvg({ months, series, mode = 'stacked', line = nul
                 const value = Number(item.values[index] || 0);
                 const h = Math.max(value > 0 ? 1.5 : 0, (value / max) * plotHeight);
                 bars += `<rect x="${(x + seriesIndex * each).toFixed(1)}" y="${(top + plotHeight - h).toFixed(1)}" width="${(each - 2).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${item.color}"${month.partial ? ' fill-opacity="0.75"' : ''}>
-                  <title>${escapeHtml(month.title || month.label)} — ${escapeHtml(item.label)}: ${moneyBR(value)}</title></rect>`;
+                  <title>${escapeHtml(month.title || month.label)} — ${escapeHtml(item.label)}: ${escapeHtml(fmtValue(value))}</title></rect>`;
             });
         }
 
         const total = totals[index];
         const labelY = top + plotHeight - (total / max) * plotHeight - 4;
         const totalLabel = mode === 'stacked' && total > 0
-            ? `<text x="${(x + barGroup / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" class="tax-columns__total">${escapeHtml(shortMoney(total))}</text>`
+            ? `<text x="${(x + barGroup / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" class="tax-columns__total">${escapeHtml(fmtTotal(total))}</text>`
             : '';
 
         return `

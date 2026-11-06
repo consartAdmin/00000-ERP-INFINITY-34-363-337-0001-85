@@ -53,4 +53,8 @@ export const DASHBOARDS = Object.freeze([
     key: 'stock-lots-expiry',
     label: 'Validade dos Lotes',
   },
+  {
+    key: 'stock-replenishment',
+    label: 'Reposição de Estoque (o que comprar)',
+  },
 ]);

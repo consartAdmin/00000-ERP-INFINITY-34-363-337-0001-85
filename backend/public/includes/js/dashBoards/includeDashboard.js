@@ -47,6 +47,8 @@ import { taxAssessmentDashboard }
   from './taxAssessment.js';
 import { stockLotsExpiryDashboard }
   from './stockLotsExpiry.js?v=20261106-1';
+import { stockReplenishmentDashboard }
+  from './stockReplenishment.js?v=20261106-1';
 import {
   renderFinancialPeriodPicker,
   bindFinancialPeriodPicker,
@@ -127,6 +129,7 @@ const DASHBOARDS = [
   // --------------------------------------------------------------------
 
   stockLotsExpiryDashboard,
+  stockReplenishmentDashboard,
 ];
 
 const DASHBOARD_PAGES = Object.freeze([
@@ -174,9 +177,10 @@ const DASHBOARD_PAGES = Object.freeze([
   {
     id: 'stock',
     title: 'Estoque',
-    description: 'Validade dos lotes (vencidos, a vencer e FEFO)',
+    description: 'Validade dos lotes e reposição (o que comprar)',
     keys: new Set([
       'stock-lots-expiry',
+      'stock-replenishment',
     ]),
   },
 ]);
@@ -780,6 +784,7 @@ async function initIncludeDashboard() {
       allowedDashboards.add('tax-assessment');
       // Estoque (validade dos lotes) também, até ter permissão própria marcada.
       allowedDashboards.add('stock-lots-expiry');
+      allowedDashboards.add('stock-replenishment');
     }
 
 
