@@ -465,3 +465,44 @@ body.uc-modal-open {
         width: calc(100vw - 20px);
     }
 }
+
+
+/* ── Uso e Consumo sem orçamento (modal com itens) ───────────────────── */
+.uc-modal-panel { width: min(1280px, calc(100vw - 32px)); max-width: 1280px; }
+.uc-sec { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: .06em; margin: 14px 0 8px; }
+.uc-sec:first-of-type { margin-top: 4px; }
+.uc-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.uc-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: #334155; }
+.uc-field input, .uc-field select { height: 30px; border: 1px solid #94a3b8; border-radius: 4px; padding: 0 8px; font-size: 12px; background: #fff; color: #0f172a; }
+.uc-field input[readonly] { background: #f1f5f9; color: #475569; }
+.uc-field select:disabled { background: #f8fafc; color: #94a3b8; }
+.uc-w-date { width: 140px; } .uc-w-cfop { width: 320px; } .uc-w-md { width: 210px; }
+.uc-w-product { width: 300px; } .uc-w-sm { width: 120px; } .uc-w-xs { width: 84px; } .uc-w-lot { width: 250px; }
+.uc-grow { flex: 1; min-width: 220px; }
+.uc-icon-btn { height: 30px; width: 36px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #1f2937; border-radius: 5px; background: #fff; cursor: pointer; color: #1f2937; }
+.uc-icon-btn svg { width: 16px; height: 16px; }
+.uc-add-btn { height: 30px; padding: 0 14px; border: 1px solid #1d4ed8; border-radius: 5px; background: #1d4ed8; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; }
+.uc-add-btn:disabled { opacity: .45; cursor: not-allowed; }
+.uc-items { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+.uc-items th { border-top: 1px solid #1f2937; border-bottom: 2px solid #1f2937; padding: 7px; font-weight: 700; background: #fff; text-align: center; }
+.uc-items td { padding: 6px 7px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+.uc-items tbody tr:nth-child(even) td { background: #f8fafc; }
+.uc-items .uc-left { text-align: left; }
+.uc-items .uc-empty { color: #94a3b8; padding: 16px; }
+.uc-lot-date { font-size: 11px; color: #64748b; }
+.uc-lot-date.is-near { color: #b45309; font-weight: 600; }
+.uc-lot-date.is-expired { color: #dc2626; font-weight: 700; }
+.uc-items-body { max-height: 260px; overflow: auto; }
+.uc-totals { display: flex; justify-content: flex-end; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+.uc-totals div { border: 1px solid #fcd34d; background: #fffbeb; border-radius: 6px; padding: 8px 14px; font-size: 12px; min-width: 190px; display: flex; justify-content: space-between; gap: 20px; }
+.uc-totals b { color: #1d4ed8; }
+.uc-pill { margin-right: auto; display: inline-block; padding: 3px 10px; border-radius: 10px; background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 700; }
+.uc-modal-footer { display: flex; align-items: center; gap: 8px; }
+.uc-status.is-draft { background: #fef3c7; color: #92400e; }
+.uc-origin { font-size: 11px; color: #64748b; }
+.uc-row-actions { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
+.uc-nowrap { white-space: nowrap; }
+.uc-row-actions .action-icons { display: inline-flex; }
+@media (max-width: 900px) {
+  .uc-w-cfop, .uc-w-md, .uc-w-product, .uc-w-lot { width: 100%; }
+}

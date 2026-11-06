@@ -75,13 +75,21 @@ function resolveErrorStatus(error, fallback = 500) {
 
 export async function list(req, res) {
   try {
-    const data = await api.list({
+    const limit = Math.min(Math.max(Number(req.query.limit || 50) || 50, 1), 500);
+    const offset = Math.max(Number(req.query.offset || 0) || 0, 0);
+
+    const result = await api.list({
       q: req.query.q || '',
-      limit: Number(req.query.limit || 50),
-      offset: Number(req.query.offset || 0),
+      status: req.query.status || '',
+      limit,
+      offset,
     });
 
-    return ok(res, data);
+    return ok(res, result.rows, {
+      total: result.total,
+      limit,
+      offset,
+    });
   } catch (error) {
     console.error(
       '[usoConsumoController][list][ERROR]',
@@ -303,5 +311,99 @@ export async function printDanfe(req, res) {
       error.message ||
       'Erro ao gerar DANFE Consart.'
     );
+  }
+}
+/* =========================================================================
+ * Uso e Consumo direto (sem orçamento)
+ * ========================================================================= */
+
+function directStatus(error, fallback = 400) {
+  const status = Number(error?.status || error?.statusCode);
+  if (status >= 400 && status < 600) return status;
+  return resolveErrorStatus(error, fallback);
+}
+
+export async function productInfo(req, res) {
+  try {
+    const data = await api.productInfo(req.params.productCode, {
+      productGradeId: req.query.product_grade_id || null,
+    });
+    return ok(res, data);
+  } catch (error) {
+    console.error('[usoConsumoController][productInfo][ERROR]', error);
+    return fail(res, directStatus(error), error.message || 'Erro ao carregar o produto.');
+  }
+}
+
+export async function create(req, res) {
+  try {
+    let data = await api.saveDraft(null, req.body || {});
+    const finishNow = req.body?.finish === true || req.body?.finish === 'true';
+
+    if (finishNow) {
+      try {
+        data = await api.finish(data.header.uso_consumo_id);
+      } catch (error) {
+        // O rascunho fica salvo; devolve o motivo para o usuário corrigir.
+        return fail(res, directStatus(error), error.message, { data });
+      }
+    }
+
+    return ok(res, data, {
+      message: finishNow
+        ? 'Uso e consumo finalizado e estoque baixado.'
+        : 'Rascunho salvo.',
+    });
+  } catch (error) {
+    console.error('[usoConsumoController][create][ERROR]', error);
+    return fail(res, directStatus(error), error.message || 'Erro ao salvar o uso e consumo.');
+  }
+}
+
+export async function update(req, res) {
+  try {
+    let data = await api.saveDraft(req.params.id, req.body || {});
+    const finishNow = req.body?.finish === true || req.body?.finish === 'true';
+
+    if (finishNow) {
+      try {
+        data = await api.finish(req.params.id);
+      } catch (error) {
+        return fail(res, directStatus(error), error.message, { data });
+      }
+    }
+
+    return ok(res, data, {
+      message: finishNow
+        ? 'Uso e consumo finalizado e estoque baixado.'
+        : 'Rascunho salvo.',
+    });
+  } catch (error) {
+    console.error('[usoConsumoController][update][ERROR]', error);
+    return fail(res, directStatus(error), error.message || 'Erro ao salvar o uso e consumo.');
+  }
+}
+
+export async function finish(req, res) {
+  try {
+    const data = await api.finish(req.params.id);
+    return ok(res, data, { message: 'Uso e consumo finalizado e estoque baixado.' });
+  } catch (error) {
+    console.error('[usoConsumoController][finish][ERROR]', error);
+    return fail(res, directStatus(error), error.message || 'Erro ao finalizar o uso e consumo.');
+  }
+}
+
+export async function remove(req, res) {
+  try {
+    const data = await api.remove(req.params.id);
+    return ok(res, data, {
+      message: data.finished
+        ? `Registro ${data.number} excluído e estoque estornado.`
+        : `Rascunho ${data.number} excluído.`,
+    });
+  } catch (error) {
+    console.error('[usoConsumoController][remove][ERROR]', error);
+    return fail(res, directStatus(error), error.message || 'Erro ao excluir o uso e consumo.');
   }
 }

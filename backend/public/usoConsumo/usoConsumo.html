@@ -8,8 +8,7 @@
     <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
     <link rel="stylesheet" href="/public/includes/css/style.css">
     <link rel="stylesheet" href="/public/includes/css/modals.css">
-    <link rel="stylesheet" href="/public/modalsSearch/budgetsModal.css">
-    <link rel="stylesheet" href="./usoConsumo.css">
+        <link rel="stylesheet" href="./usoConsumo.css?v=2">
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -27,57 +26,90 @@
                     </header>
 
                     <div class="modal__body uc-modal-body">
-                        <div id="selectedBudgetBox" class="uc-selected-budget hidden">
-                            <div><small>Orçamento selecionado</small><strong id="selectedBudgetTitle">-</strong></div>
-                            <div><small>Cliente</small><strong id="selectedBudgetCustomer">-</strong></div>
-                            <div><small>Total</small><strong id="selectedBudgetTotal">R$ 0,00</strong></div>
-                            <button id="btnRemoveBudget" type="button" title="Remover orçamento">×</button>
+                        <input id="usoConsumoId" type="hidden">
+
+                        <div class="uc-sec">Dados da saída</div>
+                        <div class="uc-row">
+                            <label class="uc-field uc-w-date">Data
+                                <input id="movementDate" type="date">
+                            </label>
+                            <label class="uc-field uc-w-cfop">CFOP
+                                <select id="cfop">
+                                    <option value="5.949">5.949 - Outra saída de mercadoria não especificada</option>
+                                    <option value="5.556">5.556 - Devolução de compra de material de uso/consumo</option>
+                                </select>
+                            </label>
+                            <label class="uc-field uc-w-md">Departamento
+                                <select id="departmentId"><option value="">Carregando...</option></select>
+                            </label>
+                            <label class="uc-field uc-w-md">Responsável
+                                <select id="employeeId"><option value="">Carregando...</option></select>
+                            </label>
+                            <label class="uc-field uc-grow">Motivo
+                                <input id="reason" type="text" maxlength="500" placeholder="Ex: Produtos retirados para uso interno da empresa.">
+                            </label>
                         </div>
 
-                        <div class="fields-inlines fields-gap-3">
-                            <div class="fields-inline fields-gap-3 uc-modal-grid">
-                                <div class="fields fields-h-6 fields-w-12 fields-font-3">
-                                    <label>Nº / ID do Orçamento
-                                        <input id="budgetId" type="number" min="1" placeholder="Ex: 1025">
-                                    </label>
-                                </div>
-                                <div class="btn-inline uc-budget-buttons">
-                                    <button id="btnFindBudget" class="btn btn-new btn-sm" type="button">Buscar</button>
-                                    <button id="btnOpenBudgetsModal" class="btn btn-new btn-sm" type="button">Importar</button>
-                                </div>
-                                <div class="fields fields-h-6 fields-w-30 fields-font-3">
-                                    <label>CFOP
-                                        <select id="cfop">
-                                            <option value="5.949">5.949 - Outra saída de mercadoria/prestação não especificada</option>
-                                            <option value="5.556">5.556 - Devolução de compra de material de uso/consumo</option>
-                                            <option value="1.556">1.556 - Compra de material para uso ou consumo</option>
-                                            <option value="2.556">2.556 - Compra interestadual de material para uso ou consumo</option>
-                                        </select>
-                                    </label>
-                                </div>
-                                <div class="fields fields-h-6 fields-w-20 fields-font-3">
-                                    <label>Departamento
-                                        <input id="department" type="text" maxlength="120" placeholder="Ex: Expedição">
-                                    </label>
-                                </div>
-                                <div class="fields fields-h-6 fields-w-20 fields-font-3">
-                                    <label>Responsável
-                                        <input id="responsible" type="text" maxlength="120" placeholder="Ex: Renato">
-                                    </label>
-                                </div>
-                            </div>
+                        <div class="uc-sec">Itens</div>
+                        <div class="uc-row" id="itemEditor">
+                            <label class="uc-field uc-w-product">Produto
+                                <input id="productSearch" type="text" placeholder="Código ou descrição (Enter busca)" autocomplete="off">
+                            </label>
+                            <button id="btnSearchProduct" class="uc-icon-btn" type="button" title="Buscar produto" aria-label="Buscar produto">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                            </button>
+                            <label class="uc-field uc-w-sm">Grade
+                                <select id="itemGrade" disabled><option value="">—</option></select>
+                            </label>
+                            <label class="uc-field uc-w-xs">U.M
+                                <select id="itemUnit" disabled><option value="">—</option></select>
+                            </label>
+                            <label class="uc-field uc-w-lot">Lote (FEFO)
+                                <select id="itemLot" disabled><option value="">—</option></select>
+                            </label>
+                            <label class="uc-field uc-w-xs">Qtd
+                                <input id="itemQty" type="number" min="0" step="any" value="1">
+                            </label>
+                            <label class="uc-field uc-w-xs">Custo unit.
+                                <input id="itemCost" type="text" readonly tabindex="-1">
+                            </label>
+                            <label class="uc-field uc-w-xs">Estoque
+                                <input id="itemStock" type="text" readonly tabindex="-1">
+                            </label>
+                            <button id="btnAddItem" class="uc-add-btn" type="button" disabled>+ Adicionar</button>
+                        </div>
 
-                            <div class="fields fields-h-5 fields-w-20 fields-font-3 uc-reason-field">
-                                <label class="uc-full">Motivo
-                                    <textarea id="reason" rows="4" placeholder="Ex: Produtos retirados para uso interno da empresa."></textarea>
-                                </label>
-                            </div>
+                        <table class="uc-items">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th class="uc-left">Descrição</th>
+                                    <th>Grade</th>
+                                    <th>U.M</th>
+                                    <th>Lote</th>
+                                    <th>Qtd</th>
+                                    <th>Custo unit.</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsBody">
+                                <tr><td colspan="9" class="uc-empty">Nenhum item adicionado.</td></tr>
+                            </tbody>
+                        </table>
+
+                        <div class="uc-totals">
+                            <div>Itens<span id="totItems">0</span></div>
+                            <div>Quantidade<span id="totQty">0</span></div>
+                            <div>Total (custo)<b id="totCost">R$ 0,00</b></div>
                         </div>
                     </div>
 
                     <footer class="modal__footer uc-modal-footer">
+                        <span class="uc-pill">O estoque e o lote só baixam ao finalizar</span>
                         <button id="btnClear" class="btn btn-clean btn-sm" type="button">Limpar</button>
-                        <button id="btnFinish" class="btn btn-new btn-sm" type="button">Finalizar como Uso e Consumo</button>
+                        <button id="btnSaveDraft" class="btn btn-clean btn-sm" type="button">Salvar rascunho</button>
+                        <button id="btnFinish" class="btn btn-new btn-sm" type="button">Finalizar e baixar estoque</button>
                     </footer>
                 </section>
             </div>
@@ -113,11 +145,13 @@
                         <tr>
                             <th>ID</th>
                             <th>Número</th>
-                            <th>Orçamento</th>
+                            <th>Origem</th>
                             <th>Departamento</th>
                             <th>Responsável</th>
                             <th>CFOP</th>
+                            <th>Itens</th>
                             <th>Total</th>
+                            <th>Situação</th>
                             <th>NF-e</th>
                             <th>Status NF-e</th>
                             <th>Data</th>
@@ -126,7 +160,7 @@
                     </thead>
                     <tbody id="rows">
                         <tr>
-                            <td colspan="11">Carregando...</td>
+                            <td colspan="13">Carregando...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -169,7 +203,7 @@
 
     </main>
     <script type="module" src="/public/includes/js/core.js"></script>
-    <script type="module" src="./usoConsumo.js"></script>
+    <script type="module" src="./usoConsumo.js?v=2"></script>
 </body>
 
 </html>

@@ -13,6 +13,11 @@ import {
   refreshNfeStatus,
   retryNfe,
   printDanfe,
+  productInfo,
+  create,
+  update,
+  finish,
+  remove,
 } from '../controllers/usoConsumoController.js';
 
 const router = Router();
@@ -27,6 +32,22 @@ router.get(
   '/',
   list
 );
+
+/* =========================================================================
+ * 📦 Uso e Consumo direto (sem orçamento)
+ *
+ * GET    /api/uso-consumo/product-info/:productCode
+ * POST   /api/uso-consumo            (rascunho; finish:true baixa o estoque)
+ * PUT    /api/uso-consumo/:id        (edita rascunho; finish:true baixa)
+ * POST   /api/uso-consumo/:id/finish
+ * DELETE /api/uso-consumo/:id        (rascunho, ou estorno sem NF-e válida)
+ * ========================================================================= */
+
+router.get('/product-info/:productCode', productInfo);
+router.post('/', create);
+router.put('/:id', update);
+router.post('/:id/finish', finish);
+router.delete('/:id', remove);
 
 /* =========================================================================
  * ✅ Finalizar orçamento
