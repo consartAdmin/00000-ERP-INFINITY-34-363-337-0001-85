@@ -19,6 +19,7 @@ export function readFiltersFromDom() {
   state.filters.supplier_id = getFilterEl('filterSupplier')?.value || '';
   state.filters.group_id = getFilterEl('filterGroup')?.value || '';
   state.filters.subgroup_id = getFilterEl('filterSubgroup')?.value || '';
+  state.filters.family_id = getFilterEl('filterFamily')?.value || '';
 }
 
 export function bindSearch() {
@@ -63,6 +64,7 @@ export function bindFilters() {
     'filterSupplier',
     'filterGroup',
     'filterSubgroup',
+    'filterFamily',
   ];
 
   ids.forEach((id) => {
@@ -72,6 +74,10 @@ export function bindFilters() {
     el.addEventListener('change', async () => {
       if (id === 'filterGroup') {
         await reloadSubgroupsByGroup(el.value);
+        await reloadFamiliesBySubgroup('');
+      }
+      if (id === 'filterSubgroup') {
+        await reloadFamiliesBySubgroup(el.value);
       }
 
       readFiltersFromDom();
@@ -89,6 +95,7 @@ export function bindFilters() {
       });
 
       await reloadSubgroupsByGroup('');
+      await reloadFamiliesBySubgroup('');
 
       readFiltersFromDom();
       state.page = 1;
@@ -255,5 +262,34 @@ async function reloadSubgroupsByGroup(groupId) {
       '[products] erro ao recarregar subgrupos:',
       err
     );
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   RELOAD FAMILIES BY SUBGROUP (3º nível)
+────────────────────────────────────────────────────────────── */
+async function reloadFamiliesBySubgroup(subgroupId) {
+  const sel = document.getElementById('filterFamily');
+  if (!sel) return;
+
+  sel.innerHTML = '<option value="">Todas famílias</option>';
+  if (!subgroupId) return;
+
+  try {
+    const res = await fetch(
+      `/api/products-families?is_active=true&subgroup_id=${encodeURIComponent(subgroupId)}`,
+    );
+    const json = await res.json();
+    const rows = json?.data?.rows ?? json?.rows ?? [];
+
+    rows.forEach((row) => {
+      if (!row.product_family_id || !row.name) return;
+      const opt = document.createElement('option');
+      opt.value = String(row.product_family_id);
+      opt.textContent = String(row.name);
+      sel.appendChild(opt);
+    });
+  } catch (err) {
+    console.error('[products] erro ao recarregar famílias:', err);
   }
 }

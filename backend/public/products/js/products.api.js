@@ -303,6 +303,10 @@ export async function loadFromApi({
     sp.set('subgroup_id', filters.subgroup_id);
   }
 
+  if (filters.family_id) {
+    sp.set('family_id', filters.family_id);
+  }
+
   const url = `${API_BASE}/api/products?${sp.toString()}`;
 
   const res = await fetchJSON(url, { signal });
@@ -497,6 +501,9 @@ export async function exportExcel({ q = '', filters = {} } = {}) {
   }
   if (filters.subgroup_id) {
     params.set('subgroup_id', filters.subgroup_id);
+  }
+  if (filters.family_id) {
+    params.set('family_id', filters.family_id);
   }
 
   const query = params.toString();

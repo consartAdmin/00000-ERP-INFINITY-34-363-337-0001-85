@@ -19,6 +19,7 @@ export function initDadosGeraisTab(ctx) {
 
     product_group_id: '#product_group_id',
     product_subgroup_id: '#product_subgroup_id',
+    product_family_id: '#product_family_id',
     manufacturer_id: '#manufacturer_id',
     supplier_id: '#supplier_id',
 
@@ -714,6 +715,7 @@ export function initDadosGeraisTab(ctx) {
 
       product_group_id: n(getVal(FIELDS.product_group_id)),
       product_subgroup_id: n(getVal(FIELDS.product_subgroup_id)),
+      product_family_id: n(getVal(FIELDS.product_family_id)),
       manufacturer_id: n(getVal(FIELDS.manufacturer_id)),
       supplier_id: n(getVal(FIELDS.supplier_id)),
 

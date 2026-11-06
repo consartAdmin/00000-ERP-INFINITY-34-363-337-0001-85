@@ -6,7 +6,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>GRUPOS & SUBGRUPOS | CONSART ERP</title>
+  <title>GRUPOS, SUBGRUPOS & FAMÍLIAS | CONSART ERP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
   <!-- 🟦 Favicons CONSART -->
@@ -22,12 +22,12 @@
   <link rel="stylesheet" href="/public/includes/css/containerLeftAndRightConsart.css"/>
 
   <!-- ✅ CSS da página -->
-  <link rel="stylesheet" href="/public/groupsAndSubgroups/groupsAndSubgroups.css?v=final-01"/>
+  <link rel="stylesheet" href="/public/groupsAndSubgroups/groupsAndSubgroups.css?v=familias-01"/>
 </head>
 
 <body class="consart-theme c-page page" style="--consart-input-h: 30px;">
 
-  <main class="consart-container consart-container--fixed consart-container--full consart-container--h-800 consart-lr"
+  <main class="consart-container consart-container--fixed consart-container--full consart-container--h-800 consart-lr gs-3cols"
         style="
           --consart-lr-left-minw: 520px;
           --consart-lr-right-minw: 520px;
@@ -211,10 +211,103 @@
       </div>
     </section>
 
+    <!-- ╭──────────────────────────────────────────────╮
+         │ 3º NÍVEL: FAMÍLIAS (filhas do subgrupo)      │
+         ╰──────────────────────────────────────────────╯ -->
+    <section class="consart-lr-panel gs-panel">
+
+      <div class="consart-lr-header gs-panel-head">
+        <div class="gs-panel-head__title">
+          <h2 class="gs-h2">🧬 Famílias de Produtos</h2>
+          <p class="gs-muted">
+            3º nível, dentro de cada subgrupo. Ex.: LUVAS → LUVA NITRÍLICA, LUVA LÁTEX.
+          </p>
+        </div>
+
+        <div class="gs-panel-head__actions">
+          <div class="gs-search">
+            <input id="familiesSearch" class="input input-sm" placeholder="Buscar família por nome..." />
+            <button type="button" id="btnSearchFamilies" class="btn btn-toolbar btn-sm" title="Buscar">🔍</button>
+          </div>
+
+          <label class="toggle gs-toggle">
+            <input type="checkbox" id="familiesShowInactive" />
+            <span>Incluir inativos</span>
+          </label>
+
+          <button type="button" id="btnNewFamily" class="btn btn-toolbar btn-sm">
+            + Nova Família
+          </button>
+        </div>
+      </div>
+
+      <form id="familyForm" class="gs-form" autocomplete="off">
+        <input type="hidden" id="familyId"/>
+
+        <div class="gs-field gs-field--grow">
+          <label for="familyName" class="gs-label">Nome da família</label>
+          <input
+            type="text"
+            id="familyName"
+            class="input"
+            maxlength="100"
+            placeholder="Ex.: Luva Nitrílica"
+            required
+          />
+        </div>
+
+        <div class="gs-field gs-field--grow">
+          <label for="familySubgroupSelect" class="gs-label">Subgrupo vinculado</label>
+          <select id="familySubgroupSelect" class="select" required></select>
+        </div>
+
+        <div class="gs-field gs-field--auto">
+          <label class="check gs-check">
+            <input type="checkbox" id="familyIsActive" checked />
+            <span>Ativo</span>
+          </label>
+        </div>
+
+        <div class="gs-actions">
+          <button type="submit" class="btn btn-toolbar btn-sm" id="btnSaveFamily">💾 Salvar</button>
+          <button type="button" class="btn btn-toolbar btn-sm" id="btnCancelFamilyEdit">✖ Cancelar</button>
+        </div>
+      </form>
+
+      <div class="gs-inline">
+        <span id="selectedSubgroupLabel" class="gs-inline__text">
+          Nenhum subgrupo selecionado. Clique em um subgrupo para ver as famílias dele.
+        </span>
+
+        <button type="button" id="btnClearSelectedSubgroup" class="btn btn-toolbar btn-sm">
+          Limpar seleção
+        </button>
+      </div>
+
+      <div class="consart-lr-scroll gs-scroll">
+        <table class="table table-zebra table-zebra-hover gs-table" aria-label="Famílias de produtos">
+          <thead>
+            <tr>
+              <th class="gs-col-id">ID</th>
+              <th>Nome</th>
+              <th>Subgrupo</th>
+              <th class="gs-col-status">Status</th>
+              <th class="gs-col-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="familiesTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="consart-lr-footer gs-footer">
+        <span id="familiesSummary" class="gs-muted">Carregando famílias...</span>
+      </div>
+    </section>
+
   </main>
 
   <!-- Scripts -->
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/groupsAndSubgroups/groupsAndSubgroups.js?v=esm-02"></script>
+  <script type="module" src="/public/groupsAndSubgroups/groupsAndSubgroups.js?v=familias-01"></script>
 </body>
 </html>

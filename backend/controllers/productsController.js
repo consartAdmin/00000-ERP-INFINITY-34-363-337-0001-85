@@ -683,6 +683,7 @@ function buildStockPositionFilters(query = {}) {
     ['supplier_id', 'p.supplier_id'],
     ['group_id', 'p.product_group_id'],
     ['subgroup_id', 'p.product_subgroup_id'],
+    ['family_id', 'p.product_family_id'],
     ['brand_id', 'p.manufacturer_id'],
   ];
 
