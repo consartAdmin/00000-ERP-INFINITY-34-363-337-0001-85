@@ -1,208 +1,402 @@
 <!-- ╔══════════════════════════════════════════════════════════════════════╗
-     ║ productsStock.html — Gestão de Estoque Min./Máx.                    ║
-     ║ CONSART ERP | Frontend                                              ║
-     ║ ✅ Busca digitada de produto, sem modal                             ║
-     ║ ✅ Filtros Grupo/Subgrupo/Fabricante                                ║
-     ║ ✅ Botão Sugestão de Compra PDF                                     ║
+     ║ productsStock.html — Gestão de Estoque Mín./Máx. (reposição)        ║
+     ║ Path: backend/public/productsStock/productsStock.html               ║
+     ║ API: /api/productsStock/replenishment                               ║
+     ║ Ponto de pedido, prazo de entrega do fabricante, pedido mínimo      ║
      ╚══════════════════════════════════════════════════════════════════════╝ -->
-
 <!doctype html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-
-  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
-
-  <title>ESTOQUE MIN./MAX.</title>
-
+  <title>ESTOQUE MÍNIMO E MÁXIMO | CONSART ERP</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/public/imagens/brasaoConsartInfinity.png">
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="./productsStock.css" />
+  <link rel="stylesheet" href="/public/productsStockLots/productsStockLots.css?v=lots-02" />
+  <link rel="stylesheet" href="./productsStock.css?v=rep-01" />
 </head>
 
-<body class="consart-theme c-page page" style="--consart-input-h: 30px;">
-  <main class="consart-container consart-container--fixed consart-container--full consart-container--vh-92">
-    <div class="ps-wrap consart-layout-col">
+<body class="page consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
 
-      <header class="ps-header">
-        <div class="ps-title">
-          <div class="ps-badge">ESTOQUE</div>
-          <h1>Gestão de Estoque</h1>
-          <p>Controle de <b>Estoque Mínimo</b>, <b>Máximo</b> e <b>Sugestão de Compra</b>.</p>
-        </div>
+    <section class="table-layout-integrated">
+      <div class="table-layout-integrated__filter">
 
-        <div class="ps-actions">
-          <button class="btn btn-ghost" id="btnEnsure">Ensure</button>
-          <button class="btn btn-soft" id="btnPurchaseSuggestionPdf">Sugestão de Compra PDF</button>
-          <button class="btn btn-primary" id="btnNew">+ Novo registro</button>
-        </div>
-      </header>
-
-      <section class="ps-filters">
-
-        <div class="field">
-          <label for="fProductSearch">Buscar produto</label>
-          <input
-            id="fProductSearch"
-            type="text"
-            placeholder="Digite SKU, descrição ou código..."
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="field">
-          <label for="fGroup">Grupo</label>
-          <select id="fGroup">
-            <option value="">Todos</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="fSubgroup">Subgrupo</label>
-          <select id="fSubgroup">
-            <option value="">Todos</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="fManufacturer">Fabricante</label>
-          <select id="fManufacturer">
-            <option value="">Todos</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="fSearch">ID Estoque</label>
-          <input id="fSearch" type="number" inputmode="numeric" placeholder="product_stock_id" />
-        </div>
-
-        <div class="field">
-          <label for="fStatus">Filtro</label>
-          <select id="fStatus">
-            <option value="">Todos</option>
-            <option value="positive">Somente com estoque &gt; 0</option>
-            <option value="below_min">Abaixo do mínimo</option>
-            <option value="above_max">Acima do máximo</option>
-            <option value="ok">Dentro do intervalo</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="fOrder">Ordenação</label>
-          <select id="fOrder">
-            <option value="id_desc">ID desc</option>
-            <option value="id_asc">ID asc</option>
-            <option value="description_asc">Produto A-Z</option>
-            <option value="description_desc">Produto Z-A</option>
-            <option value="qty_desc">Qtd desc</option>
-            <option value="qty_asc">Qtd asc</option>
-            <option value="suggestion_desc">Maior sugestão</option>
-            <option value="updated_desc">Atualizado desc</option>
-            <option value="updated_asc">Atualizado asc</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="fPageSize">Por página</label>
-          <select id="fPageSize">
-            <option>10</option>
-            <option selected>20</option>
-            <option>50</option>
-            <option>100</option>
-          </select>
-        </div>
-
-        <div class="field ps-filter-actions">
-          <label>&nbsp;</label>
-          <div class="row">
-            <button class="btn btn-soft" id="btnApply" type="button">Filtrar</button>
-            <button class="btn btn-ghost" id="btnClear" type="button">Limpar</button>
-          </div>
-        </div>
-
-      </section>
-
-      <section class="ps-table-card">
-        <div class="ps-table-top">
-          <div class="ps-meta">
-            <span id="lblInfo">—</span>
-          </div>
-
-          <div class="ps-bulk">
-            <button class="btn btn-soft" id="btnSaveSelected" disabled>Salvar selecionados</button>
-          </div>
-        </div>
-
-        <div class="ps-table-wrap consart-scroll-area">
-          <table class="ps-table consart-table-sticky">
-            <thead>
-              <tr>
-                <th class="col-check"><input type="checkbox" id="chkAll" /></th>
-                <th class="col-id">ID</th>
-                <th class="col-prod">Produto / Descrição</th>
-                <th class="col-group">Grupo</th>
-                <th class="col-manufacturer">Fabricante</th>
-                <th class="col-qty">Qtd Atual</th>
-                <th class="col-min">Estoque Mínimo</th>
-                <th class="col-max">Estoque Máximo</th>
-                <th class="col-suggestion">Sugestão</th>
-                <th class="col-status">Status</th>
-                <th class="col-updated">Atualizado</th>
-                <th class="col-actions">Ações</th>
-              </tr>
-            </thead>
-
-            <tbody id="tbBody"></tbody>
-          </table>
-        </div>
-
-        <div class="ps-pager">
-          <button class="btn btn-ghost" id="btnPrev">←</button>
-          <span id="lblPage">Página —</span>
-          <button class="btn btn-ghost" id="btnNext">→</button>
-        </div>
-      </section>
-    </div>
-
-    <div class="ps-modal-backdrop" id="modalNew" aria-hidden="true">
-      <div class="ps-modal">
-        <div class="ps-modal-header">
-          <h2>Novo registro de estoque</h2>
-          <button class="btn btn-ghost btn-icon" id="btnCloseNew">✕</button>
-        </div>
-
-        <div class="ps-modal-body">
-          <div class="grid">
-            <div class="field">
-              <label for="nQty">Qtd inicial</label>
-              <input id="nQty" type="number" step="0.001" placeholder="0" />
-            </div>
-
-            <div class="field">
-              <label for="nMin">Estoque mínimo</label>
-              <input id="nMin" type="number" step="0.001" placeholder="0" />
-            </div>
-
-            <div class="field">
-              <label for="nMax">Estoque máximo</label>
-              <input id="nMax" type="number" step="0.001" placeholder="0" />
+        <!-- TÍTULO + FILTROS + AÇÕES (div, não <header>: o topGradientBar ancora no menu) -->
+        <div class="cad-toolbar">
+          <div class="cad-toolbar__title">
+            <span class="cad-toolbar__icon" aria-hidden="true">📊</span>
+            <div>
+              <h1>Estoque mínimo e máximo</h1>
+              <p>Ponto de pedido, prazo de entrega do fabricante e sugestão de compra</p>
             </div>
           </div>
 
-          <div class="ps-hint">
-            Regra: <code>stock_max ≥ stock_min</code> e ambos ≥ 0.
+          <div class="fields-inline fields-gap-3 cad-toolbar__filters">
+            <div class="fields fields-h-6 fields-w-20 fields-font-4">
+              <label for="fQ"><b>🔎 Buscar</b></label>
+              <input id="fQ" type="search" placeholder="SKU, descrição ou código..." autocomplete="off">
+            </div>
+            <div class="fields fields-h-6 fields-w-10 fields-font-4">
+              <label for="fSituation"><b>Reposição</b></label>
+              <select id="fSituation"><option value="">Todas</option></select>
+            </div>
+            <div class="fields fields-h-6 fields-w-10 fields-font-4">
+              <label for="fManufacturer"><b>Fabricante</b></label>
+              <select id="fManufacturer"><option value="">Todos</option></select>
+            </div>
+            <div class="lots-filter-actions">
+              <button id="btnFilter" class="btn btn-new btn-sm" type="button">🔎 Filtrar</button>
+              <button id="btnMoreFilters" class="btn btn-toolbar btn-sm" type="button">
+                ⚙️ Mais filtros <span id="moreFiltersCount" class="lots-count" hidden></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="btn-inline btn-gap-4 cad-toolbar__actions">
+            <button id="btnOrders" class="btn btn-toolbar btn-sm" type="button" title="Total sugerido x pedido mínimo de cada fabricante">🏭 Pedidos por fabricante</button>
+            <button id="btnSettings" class="btn btn-toolbar btn-sm" type="button">🚚 Parâmetros de reposição</button>
+            <button id="btnPdf" class="btn btn-toolbar btn-sm" type="button" title="Sugestão de compra por fabricante">
+              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Sugestão de compra PDF</span>
+            </button>
+            <button id="btnExcel" class="btn btn-toolbar btn-sm" type="button" title="Exportar Excel">
+              <img src="/iconsImagens/excelIcons.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Excel</span>
+            </button>
+            <button id="btnBulk" class="btn btn-toolbar btn-sm" type="button" disabled>✏️ Editar selecionados <span id="bulkCount" class="lots-count" hidden></span></button>
           </div>
         </div>
 
-        <div class="ps-modal-footer">
-          <button class="btn btn-ghost" id="btnCancelNew">Cancelar</button>
-          <button class="btn btn-primary" id="btnCreateNew">Criar</button>
-        </div>
+        <div id="kpis" class="lots-kpis" aria-label="Resumo da reposição"></div>
       </div>
-    </div>
 
-    <script type="module" src="/public/includes/js/core.js"></script>
-    <script type="module" src="./productsStock.js"></script>
+      <div class="table-scroll table-height-flex">
+        <table id="repTable" class="table table-fixed ps-table table-zebra table-zebra-hover table-sticky-head table-row-h-28">
+          <colgroup>
+            <col class="c-chk"><col class="c-prod"><col class="c-group"><col class="c-mf"><col class="c-lead"><col class="c-daily">
+            <col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-cov"><col class="c-num">
+            <col class="c-sit"><col class="c-actions">
+          </colgroup>
+          <thead>
+            <tr>
+              <th><input id="chkAll" type="checkbox" title="Selecionar a página"></th>
+              <th class="l" data-sort-column="product" aria-sort="none"><button type="button" data-sort-button>Produto <span data-sort-icon>↕</span></button></th>
+              <th data-sort-column="group" aria-sort="none"><button type="button" data-sort-button>Grupo <span data-sort-icon>↕</span></button></th>
+              <th data-sort-column="manufacturer" aria-sort="none"><button type="button" data-sort-button>Fabricante <span data-sort-icon>↕</span></button></th>
+              <th data-sort-column="lead" aria-sort="none" title="Prazo de entrega"><button type="button" data-sort-button>Prazo <span data-sort-icon>↕</span></button></th>
+              <th data-sort-column="daily" aria-sort="none" title="Consumo médio por dia"><button type="button" data-sort-button>Consumo/dia <span data-sort-icon>↕</span></button></th>
+              <th class="num" data-sort-column="qty" aria-sort="none"><button type="button" data-sort-button>Atual <span data-sort-icon>↕</span></button></th>
+              <th class="num" data-sort-column="min" aria-sort="none"><button type="button" data-sort-button>Mínimo <span data-sort-icon>↕</span></button></th>
+              <th class="num" data-sort-column="reorder" aria-sort="none" title="Ponto de pedido = mínimo + consumo/dia × prazo"><button type="button" data-sort-button>Ponto <span data-sort-icon>↕</span></button></th>
+              <th class="num" data-sort-column="max" aria-sort="none"><button type="button" data-sort-button>Máximo <span data-sort-icon>↕</span></button></th>
+              <th data-sort-column="coverage" aria-sort="none" title="Quantos dias o estoque atual dura"><button type="button" data-sort-button>Cobertura <span data-sort-icon>↕</span></button></th>
+              <th class="num" data-sort-column="suggestion" aria-sort="none" title="Comprar = máximo − atual + consumo/dia × prazo"><button type="button" data-sort-button>Comprar <span data-sort-icon>↕</span></button></th>
+              <th data-sort-column="situation" aria-sort="none"><button type="button" data-sort-button>Reposição <span data-sort-icon>↕</span></button></th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="14" class="lots-empty">Carregando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="tableInfo">0 produtos</span>
+          </div>
+        </div>
+        <div class="table-footer__pagination">
+          <button type="button" id="btnPrev" class="btn btn-clean btn-sm">Anterior</button>
+          <span id="pageInfo">Página 1 de 1</span>
+          <button type="button" id="btnNext" class="btn btn-new btn-sm">Próxima</button>
+        </div>
+        <div class="table-footer__page-size">
+          <label for="rowsPerPage">Mostrar</label>
+          <select id="rowsPerPage" class="table-footer__page-size-select">
+            <option value="10">10 linhas</option>
+            <option value="20" selected>20 linhas</option>
+            <option value="50">50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+      </footer>
+    </section>
   </main>
+
+  <!-- ═══════════════ Modal: Mais filtros ═══════════════ -->
+  <div id="filtersModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-4" role="dialog" aria-modal="true" aria-labelledby="filtersTitle">
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="filtersTitle" class="modal__title">⚙️ Mais filtros</h2>
+            <p class="lots-modal-sub">Combine com a busca, a reposição e o fabricante da barra principal.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div class="lots-sec">
+            <div class="lots-sec__title">🗂️ Classificação</div>
+            <div class="lots-sec__grid">
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="fGroup">Grupo</label>
+                <select id="fGroup"><option value="">Todos</option></select>
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="fSubgroup">Subgrupo</label>
+                <select id="fSubgroup"><option value="">Todos</option></select>
+              </div>
+              <div class="fields fields-h-6 fields-font-3 lots-span">
+                <label for="fWithSales">Consumo</label>
+                <select id="fWithSales">
+                  <option value="">Todos os produtos</option>
+                  <option value="1">Só os que tiveram saída no período</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button id="btnClearFilters" class="btn btn-cancel btn-sm" type="button">Limpar</button>
+          <button id="btnApplyFilters" class="btn btn-save btn-sm" type="button">Aplicar filtros</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ═══════════════ Modal: Editar mín./máx. ═══════════════ -->
+  <div id="editModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="editTitle" class="modal__title">✏️ Mínimo e máximo</h2>
+            <p id="editSub" class="lots-modal-sub"></p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <form id="editForm" autocomplete="off">
+            <div class="lots-sec-grid">
+              <div class="lots-sec">
+                <div class="lots-sec__title">🚚 Reposição</div>
+                <div class="lots-sec__grid">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="eManufacturer">Fabricante</label>
+                    <input id="eManufacturer" type="text" disabled>
+                  </div>
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="eLead">Prazo de entrega (dias)</label>
+                    <input id="eLead" type="number" min="0" max="365" step="1">
+                    <small id="eLeadHelp" class="lots-help"></small>
+                  </div>
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="eMin">Estoque mínimo</label>
+                    <input id="eMin" type="number" min="0" step="0.001">
+                  </div>
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="eMax">Estoque máximo</label>
+                    <input id="eMax" type="number" min="0" step="0.001">
+                  </div>
+                  <div class="fields fields-h-6 fields-font-3 lots-span">
+                    <button id="btnCalc" class="btn btn-toolbar btn-sm" type="button">🧮 Calcular pelo consumo</button>
+                    <small id="eCalcHelp" class="lots-help"></small>
+                  </div>
+                </div>
+              </div>
+              <div class="lots-sec">
+                <div class="lots-sec__title">📈 Consumo e cálculo</div>
+                <div id="eCalc" class="calc">—</div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+          <button id="btnSaveEdit" class="btn btn-save btn-sm" type="submit" form="editForm">Salvar</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ═══════════════ Modal: Editar selecionados ═══════════════ -->
+  <div id="bulkModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true" aria-labelledby="bulkTitle">
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="bulkTitle" class="modal__title">✏️ Editar selecionados</h2>
+            <p id="bulkSub" class="lots-modal-sub"></p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div class="lots-sec">
+            <div class="lots-sec__title">🧮 O que fazer</div>
+            <label class="chk"><input type="radio" name="bulkMode" value="calc" checked><span><b>Calcular mínimo e máximo pelo consumo</b><small>Mínimo = consumo durante o prazo; máximo = mínimo + consumo dos dias de cobertura. Produtos sem saída no período ficam como estão.</small></span></label>
+            <label class="chk"><input type="radio" name="bulkMode" value="set"><span><b>Informar os valores</b><small>Campos em branco não mudam.</small></span></label>
+            <div class="lots-sec__grid">
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="bMin">Estoque mínimo</label>
+                <input id="bMin" type="number" min="0" step="0.001" disabled>
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="bMax">Estoque máximo</label>
+                <input id="bMax" type="number" min="0" step="0.001" disabled>
+              </div>
+              <div class="fields fields-h-6 fields-font-3 lots-span">
+                <label for="bLead">Prazo de entrega próprio (dias)</label>
+                <select id="bLead">
+                  <option value="keep">Não mudar</option>
+                  <option value="clear">Usar o prazo do fabricante</option>
+                  <option value="set">Informar…</option>
+                </select>
+              </div>
+              <div class="fields fields-h-6 fields-font-3 lots-span" id="bLeadDaysWrap" hidden>
+                <label for="bLeadDays">Prazo (dias)</label>
+                <input id="bLeadDays" type="number" min="0" max="365" step="1">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+          <button id="btnSaveBulk" class="btn btn-save btn-sm" type="button">Aplicar</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ═══════════════ Modal: Pedidos por fabricante ═══════════════ -->
+  <div id="ordersModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-8" role="dialog" aria-modal="true" aria-labelledby="ordersTitle">
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="ordersTitle" class="modal__title">🏭 Pedidos por fabricante</h2>
+            <p class="lots-modal-sub">Soma automática de comprar × custo (cost_price) dos itens no ponto de pedido, comparada com o pedido mínimo do fabricante.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div class="ord-row ord-row--h">FABRICANTE<span class="n">PRAZO</span><span class="n">ITENS</span><span class="n">TOTAL SUGERIDO</span><span class="n">PEDIDO MÍNIMO</span><span>SITUAÇÃO</span><span>AÇÃO</span></div>
+          <div id="ordersList"><div class="lots-empty">Carregando…</div></div>
+          <div id="ordersComplete"></div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Fechar</button>
+          <button id="btnOrdersPdf" class="btn btn-toolbar btn-sm" type="button">
+            <img src="/iconsImagens/pdf.png" alt="" width="18" height="18" aria-hidden="true" />
+            <span>PDF por fabricante</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ═══════════════ Modal: Parâmetros de reposição ═══════════════ -->
+  <div id="settingsModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="settingsTitle" class="modal__title">🚚 Parâmetros de reposição</h2>
+            <p class="lots-modal-sub">Como o sistema calcula o ponto de pedido e a quantidade a comprar.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div class="lots-sec-grid">
+            <div class="lots-sec">
+              <div class="lots-sec__title">🧮 Cálculo</div>
+              <div class="lots-sec__grid">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="sDays">Consumo médio dos últimos</label>
+                  <select id="sDays">
+                    <option value="30">30 dias</option>
+                    <option value="60">60 dias</option>
+                    <option value="90">90 dias</option>
+                    <option value="180">180 dias</option>
+                    <option value="365">365 dias</option>
+                  </select>
+                </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="sLead">Prazo padrão (dias)</label>
+                  <input id="sLead" type="number" min="0" max="365" step="1">
+                  <small class="lots-help">Usado quando o fabricante não tem prazo.</small>
+                </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="sSoon">"Repor em breve" se faltar até (dias)</label>
+                  <input id="sSoon" type="number" min="0" max="365" step="1">
+                </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="sSource">Contar como consumo</label>
+                  <select id="sSource">
+                    <option value="SALES">Vendas (NF-e/NFC-e/PDV)</option>
+                    <option value="ALL">Todas as saídas</option>
+                  </select>
+                </div>
+                <div class="fields fields-h-6 fields-font-3 lots-span">
+                  <label for="sCover">Máximo cobre mais (dias) no "Calcular pelo consumo"</label>
+                  <input id="sCover" type="number" min="1" max="365" step="1">
+                  <small class="lots-help">Mínimo = consumo durante o prazo. Máximo = mínimo + consumo destes dias.</small>
+                </div>
+              </div>
+            </div>
+            <div class="lots-sec">
+              <div class="lots-sec__title">🏭 Prazo e pedido mínimo por fabricante</div>
+              <div class="mf-row mf-row--h">FABRICANTE<span>PRAZO (DIAS)</span><span>PEDIDO MÍN. (R$)</span><span>PRODUTOS</span></div>
+              <div id="mfList" class="mf-list"></div>
+              <p class="lots-note">Prazo e pedido mínimo ficam no cadastro do fabricante. O pedido mínimo é comparado com a soma de comprar × custo (cost_price) dos produtos daquele fabricante.</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
+          <button id="btnSaveSettings" class="btn btn-save btn-sm" type="button">Salvar parâmetros</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ═══════════════ Modal: Kardex do produto ═══════════════ -->
+  <div id="kardexModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-8" role="dialog" aria-modal="true" aria-labelledby="kardexTitle">
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="kardexTitle" class="modal__title">📜 Movimentações do produto</h2>
+            <p id="kardexSub" class="lots-modal-sub"></p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div class="table-scroll lots-kardex-scroll">
+            <table class="table table-zebra table-sticky-head table-row-h-28">
+              <thead><tr><th>Data</th><th>Tipo</th><th>Origem</th><th class="num">Qtd.</th><th>Lote</th><th>NF-e</th><th class="l">Observação</th></tr></thead>
+              <tbody id="kardexBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Fechar</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="./productsStock.js?v=rep-01"></script>
 </body>
+
 </html>

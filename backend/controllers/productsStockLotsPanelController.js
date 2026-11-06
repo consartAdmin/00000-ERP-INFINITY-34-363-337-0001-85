@@ -83,6 +83,17 @@ export async function saveAlertSettings(req, res) {
   }
 }
 
+/* ─────────────────────── Dashboard da home ─────────────────────── */
+export async function dashboard(req, res) {
+  try {
+    await requireLotMode(scope(req));
+    const data = await panelRepo.getDashboard({ upcomingLimit: req.query.limit, months: req.query.months });
+    return res.json({ ok: true, ...data });
+  } catch (error) {
+    return fail(res, error, 'dashboard');
+  }
+}
+
 /* ─────────────────────── Produto (lupa) ─────────────────────── */
 export async function productLookup(req, res) {
   try {
@@ -332,6 +343,7 @@ export async function exportPanel(req, res) {
 }
 
 export default {
+  dashboard,
   productLookup,
   panel,
   exportPanel,

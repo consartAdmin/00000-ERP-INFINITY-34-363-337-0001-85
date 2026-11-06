@@ -45,6 +45,10 @@ import { salesTaxesDashboard }
   from './salesTaxes.js';
 import { taxAssessmentDashboard }
   from './taxAssessment.js';
+import { stockLotsExpiryDashboard }
+  from './stockLotsExpiry.js?v=20261106-1';
+import { stockReplenishmentDashboard }
+  from './stockReplenishment.js?v=20261106-1';
 import {
   renderFinancialPeriodPicker,
   bindFinancialPeriodPicker,
@@ -118,6 +122,14 @@ const DASHBOARDS = [
   salesAnalyticsDashboard,
   salesTaxesDashboard,
   taxAssessmentDashboard,
+
+
+  // --------------------------------------------------------------------
+  // STOCK
+  // --------------------------------------------------------------------
+
+  stockLotsExpiryDashboard,
+  stockReplenishmentDashboard,
 ];
 
 const DASHBOARD_PAGES = Object.freeze([
@@ -160,6 +172,15 @@ const DASHBOARD_PAGES = Object.freeze([
     description: 'Débito × crédito dos impostos, saldo a recolher e IRPJ/CSLL',
     keys: new Set([
       'tax-assessment',
+    ]),
+  },
+  {
+    id: 'stock',
+    title: 'Estoque',
+    description: 'Validade dos lotes e reposição (o que comprar)',
+    keys: new Set([
+      'stock-lots-expiry',
+      'stock-replenishment',
     ]),
   },
 ]);
@@ -761,6 +782,9 @@ async function initIncludeDashboard() {
     if (allowedDashboards.has('sales-analytics')) {
       allowedDashboards.add('sales-taxes');
       allowedDashboards.add('tax-assessment');
+      // Estoque (validade dos lotes) também, até ter permissão própria marcada.
+      allowedDashboards.add('stock-lots-expiry');
+      allowedDashboards.add('stock-replenishment');
     }
 
 

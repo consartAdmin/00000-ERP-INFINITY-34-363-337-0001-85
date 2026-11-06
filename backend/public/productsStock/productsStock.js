@@ -1,577 +1,672 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ productsStock.js — Gestão Estoque Min./Máx.                         ║
-// ║ CONSART ERP | ESM                                                   ║
-// ║ ✅ Busca digitada sem modal                                          ║
-// ║ ✅ Filtros Grupo/Subgrupo/Fabricante                                ║
-// ║ ✅ Sugestão de Compra PDF                                           ║
+// ║ productsStock.js — Estoque mínimo e máximo (reposição) | ESM         ║
+// ║ API: /api/productsStock/replenishment                                ║
+// ║   /           lista + cards      /settings   parâmetros + fabricantes║
+// ║   /orders     pedido mínimo      /params     salva mín./máx./prazo   ║
+// ║   /product/:id cálculo           /export, /pdf                       ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-'use strict';
+import { Modal } from '/public/includes/js/modal.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
 
-const API_BASE =
-  (typeof window.getApiBase === 'function' && window.getApiBase()) ||
-  window.apiBase ||
-  window.API_BASE ||
-  '';
-
-const API = `${API_BASE}/api/productsStock`;
-
-const ROUTES = {
-  groups: [
-    `${API_BASE}/api/productsGroups`,
-    `${API_BASE}/api/products-groups`,
-    `${API_BASE}/api/products-groups/list`,
-  ],
-  subgroups: [
-    `${API_BASE}/api/productsSubgroups`,
-    `${API_BASE}/api/products-subgroups`,
-    `${API_BASE}/api/products-subgroups/list`,
-  ],
-  manufacturers: [
-    `${API_BASE}/api/productsManufactures`,
-    `${API_BASE}/api/products-manufactures`,
-    `${API_BASE}/api/products-manufacturers`,
-  ],
-};
+/* ───────────────────────── Config ───────────────────────── */
+function apiBase() {
+  try { if (typeof window.getApiBase === 'function') return window.getApiBase() || ''; } catch { /* noop */ }
+  return window.API_BASE || window.apiBase || '';
+}
+const ROOT = () => `${String(apiBase()).replace(/\/$/, '')}/api/productsStock`;
+const API = () => `${ROOT()}/replenishment`;
 
 const $ = (id) => document.getElementById(id);
 
-const el = {
-  fProductSearch: $('fProductSearch'),
-  fGroup: $('fGroup'),
-  fSubgroup: $('fSubgroup'),
-  fManufacturer: $('fManufacturer'),
-  fSearch: $('fSearch'),
-  fStatus: $('fStatus'),
-  fOrder: $('fOrder'),
-  fPageSize: $('fPageSize'),
-
-  btnApply: $('btnApply'),
-  btnClear: $('btnClear'),
-  btnEnsure: $('btnEnsure'),
-  btnNew: $('btnNew'),
-  btnPurchaseSuggestionPdf: $('btnPurchaseSuggestionPdf'),
-
-  tbBody: $('tbBody'),
-  lblInfo: $('lblInfo'),
-  chkAll: $('chkAll'),
-  btnSaveSelected: $('btnSaveSelected'),
-  btnPrev: $('btnPrev'),
-  btnNext: $('btnNext'),
-  lblPage: $('lblPage'),
-
-  modalNew: $('modalNew'),
-  btnCloseNew: $('btnCloseNew'),
-  btnCancelNew: $('btnCancelNew'),
-  btnCreateNew: $('btnCreateNew'),
-  nQty: $('nQty'),
-  nMin: $('nMin'),
-  nMax: $('nMax'),
-};
-
 const state = {
-  limit: Number(el.fPageSize?.value || 20),
-  offset: 0,
+  page: 1,
+  limit: 20,
   total: 0,
   rows: [],
+  situations: [],
+  settings: null,
+  sort: '',
+  dir: 'asc',
+  filters: { q: '', situation: '', manufacturer_id: '', group_id: '', subgroup_id: '', with_sales: '' },
   selected: new Set(),
-  searchTimer: null,
+  editing: null,
+  orders: [],
 };
 
-function toast(msg) {
-  if (typeof window.showCenterModal === 'function') {
-    window.showCenterModal('Aviso', String(msg || ''));
-    return;
-  }
-  alert(String(msg || ''));
+/* ───────────────────────── Helpers ───────────────────────── */
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
-
-function esc(s) {
-  return String(s ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
-function num(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function fmtQty(v) {
-  return num(v).toLocaleString('pt-BR', {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  });
-}
-
+const fmtQty = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+const fmtDaily = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+const fmtMoney = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtInt = (v) => Number(v || 0).toLocaleString('pt-BR');
 function fmtDate(v) {
   if (!v) return '—';
+  const [y, m, d] = String(v).slice(0, 10).split('-');
+  return d ? `${d}/${m}/${y}` : String(v);
+}
+function fmtDateTime(v) {
+  if (!v) return '—';
   const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR');
+  return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString('pt-BR');
+}
+function parseMoney(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return null;
+  const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s);
+  return Number.isFinite(n) ? n : null;
 }
 
-function statusOf(r) {
-  const qty = num(r.stock_qty);
-  const min = num(r.stock_min);
-  const max = num(r.stock_max);
-
-  if (qty < min) return { key: 'below_min', label: 'Abaixo do mínimo', cls: 'danger' };
-  if (max > 0 && qty > max) return { key: 'above_max', label: 'Acima do máximo', cls: 'warn' };
-  return { key: 'ok', label: 'OK', cls: 'ok' };
-}
-
-function validateMinMax(min, max) {
-  const smin = Math.max(0, num(String(min).replace(',', '.')));
-  const smax = Math.max(0, num(String(max).replace(',', '.')));
-
-  if (smax < smin) {
-    return { ok: false, error: 'Estoque máximo não pode ser menor que o mínimo.' };
+async function api(path, { method = 'GET', body, base = API() } = {}) {
+  const response = await fetch(`${base}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await response.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
+  if (!response.ok || data?.ok === false) {
+    const error = new Error(data?.message || data?.error || `Erro HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
-
-  return { ok: true, smin, smax };
-}
-
-async function http(method, url, body) {
-  const opts = { method, headers: {} };
-
-  if (body !== undefined) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
-  }
-
-  const res = await fetch(url, opts);
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-
   return data;
 }
 
-function buildQuery() {
-  const url = new URL(API, location.origin);
-
-  url.searchParams.set('limit', String(state.limit));
-  url.searchParams.set('offset', String(state.offset));
-
-  const q = el.fProductSearch?.value?.trim();
-  const id = el.fSearch?.value?.trim();
-  const status = el.fStatus?.value;
-  const order = el.fOrder?.value;
-  const group = el.fGroup?.value;
-  const subgroup = el.fSubgroup?.value;
-  const manufacturer = el.fManufacturer?.value;
-
-  if (q) url.searchParams.set('q', q);
-  if (status) url.searchParams.set('status', status);
-  if (order) url.searchParams.set('order', order);
-  if (group) url.searchParams.set('group_id', group);
-  if (subgroup) url.searchParams.set('subgroup_id', subgroup);
-  if (manufacturer) url.searchParams.set('manufacturer_id', manufacturer);
-
-  return { url, id };
+function alertError(title, error) {
+  console.error(`[productsStock] ${title}`, error);
+  showCenterModal({ variant: 'error', title, message: error?.message || String(error) });
+}
+function alertOk(title, message) {
+  showCenterModal({ variant: 'success', title, message });
 }
 
-async function load() {
+async function download(path, filename, button) {
+  const label = button?.querySelector('span');
+  const original = label?.textContent;
+  if (button) button.disabled = true;
+  if (label) label.textContent = 'Gerando...';
   try {
-    const { url, id } = buildQuery();
-
-    if (id) {
-      const one = await http('GET', `${API}/${encodeURIComponent(id)}`);
-      state.rows = one?.product_stock_id ? [one] : [];
-      state.total = state.rows.length;
-    } else {
-      const data = await http('GET', url.toString());
-      state.rows = Array.isArray(data.rows) ? data.rows : [];
-      state.total = Number(data.total || 0);
+    const response = await fetch(`${API()}${path}`);
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.message || data?.error || `Erro HTTP ${response.status}`);
     }
-
-    state.selected.clear();
-    render();
-  } catch (err) {
-    toast(err.message || err);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch (error) {
+    alertError('Não foi possível gerar o arquivo', error);
+  } finally {
+    if (button) button.disabled = false;
+    if (label) label.textContent = original;
   }
 }
 
-function render() {
-  renderInfo();
-  renderPager();
-  renderTable();
+/* ───────────────────────── Situações ───────────────────────── */
+function situationOf(key) {
+  return state.situations.find((s) => s.key === key) || { key, label: key, color: '#64748b' };
+}
+const SHORT_LABEL = { ZERO_SALES: 'Zerado c/ venda', OVER: 'Acima do máx.' };
+
+function badge(key) {
+  const s = situationOf(key);
+  return `<span class="lot-badge" style="--c:${esc(s.color)}">${esc(SHORT_LABEL[key] || s.label)}</span>`;
 }
 
-function renderInfo() {
-  const from = state.total ? state.offset + 1 : 0;
-  const to = Math.min(state.offset + state.limit, state.total);
-
-  el.lblInfo.textContent = state.total
-    ? `Mostrando ${from}-${to} de ${state.total}`
-    : 'Nenhum registro encontrado.';
+/* ───────────────────────── Filtros ───────────────────────── */
+function readMainFilters() {
+  state.filters.q = $('fQ').value.trim();
+  state.filters.situation = $('fSituation').value;
+  state.filters.manufacturer_id = $('fManufacturer').value;
 }
 
-function renderPager() {
-  const page = Math.floor(state.offset / state.limit) + 1;
-  const pages = Math.max(1, Math.ceil(state.total / state.limit));
-
-  el.lblPage.textContent = `Página ${page} / ${pages}`;
-  el.btnPrev.disabled = state.offset <= 0;
-  el.btnNext.disabled = state.offset + state.limit >= state.total;
+function moreFiltersCount() {
+  const n = ['group_id', 'subgroup_id', 'with_sales'].filter((k) => state.filters[k]).length;
+  $('moreFiltersCount').hidden = !n;
+  $('moreFiltersCount').textContent = String(n);
 }
 
-function renderTable() {
-  el.tbBody.innerHTML = '';
-
-  for (const r of state.rows) {
-    const st = statusOf(r);
-    const suggestion = Math.max(0, num(r.stock_max) - num(r.stock_qty));
-
-    const tr = document.createElement('tr');
-    tr.dataset.id = r.product_stock_id;
-
-    tr.innerHTML = `
-      <td class="col-check">
-        <input type="checkbox" class="row-check">
-      </td>
-
-      <td class="col-id"><b>#${esc(r.product_stock_id)}</b></td>
-
-      <td class="col-prod">
-        <div class="ps-prod">
-          <div class="ps-prod-main">${esc(r.product_description || '—')}</div>
-          <div class="ps-prod-sub">SKU: ${esc(r.product_code || '—')}</div>
-        </div>
-      </td>
-
-      <td class="col-group">${esc(r.product_group_name || '—')}</td>
-      <td class="col-manufacturer">${esc(r.manufacturer_name || '—')}</td>
-
-      <td class="col-qty">${fmtQty(r.stock_qty)}</td>
-
-      <td class="col-min">
-        <input class="input-mini inp-min" type="number" step="0.001" value="${num(r.stock_min).toFixed(3)}">
-      </td>
-
-      <td class="col-max">
-        <input class="input-mini inp-max" type="number" step="0.001" value="${num(r.stock_max).toFixed(3)}">
-      </td>
-
-      <td class="col-suggestion"><b>${fmtQty(suggestion)}</b></td>
-
-      <td class="col-status">
-        <span class="badge ${st.cls}">${st.label}</span>
-      </td>
-
-      <td class="col-updated">${fmtDate(r.updated_at)}</td>
-
-      <td class="col-actions">
-        <div class="row-actions">
-          <button class="btn btn-soft btn-save">Salvar</button>
-          <button class="btn btn-ghost btn-adjust">Ajustar</button>
-          <button class="btn btn-danger btn-del">Excluir</button>
-        </div>
-      </td>
-    `;
-
-    el.tbBody.appendChild(tr);
-  }
-
-  refreshBulk();
-}
-
-function refreshBulk() {
-  el.btnSaveSelected.disabled = state.selected.size === 0;
-  el.chkAll.checked = state.rows.length > 0 && state.selected.size === state.rows.length;
-}
-
-async function saveRow(tr) {
-  const id = tr.dataset.id;
-  const min = tr.querySelector('.inp-min')?.value;
-  const max = tr.querySelector('.inp-max')?.value;
-  const v = validateMinMax(min, max);
-
-  if (!v.ok) return toast(v.error);
-
-  await http('PUT', `${API}/${id}`, {
-    stock_min: v.smin,
-    stock_max: v.smax,
+function queryString(extra = {}) {
+  const params = new URLSearchParams();
+  Object.entries({ ...state.filters, sort: state.sort, dir: state.dir, ...extra }).forEach(([k, v]) => {
+    if (v !== '' && v !== null && v !== undefined) params.set(k, v);
   });
-
-  toast(`Registro #${id} salvo.`);
-  await load();
+  return params.toString();
 }
 
-async function saveSelected() {
-  const trs = [...el.tbBody.querySelectorAll('tr')].filter((tr) =>
-    state.selected.has(String(tr.dataset.id))
-  );
-
-  for (const tr of trs) await saveRow(tr);
-}
-
-async function adjustRow(tr) {
-  const id = tr.dataset.id;
-  const value = prompt(`Ajuste incremental para #${id}`, '0');
-  if (value === null) return;
-
-  const delta = Number(String(value).replace(',', '.'));
-  if (!Number.isFinite(delta)) return toast('Delta inválido.');
-
-  await http('PATCH', `${API}/${id}/adjust`, { delta });
-  toast(`Estoque ajustado.`);
-  await load();
-}
-
-async function deleteRow(tr) {
-  const id = tr.dataset.id;
-  if (!confirm(`Excluir registro #${id}?`)) return;
-
-  await http('DELETE', `${API}/${id}`);
-  toast('Registro excluído.');
-  await load();
-}
-
-async function createNew() {
-  const qty = num(String(el.nQty.value).replace(',', '.'));
-  const v = validateMinMax(el.nMin.value, el.nMax.value);
-
-  if (!v.ok) return toast(v.error);
-
-  await http('POST', API, {
-    stock_qty: qty,
-    stock_min: v.smin,
-    stock_max: v.smax,
-  });
-
-  closeNewModal();
-  toast('Registro criado.');
-  await load();
-}
-
-function openNewModal() {
-  el.nQty.value = '0';
-  el.nMin.value = '0';
-  el.nMax.value = '0';
-  el.modalNew.classList.add('show');
-  el.modalNew.setAttribute('aria-hidden', 'false');
-}
-
-function closeNewModal() {
-  el.modalNew.classList.remove('show');
-  el.modalNew.setAttribute('aria-hidden', 'true');
-}
-
-function downloadPurchaseSuggestionPdf() {
-  const url = new URL(`${API}/purchase-suggestion/pdf`, location.origin);
-
-  const q = el.fProductSearch?.value?.trim();
-  const group = el.fGroup?.value;
-  const subgroup = el.fSubgroup?.value;
-  const manufacturer = el.fManufacturer?.value;
-
-  if (q) url.searchParams.set('q', q);
-  if (group) url.searchParams.set('group_id', group);
-  if (subgroup) url.searchParams.set('subgroup_id', subgroup);
-  if (manufacturer) url.searchParams.set('manufacturer_id', manufacturer);
-
-  window.open(url.toString(), '_blank');
-}
-
-async function loadSelect(urls, select) {
-  if (!select) return;
-
-  const list = Array.isArray(urls) ? urls : [urls];
-
-  for (const url of list) {
-    try {
-      const data = await http('GET', url);
-
-      const rows =
-        Array.isArray(data?.rows) ? data.rows :
-          Array.isArray(data?.data) ? data.data :
-            Array.isArray(data?.items) ? data.items :
-              Array.isArray(data) ? data :
-                [];
-
-      if (!rows.length) continue;
-
-      for (const r of rows) {
-        const id =
-          r.product_group_id ??
-          r.product_subgroup_id ??
-          r.product_manufacturer_id ??
-          r.manufacturer_id ??
-          r.id;
-
-        const label =
-          r.name ??
-          r.nome ??
-          r.description ??
-          r.descricao ??
-          id;
-
-        if (!id) continue;
-
-        const opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = label;
-        select.appendChild(opt);
-      }
-
-      console.log('[productsStock][select loaded]', url, rows.length);
-      return;
-    } catch (err) {
-      console.warn('[productsStock][select fallback fail]', url, err.message);
-    }
-  }
+function fillSituationSelect() {
+  const select = $('fSituation');
+  const current = state.filters.situation;
+  select.innerHTML = '<option value="">Todas</option><option value="NEED">Comprar agora + zerados</option>' + state.situations
+    .map((s) => `<option value="${esc(s.key)}">${esc(s.label)}</option>`).join('');
+  select.value = current;
 }
 
 async function loadFilterOptions() {
   try {
-    const data = await http('GET', `${API}/filter-options`);
-
-    fillSelect(el.fGroup, data.groups || []);
-    fillSelect(el.fSubgroup, data.subgroups || []);
-    fillSelect(el.fManufacturer, data.manufacturers || []);
-  } catch (err) {
-    console.error('[productsStock][filter-options]', err);
+    const data = await api('/filter-options', { base: ROOT() });
+    const opt = (list) => (list || []).map((o) => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
+    $('fManufacturer').innerHTML = `<option value="">Todos</option><option value="none">Sem fabricante</option>${opt(data.manufacturers)}`;
+    $('fGroup').innerHTML = `<option value="">Todos</option>${opt(data.groups)}`;
+    $('fSubgroup').innerHTML = `<option value="">Todos</option>${opt(data.subgroups)}`;
+  } catch (error) {
+    console.error('[productsStock] filter-options', error);
   }
 }
 
-function fillSelect(select, rows = []) {
-  if (!select) return;
-
-  select.innerHTML = `<option value="">Todos</option>`;
-
-  for (const r of rows) {
-    const opt = document.createElement('option');
-    opt.value = r.id;
-    opt.textContent = r.name || r.description || r.id;
-    select.appendChild(opt);
+/* ───────────────────────── Lista ───────────────────────── */
+async function load() {
+  $('tbody').innerHTML = '<tr><td colspan="14" class="lots-empty">Carregando…</td></tr>';
+  try {
+    const data = await api(`?${queryString({ page: state.page, limit: state.limit })}`);
+    state.rows = data.rows || [];
+    state.total = Number(data.total || 0);
+    state.situations = data.situations || [];
+    state.settings = data.settings || null;
+    fillSituationSelect();
+    renderKpis();
+    renderRows();
+    renderFooter();
+  } catch (error) {
+    $('tbody').innerHTML = `<tr><td colspan="14" class="lots-empty">Não foi possível carregar: ${esc(error.message)}</td></tr>`;
+    console.error('[productsStock] load', error);
   }
 }
 
-el.btnApply?.addEventListener('click', () => {
-  state.offset = 0;
-  load();
-});
-
-el.btnClear?.addEventListener('click', () => {
-  el.fProductSearch.value = '';
-  el.fSearch.value = '';
-  el.fStatus.value = '';
-  el.fOrder.value = 'id_desc';
-  el.fGroup.value = '';
-  el.fSubgroup.value = '';
-  el.fManufacturer.value = '';
-  state.offset = 0;
-  load();
-});
-
-el.fProductSearch?.addEventListener('input', () => {
-  clearTimeout(state.searchTimer);
-  state.searchTimer = setTimeout(() => {
-    state.offset = 0;
-    load();
-  }, 450);
-});
-
-[el.fStatus, el.fOrder, el.fGroup, el.fSubgroup, el.fManufacturer].forEach((input) => {
-  input?.addEventListener('change', () => {
-    state.offset = 0;
-    load();
-  });
-});
-
-el.fPageSize?.addEventListener('change', () => {
-  state.limit = Math.max(1, Math.min(300, Number(el.fPageSize.value) || 20));
-  state.offset = 0;
-  load();
-});
-
-el.btnPrev?.addEventListener('click', () => {
-  state.offset = Math.max(0, state.offset - state.limit);
-  load();
-});
-
-el.btnNext?.addEventListener('click', () => {
-  state.offset += state.limit;
-  load();
-});
-
-el.tbBody?.addEventListener('click', async (ev) => {
-  const btn = ev.target.closest('button');
-  if (!btn) return;
-
-  const tr = ev.target.closest('tr');
-  if (!tr) return;
-
-  try {
-    if (btn.classList.contains('btn-save')) await saveRow(tr);
-    if (btn.classList.contains('btn-adjust')) await adjustRow(tr);
-    if (btn.classList.contains('btn-del')) await deleteRow(tr);
-  } catch (err) {
-    toast(err.message || err);
+function kpiSub(s) {
+  const soon = state.settings?.soon_days ?? 15;
+  switch (s.key) {
+    case 'BUY': return `no ponto de pedido · ${fmtMoney(s.buy_value)}`;
+    case 'ZERO_SALES': return s.buy_value ? `ruptura · comprar ${fmtMoney(s.buy_value)}` : 'ruptura: vendendo sem estoque';
+    case 'SOON': return `chegam ao ponto em até ${soon} dias`;
+    case 'OK': return 'entre o ponto de pedido e o máximo';
+    case 'OVER': return `capital parado · ${fmtMoney(s.over_value)}`;
+    default: return 'use "Calcular pelo consumo"';
   }
-});
+}
 
-el.tbBody?.addEventListener('change', (ev) => {
-  const chk = ev.target.closest('.row-check');
-  if (!chk) return;
+function renderKpis() {
+  $('kpis').innerHTML = state.situations.map((s) => {
+    const active = state.filters.situation === s.key ? ' is-active' : '';
+    return `<button type="button" class="lots-kpi${active}" style="--k:${esc(s.color)}" data-situation="${esc(s.key)}" title="Filtrar: ${esc(s.label)}">
+      <span class="lots-kpi__label"><i></i>${esc(s.label)}</span>
+      <span class="lots-kpi__value">${fmtInt(s.items)} ${s.items === 1 ? 'item' : 'itens'}</span>
+      <span class="lots-kpi__sub">${esc(kpiSub(s))}</span>
+    </button>`;
+  }).join('');
+}
 
-  const tr = ev.target.closest('tr');
-  const id = String(tr?.dataset?.id || '');
-
-  if (chk.checked) state.selected.add(id);
-  else state.selected.delete(id);
-
-  refreshBulk();
-});
-
-el.chkAll?.addEventListener('change', () => {
-  state.selected.clear();
-
-  if (el.chkAll.checked) {
-    for (const r of state.rows) state.selected.add(String(r.product_stock_id));
+function coverageHtml(r) {
+  const s = situationOf(r.situation);
+  if (r.coverage_days === null) {
+    return `<div class="cov"><b style="color:#94a3b8">${r.stock_qty > 0 ? 'sem saída' : '—'}</b><i><span style="width:0"></span></i></div>`;
   }
+  const days = Math.floor(r.coverage_days);
+  const pct = Math.min(100, (r.coverage_days / Math.max(30, (r.lead_days || 0) * 3)) * 100);
+  return `<div class="cov" title="Acaba em ${fmtDate(r.runs_out_at)} · pedir até ${fmtDate(r.order_by)}">
+    <b style="color:${esc(s.color)}">${days} ${days === 1 ? 'dia' : 'dias'}</b><i><span style="width:${pct}%;background:${esc(s.color)}"></span></i></div>`;
+}
 
-  el.tbBody.querySelectorAll('.row-check').forEach((chk) => {
-    chk.checked = el.chkAll.checked;
-  });
+const LEAD_SOURCE = { PRODUCT: 'do produto', MANUFACTURER: 'fabricante', DEFAULT: 'padrão' };
 
-  refreshBulk();
-});
-
-el.btnSaveSelected?.addEventListener('click', async () => {
-  try {
-    await saveSelected();
-  } catch (err) {
-    toast(err.message || err);
+function renderRows() {
+  if (!state.rows.length) {
+    $('tbody').innerHTML = '<tr><td colspan="14" class="lots-empty">Nenhum produto encontrado com os filtros escolhidos.</td></tr>';
+    syncSelection();
+    return;
   }
-});
+  $('tbody').innerHTML = state.rows.map((r) => {
+    const checked = state.selected.has(r.product_id) ? ' checked' : '';
+    const noParams = r.stock_min <= 0 && r.stock_max <= 0;
+    const sug = r.suggestion > 0
+      ? `<span class="sug" title="${esc(fmtMoney(r.suggestion_value))}${r.cost_price > 0 ? '' : ' · produto sem custo'}">${fmtQty(r.suggestion)}</span>`
+      : '—';
+    return `<tr data-id="${r.product_id}">
+      <td><input type="checkbox" data-chk="${r.product_id}"${checked}></td>
+      <td class="l ps-prod"><b title="${esc(r.product_description)}">${esc(r.product_description || '—')}</b><small>SKU ${esc(r.product_code || '—')}</small></td>
+      <td title="${esc(r.product_group_name || '')}"><small>${esc(r.product_group_name || '—')}</small></td>
+      <td title="${esc(r.manufacturer_name || '')}">${esc(r.manufacturer_name || '—')}</td>
+      <td class="ps-lead">${r.lead_days} d<small>${LEAD_SOURCE[r.lead_source] || ''}</small></td>
+      <td title="${esc(fmtQty(r.qty_out))} saídas em ${state.settings?.consumption_days ?? 90} dias">${r.daily > 0 ? fmtDaily(r.daily) : '—'}</td>
+      <td class="num"><b class="${r.stock_qty <= 0 && r.daily > 0 ? 'ps-zero' : ''}">${fmtQty(r.stock_qty)}</b></td>
+      <td class="num">${noParams ? '—' : fmtQty(r.stock_min)}</td>
+      <td class="num">${noParams && !r.daily ? '—' : fmtQty(Math.round(r.reorder_point * 10) / 10)}</td>
+      <td class="num">${noParams ? '—' : fmtQty(r.stock_max)}</td>
+      <td>${coverageHtml(r)}</td>
+      <td class="num">${sug}</td>
+      <td>${badge(r.situation)}</td>
+      <td>${actionIconsHtml([
+        { action: 'edit', title: 'Editar mín./máx.', attrs: { 'data-act': 'edit', 'data-id': r.product_id } },
+        { action: 'view', title: 'Movimentações (Kardex)', attrs: { 'data-act': 'kardex', 'data-id': r.product_id } },
+      ])}</td>
+    </tr>`;
+  }).join('');
+  syncSelection();
+}
 
-el.btnEnsure?.addEventListener('click', async () => {
+function renderFooter() {
+  const pages = Math.max(1, Math.ceil(state.total / state.limit));
+  if (state.page > pages) state.page = pages;
+  $('tableInfo').textContent = `${fmtInt(state.total)} ${state.total === 1 ? 'produto' : 'produtos'}`;
+  $('pageInfo').textContent = `Página ${state.page} de ${pages}`;
+  $('btnPrev').disabled = state.page <= 1;
+  $('btnNext').disabled = state.page >= pages;
+}
+
+function syncSelection() {
+  const n = state.selected.size;
+  $('btnBulk').disabled = !n;
+  $('bulkCount').hidden = !n;
+  $('bulkCount').textContent = String(n);
+  const pageIds = state.rows.map((r) => r.product_id);
+  $('chkAll').checked = pageIds.length > 0 && pageIds.every((id) => state.selected.has(id));
+}
+
+/* ───────────────────────── Editar um produto ───────────────────────── */
+function calcText(row, lead, min, max) {
+  const days = state.settings?.consumption_days ?? 90;
+  const daily = row.daily || 0;
+  if (!(daily > 0)) {
+    return `Sem vendas/saídas nos últimos <b>${days} dias</b>. Sem consumo, o ponto de pedido é o próprio mínimo (<b>${fmtQty(min)}</b>).<br>
+      Estoque atual: <b>${fmtQty(row.stock_qty)}</b>.`;
+  }
+  const during = daily * lead;
+  const point = min + during;
+  const buy = Math.max(0, Math.ceil(Math.max(max, min) - row.stock_qty + during));
+  const cover = Math.floor(row.stock_qty / daily);
+  const now = row.stock_qty <= point;
+  const arrive = new Date(); arrive.setDate(arrive.getDate() + lead);
+  return `Vendas/saídas em ${days} dias: <b>${fmtQty(row.qty_out)}</b> → consumo médio <b>${fmtDaily(daily)}/dia</b><br>
+    Consumo durante o prazo: ${fmtDaily(daily)} × ${lead} dias = <b>${fmtQty(Math.round(during * 10) / 10)}</b><br>
+    <b>Ponto de pedido</b> = mínimo ${fmtQty(min)} + ${fmtQty(Math.round(during * 10) / 10)} = <b>${fmtQty(Math.round(point * 10) / 10)}</b><br>
+    Estoque atual: <b>${fmtQty(row.stock_qty)}</b> (cobre ${cover} dias) → ${now
+      ? '<span style="color:#dc2626;font-weight:800">comprar agora</span>'
+      : '<span style="color:#16a34a;font-weight:800">ainda não precisa comprar</span>'}<br>
+    <b>Comprar</b> = máximo ${fmtQty(max)} − atual ${fmtQty(row.stock_qty)} + ${fmtQty(Math.round(during * 10) / 10)} (consumo até chegar) = <b>${fmtQty(buy)}</b><br>
+    ${now ? `Se pedir hoje, chega em <b>${arrive.toLocaleDateString('pt-BR')}</b>.` : `Pedir até <b>${fmtDate(row.order_by)}</b>.`}`;
+}
+
+function editLead() {
+  const row = state.editing;
+  const v = $('eLead').value.trim();
+  return v === '' ? (row.lead_time_manufacturer ?? state.settings?.default_lead_time_days ?? 0) : Number(v);
+}
+
+function refreshCalc() {
+  const row = state.editing;
+  if (!row) return;
+  $('eCalc').innerHTML = calcText(row, editLead(), Number($('eMin').value || 0), Number($('eMax').value || 0));
+}
+
+async function openEdit(productId) {
   try {
-    await http('POST', `${API}/ensure`);
-    toast('Ensure OK.');
+    const { row } = await api(`/product/${productId}`);
+    state.editing = row;
+    $('editSub').textContent = `${row.product_description || ''} · SKU ${row.product_code || '—'}`;
+    $('eManufacturer').value = row.manufacturer_name || 'Sem fabricante';
+    $('eLead').value = row.lead_time_product ?? '';
+    const base = row.lead_time_manufacturer ?? row.settings?.default_lead_time_days;
+    $('eLead').placeholder = String(base ?? '');
+    $('eLeadHelp').textContent = row.lead_time_manufacturer !== null
+      ? `Do fabricante: ${row.lead_time_manufacturer} d. Preencha só se este produto for diferente.`
+      : `Padrão: ${row.settings?.default_lead_time_days} d (fabricante sem prazo). Preencha só se este produto for diferente.`;
+    $('eMin').value = row.stock_min;
+    $('eMax').value = row.stock_max;
+    $('btnCalc').textContent = `🧮 Calcular pelo consumo dos últimos ${row.settings?.consumption_days ?? 90} dias`;
+    $('btnCalc').disabled = !row.calc?.has_consumption;
+    $('eCalcHelp').textContent = row.calc?.has_consumption
+      ? `Mínimo = consumo durante o prazo; máximo = mínimo + ${row.settings?.max_cover_days ?? 30} dias de consumo.`
+      : 'Sem saídas no período para calcular.';
+    refreshCalc();
+    Modal.open('editModal', { focusSelector: '#eMin' });
+  } catch (error) {
+    alertError('Não foi possível abrir o produto', error);
+  }
+}
+
+function calcFromConsumption() {
+  const row = state.editing;
+  if (!row || !(row.daily > 0)) return;
+  const lead = editLead();
+  const cover = state.settings?.max_cover_days ?? 30;
+  const min = Math.ceil(row.daily * lead);
+  $('eMin').value = min;
+  $('eMax').value = Math.max(min, Math.ceil(row.daily * (lead + cover)));
+  refreshCalc();
+}
+
+async function saveEdit(event) {
+  event.preventDefault();
+  const row = state.editing;
+  if (!row) return;
+  const min = Number($('eMin').value || 0);
+  const max = Number($('eMax').value || 0);
+  if (max > 0 && max < min) return alertError('Valores inválidos', new Error('O máximo deve ser maior ou igual ao mínimo.'));
+  const button = $('btnSaveEdit');
+  button.disabled = true;
+  try {
+    await api('/params', {
+      method: 'PUT',
+      body: { items: [{ product_id: row.product_id, stock_min: min, stock_max: max, lead_time_days: $('eLead').value.trim() }] },
+    });
+    Modal.close('editModal');
     await load();
-  } catch (err) {
-    toast(err.message || err);
+  } catch (error) {
+    alertError('Erro ao salvar', error);
+  } finally {
+    button.disabled = false;
   }
-});
+}
 
-el.btnPurchaseSuggestionPdf?.addEventListener('click', downloadPurchaseSuggestionPdf);
+/* ───────────────────────── Editar selecionados ───────────────────────── */
+function bulkMode() {
+  return document.querySelector('input[name="bulkMode"]:checked')?.value || 'calc';
+}
+function syncBulkForm() {
+  const set = bulkMode() === 'set';
+  $('bMin').disabled = !set;
+  $('bMax').disabled = !set;
+  $('bLeadDaysWrap').hidden = $('bLead').value !== 'set';
+}
+function openBulk() {
+  if (!state.selected.size) return;
+  $('bulkSub').textContent = `${state.selected.size} produto(s) selecionado(s).`;
+  $('bMin').value = '';
+  $('bMax').value = '';
+  $('bLead').value = 'keep';
+  $('bLeadDays').value = '';
+  syncBulkForm();
+  Modal.open('bulkModal');
+}
+async function saveBulk() {
+  const mode = bulkMode();
+  const leadMode = $('bLead').value;
+  const items = [...state.selected].map((id) => {
+    const item = { product_id: id };
+    if (mode === 'calc') item.calc = true;
+    else {
+      if ($('bMin').value !== '') item.stock_min = Number($('bMin').value);
+      if ($('bMax').value !== '') item.stock_max = Number($('bMax').value);
+    }
+    if (leadMode === 'clear') item.lead_time_days = '';
+    if (leadMode === 'set') item.lead_time_days = $('bLeadDays').value;
+    return item;
+  });
+  const button = $('btnSaveBulk');
+  button.disabled = true;
+  try {
+    const out = await api('/params', { method: 'PUT', body: { items } });
+    Modal.close('bulkModal');
+    state.selected.clear();
+    await load();
+    alertOk('Produtos atualizados', `${out.updated} produto(s) atualizado(s)${out.skipped ? `; ${out.skipped} sem saída no período ficaram como estavam` : ''}.`);
+  } catch (error) {
+    alertError('Erro ao aplicar', error);
+  } finally {
+    button.disabled = false;
+  }
+}
 
-el.btnNew?.addEventListener('click', openNewModal);
-el.btnCloseNew?.addEventListener('click', closeNewModal);
-el.btnCancelNew?.addEventListener('click', closeNewModal);
-el.btnCreateNew?.addEventListener('click', () => {
-  createNew().catch((err) => toast(err.message || err));
-});
+/* ───────────────────────── Kardex ───────────────────────── */
+async function openKardex(productId) {
+  const row = state.rows.find((r) => r.product_id === Number(productId));
+  $('kardexSub').textContent = row ? `${row.product_description || ''} · SKU ${row.product_code || '—'}` : '';
+  $('kardexBody').innerHTML = '<tr><td colspan="7" class="lots-empty">Carregando…</td></tr>';
+  Modal.open('kardexModal');
+  try {
+    const { rows } = await api(`/product/${productId}/movements?limit=60`);
+    $('kardexBody').innerHTML = rows.length ? rows.map((m) => `<tr>
+      <td>${esc(fmtDateTime(m.created_at))}</td>
+      <td><b style="color:${m.movement_type === 'SAIDA' ? '#dc2626' : m.movement_type === 'ENTRADA' ? '#16a34a' : '#475569'}">${esc(m.movement_type)}</b></td>
+      <td><small>${esc(m.origin_module || '—')}</small></td>
+      <td class="num">${fmtQty(m.quantity)}</td>
+      <td>${esc(m.lot_code || '—')}</td>
+      <td>${esc(m.nfe_number || '—')}</td>
+      <td class="l"><small>${esc(m.notes || '')}</small></td>
+    </tr>`).join('') : '<tr><td colspan="7" class="lots-empty">Nenhuma movimentação.</td></tr>';
+  } catch (error) {
+    $('kardexBody').innerHTML = `<tr><td colspan="7" class="lots-empty">${esc(error.message)}</td></tr>`;
+  }
+}
 
-el.modalNew?.addEventListener('click', (ev) => {
-  if (ev.target === el.modalNew) closeNewModal();
-});
+/* ───────────────────────── Pedidos por fabricante ───────────────────────── */
+function orderRowHtml(o, index) {
+  const hasMin = o.min_order_value > 0;
+  const pct = hasMin ? Math.min(100, o.percent || 0) : 0;
+  const color = !hasMin ? '#64748b' : o.reached ? '#16a34a' : '#d97706';
+  const label = !hasMin ? 'Sem pedido mínimo' : o.reached ? `${o.percent}% · Atinge o mínimo` : `${o.percent}% · Faltam ${fmtMoney(o.missing)}`;
+  const action = hasMin && !o.reached && o.manufacturer_id
+    ? `<button class="btn btn-toolbar btn-sm" type="button" data-complete="${index}">➕ Completar</button>`
+    : `<button class="btn btn-new btn-sm" type="button" data-order-pdf="${index}" title="Sugestão de compra deste fabricante em PDF">🛒 Gerar pedido</button>`;
+  const noCost = o.items_without_cost ? ` <small title="Itens sem custo não entram no total" style="color:#d97706">(${o.items_without_cost} sem custo)</small>` : '';
+  return `<div class="ord-row">
+    <b>${esc(o.manufacturer_name)}</b>
+    <span class="n">${o.lead_days} d</span>
+    <span class="n">${o.items}${noCost}</span>
+    <span class="n"><b>${fmtMoney(o.total)}</b></span>
+    <span class="n">${hasMin ? fmtMoney(o.min_order_value) : '—'}</span>
+    <div class="ord-bar"><small style="color:${color}">${esc(label)}</small><i><span style="width:${pct}%;background:${color}"></span></i></div>
+    <div class="ord-actions">${action}</div>
+  </div>`;
+}
 
-await loadFilterOptions();
-await load();
+function completeHtml(o, index) {
+  if (!o.complete?.length) {
+    return `<div class="ord-tip"><b>➕ ${esc(o.manufacturer_name)} (faltam ${fmtMoney(o.missing)}):</b> nenhum outro item deste fabricante tem consumo e custo para antecipar.
+      <div class="ord-actions" style="margin-top:6px"><button class="btn btn-toolbar btn-sm" type="button" data-order-pdf="${index}">🛒 Gerar pedido assim mesmo</button></div></div>`;
+  }
+  const lines = o.complete.map((c) => `${esc(c.product_description)} · chega ao ponto em ${c.days_to_reorder ?? '—'} dias · +${fmtQty(c.qty)} un. × ${fmtMoney(c.cost_price)} = ${fmtMoney(c.value)}`).join('<br>');
+  const total = o.total + o.complete_total;
+  return `<div class="ord-tip"><b>➕ Completar ${esc(o.manufacturer_name)} (faltam ${fmtMoney(o.missing)}):</b> antecipe os itens que vão chegar ao ponto de pedido mais cedo.<br>
+    ${lines} → <b>total ${fmtMoney(total)}${o.complete_reaches ? ', atinge o mínimo' : ', ainda abaixo do mínimo'}</b>
+    <div class="ord-actions" style="margin-top:6px"><button class="btn btn-new btn-sm" type="button" data-order-pdf="${index}" data-with-complete="1">🛒 Gerar pedido com os itens</button></div></div>`;
+}
+
+async function openOrders() {
+  $('ordersList').innerHTML = '<div class="lots-empty">Carregando…</div>';
+  $('ordersComplete').innerHTML = '';
+  Modal.open('ordersModal');
+  try {
+    const data = await api('/orders');
+    state.orders = data.orders || [];
+    $('ordersList').innerHTML = state.orders.length
+      ? state.orders.map(orderRowHtml).join('')
+      : '<div class="lots-empty">Nenhum produto no ponto de pedido agora.</div>';
+  } catch (error) {
+    $('ordersList').innerHTML = `<div class="lots-empty">${esc(error.message)}</div>`;
+  }
+}
+
+function onOrdersClick(e) {
+  const complete = e.target.closest('[data-complete]');
+  if (complete) {
+    const o = state.orders[Number(complete.dataset.complete)];
+    if (o) $('ordersComplete').innerHTML = completeHtml(o, Number(complete.dataset.complete));
+    return;
+  }
+  const pdf = e.target.closest('[data-order-pdf]');
+  if (pdf) {
+    const o = state.orders[Number(pdf.dataset.orderPdf)];
+    if (!o) return;
+    const mf = o.manufacturer_id ?? 'none';
+    const params = new URLSearchParams({ manufacturer_id: mf });
+    if (pdf.dataset.withComplete) params.set('complete', '1');
+    const slug = String(o.manufacturer_name || 'fabricante').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    download(`/pdf?${params}`, `pedido-${slug}-${new Date().toISOString().slice(0, 10)}.pdf`, pdf);
+  }
+}
+
+/* ───────────────────────── Parâmetros ───────────────────────── */
+async function openSettings() {
+  try {
+    const data = await api('/settings');
+    const s = data.settings;
+    $('sDays').value = String(s.consumption_days);
+    if (!$('sDays').value) {
+      $('sDays').insertAdjacentHTML('beforeend', `<option value="${s.consumption_days}">${s.consumption_days} dias</option>`);
+      $('sDays').value = String(s.consumption_days);
+    }
+    $('sLead').value = s.default_lead_time_days;
+    $('sSoon').value = s.soon_days;
+    $('sSource').value = s.consumption_source;
+    $('sCover').value = s.max_cover_days;
+    const money = (v) => (v === null || v === undefined ? '' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    $('mfList').innerHTML = (data.manufacturers || []).map((m) => `<div class="mf-row" data-mf="${m.id}">
+        <span title="${esc(m.name)}">${esc(m.name)}</span>
+        <input type="number" min="0" max="365" step="1" data-lead value="${m.lead_time_days ?? ''}" placeholder="padrão">
+        <input type="text" inputmode="decimal" data-min value="${money(m.min_order_value)}" placeholder="sem mínimo">
+        <span>${fmtInt(m.products)}</span>
+      </div>`).join('') + `<div class="mf-row"><span>Sem fabricante</span><input type="text" value="padrão" disabled><input type="text" value="—" disabled><span>${fmtInt(data.without_manufacturer)}</span></div>`;
+    Modal.open('settingsModal');
+  } catch (error) {
+    alertError('Não foi possível abrir os parâmetros', error);
+  }
+}
+
+async function saveSettings() {
+  const manufacturers = [...document.querySelectorAll('#mfList [data-mf]')].map((row) => ({
+    id: Number(row.dataset.mf),
+    lead_time_days: row.querySelector('[data-lead]').value.trim(),
+    min_order_value: parseMoney(row.querySelector('[data-min]').value),
+  }));
+  const button = $('btnSaveSettings');
+  button.disabled = true;
+  try {
+    await api('/settings', {
+      method: 'PUT',
+      body: {
+        consumption_days: Number($('sDays').value),
+        default_lead_time_days: Number($('sLead').value || 0),
+        soon_days: Number($('sSoon').value || 0),
+        consumption_source: $('sSource').value,
+        max_cover_days: Number($('sCover').value || 30),
+        manufacturers,
+      },
+    });
+    Modal.close('settingsModal');
+    await load();
+  } catch (error) {
+    alertError('Erro ao salvar os parâmetros', error);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+/* ───────────────────────── Eventos ───────────────────────── */
+function search() {
+  readMainFilters();
+  state.page = 1;
+  load();
+}
+
+function bind() {
+  Modal.setup();
+
+  $('btnFilter').addEventListener('click', search);
+  $('fQ').addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
+  $('fSituation').addEventListener('change', search);
+  $('fManufacturer').addEventListener('change', search);
+
+  $('kpis').addEventListener('click', (e) => {
+    const card = e.target.closest('[data-situation]');
+    if (!card) return;
+    const key = card.dataset.situation;
+    state.filters.situation = state.filters.situation === key ? '' : key;
+    $('fSituation').value = state.filters.situation;
+    state.page = 1;
+    load();
+  });
+
+  $('btnMoreFilters').addEventListener('click', () => {
+    $('fGroup').value = state.filters.group_id;
+    $('fSubgroup').value = state.filters.subgroup_id;
+    $('fWithSales').value = state.filters.with_sales;
+    Modal.open('filtersModal');
+  });
+  $('btnApplyFilters').addEventListener('click', () => {
+    state.filters.group_id = $('fGroup').value;
+    state.filters.subgroup_id = $('fSubgroup').value;
+    state.filters.with_sales = $('fWithSales').value;
+    moreFiltersCount();
+    Modal.close('filtersModal');
+    search();
+  });
+  $('btnClearFilters').addEventListener('click', () => {
+    ['fGroup', 'fSubgroup', 'fWithSales'].forEach((id) => { $(id).value = ''; });
+  });
+
+  $('btnPrev').addEventListener('click', () => { if (state.page > 1) { state.page -= 1; load(); } });
+  $('btnNext').addEventListener('click', () => { state.page += 1; load(); });
+  $('rowsPerPage').addEventListener('change', (e) => { state.limit = Number(e.target.value) || 20; state.page = 1; load(); });
+
+  $('tbody').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    if (btn.dataset.act === 'edit') openEdit(btn.dataset.id);
+    if (btn.dataset.act === 'kardex') openKardex(btn.dataset.id);
+  });
+  $('tbody').addEventListener('change', (e) => {
+    const chk = e.target.closest('[data-chk]');
+    if (!chk) return;
+    const id = Number(chk.dataset.chk);
+    if (chk.checked) state.selected.add(id); else state.selected.delete(id);
+    syncSelection();
+  });
+  $('chkAll').addEventListener('change', (e) => {
+    state.rows.forEach((r) => { if (e.target.checked) state.selected.add(r.product_id); else state.selected.delete(r.product_id); });
+    renderRows();
+  });
+
+  createSortableTable({
+    table: '#repTable',
+    defaultColumn: '',
+    defaultDirection: 'asc',
+    onSort: ({ column, direction }) => {
+      state.sort = column;
+      state.dir = direction;
+      state.page = 1;
+      return load();
+    },
+  });
+
+  $('editForm').addEventListener('submit', saveEdit);
+  ['eLead', 'eMin', 'eMax'].forEach((id) => $(id).addEventListener('input', refreshCalc));
+  $('btnCalc').addEventListener('click', calcFromConsumption);
+
+  $('btnBulk').addEventListener('click', openBulk);
+  document.querySelectorAll('input[name="bulkMode"]').forEach((el) => el.addEventListener('change', syncBulkForm));
+  $('bLead').addEventListener('change', syncBulkForm);
+  $('btnSaveBulk').addEventListener('click', saveBulk);
+
+  $('btnOrders').addEventListener('click', openOrders);
+  $('ordersModal').addEventListener('click', onOrdersClick);
+  $('btnOrdersPdf').addEventListener('click', (e) => download('/pdf?complete=1', `sugestao-de-compra-${new Date().toISOString().slice(0, 10)}.pdf`, e.currentTarget));
+
+  $('btnSettings').addEventListener('click', openSettings);
+  $('btnSaveSettings').addEventListener('click', saveSettings);
+
+  $('btnPdf').addEventListener('click', (e) => {
+    readMainFilters();
+    download(`/pdf?${queryString()}`, `sugestao-de-compra-${new Date().toISOString().slice(0, 10)}.pdf`, e.currentTarget);
+  });
+  $('btnExcel').addEventListener('click', (e) => {
+    readMainFilters();
+    download(`/export?${queryString()}`, `estoque-reposicao-${new Date().toISOString().slice(0, 10)}.xlsx`, e.currentTarget);
+  });
+}
+
+bind();
+loadFilterOptions();
+load();

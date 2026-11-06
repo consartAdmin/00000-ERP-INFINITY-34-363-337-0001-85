@@ -1662,7 +1662,7 @@
    ║ New layout: product ranking + product chart + customer chart       ║
    ╚══════════════════════════════════════════════════════════════════════╝ */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
     --dash-bg-start: var(--sa-bg-start);
     --dash-bg-end: var(--sa-bg-end);
     --dash-border: var(--sa-border-color);
@@ -1735,7 +1735,7 @@
    Prevent old size utilities from shrinking the new dashboard.
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .sales-analytics {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics {
     width: 100% !important;
     max-width: none !important;
     min-width: 0 !important;
@@ -1831,7 +1831,7 @@
    CHART TITLE
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .analytics-chart h3 {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .analytics-chart h3 {
     margin: 0;
 
     color:
@@ -2006,7 +2006,7 @@
    ║ LOADING                                                             ║
    ╚══════════════════════════════════════════════════════════════════════╝ */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]).is-loading {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]).is-loading {
     opacity:
         var(--sa-loading-opacity);
 
@@ -2019,9 +2019,9 @@
    ║ FREE LAYOUT                                                         ║
    ╚══════════════════════════════════════════════════════════════════════╝ */
 
-#includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
+#includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
 
-#includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+#includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
     width: 100% !important;
     max-width: none !important;
     min-width: 0 !important;
@@ -2038,7 +2038,7 @@
    DRAGGING
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]).is-dragging {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]).is-dragging {
     transform:
         scale(var(--sa-drag-scale));
 
@@ -2059,9 +2059,9 @@
     }
 
 
-    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
+    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
 
-    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         min-width:
             var(--sa-medium-free-min-width);
     }
@@ -2074,7 +2074,7 @@
 
 @media (max-width: 900px) {
 
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         height: auto;
         max-height: none;
         min-height: 0;
@@ -2094,9 +2094,9 @@
     }
 
 
-    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
+    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
 
-    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         width:
             var(--sa-tablet-free-width);
 
@@ -2111,7 +2111,7 @@
 
 @media (max-width: 600px) {
 
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         padding:
             var(--sa-mobile-card-padding);
     }
@@ -2156,9 +2156,9 @@
 
 @media (min-width: 901px) {
 
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
-    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
-    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
+    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
+    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         grid-column: 1 / -1 !important;
         width: 100% !important;
         max-width: none !important;
@@ -2200,9 +2200,9 @@
         max-width: none !important;
     }
 
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
-    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
-    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
+    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
+    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         grid-column: 1 / -1 !important;
         width: 100% !important;
         max-width: none !important;
@@ -2218,7 +2218,7 @@
         box-sizing: border-box !important;
     }
 
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .sales-analytics {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics {
         display: grid !important;
         grid-template-rows: 300px 64px !important;
         gap: 10px !important;
@@ -2345,7 +2345,7 @@
    MAIN SALES ANALYTICS
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
 
     position: relative;
 
@@ -2379,7 +2379,7 @@
    TOP CONSART LIGHT LINE
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"])::before {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"])::before {
 
     content: "";
 
@@ -2412,7 +2412,7 @@
    SUBTLE GRID BACKGROUND
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"])::after {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"])::after {
 
     content: "";
 
@@ -2439,7 +2439,7 @@
    INTERNAL CONTENT ABOVE BACKGROUND EFFECTS
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .sales-analytics {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics {
 
     position: relative;
 
@@ -2526,7 +2526,7 @@
    CHART HEADER
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .analytics-chart__header {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .analytics-chart__header {
 
     position: relative;
 
@@ -2539,7 +2539,7 @@
    CHART TITLES
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .analytics-chart h3 {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .analytics-chart h3 {
 
     color:
         var(--consart-tech-text) !important;
@@ -2757,7 +2757,7 @@
    LOADING
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]).is-loading {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]).is-loading {
 
     filter:
         saturate(0.75);
@@ -2797,7 +2797,7 @@
    MAIN CARD
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
 
     position: relative;
 
@@ -2828,7 +2828,7 @@
    REMOVE DARK / NEON BACKGROUND
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"])::after {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"])::after {
 
     display:
         none !important;
@@ -2839,7 +2839,7 @@
    CONSART TOP ACCENT
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"])::before {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"])::before {
 
     content:
         "";
@@ -2885,7 +2885,7 @@
    INTERNAL CONTAINER
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .sales-analytics {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics {
 
     position:
         relative;
@@ -2980,7 +2980,7 @@
    CHART HEADER
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .analytics-chart__header {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .analytics-chart__header {
 
     border-bottom:
         1px solid #e5edf7 !important;
@@ -2994,7 +2994,7 @@
    CHART TITLE
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .analytics-chart h3 {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .analytics-chart h3 {
 
     color:
         #1f4d83 !important;
@@ -3277,7 +3277,7 @@
    LOADING
    ====================================================================== */
 
-#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]).is-loading {
+#includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]).is-loading {
 
     opacity:
         0.66;
@@ -3627,7 +3627,7 @@
 }
 
 @media (min-width: 901px) {
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .sales-analytics {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics {
         display: grid !important;
         grid-template-rows: var(--abc-four-panels-height) var(--abc-kpi-row-height) !important;
         gap: var(--abc-layout-gap) !important;
@@ -3660,9 +3660,9 @@
         transform: none !important;
     }
 
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
-    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
-    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
+    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
+    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         height: var(--abc-dashboard-total-height) !important;
         min-height: var(--abc-dashboard-total-height) !important;
         max-height: var(--abc-dashboard-total-height) !important;
@@ -3671,7 +3671,7 @@
 }
 
 @media (max-width: 900px) {
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .sales-analytics {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics {
         display: flex !important;
         height: auto !important;
     }
@@ -3689,7 +3689,7 @@
         max-height: 260px !important;
     }
 
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         height: auto !important;
         min-height: 0 !important;
         max-height: none !important;
@@ -3847,7 +3847,7 @@
 @media (min-width: 901px) {
 
     /* Complete internal structure */
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .sales-analytics {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics {
         grid-template-rows:
             var(--abc-four-panels-height) var(--abc-kpi-row-height) !important;
     }
@@ -3870,9 +3870,9 @@
 
 
     /* Main analytics dashboard */
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
-    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]),
-    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
+    #includeDashBoard[data-layout-mode="free"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]),
+    #includeDashBoard[data-free="1"] .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         height: var(--abc-dashboard-total-height) !important;
         min-height: var(--abc-dashboard-total-height) !important;
         max-height: var(--abc-dashboard-total-height) !important;
@@ -4060,13 +4060,13 @@
    ====================================================================== */
 
 @media (min-width: 901px) {
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
         height: 552px !important;
         min-height: 552px !important;
         max-height: 552px !important;
     }
 
-    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"]) .sales-analytics {
+    #includeDashBoard .dash-card:is([data-dashboard-key="sales-analytics"], [data-dashboard-key="sales-taxes"], [data-dashboard-key="tax-assessment"], [data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics {
         display: grid !important;
         grid-template-rows: 56px var(--abc-four-panels-height) var(--abc-kpi-row-height) !important;
         gap: var(--abc-layout-gap) !important;
@@ -4817,3 +4817,32 @@
         font-size: 11px;
     }
 }
+
+/* ======================================================================
+   Estoque · Validade dos lotes (stockLotsExpiry.js)
+   ====================================================================== */
+#includeDashBoard .stock-lots-dash__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#includeDashBoard .stock-lots-dash__caption { font-size: 12px; font-weight: 700; color: #475569; }
+#includeDashBoard .stock-lots-dash__link { font-size: 12px; font-weight: 800; color: #1d4ed8; text-decoration: none; }
+#includeDashBoard .stock-lots-dash__link:hover { text-decoration: underline; }
+#includeDashBoard .stock-lots-dash__off {
+  margin: 12px 0; padding: 14px 16px; border-radius: 12px;
+  background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 13px;
+}
+#includeDashBoard .stock-lots-dash__days { color: #94a3b8; font-weight: 600; font-size: 10px; }
+#includeDashBoard .stock-lots-dash__pill {
+  display: inline-block; min-width: 38px; padding: 1px 7px; border-radius: 999px; text-align: center;
+  font-weight: 800; font-size: 11px; color: var(--lc);
+  background: color-mix(in srgb, var(--lc) 14%, #fff);
+}
+#includeDashBoard .stock-lots-dash__upcoming td:nth-child(2) { font-weight: 700; }
+#includeDashBoard .stock-lots-kpi { text-decoration: none; color: inherit; position: relative; }
+#includeDashBoard .stock-lots-kpi::before { background: var(--lk) !important; }
+#includeDashBoard .stock-lots-kpi .analytics-kpi__value { color: var(--lk); }
+#includeDashBoard .stock-lots-kpi__hint { display: block; font-size: 11px; color: #64748b; font-weight: 600; }
+#includeDashBoard .tax-columns__note { font-size: 10px; color: #94a3b8; text-align: center; margin-top: 4px; }

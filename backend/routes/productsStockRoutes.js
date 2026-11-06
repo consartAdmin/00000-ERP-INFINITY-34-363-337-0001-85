@@ -13,6 +13,7 @@
 import { Router } from 'express';
 
 import ctrl from '../controllers/productsStockController.js';
+import replenishment from '../controllers/productsStockReplenishmentController.js';
 
 const router = Router();
 
@@ -26,10 +27,26 @@ router.post('/ensure', ctrl.ensure);
    Relatórios
 ======================================================================== */
 
+// Sugestão de compra agrupada por fabricante (ponto de pedido + pedido mínimo)
 router.get(
     '/purchase-suggestion/pdf',
-    ctrl.purchaseSuggestionPdf,
+    replenishment.purchaseSuggestionPdf,
 );
+
+/* ========================================================================
+   Reposição (mínimo, máximo, prazo do fabricante, pedido mínimo)
+======================================================================== */
+
+router.get('/replenishment', replenishment.list);
+router.get('/replenishment/export', replenishment.exportExcel);
+router.get('/replenishment/pdf', replenishment.purchaseSuggestionPdf);
+router.get('/replenishment/settings', replenishment.getSettings);
+router.put('/replenishment/settings', replenishment.saveSettings);
+router.get('/replenishment/orders', replenishment.orders);
+router.get('/replenishment/dashboard', replenishment.dashboard);
+router.get('/replenishment/product/:productId(\\d+)', replenishment.getProduct);
+router.get('/replenishment/product/:productId(\\d+)/movements', replenishment.productMovements);
+router.put('/replenishment/params', replenishment.saveParams);
 
 /* ========================================================================
    Filtros

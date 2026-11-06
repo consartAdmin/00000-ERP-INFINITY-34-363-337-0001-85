@@ -41,6 +41,7 @@ router.get('/options', options);
 router.get('/options/:product_stock_id', options);
 
 // ✅ Painel de lotes e validades (tela Estoque por Lote)
+router.get('/dashboard', panelController.dashboard);
 router.get('/panel', panelController.panel);
 router.get('/panel/export', panelController.exportPanel);
 router.get('/product-lookup', panelController.productLookup);
