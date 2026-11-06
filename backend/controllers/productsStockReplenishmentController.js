@@ -3,10 +3,10 @@
 // ║ Base: /api/productsStock/replenishment                               ║
 // ║   GET  /                    lista + cards por situação               ║
 // ║   GET  /export              Excel (?format=xlsx)                     ║
-// ║   GET  /pdf                 Sugestão de compra (por fabricante)      ║
-// ║   GET  /settings            parâmetros + fabricantes                 ║
+// ║   GET  /pdf                 Sugestão de compra (por fornecedor)      ║
+// ║   GET  /settings            parâmetros + fornecedores               ║
 // ║   PUT  /settings            salva parâmetros + prazo/pedido mínimo   ║
-// ║   GET  /orders              pedidos por fabricante + completar       ║
+// ║   GET  /orders              pedidos por fornecedor + completar       ║
 // ║   GET  /dashboard           card "Reposição de estoque" da home      ║
 // ║   GET  /product/:productId  linha + cálculo pelo consumo             ║
 // ║   GET  /product/:id/movements  últimas movimentações (Kardex)        ║
@@ -38,7 +38,7 @@ function filtersFrom(query = {}) {
     situation: query.situation,
     group_id: query.group_id,
     subgroup_id: query.subgroup_id,
-    manufacturer_id: query.manufacturer_id,
+    supplier_id: query.supplier_id,
     with_sales: query.with_sales,
     sort: query.sort,
     dir: query.dir,
@@ -67,8 +67,8 @@ export async function list(req, res) {
 
 export async function getSettings(req, res) {
   try {
-    const [settings, mf] = await Promise.all([repo.getSettings(), repo.listManufacturersReplenishment()]);
-    return res.json({ ok: true, settings, ...mf });
+    const [settings, sup] = await Promise.all([repo.getSettings(), repo.listSuppliersReplenishment()]);
+    return res.json({ ok: true, settings, ...sup });
   } catch (error) {
     return fail(res, error, 'getSettings');
   }
@@ -77,8 +77,8 @@ export async function getSettings(req, res) {
 export async function saveSettings(req, res) {
   try {
     const settings = await repo.saveSettings(req.body || {}, userId(req));
-    const mf = await repo.listManufacturersReplenishment();
-    return res.json({ ok: true, settings, ...mf });
+    const sup = await repo.listSuppliersReplenishment();
+    return res.json({ ok: true, settings, ...sup });
   } catch (error) {
     return fail(res, error, 'saveSettings');
   }
@@ -86,7 +86,7 @@ export async function saveSettings(req, res) {
 
 export async function orders(req, res) {
   try {
-    return res.json(await repo.listManufacturerOrders({ withComplete: true }));
+    return res.json(await repo.listSupplierOrders({ withComplete: true }));
   } catch (error) {
     return fail(res, error, 'orders');
   }
@@ -136,7 +136,7 @@ export async function exportExcel(req, res) {
       { key: 'product_code', label: 'SKU', width: 12 },
       { key: 'product_description', label: 'Produto', width: 46, bold: true },
       { key: 'product_group_name', label: 'Grupo', width: 20 },
-      { key: 'manufacturer_name', label: 'Fabricante', width: 20 },
+      { key: 'supplier_name', label: 'Fornecedor', width: 20 },
       { key: 'lead', label: 'Prazo', width: 14, value: (r) => leadLabel(r) },
       { key: 'daily', label: 'Consumo/dia', width: 12, value: (r) => Number(r.daily.toFixed(3)), numFmt: '#,##0.00' },
       { key: 'stock_qty', label: 'Atual', width: 11, value: (r) => r.stock_qty, numFmt: '#,##0.###' },
@@ -173,24 +173,24 @@ export async function exportExcel(req, res) {
 }
 
 /**
- * Sugestão de compra em PDF, agrupada por fabricante, com o pedido mínimo.
- * ?manufacturer_id=ID|none  → só um fabricante
+ * Sugestão de compra em PDF, agrupada por fornecedor, com o pedido mínimo.
+ * ?supplier_id=ID|none  → só um fornecedor
  * ?complete=1               → inclui os itens sugeridos para completar o mínimo
  */
 export async function purchaseSuggestionPdf(req, res) {
   try {
-    const manufacturerId = String(req.query.manufacturer_id || '').trim() || null;
+    const supplierId = String(req.query.supplier_id || '').trim() || null;
     const withComplete = String(req.query.complete || '') === '1';
-    const filters = { ...filtersFrom(req.query), situation: 'NEED', sort: 'manufacturer', dir: 'asc', page: 1 };
+    const filters = { ...filtersFrom(req.query), situation: 'NEED', sort: 'supplier', dir: 'asc', page: 1 };
     const [{ rows }, ordersData] = await Promise.all([
       repo.listAllReplenishment(filters),
-      repo.listManufacturerOrders({ withComplete, manufacturer_id: manufacturerId }),
+      repo.listSupplierOrders({ withComplete, supplier_id: supplierId }),
     ]);
     const lines = rows.filter((r) => r.suggestion > 0);
-    const orderBy = new Map(ordersData.orders.map((o) => [o.manufacturer_id ?? 'none', o]));
+    const orderBy = new Map(ordersData.orders.map((o) => [o.supplier_id ?? 'none', o]));
 
     const REPORT_TITLE = 'Sugestão de Compra';
-    const { doc } = createThemedDoc({ title: REPORT_TITLE, subject: 'Sugestão de compra por fabricante', collect: false });
+    const { doc } = createThemedDoc({ title: REPORT_TITLE, subject: 'Sugestão de compra por fornecedor', collect: false });
     const filename = `sugestao_de_compra_${new Date().toISOString().slice(0, 10)}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -202,9 +202,9 @@ export async function purchaseSuggestionPdf(req, res) {
 
     let y = drawFullHeader(doc, {
       title: REPORT_TITLE,
-      subtitle: 'Ponto de pedido, prazo de entrega e pedido mínimo do fabricante',
+      subtitle: 'Ponto de pedido, prazo de entrega e pedido mínimo do fornecedor',
       info: [
-        ['Fabricante', manufacturerId ? (orderBy.get(manufacturerId === 'none' ? 'none' : Number(manufacturerId))?.manufacturer_name || '—') : 'Todos'],
+        ['Fornecedor', supplierId ? (orderBy.get(supplierId === 'none' ? 'none' : Number(supplierId))?.supplier_name || '—') : 'Todos'],
         ['Itens', themeNumber(lines.length, 0)],
       ],
     }) + 14;
@@ -212,7 +212,7 @@ export async function purchaseSuggestionPdf(req, res) {
     y = drawKpis(doc, y, [
       { label: 'Itens para comprar', value: themeNumber(lines.length, 0), hint: 'No ponto de pedido ou abaixo', color: SERIES[0] },
       { label: 'Compra estimada', value: themeMoney(total), hint: 'Comprar × custo do produto', color: SERIES[1] },
-      { label: 'Fabricantes prontos', value: `${ready} de ${ordersData.orders.length}`, hint: 'Atingem o pedido mínimo', color: SERIES[6] },
+      { label: 'Fornecedores prontos', value: `${ready} de ${ordersData.orders.length}`, hint: 'Atingem o pedido mínimo', color: SERIES[6] },
       { label: 'Zerados com venda', value: themeNumber(zero, 0), hint: 'Venderam e estão sem estoque', color: zero ? C.red : SERIES[7] },
     ]) + 16;
 
@@ -236,14 +236,14 @@ export async function purchaseSuggestionPdf(req, res) {
 
     const groups = new Map();
     lines.forEach((r) => {
-      const key = r.manufacturer_id ?? 'none';
+      const key = r.supplier_id ?? 'none';
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(r);
     });
 
     for (const [key, items] of groups) {
       const order = orderBy.get(key);
-      const name = items[0].manufacturer_name || 'Sem fabricante';
+      const name = items[0].supplier_name || 'Sem fornecedor';
       const sub = items.reduce((acc, r) => acc + r.suggestion_value, 0);
       const minTxt = order?.min_order_value
         ? ` · pedido mínimo ${themeMoney(order.min_order_value)} · ${order.reached ? 'atinge o mínimo' : `faltam ${themeMoney(order.missing)}`}`

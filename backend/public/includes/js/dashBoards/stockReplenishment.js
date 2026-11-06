@@ -3,10 +3,10 @@
 // ║ CONSART ERP                                                        ║
 // ║                                                                      ║
 // ║ ✅ Comprar agora (no ponto de pedido ou abaixo)                     ║
-// ║ ✅ Pedido mínimo por fabricante (Σ comprar × cost_price)            ║
+// ║ ✅ Pedido mínimo por fornecedor (Σ comprar × cost_price)            ║
 // ║ ✅ Vai faltar nos próximos 30 dias (pedir até)                      ║
 // ║ ✅ Cobertura do estoque em dias                                      ║
-// ║ ✅ KPIs: itens p/ comprar, compra estimada, fabricantes prontos,    ║
+// ║ ✅ KPIs: itens p/ comprar, compra estimada, fornecedors prontos,    ║
 // ║          acima do máximo                                             ║
 // ║                                                                      ║
 // ║ Fonte: GET /api/productsStock/replenishment/dashboard                ║
@@ -56,7 +56,7 @@ export const stockReplenishmentDashboard = {
                 </section>
 
                 <section class="analytics-chart analytics-chart--abc analytics-chart--ranking">
-                  <header class="analytics-chart__header"><h3>PEDIDO MÍNIMO POR FABRICANTE</h3></header>
+                  <header class="analytics-chart__header"><h3>PEDIDO MÍNIMO POR FORNECEDOR</h3></header>
                   <div class="analytics-chart__body tax-panel__scroll" data-rep-list="orders"></div>
                 </section>
 
@@ -84,7 +84,7 @@ export const stockReplenishmentDashboard = {
                   <small class="stock-lots-kpi__hint">comprar × custo do produto</small>
                 </a>
                 <a class="analytics-kpi stock-lots-kpi kpi-w-20 kpi-h-2 kpi-p-1 kpi-radius-6" style="--lk:#7c3aed" href="${MODULE_URL}">
-                  <span class="analytics-kpi__label">FABRICANTES PRONTOS P/ PEDIR</span>
+                  <span class="analytics-kpi__label">FORNECEDORS PRONTOS P/ PEDIR</span>
                   <strong class="analytics-kpi__value" data-rep-field="readyValue">0 de 0</strong>
                   <small class="stock-lots-kpi__hint" data-rep-field="readyHint"></small>
                 </a>
@@ -127,7 +127,7 @@ function renderAll(card, data) {
     const by = (key) => situations.find((x) => x.key === key) || { items: 0, buy_value: 0, over_value: 0, color: '#64748b' };
 
     card.querySelector('[data-rep-caption]').textContent =
-        `REPOSIÇÃO DE ESTOQUE · mínimo, máximo e prazo de entrega do fabricante · consumo dos últimos ${s.consumption_days || 90} dias`;
+        `REPOSIÇÃO DE ESTOQUE · mínimo, máximo e prazo de entrega do fornecedor · consumo dos últimos ${s.consumption_days || 90} dias`;
 
     renderBuy(card, data.buyNow || [], by('BUY').items + by('ZERO_SALES').items);
     renderOrders(card, data.orders || []);
@@ -163,7 +163,7 @@ function renderBuy(card, rows, total) {
         <thead><tr><th>Produto</th><th>Atual</th><th>Ponto</th><th>Comprar</th><th>Chega</th></tr></thead>
         <tbody>
           ${rows.map((r) => `
-            <tr title="${escapeHtml(`${r.product_code || ''} ${r.product_description || ''} · ${r.manufacturer_name || 'sem fabricante'} · prazo ${r.lead_days} d`)}">
+            <tr title="${escapeHtml(`${r.product_code || ''} ${r.product_description || ''} · ${r.supplier_name || 'sem fornecedor'} · prazo ${r.lead_days} d`)}">
               <td class="tax-table__product">${escapeHtml(r.product_description || r.product_code || '—')}</td>
               <td${r.stock_qty <= 0 ? ' style="color:#7c3aed;font-weight:800"' : ''}>${qty(r.stock_qty)}</td>
               <td>${qty(Math.round(r.reorder_point))}</td>
@@ -181,7 +181,7 @@ function renderBuy(card, rows, total) {
 function renderOrders(card, orders) {
     const container = card.querySelector('[data-rep-list="orders"]');
     if (!orders.length) {
-        container.innerHTML = '<div class="analytics-abc-ranking__empty">Nenhum fabricante com itens para comprar.</div>';
+        container.innerHTML = '<div class="analytics-abc-ranking__empty">Nenhum fornecedor com itens para comprar.</div>';
         return;
     }
     const pill = (o) => {
@@ -192,11 +192,11 @@ function renderOrders(card, orders) {
     };
     container.innerHTML = `
       <table class="tax-table tax-table--products">
-        <thead><tr><th>Fabricante</th><th>Sugerido</th><th>Mínimo</th><th>Situação</th></tr></thead>
+        <thead><tr><th>Fornecedor</th><th>Sugerido</th><th>Mínimo</th><th>Situação</th></tr></thead>
         <tbody>
           ${orders.slice(0, 8).map((o) => `
-            <tr title="${escapeHtml(`${o.manufacturer_name} · ${o.items} item(ns) · prazo ${o.lead_days} d`)}">
-              <td class="tax-table__product">${escapeHtml(o.manufacturer_name)}</td>
+            <tr title="${escapeHtml(`${o.supplier_name} · ${o.items} item(ns) · prazo ${o.lead_days} d`)}">
+              <td class="tax-table__product">${escapeHtml(o.supplier_name)}</td>
               <td><strong>${moneyBR(o.total)}</strong></td>
               <td>${o.min_order_value > 0 ? moneyBR(o.min_order_value) : '—'}</td>
               <td>${pill(o)}</td>
@@ -205,7 +205,7 @@ function renderOrders(card, orders) {
       </table>
       <div class="tax-table__footer">
         <span class="tax-rate-legend">Sugerido = comprar × custo (cost_price)</span>
-        <a class="tax-link" href="${MODULE_URL}">Pedidos por fabricante</a>
+        <a class="tax-link" href="${MODULE_URL}">Pedidos por fornecedor</a>
       </div>`;
 }
 
@@ -230,7 +230,7 @@ function renderSoon(card, rows, total, situations) {
         </tbody>
       </table>
       <div class="tax-table__footer">
-        <span class="tax-rate-legend">Pedir até = acaba em − prazo do fabricante</span>
+        <span class="tax-rate-legend">Pedir até = acaba em − prazo do fornecedor</span>
         <a class="tax-link" href="${MODULE_URL}">Ver todos (${formatInteger(total)})</a>
       </div>`;
 }
