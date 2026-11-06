@@ -142,7 +142,7 @@ const DASHBOARD_PAGES = Object.freeze([
   {
     id: 'taxes',
     title: 'Impostos',
-    description: 'Impostos sobre vendas por tipo e por produto',
+    description: 'Impostos sobre vendas por tipo, por produto e evolução mensal',
     keys: new Set([
       'sales-taxes',
     ]),

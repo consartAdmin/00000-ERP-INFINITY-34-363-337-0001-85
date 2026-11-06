@@ -9,6 +9,7 @@ import {
     buildAssessmentPdf,
     exportFileName,
 } from '../repositories/taxAssessment/taxAssessment.export.js';
+import { loadTaxAssessmentHistory } from '../repositories/taxHistory/taxHistory.repository.js';
 
 
 const EXPORT_FORMATS = Object.freeze({
@@ -79,6 +80,27 @@ export async function exportTaxAssessment(req, res) {
             ok: false,
             code: error?.code || 'TAX_ASSESSMENT_EXPORT_ERROR',
             message: error?.message || 'Unable to export tax assessment.',
+        });
+    }
+}
+
+
+// GET /api/dashboard/tax-assessment/history?endDate=YYYY-MM-DD&months=6
+export async function getTaxAssessmentHistory(req, res) {
+    try {
+        const data = await loadTaxAssessmentHistory({
+            endDate: String(req.query?.endDate || '').trim(),
+            months: req.query?.months,
+        });
+
+        return res.json({ ok: true, ...data });
+    } catch (error) {
+        console.error('[taxAssessmentDashboardController] getTaxAssessmentHistory:', error);
+
+        return res.status(Number(error?.status) || 500).json({
+            ok: false,
+            code: error?.code || 'TAX_ASSESSMENT_HISTORY_ERROR',
+            message: error?.message || 'Unable to load tax assessment history.',
         });
     }
 }

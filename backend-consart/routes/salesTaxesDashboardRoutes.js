@@ -11,6 +11,8 @@ import {
 
 import {
     getSalesTaxesDashboard,
+    getSalesTaxesHistory,
+    exportSalesTaxes,
 } from '../controllers/salesTaxesDashboardController.js';
 
 
@@ -31,6 +33,12 @@ router.get(
     requireAuth,
     getSalesTaxesDashboard
 );
+
+// GET /api/dashboard/sales-taxes/history?endDate=YYYY-MM-DD&months=6
+router.get('/history', requireAuth, getSalesTaxesHistory);
+
+// GET /api/dashboard/sales-taxes/export?format=xlsx|pdf&startDate=...&endDate=...
+router.get('/export', requireAuth, exportSalesTaxes);
 
 
 export default router;
