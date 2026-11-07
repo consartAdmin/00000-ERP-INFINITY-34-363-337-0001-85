@@ -14,6 +14,20 @@ import {
   rowToInvoice,
 } from './_shared.js';
 
+// usoConsumo não é criada pelo código (nem todo banco tem): só junta se existir.
+let usoConsumoTableChecked = null;
+async function hasUsoConsumoTable() {
+  if (usoConsumoTableChecked === null) {
+    try {
+      const { rows } = await pool.query(`SELECT to_regclass('public."usoConsumo"') IS NOT NULL AS ok`);
+      usoConsumoTableChecked = Boolean(rows[0]?.ok);
+    } catch {
+      usoConsumoTableChecked = false;
+    }
+  }
+  return usoConsumoTableChecked;
+}
+
 export async function search({
   q = '',
   status,
@@ -89,6 +103,12 @@ export async function search({
   const args = [];
   let ai = 1;
 
+  const withUso = await hasUsoConsumoTable();
+  const usoJoin = withUso
+    ? `LEFT JOIN public."usoConsumo" uc ON uc.invoice_id = i.invoice_id`
+    : '';
+  const usoNumber = withUso ? 'uc.number' : 'NULL::text';
+
   // ======================================================================
   // TEXT SEARCH
   // ======================================================================
@@ -104,6 +124,7 @@ export async function search({
         OR CAST(i.nfe_number AS TEXT) LIKE $${ai}
         OR CAST(o.order_id AS TEXT) LIKE $${ai}
         OR CAST(i.budget_id AS TEXT) LIKE $${ai}
+        OR LOWER(COALESCE(${usoNumber}, '')) LIKE $${ai}
       )
     `);
 
@@ -179,7 +200,8 @@ export async function search({
 
       COALESCE(
         o.order_id::text,
-        i.budget_id::text
+        i.budget_id::text,
+        ${usoNumber}
       ) AS order_number,
 
       COALESCE(
@@ -221,6 +243,8 @@ export async function search({
     LEFT JOIN ${TB_BUDGETS} b
       ON b.budget_id = i.budget_id
 
+    ${usoJoin}
+
     ${whereSql}
 
     ORDER BY
@@ -252,6 +276,8 @@ export async function search({
 
     LEFT JOIN ${TB_BUDGETS} b
       ON b.budget_id = i.budget_id
+
+    ${usoJoin}
 
     ${whereSql}
   `;
@@ -295,6 +321,8 @@ export async function search({
 
     LEFT JOIN ${TB_BUDGETS} b
       ON b.budget_id = i.budget_id
+
+    ${usoJoin}
 
     WHERE ${sumWhere.join(' AND ')}
   `;

@@ -8,6 +8,13 @@ import {
   emitirNFeUsoConsumo,
 } from '../nfe/nfe.index.js';
 
+// Destinatário da NF-e de uso e consumo é a própria empresa (aparece em Notas Emitidas).
+export function companyAsCustomer() {
+  const name = String(process.env.EMPRESA_RAZAO || process.env.EMPRESA_FANTASIA || '').trim() || null;
+  const taxId = String(process.env.EMPRESA_CNPJ || '').replace(/\D/g, '') || null;
+  return [name, taxId];
+}
+
 // Status que o provedor devolveu na hora (NF-e API é síncrona; PlugNotas não).
 function initialStatus(emission) {
   const status = String(emission?.provider_status || '').toUpperCase();
@@ -139,6 +146,8 @@ export async function emitNfe(usoConsumoId) {
           issued_date,
           total_amount,
           nfe_provider_id,
+          customer_name,
+          customer_tax_id,
           created_at,
           updated_at
         )
@@ -155,6 +164,8 @@ export async function emitNfe(usoConsumoId) {
           CASE WHEN $6::varchar(20) = 'AUTORIZADA' THEN CURRENT_DATE END,
           $3,
           $4,
+          $10,
+          $11,
           NOW(),
           NOW()
         )
@@ -170,6 +181,7 @@ export async function emitNfe(usoConsumoId) {
         emission.nfe_protocol || null,
         emission.xml_url || null,
         emission.danfe_url || null,
+        ...companyAsCustomer(),
       ]
     );
 
