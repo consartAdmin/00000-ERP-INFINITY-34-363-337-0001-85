@@ -232,12 +232,16 @@
     }
 
     #aba-precos .price-fiscal-footer {
+      margin-top: 16px;
+    }
+
+    /* Cada coluna alinha seus botões embaixo à direita do próprio quadro */
+    #aba-precos .price-fiscal-footer__col {
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-end;
       gap: 8px;
-      width: 100%;
-      margin-top: 16px;
+      min-width: 0;
     }
 
     .product-general-right {
@@ -1133,22 +1137,26 @@
         </div>
 
         <!-- Ações da aba Preços / Fiscal (embaixo à direita) -->
-        <div class="price-fiscal-footer">
-          <button type="button" id="btnVincularClassificacaoFiscal" class="btn btn-primary btn-sm">
-            🔍 Vincular / Alterar Classificação
-          </button>
+        <div class="c-grid g-2 gap-16 price-fiscal-footer">
+          <div class="price-fiscal-footer__col">
+            <button type="submit" form="formPrecos" class="btn btn-save btn-sm">
+              💾 Salvar Tabela de Preços
+            </button>
+          </div>
 
-          <button type="button" id="btnRemoverClassificacaoFiscal" class="btn btn-danger btn-sm">
-            ❌ Remover Vínculo Fiscal
-          </button>
+          <div class="price-fiscal-footer__col">
+            <button type="button" id="btnVincularClassificacaoFiscal" class="btn btn-primary btn-sm">
+              🔍 Vincular / Alterar Classificação
+            </button>
 
-          <button id="btnConfirmarVinculoFiscal" type="button" class="btn btn-save btn-sm">
-            ✔️ Confirmar Vínculo Fiscal
-          </button>
+            <button type="button" id="btnRemoverClassificacaoFiscal" class="btn btn-danger btn-sm">
+              ❌ Remover Vínculo Fiscal
+            </button>
 
-          <button type="submit" form="formPrecos" class="btn btn-save btn-sm">
-            💾 Salvar Tabela de Preços
-          </button>
+            <button id="btnConfirmarVinculoFiscal" type="button" class="btn btn-save btn-sm">
+              ✔️ Confirmar Vínculo Fiscal
+            </button>
+          </div>
         </div>
 
       </div>
