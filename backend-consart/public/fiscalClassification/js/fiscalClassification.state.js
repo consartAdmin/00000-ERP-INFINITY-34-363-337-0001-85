@@ -10,12 +10,17 @@ import { DEFAULT_PAGE_SIZE } from './fiscalClassification.config.js';
 export const state = {
   page: 1,
   pageSize: DEFAULT_PAGE_SIZE,
-  total: 0,
+  allRows: [],
+  filteredRows: [],
+  sortColumn: 'classification_name',
+  sortDirection: 'asc',
   filters: {
     query: '',
     ncm: '',
     cest: '',
-    active: 'all',
+    profileId: '',
+    active: 'true',
   },
   fiscalProfilesById: new Map(),
+  editingRow: null,
 };

@@ -1,21 +1,23 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ FILE: fiscalClassification.modal.js                                ║
-// ║ MODULE: Fiscal Classification — User Feedback                      ║
+// ║ MODULE: Fiscal Classification — Modal (modals.css + modal.js)      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
-export function confirmDeleteClassification(row) {
-  return window.confirm(
-    `Deseja realmente desativar a classificação "${row.classification_name}" ` +
-    `(ID ${row.fiscal_classification_id})?`,
-  );
+// ESC, backdrop e [data-modal-close] já são tratados pelo Modal.setup().
+import { Modal } from '/public/includes/js/modal.js';
+
+const MODAL_ID = 'classificationModal';
+
+export function configureModal() {
+  Modal.setup();
 }
 
-export function showSuccess(message) {
-  window.alert(message);
+export function openClassificationModal() {
+  Modal.open(MODAL_ID, { focusSelector: '#classification_name' });
 }
 
-export function showError(message) {
-  window.alert(message);
+export function closeClassificationModal() {
+  Modal.close(MODAL_ID);
 }
