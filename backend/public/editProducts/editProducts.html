@@ -168,12 +168,19 @@
       min-width: 0;
     }
 
+    /* Mesmas cores do bloco Descrição (entity-header) */
     .product-images-card {
       min-height: 220px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      background: var(--card);
+      padding: var(--entity-header-padding, 14px);
+      border: 1px solid var(--entity-header-border, var(--line));
+      border-radius: var(--entity-header-radius, var(--radius-sm));
+      background: var(--entity-header-bg, var(--card));
+    }
+
+    /* Descrição / Imagens lado a lado: os dois blocos com a mesma altura */
+    #aba-descricao #formDescricaoProduto,
+    #aba-descricao #formDescricaoProduto > .entity-header {
+      height: 100%;
     }
 
     .product-images-card__header,
