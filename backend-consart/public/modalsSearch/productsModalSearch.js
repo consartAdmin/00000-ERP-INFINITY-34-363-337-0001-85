@@ -1535,7 +1535,6 @@ export function openProductsModalSearch({
         false
       );
 
-      const unitBadgeBg = p.standard ? '#16a34a' : '#2563eb';
       const unitLabel = und || '-';
 
       const subtitle = [
@@ -1583,20 +1582,7 @@ export function openProductsModalSearch({
 
   <!-- UNIDADE -->
   <td data-col="unit" style="text-align:center;">
-    <span style="
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-width:72px;
-      padding:5px 10px;
-      border-radius:999px;
-      background:${unitBadgeBg};
-      color:#fff;
-      font-weight:800;
-      font-size:.72rem;
-    ">
-      ${escHtml(unitLabel)}
-    </span>
+    ${escHtml(unitLabel)}
   </td>
 
   <!-- FATOR -->
