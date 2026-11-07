@@ -642,11 +642,6 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     Calculada exclusivamente pela quantidade original do item na NF-e de entrada.
   </div>
 
-  <div class="fiscal-fraction-section-labels">
-    <div>Fração fiscal por unidade</div>
-    <div>Prévia proporcional para a quantidade da operação</div>
-  </div>
-
   <div class="fiscal-fraction-grid fiscal-fraction-grid--all">
 
     <!-- ═══════════════════════════════════════
