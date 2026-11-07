@@ -359,31 +359,29 @@ async function moveItemStock(client, { item, product, delta, useLot }) {
     );
     const lot = rows[0];
     if (!lot) throw httpError(404, `Lote ${item.lot_code || item.lot_id} não encontrado para o produto ${item.product_code}.`);
-    if (delta < 0 && Number(lot.qty_available) < Math.abs(delta)) {
-      throw httpError(
-        409,
-        `Saldo insuficiente no lote ${lot.lot_code} do produto ${item.product_code}: disponível ${Number(lot.qty_available)}, pedido ${Math.abs(delta)}.`,
+    // O lote não pode ficar negativo (CHECK qty_on_hand >= 0): baixa só o
+    // saldo que existe e o restante fica registrado como "sem saldo".
+    const applied = delta < 0
+      ? -Math.min(Math.abs(delta), Math.max(0, Number(lot.qty_available) || 0))
+      : delta;
+    if (applied !== 0) {
+      await client.query(
+        `UPDATE ${TB_LOTS} SET qty_on_hand = COALESCE(qty_on_hand, 0) + $2, updated_at = NOW() WHERE lot_id = $1`,
+        [item.lot_id, applied],
       );
     }
-    await client.query(
-      `UPDATE ${TB_LOTS} SET qty_on_hand = COALESCE(qty_on_hand, 0) + $2, updated_at = NOW() WHERE lot_id = $1`,
-      [item.lot_id, delta],
-    );
-  } else {
-    if (delta < 0 && previousStock < Math.abs(delta)) {
-      throw httpError(
-        409,
-        `Estoque insuficiente do produto ${item.product_code}: disponível ${previousStock}, pedido ${Math.abs(delta)}.`,
-      );
-    }
-    await client.query(
-      `UPDATE ${TB_STOCK} SET stock_qty = COALESCE(stock_qty, 0) + $2 WHERE product_stock_id = $1`,
-      [product.product_stock_id, delta],
-    );
+    const newStock = await currentStock(client, product.product_stock_id);
+    return { previousStock, newStock, applied: round4(applied) };
   }
 
+  // Sem lote: o estoque pode ficar zerado ou negativo (uso e consumo não trava).
+  await client.query(
+    `UPDATE ${TB_STOCK} SET stock_qty = COALESCE(stock_qty, 0) + $2 WHERE product_stock_id = $1`,
+    [product.product_stock_id, delta],
+  );
+
   const newStock = await currentStock(client, product.product_stock_id);
-  return { previousStock, newStock };
+  return { previousStock, newStock, applied: round4(delta) };
 }
 
 /** Estorno das baixas antigas (vindas do orçamento): só productsStock. */
@@ -457,29 +455,36 @@ export async function finish(id) {
     );
     if (!items.length) throw httpError(400, 'Este registro não possui itens.');
 
-    if (stockMode.requireLot) {
-      const withoutLot = items.filter((i) => !positiveInt(i.lot_id));
-      if (withoutLot.length) {
-        throw httpError(
-          400,
-          `O estoque está no modo por lote. Escolha o lote de: ${withoutLot.map((i) => i.product_code).join(', ')}.`,
-        );
-      }
-    }
-
+    // Estoque zerado ou negativo não bloqueia o uso e consumo nem a NF-e.
+    // Modo por lote: item sem lote (nenhum lote com saldo) não baixa lote, e o
+    // que passar do saldo do lote fica como "sem saldo" no item.
     for (const item of items) {
       const product = await loadProduct(item.product_code, client);
-      if (!product?.product_stock_id) {
-        throw httpError(400, `Produto ${item.product_code} sem cadastro de estoque.`);
-      }
       const qtyBase = round4(Number(item.quantity) * (Number(item.unit_factor) || 1));
-      const { previousStock, newStock } = await moveItemStock(client, {
-        item, product, delta: -qtyBase, useLot: stockMode.requireLot,
-      });
-      await recordMovement(client, {
-        uso, item, delta: -qtyBase, previousStock, newStock, type: 'USO_CONSUMO',
-        notes: `Uso e consumo ${uso.number} (${uso.department}). CFOP ${uso.cfop}.`,
-      });
+      let debited = 0;
+
+      if (product?.product_stock_id && qtyBase > 0) {
+        const hasLot = Boolean(positiveInt(item.lot_id));
+        if (!stockMode.requireLot || hasLot) {
+          const moved = await moveItemStock(client, {
+            item, product, delta: -qtyBase, useLot: stockMode.requireLot,
+          });
+          debited = round4(Math.abs(moved.applied));
+          const missing = round4(qtyBase - debited);
+          if (debited > 0) {
+            await recordMovement(client, {
+              uso, item, delta: -debited, previousStock: moved.previousStock, newStock: moved.newStock,
+              type: 'USO_CONSUMO',
+              notes: `Uso e consumo ${uso.number} (${uso.department}). CFOP ${uso.cfop}.${missing > 0 ? ` Sem saldo no lote: ${missing} não baixado.` : ''}`,
+            });
+          }
+        }
+      }
+
+      await client.query(
+        `UPDATE ${TB_USO_ITEMS} SET stock_debited_qty = $2 WHERE uso_consumo_item_id = $1`,
+        [item.uso_consumo_item_id, debited],
+      );
     }
 
     await client.query(
@@ -538,7 +543,11 @@ export async function remove(id) {
       for (const item of items) {
         const product = await loadProduct(item.product_code, client);
         if (!product?.product_stock_id) continue;
-        const qtyBase = round4(Number(item.quantity) * (Number(item.unit_factor) || 1));
+        // Devolve só o que foi baixado de fato (stock_debited_qty); registros
+        // antigos não têm a coluna preenchida e baixaram a quantidade inteira.
+        const qtyBase = item.stock_debited_qty === null || item.stock_debited_qty === undefined
+          ? round4(Number(item.quantity) * (Number(item.unit_factor) || 1))
+          : round4(Number(item.stock_debited_qty));
         if (!(qtyBase > 0)) continue;
 
         // Registros antigos (do orçamento) baixaram só productsStock, sem lote.
@@ -548,7 +557,8 @@ export async function remove(id) {
           : await moveLegacyStock(client, { item, product, delta: qtyBase });
 
         await recordMovement(client, {
-          uso, item, delta: qtyBase, ...moved, type: 'ESTORNO_USO_CONSUMO',
+          uso, item, delta: qtyBase, previousStock: moved.previousStock, newStock: moved.newStock,
+          type: 'ESTORNO_USO_CONSUMO',
           notes: `Estorno do uso e consumo ${uso.number} (excluído).`,
         });
         restored += 1;
