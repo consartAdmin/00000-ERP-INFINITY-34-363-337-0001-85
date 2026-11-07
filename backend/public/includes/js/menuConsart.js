@@ -61,14 +61,72 @@ function splitLabel(label = '') {
   return { icon, text: rest || text.trim() };
 }
 
-function labelNodes(label, { iconClass = 'menu-ico' } = {}) {
-  const { icon, text } = splitLabel(label);
+// Ícones de linha monocromáticos (estilo "outline"), escolhidos pelo nome do
+// menu. O emoji do cadastro continua no banco; aqui ele só vira fallback.
+const ICON_PATHS = {
+  home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+  layers: '<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/>',
+  trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>',
+  truck: '<path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
+  wallet: '<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M16 15h2"/><path d="M6 6V4h11v2"/>',
+  chart: '<path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-4"/><path d="M12 16V8"/><path d="M16 16v-6"/>',
+  calculator: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
+  wrench: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4 2.5-2.5Z"/>',
+  cart: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/>',
+  chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>',
+  package: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5"/><path d="M12 12v9"/>',
+  sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
+  receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  archive: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M10 13h4"/>',
+  card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/>',
+  cash: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+  badge: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16a3 3 0 0 1 6 0"/><path d="M14 10h4M14 14h3"/>',
+  database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  file: '<path d="M14 3H6v18h12V7l-4-4Z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/>',
+  dot: '<circle cx="12" cy="12" r="3"/>',
+};
+
+// Ordem importa: o primeiro termo encontrado no nome (sem acento) vence.
+const ICON_RULES = [
+  ['inicio', 'home'], ['suporte', 'chat'], ['e-commerce', 'cart'], ['ecommerce', 'cart'],
+  ['gestao erp', 'layers'], ['comercial', 'briefcase'], ['vendas', 'trend'],
+  ['logistica', 'truck'], ['transportadora', 'truck'], ['financeiro', 'wallet'],
+  ['relatorio', 'chart'], ['contabilidade', 'calculator'], ['configurac', 'settings'],
+  ['ferramenta', 'wrench'], ['cliente', 'users'], ['produto', 'package'],
+  ['ajustes em lote', 'sliders'], ['lote', 'sliders'], ['secundario', 'list'],
+  ['fiscal', 'receipt'], ['imposto', 'receipt'], ['estoque', 'archive'],
+  ['despesa', 'card'], ['caixa', 'cash'], ['moviment', 'cash'], ['r.h', 'badge'],
+  ['rh', 'badge'], ['colaborador', 'badge'], ['auxiliar', 'database'], ['cadastro', 'database'],
+  ['nota', 'file'], ['documento', 'file'],
+];
+
+function normalizeText(text) {
+  return String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+function iconFor(text) {
+  const norm = normalizeText(text);
+  const rule = ICON_RULES.find(([term]) => norm.includes(term));
+  return rule ? rule[1] : null;
+}
+
+function svgIcon(name, size = 16) {
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" ` +
+    `stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ICON_PATHS.dot}</svg>`;
+}
+
+// mode: 'svg' → ícone de linha (topo, títulos de coluna); 'none' → só o texto.
+function labelNodes(label, { mode = 'svg', size = 16 } = {}) {
+  const { text } = splitLabel(label);
   const nodes = [];
-  if (icon) {
+  if (mode === 'svg') {
     const ico = document.createElement('span');
-    ico.className = iconClass;
-    ico.setAttribute('aria-hidden', 'true');
-    ico.textContent = icon;
+    ico.className = 'menu-ico';
+    ico.innerHTML = svgIcon(iconFor(text) || 'dot', size);
     nodes.push(ico);
   }
   const span = document.createElement('span');
@@ -78,7 +136,7 @@ function labelNodes(label, { iconClass = 'menu-ico' } = {}) {
   return nodes;
 }
 
-const CHEVRON_SVG = '<svg class="menu-chevron" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M5.5 7.5 10 12l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHEVRON_SVG = '<svg class="menu-chevron" viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path d="M5.5 7.5 10 12l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 function isCurrentPage(href) {
   if (!href || href === '#') return false;
@@ -90,9 +148,9 @@ function isCurrentPage(href) {
   }
 }
 
-function createLink(item, extraClass = '') {
+function createLink(item, extraClass = '', { topLevel = false } = {}) {
   const a = document.createElement('a');
-  a.append(...labelNodes(item.label));
+  a.append(...labelNodes(item.label, { mode: topLevel ? 'svg' : 'none' }));
   a.title = splitLabel(item.label).text;
   a.href = (item.href || '#').trim();
   if (item.id != null) a.dataset.moduloId = String(item.id);
@@ -113,7 +171,7 @@ function createMegaColumn(title, links) {
   col.classList.add('mega-col');
   const head = document.createElement('div');
   head.classList.add('mega-col-title');
-  head.append(...labelNodes(title));
+  head.append(...labelNodes(title, { size: 14 }));
   col.appendChild(head);
   links.forEach(child => col.appendChild(createLink(child)));
   return col;
@@ -326,10 +384,10 @@ function mountMenuSearch(menuElement) {
         const row = document.createElement('div');
         row.classList.add('menu-search-item');
         const parts = item.path.split(' › ');
-        const { icon, text } = splitLabel(parts[parts.length - 1]);
+        const { text } = splitLabel(parts[parts.length - 1]);
         const ico = document.createElement('span');
         ico.className = 'menu-ico';
-        ico.textContent = icon || '•';
+        ico.innerHTML = svgIcon(parts.slice(0, -1).reverse().map(iconFor).find(Boolean) || iconFor(text) || 'dot', 15);
         const body = document.createElement('span');
         body.className = 'menu-search-text';
         const title = document.createElement('strong');
@@ -402,7 +460,7 @@ async function buildMenuPrincipal() {
   });
   mountMenuSearch(menu);
   MENU_CONFIG.forEach(item => {
-    if (item.type === 'link') menu.appendChild(createLink(item, item.className || ''));
+    if (item.type === 'link') menu.appendChild(createLink(item, item.className || '', { topLevel: true }));
     else if (item.type === 'dropdown') menu.appendChild(createDropdown(item));
   });
   [...menu.children].forEach(child => { child.style.pointerEvents = 'auto'; });
