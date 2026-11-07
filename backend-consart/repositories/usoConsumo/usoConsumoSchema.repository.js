@@ -43,7 +43,8 @@ async function run() {
       ALTER TABLE ${TB_USO_ITEMS}
         ADD COLUMN IF NOT EXISTS lot_id BIGINT,
         ADD COLUMN IF NOT EXISTS unit_factor NUMERIC(14,4) DEFAULT 1,
-        ADD COLUMN IF NOT EXISTS expires_at DATE
+        ADD COLUMN IF NOT EXISTS expires_at DATE,
+        ADD COLUMN IF NOT EXISTS stock_debited_qty NUMERIC(14,4)
     `);
     await dropStatusChecks(client);
     await client.query(`

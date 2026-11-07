@@ -232,7 +232,8 @@ function renderLots(lots = []) {
     return;
   }
   if (!lots.length) {
-    select.innerHTML = '<option value="">Nenhum lote com saldo</option>';
+    // Estoque zerado/negativo não trava: o item entra sem lote e não baixa lote.
+    select.innerHTML = '<option value="">Sem lote (sem saldo)</option>';
     select.disabled = true;
     return;
   }
@@ -329,16 +330,16 @@ function addItem() {
   const lotOpt = $('itemLot').selectedOptions?.[0];
   const lotId = product.require_lot ? Number(lotOpt?.value || 0) || null : null;
 
-  if (product.require_lot && !lotId) return notify('Este produto não tem lote com saldo para baixar.', 'error');
-
+  // Estoque zerado ou negativo não bloqueia: o item entra assim mesmo e a NF-e
+  // pode ser emitida. Só avisamos quando passa do saldo do lote.
   const qtyBase = quantity * factor;
-  if (product.require_lot) {
+  if (product.require_lot && lotId) {
     const alreadyInLot = state.items
       .filter((i) => i.lot_id === lotId)
       .reduce((acc, i) => acc + i.quantity * i.unit_factor, 0);
     const available = Number(lotOpt?.dataset.available || 0);
     if (qtyBase + alreadyInLot > available) {
-      return notify(`Saldo insuficiente no lote ${lotOpt?.dataset.code}: disponível ${numBR(available)}.`, 'error');
+      notify(`A quantidade passa do saldo do lote ${lotOpt?.dataset.code} (disponível ${numBR(available)}).\nO item foi adicionado; ao finalizar, o lote baixa só o saldo que tem.`, 'warning');
     }
   }
 
