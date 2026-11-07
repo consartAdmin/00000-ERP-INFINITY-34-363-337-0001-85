@@ -1,58 +1,69 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ priceCommissions.modal.js — Controle do modal | CONSART ERP         ║
+// ║ Modal global (modals.css + modal.js): ESC, backdrop e               ║
+// ║ [data-modal-close] já são tratados pelo Modal.setup().              ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
+import { Modal } from '/public/includes/js/modal.js';
 import { dom } from './priceCommissions.config.js';
 import { state } from './priceCommissions.state.js';
 import { syncCommissionTypeFields } from './priceCommissions.form.js';
 import { fillSelect, todayYmd } from './priceCommissions.utils.js';
 
-export function openPriceCommissionModal(editRow = null) {
-  dom.modal.setAttribute('aria-hidden', 'false');
-  dom.modal.hidden = false;
-  dom.modal.classList.add('is-open');
+function setDateValue(input, value) {
+  input.value = value ? String(value).slice(0, 10) : '';
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
 
-  dom.commission_id.value = editRow?.commission_id ?? '';
-  dom.mTitle.textContent = editRow
-    ? `Editar Regra #${editRow.commission_id}`
-    : 'Nova Regra';
+export function setupPriceCommissionModal() {
+  Modal.setup();
+}
 
-  dom.btnDelete.hidden = !editRow;
-  dom.btnDelete.style.display = editRow ? '' : 'none';
+/**
+ * Abre o modal.
+ * @param {object|null} row  Regra a editar (null = nova)
+ * @param {{ duplicate?: boolean }} options
+ */
+export function openPriceCommissionModal(row = null, { duplicate = false } = {}) {
+  const editing = Boolean(row?.commission_id) && !duplicate;
+
+  dom.commission_id.value = editing ? row.commission_id : '';
+  dom.mTitle.textContent = editing
+    ? `Editar comissão #${row.commission_id}`
+    : (duplicate ? `Duplicar comissão #${row.commission_id}` : 'Nova comissão');
+
+  dom.btnDelete.hidden = !editing;
+  dom.btnDelete.style.display = editing ? '' : 'none';
 
   fillSelect(dom.price_id, state.prices, {
     valueKey: 'price_id',
     labelKey: 'name',
-    firstLabel: null
+    firstLabel: 'Selecione...'
   });
 
   fillSelect(dom.seller_id, state.sellers, {
     valueKey: 'id',
     labelKey: 'name',
-    firstLabel: null
+    firstLabel: 'Selecione...'
   });
 
-  dom.price_id.value = editRow?.price_id ?? state.prices[0]?.price_id ?? '';
-  dom.seller_id.value = editRow?.seller_id ?? state.sellers[0]?.id ?? '';
-  dom.commission_type.value = editRow?.commission_type ?? 'PERCENT';
-  dom.percent_value.value = Number(editRow?.percent_value ?? 0);
-  dom.fixed_value.value = Number(editRow?.fixed_value ?? 0);
-  dom.active.value = String(editRow?.active ?? true);
-  dom.valid_from.value = editRow?.valid_from
-    ? String(editRow.valid_from).slice(0, 10)
-    : todayYmd();
-  dom.valid_to.value = editRow?.valid_to
-    ? String(editRow.valid_to).slice(0, 10)
-    : '';
+  dom.price_id.value = row?.price_id ?? '';
+  dom.seller_id.value = row?.seller_id ?? '';
+  dom.commission_type.value = row?.commission_type ?? 'PERCENT';
+  dom.percent_value.value = Number(row?.percent_value ?? 0);
+  dom.fixed_value.value = Number(row?.fixed_value ?? 0);
+  dom.active.value = String(row?.active ?? true);
+
+  setDateValue(dom.valid_from, duplicate ? todayYmd() : (row?.valid_from || todayYmd()));
+  setDateValue(dom.valid_to, duplicate ? '' : row?.valid_to);
 
   syncCommissionTypeFields();
+
+  Modal.open(dom.modal, { focusSelector: '#price_id' });
 }
 
 export function closePriceCommissionModal() {
-  dom.modal.classList.remove('is-open');
-  dom.modal.setAttribute('aria-hidden', 'true');
-  dom.modal.hidden = true;
+  Modal.close(dom.modal);
 }
-

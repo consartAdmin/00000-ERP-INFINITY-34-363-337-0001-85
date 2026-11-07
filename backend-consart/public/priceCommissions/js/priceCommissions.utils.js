@@ -4,21 +4,38 @@
 
 'use strict';
 
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
+/** Avisos no centerAlertModal (padrão CONSART). */
+export function notify(message, type = 'success') {
+  const variant = ['error', 'warning'].includes(type) ? type : 'success';
+  if (variant === 'error') console.error('[priceCommissions]', message);
+  showCenterModal({
+    variant,
+    title: variant === 'error' ? 'Erro' : (variant === 'warning' ? 'Atenção' : 'Comissões'),
+    message: String(message ?? ''),
+    timeoutMs: variant === 'success' ? 2500 : undefined
+  });
+}
+
+/** Mantido para compatibilidade: erros vão para o centerAlertModal. */
 export function showToast(message) {
-  const toast = document.getElementById('toast');
+  notify(message, 'error');
+}
 
-  if (!toast) {
-    window.alert(message);
-    return;
-  }
-
-  toast.textContent = message;
-  toast.classList.remove('hidden');
-
-  window.clearTimeout(showToast.timer);
-  showToast.timer = window.setTimeout(() => {
-    toast.classList.add('hidden');
-  }, 3500);
+/** Confirmação no centerAlertModal. Resolve true/false. */
+export async function confirmCenter(message, { title = 'Confirmar', confirmLabel = 'Excluir' } = {}) {
+  const button = await showCenterModal({
+    variant: 'warning',
+    title,
+    message: String(message ?? ''),
+    timeoutMs: null,
+    buttons: [
+      { label: 'Cancelar', variant: 'cancel' },
+      { label: confirmLabel, variant: 'confirm' }
+    ]
+  });
+  return String(button?.variant || '').toLowerCase() === 'confirm';
 }
 
 export function escapeHtml(value) {
@@ -43,15 +60,16 @@ export function formatCommissionValue(row = {}) {
   }
 
   return `${Number(row.percent_value || 0).toLocaleString('pt-BR', {
-    minimumFractionDigits: 4,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 4
   })}%`;
 }
 
-export function formatValidity(row = {}) {
-  const from = row.valid_from ? String(row.valid_from).slice(0, 10) : '';
-  const to = row.valid_to ? String(row.valid_to).slice(0, 10) : '';
-  return to ? `${from} → ${to}` : `${from} → (aberto)`;
+/** aaaa-mm-dd → dd/mm/aaaa (sem fuso). */
+export function formatDateBR(value) {
+  const ymd = value ? String(value).slice(0, 10) : '';
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
 }
 
 export function todayYmd() {

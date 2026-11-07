@@ -6,23 +6,24 @@
 
 import { dom } from './priceCommissions.config.js';
 import {
+  changePageSize,
   clearAndSearchPriceCommissions,
   duplicatePriceCommission,
   editPriceCommission,
+  goToPage,
+  newPriceCommission,
   removeCurrentPriceCommission,
+  removePriceCommission,
   savePriceCommission,
   searchPriceCommissions
 } from './priceCommissions.actions.js';
+import { exportPriceCommissions } from './priceCommissions.export.js';
 import { syncCommissionTypeFields } from './priceCommissions.form.js';
-import {
-  closePriceCommissionModal,
-  openPriceCommissionModal
-} from './priceCommissions.modal.js';
 import { showToast } from './priceCommissions.utils.js';
 
 let eventsBound = false;
 
-function runAsync(action) {
+export function runAsync(action) {
   Promise.resolve()
     .then(action)
     .catch((error) => {
@@ -35,51 +36,43 @@ export function bindPriceCommissionEvents() {
   if (eventsBound) return;
   eventsBound = true;
 
-  dom.btnSearch.addEventListener('click', () => {
-    runAsync(searchPriceCommissions);
-  });
+  const search = () => runAsync(() => searchPriceCommissions({ resetOffset: true }));
 
-  dom.btnClear.addEventListener('click', () => {
-    runAsync(clearAndSearchPriceCommissions);
+  dom.btnSearch.addEventListener('click', search);
+  dom.fQ.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { event.preventDefault(); search(); }
   });
+  [dom.fPrice, dom.fSeller, dom.fActive].forEach((select) => select.addEventListener('change', search));
 
-  dom.btnClose.addEventListener('click', closePriceCommissionModal);
-  dom.btnCancel.addEventListener('click', closePriceCommissionModal);
+  dom.btnClear.addEventListener('click', () => runAsync(clearAndSearchPriceCommissions));
+  dom.btnNew.addEventListener('click', newPriceCommission);
+  dom.btnExportPdf.addEventListener('click', () => runAsync(() => exportPriceCommissions('pdf', dom.btnExportPdf)));
+  dom.btnExportExcel.addEventListener('click', () => runAsync(() => exportPriceCommissions('xlsx', dom.btnExportExcel)));
 
-  dom.modal.addEventListener('click', (event) => {
-    if (event.target?.dataset?.close) {
-      closePriceCommissionModal();
-    }
-  });
+  dom.btnPrevious.addEventListener('click', () => runAsync(() => goToPage(-1)));
+  dom.btnNext.addEventListener('click', () => runAsync(() => goToPage(1)));
+  dom.pageSize.addEventListener('change', () => runAsync(() => changePageSize(dom.pageSize.value)));
 
   dom.commission_type.addEventListener('change', syncCommissionTypeFields);
 
   dom.form.addEventListener('submit', (event) => {
+    event.preventDefault();
     runAsync(() => savePriceCommission(event));
   });
 
-  dom.btnDelete.addEventListener('click', () => {
-    runAsync(removeCurrentPriceCommission);
-  });
+  dom.btnDelete.addEventListener('click', () => runAsync(removeCurrentPriceCommission));
 
+  // Clique na linha = editar; ícones = ação específica
   dom.tbody.addEventListener('click', (event) => {
-    const button = event.target?.closest('button');
-    if (!button) return;
+    const tr = event.target?.closest('tr[data-id]');
+    if (!tr) return;
 
-    if (button.dataset.edit) {
-      editPriceCommission(Number(button.dataset.edit));
-      return;
-    }
+    const button = event.target.closest('[data-action]');
+    const id = Number(button?.dataset.id || tr.dataset.id);
+    const action = button?.dataset.action || 'edit';
 
-    if (button.dataset.dup) {
-      duplicatePriceCommission(Number(button.dataset.dup));
-    }
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && dom.modal.getAttribute('aria-hidden') === 'false') {
-      closePriceCommissionModal();
-    }
+    if (action === 'copy') duplicatePriceCommission(id);
+    else if (action === 'delete') runAsync(() => removePriceCommission(id));
+    else editPriceCommission(id);
   });
 }
-

@@ -14,6 +14,7 @@ import {
   deletePriceCommission,
   listPrices,
   listSellers,
+  exportPriceCommissions,
 } from '../controllers/priceCommissionsController.js';
 
 const router = Router();
@@ -23,6 +24,9 @@ await initPriceCommissionsController?.();
 // combos
 router.get('/prices', listPrices);
 router.get('/sellers', listSellers);
+
+// relatórios (antes de /:id)
+router.get('/export', exportPriceCommissions);
 
 // crud
 router.get('/', listPriceCommissions);

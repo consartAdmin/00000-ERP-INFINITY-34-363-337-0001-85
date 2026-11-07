@@ -7,8 +7,23 @@
 export const ROUTES = Object.freeze({
   base: '/api/price-commissions',
   prices: '/api/price-commissions/prices',
-  sellers: '/api/price-commissions/sellers'
+  sellers: '/api/price-commissions/sellers',
+  export: '/api/price-commissions/export'
 });
+
+/** Colunas aceitas na ordenação (mesma lista do backend). */
+export const SORT_COLUMNS = Object.freeze([
+  'commission_id',
+  'price_name',
+  'seller_name',
+  'commission_type',
+  'value',
+  'valid_from',
+  'valid_to',
+  'active'
+]);
+
+export const DEFAULT_LIMIT = 50;
 
 export const dom = {};
 
@@ -20,13 +35,21 @@ const DOM_IDS = [
   'fDate',
   'btnSearch',
   'btnClear',
+  'btnNew',
+  'btnExportPdf',
+  'btnExportExcel',
+  'commissionsTable',
   'tbody',
+  'tableInfo',
+  'pageInfo',
+  'btnPrevious',
+  'btnNext',
+  'pageSize',
   'modal',
   'form',
   'mTitle',
-  'btnClose',
-  'btnCancel',
   'btnDelete',
+  'btnSave',
   'commission_id',
   'price_id',
   'seller_id',
@@ -55,4 +78,3 @@ export function assertRequiredDom() {
     );
   }
 }
-
