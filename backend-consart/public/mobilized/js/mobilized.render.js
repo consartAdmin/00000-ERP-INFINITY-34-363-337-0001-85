@@ -36,6 +36,7 @@ function renderFooter() {
   if (dom.sumTotal) dom.sumTotal.textContent = `Total (filtro) ${formatBRL(summary.items_total)}`;
   if (dom.sumMissing) {
     dom.sumMissing.hidden = missing === 0;
+    dom.sumMissing.style.display = missing === 0 ? 'none' : '';
     dom.sumMissing.textContent = `⚠ ${plural(missing, 'item sem valor', 'itens sem valor')}`;
   }
 }
@@ -146,6 +147,7 @@ export function renderTotals() {
   if (dom.kpiItemsTotal) dom.kpiItemsTotal.textContent = `Total ${formatBRL(total)}`;
   if (dom.kpiItemsMissing) {
     dom.kpiItemsMissing.hidden = missing === 0;
+    dom.kpiItemsMissing.style.display = missing === 0 ? 'none' : '';
     dom.kpiItemsMissing.textContent = `⚠ ${missing} sem valor unitário`;
   }
   if (dom.itemsFootTotal) dom.itemsFootTotal.innerHTML = `<b>${escapeHtml(formatBRL(total))}</b>`;
