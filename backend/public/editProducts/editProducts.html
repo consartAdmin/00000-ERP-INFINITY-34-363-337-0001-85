@@ -505,25 +505,22 @@
             </div>
 
             <div class="product-general-layout">
-              <div class="product-general-fields c-grid gap-12">
-
-                <!-- 1) Identificação -->
-                <div class="section section-white section-border-thin section-radius-2 section-p-3 section-column section-gap-2">
-                  <div class="section__header"><h3 class="section__title">🔖 Identificação</h3></div>
-                  <div class="c-grid g-6 gap-12">
-                    <div class="fields fields-h-6 fields-w-full">
+              <div class="product-general-fields">
+                <!-- Grade única de 6 colunas: tudo alinhado e sem espaço sobrando -->
+                <div class="c-grid g-6 gap-12">
+                  <div class="fields fields-h-6 fields-w-full">
                       <span>SKU</span>
                       <input type="text" id="produtoId" name="product_code" data-field="product_code"
                         placeholder="Ex.: 4828" readonly>
                     </div>
 
-                    <div class="fields fields-h-6 fields-w-full" style="grid-column: span 3;">
+                  <div class="fields fields-h-6 fields-w-full" style="grid-column: span 3;">
                       <span>Descrição</span>
                       <input type="text" id="descricao" name="description" data-field="description"
                         placeholder="Descrição do produto">
                     </div>
 
-                    <div class="fields fields-h-6 fields-w-full" style="grid-column: span 2;">
+                  <div class="fields fields-h-6 fields-w-full" style="grid-column: span 2;">
                       <span>Código de Barras
                         <span id="codigoBarrasUnidade" hidden
                           title="Unidade padrão (aba Unidades)"></span>
@@ -532,14 +529,8 @@
                         placeholder="Sem unidade padrão" readonly
                         title="Código de barras da unidade padrão (aba Unidades)">
                     </div>
-                  </div>
-                </div>
 
-                <!-- 2) Classificação: Grupo → Subgrupo → Família -->
-                <div class="section section-white section-border-thin section-radius-2 section-p-3 section-column section-gap-2">
-                  <div class="section__header"><h3 class="section__title">🗂️ Classificação</h3></div>
-                  <div class="c-grid g-3 gap-12">
-                    <div class="fields fields-h-6 fields-w-full">
+                  <div class="fields fields-h-6 fields-w-full">
                       <span>Grupo
                         <button type="button" class="quick-add-btn" data-quick-add="group"
                           title="Cadastrar novo grupo" aria-label="Cadastrar novo grupo">+</button>
@@ -547,7 +538,7 @@
                       <select id="product_group_id" name="product_group_id"></select>
                     </div>
 
-                    <div class="fields fields-h-6 fields-w-full">
+                  <div class="fields fields-h-6 fields-w-full">
                       <span>Subgrupo
                         <button type="button" class="quick-add-btn" data-quick-add="subgroup"
                           title="Cadastrar novo subgrupo" aria-label="Cadastrar novo subgrupo">+</button>
@@ -555,21 +546,15 @@
                       <select id="product_subgroup_id" name="product_subgroup_id"></select>
                     </div>
 
-                    <div class="fields fields-h-6 fields-w-full">
+                  <div class="fields fields-h-6 fields-w-full">
                       <span>Família
                         <button type="button" class="quick-add-btn" data-quick-add="family"
                           title="Cadastrar nova família" aria-label="Cadastrar nova família">+</button>
                       </span>
                       <select id="product_family_id" name="product_family_id"></select>
                     </div>
-                  </div>
-                </div>
 
-                <!-- 3) Fornecimento -->
-                <div class="section section-white section-border-thin section-radius-2 section-p-3 section-column section-gap-2">
-                  <div class="section__header"><h3 class="section__title">🏭 Fornecimento</h3></div>
-                  <div class="c-grid g-3 gap-12">
-                    <div class="fields fields-h-6 fields-w-full">
+                  <div class="fields fields-h-6 fields-w-full">
                       <span>Fabricante
                         <button type="button" class="quick-add-btn" data-quick-add="manufacturer"
                           title="Cadastrar novo fabricante" aria-label="Cadastrar novo fabricante">+</button>
@@ -577,27 +562,22 @@
                       <select id="manufacturer_id" name="manufacturer_id"></select>
                     </div>
 
-                    <div class="fields fields-h-6 fields-w-full">
+                  <div class="fields fields-h-6 fields-w-full">
                       <span>Ref. Fabricante</span>
                       <input type="text" id="refFabricante" name="manufacturer_ref" data-field="manufacturer_ref"
                         placeholder="Referência do fabricante">
                     </div>
 
-                    <div class="fields fields-h-6 fields-w-full">
+                  <div class="fields fields-h-6 fields-w-full">
                       <span>Fornecedor
                         <button type="button" class="quick-add-btn" data-quick-add="supplier"
                           title="Cadastrar novo fornecedor" aria-label="Cadastrar novo fornecedor">+</button>
                       </span>
                       <select id="supplier_id" name="supplier_id"></select>
                     </div>
-                  </div>
-                </div>
 
-                <!-- 4) Localização -->
-                <div class="section section-white section-border-thin section-radius-2 section-p-3 section-column section-gap-2" data-feature="PRODUCT_LOCATIONS">
-                  <div class="section__header"><h3 class="section__title">📍 Localização</h3></div>
-                  <div class="fields fields-h-6 fields-w-full">
-                    <span>Localização principal</span>
+                  <div class="fields fields-h-6 fields-w-full" style="grid-column: span 3;" data-feature="PRODUCT_LOCATIONS">
+                    <span>Localização</span>
                     <div class="inline-field">
                       <input type="text" id="product_location_label" placeholder="Selecione uma localização" readonly>
                       <button type="button" id="btnBuscarLocalizacao" class="btn btn-lookup btn-sm"
@@ -606,12 +586,12 @@
                       </button>
                     </div>
                   </div>
-
-                  <select id="product_location_id" name="product_location_id" hidden></select>
-
-                  <!-- Todas as localizações do SKU (Mapa de Localização); a principal é a do campo acima -->
-                  <div id="productLocationsList" class="product-locations-list" data-feature="PRODUCT_LOCATIONS" hidden></div>
                 </div>
+
+                <select id="product_location_id" name="product_location_id" hidden></select>
+
+                <!-- Todas as localizações do SKU (Mapa de Localização); a principal é a do campo acima -->
+                <div id="productLocationsList" class="product-locations-list" data-feature="PRODUCT_LOCATIONS" hidden></div>
               </div>
 
               <section id="productsImagens" class="product-images-card" aria-labelledby="productsImagensTitle">
