@@ -176,6 +176,19 @@
       gap: 12px;
     }
 
+    .product-units-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .product-units-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, .7fr) minmax(0, 1.1fr) minmax(0, 1.9fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
     .product-units-flags {
       display: flex;
       align-items: flex-end;
@@ -702,13 +715,13 @@
                 </div>
                 <!-- 5) Unidades (antes era a aba Unidades) -->
                 <div class="section section-white section-border-thin section-radius-2 section-p-3 section-column section-gap-2 product-units-card">
-                  <form id="formUnitProduct" class="section-column section-gap-2" novalidate>
+                  <form id="formUnitProduct" class="product-units-form" novalidate>
                     <div class="section__header product-units-head">
                       <h3 class="section__title">📏 Unidades</h3>
                       <button type="submit" class="btn btn-toolbar btn-sm">➕ Adicionar Unidade</button>
                     </div>
 
-                    <div class="c-grid g-4 gap-12">
+                    <div class="product-units-row">
                       <div class="fields fields-h-6 fields-w-full">
                         <span>Unidade</span>
                         <select id="unidadeSelect" name="unidadeSelect"></select>
@@ -717,23 +730,25 @@
                         <span>Fator</span>
                         <input type="number" step="0.01" id="unitFactor" name="unitFactor" readonly class="is-readonly">
                       </div>
-                      <div class="fields fields-h-6 fields-w-full" style="grid-column: span 2;">
+                      <div class="fields fields-h-6 fields-w-full">
                         <span>Descrição</span>
                         <input type="text" id="unitDesc" name="unitDesc" readonly class="is-readonly">
                       </div>
 
-                      <div class="fields fields-h-6 fields-w-full" style="grid-column: span 2;">
+                      <div class="fields fields-h-6 fields-w-full">
                         <span>Código de Barras (Unidade)</span>
                         <div class="inline-field">
                           <input type="text" id="unitBarcode" name="unitBarcode" placeholder="Automático se vazio" autocomplete="off">
                           <button type="button" id="btnGenerateUnitBarcode" class="btn btn-new btn-sm">🎯 Gerar</button>
                         </div>
                       </div>
-                      <div class="product-units-flags" style="grid-column: span 2;">
+                      <div class="product-units-flags">
                         <label><input type="checkbox" id="unitIsDefault" name="unitIsDefault"> Padrão</label>
                         <label><input type="checkbox" id="unitIsActive" name="unitIsActive" checked> Ativo</label>
                       </div>
+                    </div>
 
+                    <div class="c-grid g-4 gap-12">
                       <div class="fields fields-h-6 fields-w-full">
                         <span>Largura (cm)</span>
                         <input type="number" step="0.01" id="unitWidth" placeholder="0,00">
