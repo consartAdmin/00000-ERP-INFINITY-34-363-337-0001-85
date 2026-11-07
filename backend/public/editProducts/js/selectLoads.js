@@ -373,7 +373,8 @@ function initTabs({
   });
 
   const usp = new URLSearchParams(location.search);
-  const tabParam = usp.get('tab');
+  // A aba Grade foi unida à aba Estoque: links antigos (?tab=grade) abrem o Estoque.
+  const tabParam = usp.get('tab') === 'grade' ? 'estoque' : usp.get('tab');
   const hashId = location.hash?.slice(1);
   const startPanel =
     (hashId && document.getElementById(hashId)) ? hashId
