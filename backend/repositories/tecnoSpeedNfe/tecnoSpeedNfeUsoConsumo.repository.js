@@ -217,7 +217,8 @@ export async function emitirNFeUsoConsumo(
 
     const codigo = String(item.product_code || '').trim();
     const descricao = String(item.description || '').trim().toUpperCase();
-    const ncm = onlyDigits(item.ncm || fiscal.ncm || fiscal.ncm_code)
+    // Cadastro fiscal atual primeiro: corrigir o NCM no produto vale no reenvio.
+    const ncm = onlyDigits(fiscal.ncm || fiscal.ncm_code || item.ncm)
       .slice(0, 8);
 
     const cest = onlyDigits(
@@ -244,9 +245,9 @@ export async function emitirNFeUsoConsumo(
     );
 
     const cstIcms = String(
-      item.cst_icms ||
       fiscal.cst_icms ||
       fiscal.icms_cst ||
+      item.cst_icms ||
       ''
     ).padStart(2, '0');
 
