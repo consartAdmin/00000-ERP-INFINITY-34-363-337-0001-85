@@ -565,15 +565,15 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     display: grid;
 
     /* Same width/behavior as Origem fiscal */
-    grid-template-columns: repeat(10, minmax(105px, 1fr));
+    grid-template-columns: repeat(5, minmax(130px, 1fr));
 
-    gap: 8px;
+    gap: 10px;
     width: 100%;
   }
 
   #mFiscalFractionPanel .fiscal-fraction-card {
     min-width: 0;
-    padding: 9px 10px;
+    padding: 10px;
 
     border: 1px solid var(--line, #dbe3ef);
     border-radius: var(--radius-sm, 8px);
@@ -585,7 +585,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     margin-bottom: 4px;
 
     color: var(--muted, #64748b);
-    font-size: .72rem;
+    font-size: .78rem;
     line-height: 1.15;
 
     white-space: normal;
@@ -594,7 +594,6 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
   #mFiscalFractionPanel .fiscal-fraction-value {
     display: block;
 
-    font-size: .86rem;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
 
