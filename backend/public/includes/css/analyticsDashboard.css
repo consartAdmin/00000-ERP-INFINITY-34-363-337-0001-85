@@ -4846,3 +4846,83 @@
 #includeDashBoard .stock-lots-kpi .analytics-kpi__value { color: var(--lk); }
 #includeDashBoard .stock-lots-kpi__hint { display: block; font-size: 11px; color: #64748b; font-weight: 600; }
 #includeDashBoard .tax-columns__note { font-size: 10px; color: #94a3b8; text-align: center; margin-top: 4px; }
+
+/* ======================================================================
+   Estoque (slide 5/5): versão compacta para os dois painéis
+   (Validade dos lotes + Reposição) caberem numa tela, sem zoom.
+   ====================================================================== */
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) {
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 8px 10px !important;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics {
+  gap: 8px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  grid-template-rows: none !important;
+  grid-auto-rows: auto !important;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .stock-lots-dash__top {
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 4px 10px !important;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics__abc-row {
+  min-height: 0 !important;
+  height: clamp(190px, calc((100vh - 500px) / 2), 320px) !important;
+  gap: 8px !important;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .analytics-chart--abc {
+  min-height: 0 !important;
+  height: 100% !important;
+  padding: 6px 8px !important;
+  display: flex;
+  flex-direction: column;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .analytics-chart__header {
+  margin: 0 0 3px !important;
+  padding: 0 0 3px !important;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .analytics-chart__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .tax-table th,
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .tax-table td {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .tax-table__footer {
+  padding-top: 4px !important;
+}
+/* Rosca ao lado da legenda */
+#includeDashBoard .dash-card[data-dashboard-key="stock-lots-expiry"] .tax-donut {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+#includeDashBoard .dash-card[data-dashboard-key="stock-lots-expiry"] .tax-donut__chart { flex: 0 0 46%; }
+#includeDashBoard .dash-card[data-dashboard-key="stock-lots-expiry"] .tax-donut__svg { max-width: 170px; max-height: 170px; }
+#includeDashBoard .dash-card[data-dashboard-key="stock-lots-expiry"] .tax-donut .tax-legend { flex: 1 1 auto; min-width: 0; padding: 0; }
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .tax-columns__svg {
+  max-height: calc(100% - 40px);
+}
+/* KPIs mais baixos */
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .sales-analytics__kpi-row {
+  min-height: 0 !important;
+  height: auto !important;
+  gap: 8px !important;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .stock-lots-kpi {
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 4px 10px !important;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .stock-lots-kpi .analytics-kpi__value {
+  font-size: 16px !important;
+  line-height: 1.2;
+}
+#includeDashBoard .dash-card:is([data-dashboard-key="stock-lots-expiry"], [data-dashboard-key="stock-replenishment"]) .stock-lots-kpi__hint { font-size: 10.5px; }
