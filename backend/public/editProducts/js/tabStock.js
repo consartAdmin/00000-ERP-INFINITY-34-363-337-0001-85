@@ -104,6 +104,8 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     gradeDialogSave: '#btnSaveCreateGrade',
     gradeCatalog: '#newGradeId',
     gradeStock: '#newGradeStock',
+    gradeNewCode: '#newGradeCode',
+    gradeNewDesc: '#newGradeDesc',
     mLotCode: '#mLotCode',
     mExpiresAt: '#mExpiresAt',
     mManufacturedMonth: '#mManufacturedMonth',
@@ -2073,7 +2075,9 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
         '',
       ).trim();
 
-      return { gradeId, description };
+      const grade = String(row.grade ?? row.code ?? '').trim();
+
+      return { gradeId, grade, description };
     }
 
     async function fetchFirst(urls) {
@@ -2124,7 +2128,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
           const opt = document.createElement('option');
           opt.value = String(row.gradeId);
           const linked = linkedByGradeId.has(row.gradeId);
-          opt.textContent = `${row.gradeId}${row.description ? ` — ${row.description}` : ''}${linked ? ' (já vinculada)' : ''}`;
+          opt.textContent = `${row.grade || row.gradeId}${row.description && row.description !== row.grade ? ` — ${row.description}` : ''}${linked ? ' (já vinculada)' : ''}`;
           opt.dataset.productGradeId = linked ? String(linkedByGradeId.get(row.gradeId)) : '';
           select.appendChild(opt);
         }
@@ -2187,17 +2191,41 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       setVal(LOT_FIELDS.gradeStock, '0');
       await loadCatalog();
 
-      if (!dlg.open) dlg.showModal();
-      setTimeout(() => $(LOT_FIELDS.gradeCatalog)?.focus(), 50);
+      setVal(LOT_FIELDS.gradeNewCode, '');
+      setVal(LOT_FIELDS.gradeNewDesc, '');
+
+      Modal.setup();
+      Modal.open(dlg, { focusSelector: LOT_FIELDS.gradeCatalog });
     }
 
     function close() {
       const dlg = dialog();
-      if (dlg?.open) dlg.close();
+      if (dlg) Modal.close(dlg);
+    }
+
+    // Cadastra a grade no catálogo (POST /api/grades faz upsert pelo código).
+    async function createCatalogGrade(code, description) {
+      const resp = await ctx.jfetch('/api/grades', {
+        method: 'POST',
+        body: JSON.stringify({ grade: code, description: description || code }),
+      });
+      const row = resp?.data?.data ?? resp?.data ?? resp?.row ?? resp;
+      const id = Number(row?.grade_id ?? row?.id ?? 0);
+      if (!id) throw new Error('Não foi possível cadastrar a grade.');
+      return id;
     }
 
     async function save() {
       const select = $(LOT_FIELDS.gradeCatalog);
+      const newCode = String(getVal(LOT_FIELDS.gradeNewCode) || '').trim();
+      const newDesc = String(getVal(LOT_FIELDS.gradeNewDesc) || '').trim();
+
+      if (newCode) {
+        const createdGradeId = await createCatalogGrade(newCode, newDesc);
+        await loadCatalog();
+        if (select) select.value = String(createdGradeId);
+      }
+
       const gradeId = Number(select?.value || 0);
       const stock = Math.max(0, toNum(getVal(LOT_FIELDS.gradeStock), 0));
 
@@ -2297,11 +2325,6 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       const dlg = dialog();
       if (dlg && !dlg.dataset.gradeQuickBound) {
         dlg.dataset.gradeQuickBound = 'true';
-        dlg.addEventListener('cancel', event => {
-          event.preventDefault();
-          close();
-        });
-
         dlg.addEventListener('keydown', event => {
           if (event.key !== 'Enter') return;
           if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;

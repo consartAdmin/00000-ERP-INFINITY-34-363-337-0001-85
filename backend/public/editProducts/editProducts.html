@@ -40,11 +40,18 @@
     }
 
     /* Modal de lote (modals.css + modal.js) */
-    #dlgLot .lot-modal__footer {
+    #dlgLot .lot-modal__footer,
+    #dlgCreateGrade .lot-modal__footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
+    }
+
+    #dlgCreateGrade .modal__body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     #dlgLot .lot-ops__row {
@@ -1238,7 +1245,10 @@
 
               <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
                 <div class="fields fields-h-6 fields-w-full">
-                  <span>Grade</span>
+                  <span>Grade
+                    <button type="button" id="btnCreateGradeFromLot" class="quick-add-btn"
+                      title="Cadastrar / vincular grade" aria-label="Cadastrar ou vincular grade">+</button>
+                  </span>
                   <select id="mProductGradeId">
                     <option value="">Sem grade</option>
                   </select>
@@ -1405,6 +1415,55 @@
               <div class="btn-inline btn-gap-3">
                 <button type="button" id="lot-modal-cancel" class="btn btn-flat btn-sm">Cancelar</button>
                 <button type="button" id="lot-modal-save" class="btn btn-save btn-sm">💾 Salvar</button>
+              </div>
+            </div>
+
+          </section>
+        </div>
+      </div>
+
+      <!-- Modal rápido: cadastrar / vincular grade (aberto pelo "+" do lote) -->
+      <div id="dlgCreateGrade" class="modal" aria-hidden="true">
+        <div class="modal__backdrop" data-modal-close></div>
+
+        <div class="modal__dialog">
+          <section class="modal__panel modal-width-4" role="dialog" aria-modal="true" aria-labelledby="dlgCreateGradeTitle">
+
+            <div class="modal__header modal-header-color-3">
+              <h2 class="modal__title" id="dlgCreateGradeTitle">🧩 Grade do produto</h2>
+              <button type="button" id="btnCloseCreateGrade" class="modal__close" aria-label="Fechar" title="Fechar">&times;</button>
+            </div>
+
+            <form id="formCreateGrade" class="modal__body" novalidate>
+              <div class="fields fields-h-6 fields-w-full fields-value-bold">
+                <span>Grade já cadastrada</span>
+                <select id="newGradeId">
+                  <option value="">— Selecione uma grade —</option>
+                </select>
+              </div>
+
+              <p class="muted" style="margin:0;">Ou cadastre uma grade nova:</p>
+
+              <div class="modal-form-grid modal-form-grid--3 fields-value-bold">
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Grade</span>
+                  <input id="newGradeCode" type="text" maxlength="30" autocomplete="off" placeholder="Ex.: P, M, G, 500ML">
+                </div>
+
+                <div class="fields fields-h-6 fields-w-full modal-field--span-2">
+                  <span>Descrição</span>
+                  <input id="newGradeDesc" type="text" maxlength="120" autocomplete="off" placeholder="Ex.: Pequeno">
+                </div>
+              </div>
+
+              <input id="newGradeStock" type="hidden" value="0">
+            </form>
+
+            <div class="modal__footer lot-modal__footer">
+              <span class="muted">A grade é vinculada ao produto e selecionada no lote.</span>
+              <div class="btn-inline btn-gap-3">
+                <button type="button" id="btnCancelCreateGrade" class="btn btn-flat btn-sm">Cancelar</button>
+                <button type="button" id="btnSaveCreateGrade" class="btn btn-save btn-sm">💾 Salvar</button>
               </div>
             </div>
 
