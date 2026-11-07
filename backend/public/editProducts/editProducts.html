@@ -220,6 +220,32 @@
       height: 30px;
     }
 
+    /* Caixa de texto e área das imagens com o mesmo topo e o mesmo fim */
+    #aba-descricao .description-product-fields,
+    #aba-descricao .description-product-fields > .field-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    #aba-descricao .description-product-fields textarea {
+      flex: 1;
+      min-height: 130px;
+    }
+
+    #aba-descricao .product-images-card {
+      gap: var(--entity-header-gap, 12px);
+    }
+
+    #aba-descricao .product-images-gallery {
+      flex: 1;
+      margin: 0;
+    }
+
+    #aba-descricao #descricaoProdutoStatus:empty {
+      display: none;
+    }
+
     .product-images-card__header,
     .product-images-card__actions {
       display: flex;
@@ -696,17 +722,14 @@
 
               <label class="field-group" for="descricaoDetalhada">
 
-                <span>Descrição detalhada</span>
-
-                <textarea id="code_template"
+                <textarea id="code_template" aria-label="Descrição detalhada"
                   class="textarea textarea-border-1 textarea-radius-4 textarea-h-3 textarea-w-10 textarea-resize-vertical textarea-padding-5"
                   spellcheck="false" placeholder="Digite a descrição completa do produto..."></textarea>
 
               </label>
             </div>
 
-            <div id="descricaoProdutoStatus" class="description-status" role="status" aria-live="polite">
-            </div>
+            <div id="descricaoProdutoStatus" class="description-status" role="status" aria-live="polite"></div>
 
             <!-- Salvar no rodapé do bloco, na mesma linha dos botões das imagens -->
             <div class="btn-inline" style="display: flex; width: 100%; justify-content: flex-end; margin-top: auto;">
@@ -721,10 +744,10 @@
 
         <!-- 🖼️ Imagens do produto (antes era a aba Imagens) -->
         <section id="productsImagens" class="product-images-card" aria-labelledby="productsImagensTitle">
-          <div class="product-images-card__header">
+          <div class="entity-header__top">
             <div>
-              <div id="productsImagensTitle" class="product-images-card__title">🖼️ Imagens do Produto</div>
-              <div class="product-images-card__hint">JPG, PNG ou WebP</div>
+              <div id="productsImagensTitle" class="entity-header__title">🖼️ Imagens do Produto</div>
+              <div class="entity-header__subtitle">Fotos do produto e das unidades (JPG, PNG ou WebP).</div>
             </div>
             <span id="productsImagensCount" class="badge">0 imagens</span>
           </div>
