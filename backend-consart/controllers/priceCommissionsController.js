@@ -24,6 +24,8 @@ export async function listPriceCommissions(req, res) {
       date,
       dateFrom,
       dateTo,
+      sort,
+      dir,
       limit = 200,
       offset = 0,
     } = req.query;
@@ -36,6 +38,8 @@ export async function listPriceCommissions(req, res) {
       date,
       dateFrom,
       dateTo,
+      sort,
+      dir,
       limit: Number(limit) || 200,
       offset: Number(offset) || 0,
     });

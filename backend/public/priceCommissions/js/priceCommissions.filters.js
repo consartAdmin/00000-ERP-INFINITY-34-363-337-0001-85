@@ -5,6 +5,7 @@
 'use strict';
 
 import { dom } from './priceCommissions.config.js';
+import { state } from './priceCommissions.state.js';
 
 export function buildFilterParams() {
   return {
@@ -13,8 +14,10 @@ export function buildFilterParams() {
     seller_id: dom.fSeller.value,
     active: dom.fActive.value,
     date: dom.fDate.value,
-    limit: 500,
-    offset: 0
+    sort: state.sortColumn,
+    dir: state.sortDirection,
+    limit: state.limit,
+    offset: state.offset
   };
 }
 
@@ -24,5 +27,5 @@ export function clearFilters() {
   dom.fSeller.value = '';
   dom.fActive.value = 'true';
   dom.fDate.value = '';
+  dom.fDate.dispatchEvent(new Event('change', { bubbles: true }));
 }
-

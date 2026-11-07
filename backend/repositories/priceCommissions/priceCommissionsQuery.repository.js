@@ -7,6 +7,28 @@ import pool from '../../config/db.js';
 import { TB_PRICES, TB_SELLERS, TB_PC } from './priceCommissions.constants.js';
 import { rowToObj } from './priceCommissions.mappers.js';
 
+// Ordenação pelo cabeçalho da lista (whitelist: nunca interpolar o valor do usuário)
+const SORT_SQL = Object.freeze({
+  commission_id: 'pc.commission_id',
+  price_name: 'LOWER(p.name)',
+  seller_name: 'LOWER(s.name)',
+  commission_type: 'pc.commission_type',
+  value: "(CASE WHEN pc.commission_type = 'FIXED' THEN pc.fixed_value ELSE pc.percent_value END)",
+  valid_from: 'pc.valid_from',
+  valid_to: 'pc.valid_to',
+  active: 'pc.active',
+});
+
+function buildOrderBy(sort, dir) {
+  const column = SORT_SQL[String(sort || '').trim()];
+  if (!column) {
+    return 'ORDER BY pc.active DESC, pc.valid_from DESC, pc.price_id ASC, pc.seller_id ASC';
+  }
+  const direction = String(dir || '').toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+  const nulls = direction === 'DESC' ? 'NULLS FIRST' : 'NULLS LAST';
+  return `ORDER BY ${column} ${direction} ${nulls}, LOWER(p.name) ASC, LOWER(s.name) ASC, pc.commission_id ASC`;
+}
+
 // ======================================================================
 // CRUD
 // ======================================================================
@@ -18,6 +40,8 @@ export async function list({
   date,        // data de referência (pega regra vigente nela)
   dateFrom,
   dateTo,
+  sort,
+  dir,
   limit = 200,
   offset = 0,
 } = {}) {
@@ -68,7 +92,7 @@ export async function list({
     JOIN ${TB_PRICES} p ON p.price_id = pc.price_id
     JOIN ${TB_SELLERS} s ON s.id = pc.seller_id
     ${whereSql}
-    ORDER BY pc.active DESC, pc.valid_from DESC, pc.price_id ASC, pc.seller_id ASC
+    ${buildOrderBy(sort, dir)}
     LIMIT $${ai} OFFSET $${ai + 1}
   `;
   args.push(Number(limit) || 200, Number(offset) || 0);
