@@ -144,7 +144,7 @@
         <form id="formMobilized" class="modal__body modal-section" autocomplete="off">
           <input type="hidden" id="mobilized_id" />
 
-          <div class="modal-form-grid modal-form-grid--5">
+          <div class="modal-form-grid modal-form-grid--5 fields-value-bold">
             <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
               <label for="title">Título *</label>
               <input id="title" type="text" maxlength="180" placeholder="Ex.: Impressoras da loja 2" required />
@@ -169,6 +169,8 @@
               <input id="external_ref" type="text" maxlength="80" placeholder="Nº documento / NF" />
             </div>
 
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
             <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
               <label for="source_system">Origem</label>
               <input id="source_system" type="text" maxlength="60" placeholder="Ex.: Compra direta, Fornecedor X" />
@@ -180,7 +182,7 @@
             </div>
           </div>
 
-          <div class="modal-divider"></div>
+          <div class="modal-divider modal-divider--soft"></div>
 
           <!-- PDF -->
           <div class="summary summary--between summary-gap-8">
@@ -201,7 +203,7 @@
             </div>
           </div>
 
-          <div class="modal-divider"></div>
+          <div class="modal-divider modal-divider--soft"></div>
 
           <!-- ITENS -->
           <div class="summary summary--between summary-gap-8">
@@ -268,7 +270,7 @@
         <div class="modal__body modal-section">
           <input type="hidden" id="mobilized_item_id" />
 
-          <div class="modal-form-grid modal-form-grid--4">
+          <div class="modal-form-grid modal-form-grid--4 fields-value-bold">
             <div class="fields fields-h-6 fields-w-full fields-font-3">
               <label for="item_sku">SKU</label>
               <input id="item_sku" type="text" maxlength="60" />
@@ -278,6 +280,8 @@
               <label for="item_description">Descrição *</label>
               <input id="item_description" type="text" maxlength="500" required />
             </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
 
             <div class="fields fields-h-6 fields-w-full fields-font-3">
               <label for="item_model">Modelo</label>
@@ -293,6 +297,8 @@
               <label for="item_nfe_ref">NF-e</label>
               <input id="item_nfe_ref" type="text" maxlength="120" placeholder="Chave ou nº da NF" />
             </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
 
             <div class="fields fields-h-6 fields-w-full fields-font-3">
               <label for="item_quantity">Quantidade *</label>
@@ -314,13 +320,15 @@
               <input id="item_total_value" type="text" readonly />
             </div>
 
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
             <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
               <label for="item_notes">Notas</label>
               <input id="item_notes" type="text" />
             </div>
           </div>
 
-          <div class="modal-divider"></div>
+          <div class="modal-divider modal-divider--soft"></div>
 
           <div class="summary summary-gap-8">
             <img id="item_img_preview" alt="Imagem do item" width="72" height="72" />
@@ -341,7 +349,7 @@
   </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/mobilized/js/mobilized.init.js?v=2"></script>
+  <script type="module" src="/public/mobilized/js/mobilized.init.js?v=3"></script>
 </body>
 
 </html>

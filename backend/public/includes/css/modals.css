@@ -648,6 +648,13 @@
     background: var(--modal-border-color);
 }
 
+/* Linha discreta azul-clara (ex.: entre fileiras de campos de um modal-form-grid) */
+.modal-divider--soft {
+    height: 1px;
+    margin: 2px 0;
+    background: #bfdbfe;
+}
+
 /* Upload and existing attachments */
 
 .modal-upload-grid {
