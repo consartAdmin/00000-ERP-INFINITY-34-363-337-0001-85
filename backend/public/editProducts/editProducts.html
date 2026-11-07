@@ -54,6 +54,25 @@
       gap: 12px;
     }
 
+    /* Todos os campos do lote numa linha só */
+    #dlgLot .lot-main-row {
+      display: grid;
+      grid-template-columns:
+        minmax(105px, 1fr) minmax(105px, 1fr) minmax(80px, .75fr) minmax(115px, .95fr)
+        minmax(80px, .75fr) minmax(80px, .75fr) minmax(80px, .7fr) minmax(85px, .8fr)
+        minmax(300px, 3fr) minmax(78px, .65fr);
+      gap: 10px;
+      align-items: end;
+    }
+
+    #dlgLot .lot-main-row > .fields { min-width: 0; }
+    #dlgLot .lot-main-row > .fields > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    @media (max-width: 1400px) {
+      #dlgLot .lot-main-row { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      #dlgLot .lot-main-row > .fields:nth-child(9) { grid-column: span 3; }
+    }
+
     #dlgLot .lot-ops__row {
       display: flex;
       align-items: flex-end;
@@ -163,6 +182,53 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+
+    .fiscal-sheet-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--card);
+      overflow: hidden;
+    }
+
+    .fiscal-sheet {
+      width: 100%;
+      margin: 0;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .fiscal-sheet th,
+    .fiscal-sheet td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fiscal-sheet tbody tr:last-child > * { border-bottom: 0; }
+
+    .fiscal-sheet-wrap .fiscal-sheet tbody th[scope="row"],
+    .fiscal-sheet-wrap .fiscal-sheet tbody td {
+      text-align: left;
+    }
+
+    .fiscal-sheet tbody th[scope="row"] {
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .fiscal-sheet td {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fiscal-sheet__group th {
+      background: var(--surface-2, #f1f5f9);
+      font-weight: 800;
     }
 
     .product-fiscal-actions {
@@ -1017,78 +1083,64 @@
 
           </div>
 
-          <!-- Classificação Fiscal -->
-          <div class="entity-header__table">
-
-            <div class="entity-header__table-title">
-              📂 Classificação Fiscal
-            </div>
-
-            <section class="table-layout">
-              <div class="table-scroll--rounded table-scroll--flex table-row-h-35" data-table-settings="editproducts.table-3">
-                <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head">
-                  <thead>
-                    <tr>
-                      <th>Classificação</th>
-                      <th>NCM</th>
-                      <th>CEST</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td id="classificacao_desc">—</td>
-                      <td id="ncm_texto">—</td>
-                      <td id="cest_texto">—</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
+          <!-- Classificação + Perfil Fiscal numa planilha só -->
+          <div class="fiscal-sheet-wrap">
+            <table class="table fiscal-sheet" aria-label="Classificação e perfil fiscal do produto">
+              <colgroup>
+                <col style="width: 32%">
+                <col>
+              </colgroup>
+              <tbody>
+                <tr class="fiscal-sheet__group">
+                  <th colspan="2" scope="colgroup">📂 Classificação Fiscal</th>
+                </tr>
+                <tr>
+                  <th scope="row">Classificação</th>
+                  <td id="classificacao_desc">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">NCM</th>
+                  <td id="ncm_texto">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">CEST</th>
+                  <td id="cest_texto">—</td>
+                </tr>
+                <tr class="fiscal-sheet__group">
+                  <th colspan="2" scope="colgroup">🔗 Perfil Fiscal Vinculado</th>
+                </tr>
+                <tr>
+                  <th scope="row">Nome</th>
+                  <td id="perfil_nome">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">CST</th>
+                  <td id="perfil_cst">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">ICMS</th>
+                  <td id="perfil_aliq">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">Origem</th>
+                  <td id="perfil_origem">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">CFOP Entrada</th>
+                  <td id="perfil_cfop_entrada">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">CFOP Saída</th>
+                  <td id="perfil_cfop_saida">—</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          <!-- Perfil Fiscal -->
-          <div class="entity-header__table">
-
-            <div class="entity-header__table-title">
-              🔗 Perfil Fiscal Vinculado
-            </div>
-
-            <section class="table-layout">
-              <div class="table-scroll--rounded table-scroll--flex " data-table-settings="editproducts.table-4">
-                <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head">
-                  <thead>
-                    <tr>
-                      <th>Nome</th>
-                      <th>CST</th>
-                      <th>ICMS</th>
-                      <th>Origem</th>
-                      <th>CFOP Entrada</th>
-                      <th>CFOP Saída</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td id="perfil_nome">—</td>
-                      <td id="perfil_cst">—</td>
-                      <td id="perfil_aliq">—</td>
-                      <td id="perfil_origem">—</td>
-                      <td id="perfil_cfop_entrada">—</td>
-                      <td id="perfil_cfop_saida">—</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <div class="entity-header__footer">
-              <div class="entity-header__footnote">
-                Ao confirmar, o produto terá o
-                <strong>Produto Fiscal</strong>
-                atualizado automaticamente.
-              </div>
-            </div>
-
+          <div class="entity-header__footnote">
+            Ao confirmar, o produto terá o
+            <strong>Produto Fiscal</strong>
+            atualizado automaticamente.
           </div>
 
         </header>
@@ -1364,7 +1416,7 @@
 
               <input type="hidden" id="mLotId">
 
-              <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+              <div class="lot-main-row fields-value-bold">
                 <div class="fields fields-h-6 fields-w-full">
                   <span>Grade
                     <button type="button" id="btnCreateGradeFromLot" class="quick-add-btn"
@@ -1413,12 +1465,12 @@
                 </div>
 
                 <!-- Origem da NF-e -->
-                <div class="fields fields-h-6 fields-w-full modal-field--span-3">
+                <div class="fields fields-h-6 fields-w-full">
                   <span>Chave NF-e de entrada</span>
                   <div class="inline-field">
                     <input id="mNfeKey" type="text" maxlength="44" readonly aria-readonly="true" class="is-readonly mono"
                       placeholder="Sem chave vinculada">
-                    <button type="button" id="btnCopyLotNfeKey" class="btn btn-flat btn-sm" title="Copiar chave da NF-e">📋 Copiar</button>
+                    <button type="button" id="btnCopyLotNfeKey" class="btn btn-flat btn-sm" title="Copiar chave da NF-e" aria-label="Copiar chave da NF-e">📋</button>
                   </div>
                 </div>
 
