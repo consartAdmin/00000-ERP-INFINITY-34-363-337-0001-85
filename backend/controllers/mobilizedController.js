@@ -162,7 +162,9 @@ export async function getById(req, res) {
 export async function list(req, res) {
   try {
     const result = await api.listMobilized(req.query || {});
-    return ok(res, result.rows, { total: result.total, limit: result.limit, offset: result.offset });
+    return ok(res, result.rows, {
+      total: result.total, limit: result.limit, offset: result.offset, summary: result.summary,
+    });
   } catch (err) {
     console.error('[mobilized][list] error', err);
     if (isPgMissingTable(err)) {
@@ -578,7 +580,7 @@ export async function downloadAllPdf(req, res) {
         to,
         limit,
         offset,
-        orderBy: 'mobilized_id desc',
+        orderBy: req.query?.orderBy || 'mobilized_id desc',
       });
 
       const rows = out?.rows || [];
