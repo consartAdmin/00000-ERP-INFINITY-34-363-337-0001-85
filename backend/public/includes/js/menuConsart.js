@@ -15,6 +15,9 @@ const MENU_CACHE_KEY = 'consart:menu-config';
 
 let MENU_CONFIG = [];
 
+// Tema visual do menu: 'dark' (barra grafite) ou 'light' (barra branca).
+const MENU_THEME = 'dark';
+
 function readMenuCache() {
   try {
     const cached = JSON.parse(localStorage.getItem(MENU_CACHE_KEY) || 'null');
@@ -455,6 +458,7 @@ async function buildMenuPrincipal() {
   MENU_CONFIG = await loadMenuConfig();
   const menu = document.createElement('div');
   menu.classList.add('menu-principal');
+  menu.dataset.theme = MENU_THEME;
   Object.assign(menu.style, {
     height: 'auto', minHeight: '0', bottom: 'auto', pointerEvents: 'none',
   });
