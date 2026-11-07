@@ -41,6 +41,14 @@ export function initDadosGeraisTab(ctx) {
     standardBarcode.hasStandard = !!e.detail?.hasStandard;
     const el = getEl(FIELDS.barcode);
     if (el) el.value = standardBarcode.value;
+
+    // Unidade padrão ao lado do rótulo (ex.: "(UN · padrão)").
+    const pill = ctx.$('#codigoBarrasUnidade');
+    if (pill) {
+      const unit = String(e.detail?.unit ?? '').trim();
+      pill.textContent = unit ? `(${unit} · padrão)` : '';
+      pill.hidden = !(standardBarcode.hasStandard && unit);
+    }
   });
 
   const getEl = (s) => (s ? ctx.$(s) : null);
