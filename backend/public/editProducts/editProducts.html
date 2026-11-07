@@ -231,17 +231,21 @@
       font-weight: 800;
     }
 
-    #aba-precos .price-fiscal-footer {
-      margin-top: 16px;
+    /* Os dois quadros com a mesma altura; ações embaixo à direita de cada um */
+    .price-fiscal-row #formPrecos > .entity-header,
+    .price-fiscal-row > .product-fiscal-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    /* Cada coluna alinha seus botões embaixo à direita do próprio quadro */
-    #aba-precos .price-fiscal-footer__col {
+    #aba-precos .price-fiscal-actions {
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-end;
       gap: 8px;
-      min-width: 0;
+      margin-top: auto;
+      padding-top: 4px;
     }
 
     .product-general-right {
@@ -1049,6 +1053,12 @@
               </div>
             </section>
 
+            <div class="price-fiscal-actions">
+              <button type="submit" class="btn btn-save btn-sm">
+                💾 Salvar Tabela de Preços
+              </button>
+            </div>
+
           </header>
 
         </form>
@@ -1133,18 +1143,7 @@
             atualizado automaticamente.
           </div>
 
-        </header>
-        </div>
-
-        <!-- Ações da aba Preços / Fiscal (embaixo à direita) -->
-        <div class="c-grid g-2 gap-16 price-fiscal-footer">
-          <div class="price-fiscal-footer__col">
-            <button type="submit" form="formPrecos" class="btn btn-save btn-sm">
-              💾 Salvar Tabela de Preços
-            </button>
-          </div>
-
-          <div class="price-fiscal-footer__col">
+          <div class="price-fiscal-actions">
             <button type="button" id="btnVincularClassificacaoFiscal" class="btn btn-primary btn-sm">
               🔍 Vincular / Alterar Classificação
             </button>
@@ -1157,7 +1156,10 @@
               ✔️ Confirmar Vínculo Fiscal
             </button>
           </div>
+
+        </header>
         </div>
+
 
       </div>
 
