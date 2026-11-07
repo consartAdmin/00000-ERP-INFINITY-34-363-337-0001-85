@@ -14,6 +14,7 @@
 'use strict';
 
 import { showCenterModal } from "../../includes/js/centerAlertModal.js";
+import { Modal } from "/public/includes/js/modal.js";
 
 /**
  * Alias compatível com seu selectLoads.js
@@ -286,8 +287,8 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     if (isSimple) {
       const dialog = $(LOT_FIELDS.modalDialog);
 
-      if (dialog?.open) {
-        dialog.close();
+      if (dialog && Modal.isOpen(dialog)) {
+        Modal.close(dialog);
       }
     }
   }
@@ -432,6 +433,14 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       const handleDialogClose = () => {
         if (!finished) finish(false);
       };
+
+      if (!dialog.dataset.escIsolated) {
+        dialog.dataset.escIsolated = '1';
+        // Esc no alerta não pode chegar ao modal.js (fecharia o modal de lote atrás)
+        dialog.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') event.stopPropagation();
+        });
+      }
 
       btnOk?.addEventListener('click', handleOk);
       btnCancel?.addEventListener('click', handleCancel);
@@ -2505,7 +2514,8 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
         $(LOT_FIELDS.btnUnreserve).disabled = true;
         $(LOT_FIELDS.btnConsume).disabled = true;
 
-        if (!dlg.open) dlg.showModal();
+        Modal.setup();
+        if (!Modal.isOpen(dlg)) Modal.open(dlg);
 
         bindEnterToSaveLotModal();
 
@@ -2626,7 +2636,8 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       $(LOT_FIELDS.btnUnreserve).disabled = false;
       $(LOT_FIELDS.btnConsume).disabled = false;
 
-      if (!dlg.open) dlg.showModal();
+      Modal.setup();
+      if (!Modal.isOpen(dlg)) Modal.open(dlg);
 
       bindEnterToSaveLotModal();
 
@@ -2645,7 +2656,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
 
       dlg.onkeydown = null;
 
-      if (dlg.open) dlg.close();
+      Modal.close(dlg);
     }
 
     function modalLotId() {
@@ -2880,12 +2891,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       $(LOT_FIELDS.btnCloseModal)?.addEventListener('click', closeModal);
       $(LOT_FIELDS.btnCancelModal)?.addEventListener('click', closeModal);
 
-      // dialog cancel (ESC / click backdrop)
-      const dlg = $(LOT_FIELDS.modalDialog);
-      dlg?.addEventListener('cancel', (ev) => {
-        ev.preventDefault();
-        closeModal();
-      });
+      // ESC / clique no fundo: tratados pelo modal.js (data-modal-close)
 
       // modal save/delete
       $(LOT_FIELDS.btnSaveModal)?.addEventListener('click', () => saveModal().catch(e => ctx.toast?.(e.message, 'error')));

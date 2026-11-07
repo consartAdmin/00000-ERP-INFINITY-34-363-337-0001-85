@@ -39,66 +39,23 @@
       box-shadow: var(--shadow);
     }
 
-    dialog#dlgLot::backdrop {
-      background: rgba(0, 0, 0, .35);
-    }
-
-    dialog#dlgLot {
-      width: min(1500px, 96vw);
-      max-width: 96vw;
-      max-height: 94vh;
-      padding: 0;
-      border: none;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      box-sizing: border-box;
-    }
-
-    #dlgLot #formDlgLot {
-      width: 100%;
-    }
-
-    #dlgLot .dlg-body {
-      padding: 14px;
-      max-height: calc(94vh - 115px);
-      overflow-x: hidden;
-      overflow-y: auto;
-      box-sizing: border-box;
-    }
-
-    #dlgLot .dlg-head {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      background: var(--card);
-    }
-
-    #dlgLot .dlg-title {
-      font-weight: 800;
-    }
-
-    #dlgLot .dlg-body {
-      padding: 14px;
-    }
-
-    #dlgLot .dlg-foot {
-      padding: 12px 14px;
-      border-top: 1px solid var(--line);
+    /* Modal de lote (modals.css + modal.js) */
+    #dlgLot .lot-modal__footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
-      background: var(--card);
     }
 
-    #dlgLot .divider {
-      height: 1px;
-      background: var(--line);
-      margin: 10px 0;
+    #dlgLot .lot-ops__row {
+      display: flex;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    #dlgLot .lot-ops__row .muted {
+      padding-bottom: 8px;
     }
 
     #aba-estoque .row-5>* {
@@ -1264,194 +1221,184 @@
 
       </div>
 
-      <dialog id="dlgLot" aria-labelledby="dlgLotTitle">
-        <form method="dialog" id="formDlgLot">
+      <div id="dlgLot" class="modal lot-modal" aria-hidden="true">
+        <div class="modal__backdrop" data-modal-close></div>
 
-          <div class="dlg-head">
-            <div class="dlg-title" id="dlgLotTitle">Lote</div>
-            <button type="button" id="lot-modal-close" class="btn btn-flat btn-sm">✕</button>
-          </div>
+        <div class="modal__dialog">
+          <section class="modal__panel modal-width-12" role="dialog" aria-modal="true" aria-labelledby="dlgLotTitle">
 
-          <div class="dlg-body">
-
-            <input type="hidden" id="mLotId">
-
-            <div class="fields-inline fields-gap-3">
-
-              <div class="fields fields-h-6 fields-w-10">
-                <span>Grade</span>
-                <select id="mProductGradeId">
-                  <option value="">Sem grade</option>
-                </select>
-              </div>
-
-              <div class="fields fields-h-6 fields-w-10">
-                <span>Lote *</span>
-                <input id="mLotCode" type="text" placeholder="Ex: L2026-001" required>
-              </div>
-
-              <div class="fields fields-h-6 fields-w-10">
-                <span>Validade</span>
-                <input id="mExpiresAt" type="date">
-              </div>
-
-              <div class="fields fields-h-6 fields-w-10">
-                <span>Qtd em mãos</span>
-                <input id="mQtyOnHand" type="number" step="0.001" value="0">
-              </div>
-
-              <div class="fields fields-h-6 fields-w-10">
-                <span>Reservado</span>
-                <input id="mQtyReserved" type="number" step="0.001" value="0" disabled>
-              </div>
-
-              <div class="fields fields-h-6 fields-w-10">
-                <span>Custo unitário</span>
-                <input id="mCostUnit" type="number" step="0.000001" placeholder="Opcional">
-              </div>
-
+            <div class="modal__header modal-header-color-3">
+              <h2 class="modal__title" id="dlgLotTitle">Lote</h2>
+              <button type="button" id="lot-modal-close" class="modal__close" aria-label="Fechar" title="Fechar">&times;</button>
             </div>
 
-            <!-- Origem da NF-e -->
-            <div class="fields-inline fields-gap-3">
+            <form id="formDlgLot" class="modal__body" novalidate>
 
-              <div class="fields fields-w-30 fields-h-6">
-                <span>Chave NF-e de entrada</span>
+              <input type="hidden" id="mLotId">
 
-                <input id="mNfeKey" type="text" maxlength="44" readonly aria-readonly="true" class="is-readonly mono"
-                  placeholder="Sem chave vinculada">
-              </div>
+              <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Grade</span>
+                  <select id="mProductGradeId">
+                    <option value="">Sem grade</option>
+                  </select>
+                </div>
 
-              <button type="button" id="btnCopyLotNfeKey" class="btn btn-flat btn-sm" title="Copiar chave da NF-e">
-                📋
-              </button>
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Lote *</span>
+                  <input id="mLotCode" type="text" placeholder="Ex: L2026-001" required>
+                </div>
 
-              <div class="fields fields-w-20 fields-h-6">
-                <span>Item NF-e</span>
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Validade</span>
+                  <input id="mExpiresAt" type="date">
+                </div>
 
-                <input id="mNfeItemSeq" type="number" readonly aria-readonly="true" class="is-readonly" placeholder="—">
-              </div>
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Qtd em mãos</span>
+                  <input id="mQtyOnHand" type="number" step="0.001" value="0">
+                </div>
 
-            </div>
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Reservado</span>
+                  <input id="mQtyReserved" type="number" step="0.001" value="0" disabled>
+                </div>
 
-            <!-- Painel fiscal do lote -->
-            <section id="mFiscalPanel" class="lot-fiscal-panel hidden" aria-labelledby="mFiscalPanelTitle">
-              <div class="lot-fiscal-header">
-                <div>
-                  <div id="mFiscalPanelTitle" class="lot-fiscal-title">
-                    🧾 Origem fiscal da entrada
-                  </div>
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Custo unitário</span>
+                  <input id="mCostUnit" type="number" step="0.000001" placeholder="Opcional">
+                </div>
 
-                  <div id="mFiscalSubtitle" class="lot-fiscal-subtitle">
-                    Valores informados pelo fornecedor na NF-e de entrada.
+                <!-- Origem da NF-e -->
+                <div class="fields fields-h-6 fields-w-full modal-field--span-4">
+                  <span>Chave NF-e de entrada</span>
+                  <div class="inline-field">
+                    <input id="mNfeKey" type="text" maxlength="44" readonly aria-readonly="true" class="is-readonly mono"
+                      placeholder="Sem chave vinculada">
+                    <button type="button" id="btnCopyLotNfeKey" class="btn btn-flat btn-sm" title="Copiar chave da NF-e">📋 Copiar</button>
                   </div>
                 </div>
 
-                <div class="lot-fiscal-actions">
-                  <button type="button" id="btnApplyFiscalCostRule" class="btn btn-primary btn-sm">
-                    ⚙️ Atualizar dados fiscais
-                  </button>
-
-                  <span id="mFiscalStatus" class="fiscal-status" role="status" aria-live="polite">
-                    —
-                  </span>
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Item NF-e</span>
+                  <input id="mNfeItemSeq" type="number" readonly aria-readonly="true" class="is-readonly" placeholder="—">
                 </div>
               </div>
 
-              <div class="lot-fiscal-grid">
+              <!-- Painel fiscal do lote -->
+              <section id="mFiscalPanel" class="lot-fiscal-panel hidden" aria-labelledby="mFiscalPanelTitle">
+                <div class="lot-fiscal-header">
+                  <div>
+                    <div id="mFiscalPanelTitle" class="lot-fiscal-title">
+                      🧾 Origem fiscal da entrada
+                    </div>
 
-                <div class="lot-fiscal-field">
-                  <span>Nota de entrada</span>
-                  <strong id="mInboundInvoiceId">—</strong>
+                    <div id="mFiscalSubtitle" class="lot-fiscal-subtitle">
+                      Valores informados pelo fornecedor na NF-e de entrada.
+                    </div>
+                  </div>
+
+                  <div class="lot-fiscal-actions">
+                    <button type="button" id="btnApplyFiscalCostRule" class="btn btn-primary btn-sm">
+                      ⚙️ Atualizar dados fiscais
+                    </button>
+
+                    <span id="mFiscalStatus" class="fiscal-status" role="status" aria-live="polite">
+                      —
+                    </span>
+                  </div>
                 </div>
 
-                <div class="lot-fiscal-field">
-                  <span>Item interno</span>
-                  <strong id="mInboundItemId">—</strong>
-                </div>
+                <div class="lot-fiscal-grid">
 
-                <div class="lot-fiscal-field">
-                  <span>Código do fornecedor</span>
-                  <strong id="mSupplierProductCode">—</strong>
-                </div>
+                  <div class="lot-fiscal-field">
+                    <span>Nota de entrada</span>
+                    <strong id="mInboundInvoiceId">—</strong>
+                  </div>
 
-                <div class="lot-fiscal-field">
-                  <span>CST de entrada</span>
-                  <strong id="mIcmsCst">—</strong>
-                </div>
+                  <div class="lot-fiscal-field">
+                    <span>Item interno</span>
+                    <strong id="mInboundItemId">—</strong>
+                  </div>
 
-                <div class="lot-fiscal-field">
-                  <span>Base ICMS</span>
-                  <strong id="mIcmsBase">—</strong>
-                </div>
+                  <div class="lot-fiscal-field">
+                    <span>Código do fornecedor</span>
+                    <strong id="mSupplierProductCode">—</strong>
+                  </div>
 
-                <div class="lot-fiscal-field">
-                  <span>Alíquota ICMS</span>
-                  <strong id="mIcmsRate">—</strong>
-                </div>
+                  <div class="lot-fiscal-field">
+                    <span>CST de entrada</span>
+                    <strong id="mIcmsCst">—</strong>
+                  </div>
 
-                <div class="lot-fiscal-field">
-                  <span>Valor ICMS</span>
-                  <strong id="mIcmsValue">—</strong>
-                </div>
+                  <div class="lot-fiscal-field">
+                    <span>Base ICMS</span>
+                    <strong id="mIcmsBase">—</strong>
+                  </div>
 
-                <div class="lot-fiscal-field">
-                  <span>Base ICMS-ST retido</span>
-                  <strong id="mIcmsStBase">—</strong>
-                </div>
+                  <div class="lot-fiscal-field">
+                    <span>Alíquota ICMS</span>
+                    <strong id="mIcmsRate">—</strong>
+                  </div>
 
-                <div class="lot-fiscal-field">
-                  <span>Alíquota ICMS-ST</span>
-                  <strong id="mIcmsStRate">—</strong>
-                </div>
+                  <div class="lot-fiscal-field">
+                    <span>Valor ICMS</span>
+                    <strong id="mIcmsValue">—</strong>
+                  </div>
 
-                <div class="lot-fiscal-field">
-                  <span>ICMS-ST retido</span>
-                  <strong id="mIcmsStValue">—</strong>
-                </div>
+                  <div class="lot-fiscal-field">
+                    <span>Base ICMS-ST retido</span>
+                    <strong id="mIcmsStBase">—</strong>
+                  </div>
 
+                  <div class="lot-fiscal-field">
+                    <span>Alíquota ICMS-ST</span>
+                    <strong id="mIcmsStRate">—</strong>
+                  </div>
+
+                  <div class="lot-fiscal-field">
+                    <span>ICMS-ST retido</span>
+                    <strong id="mIcmsStValue">—</strong>
+                  </div>
+
+                </div>
+              </section>
+
+              <div class="modal-section lot-ops">
+                <h3 class="section__title">⚡ Operações rápidas</h3>
+
+                <div class="lot-ops__row">
+                  <div class="fields fields-h-6 fields-w-20 fields-value-bold">
+                    <span>Quantidade</span>
+                    <input id="lotOpQty" type="number" step="0.001" value="1">
+                  </div>
+
+                  <div class="btn-inline btn-gap-3">
+                    <button type="button" id="lotOpReserve" class="btn btn-toolbar btn-sm">Reservar</button>
+                    <button type="button" id="lotOpUnreserve" class="btn btn-flat btn-sm">Desreservar</button>
+                    <button type="button" id="lotOpConsume" class="btn btn-danger btn-sm">Baixar</button>
+                  </div>
+
+                  <span class="muted">Reservar/desreservar para orçamento. Baixar para saída confirmada.</span>
+                </div>
               </div>
-            </section>
 
-            <div class="divider"></div>
+            </form>
 
-            <div class="stack" style="gap:8px;">
-              <div style="font-weight: 900;">Operações rápidas</div>
-
-              <div class="fields-inline fields-gap-3">
-
-                <div class="fields fields-h-6 fields-w-10" style="width:220px;gap:6px;">
-                  <span>Quantidade</span>
-                  <input id="lotOpQty" type="number" step="0.001" value="1">
-                </div>
-
-                <div class="btn-inline btn-gap-3">
-                  <button type="button" id="lotOpReserve" class="btn btn-primary btn-sm">Reservar</button>
-                  <button type="button" id="lotOpUnreserve" class="btn btn-flat btn-sm">Desreservar</button>
-                  <button type="button" id="lotOpConsume" class="btn btn-danger btn-sm">Baixar</button>
-                </div>
+            <div class="modal__footer lot-modal__footer">
+              <div>
+                <button type="button" id="lot-modal-delete" class="btn btn-danger btn-sm hidden">Excluir</button>
               </div>
 
-              <div class="muted" style="font-weight: 700;">
-                Reservar/desreservar para orçamento. Baixar para saída confirmada.
+              <div class="btn-inline btn-gap-3">
+                <button type="button" id="lot-modal-cancel" class="btn btn-flat btn-sm">Cancelar</button>
+                <button type="button" id="lot-modal-save" class="btn btn-save btn-sm">💾 Salvar</button>
               </div>
             </div>
 
-          </div>
-
-          <div class="dlg-foot">
-            <div>
-              <button type="button" id="lot-modal-delete" class="btn btn-danger btn-sm hidden">Excluir</button>
-            </div>
-
-            <div class="row center" style="gap:8px;">
-              <button type="button" id="lot-modal-cancel" class="btn btn-flat btn-sm">Cancelar</button>
-              <button type="button" id="lot-modal-save" class="btn btn-primary btn-sm">Salvar</button>
-            </div>
-          </div>
-
-        </form>
-      </dialog>
+          </section>
+        </div>
+      </div>
 
     </section>
 
