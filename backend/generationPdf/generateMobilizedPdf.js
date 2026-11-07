@@ -422,9 +422,10 @@ function computeDescBlockLines(item) {
   const nfe = safeStr(item?.nfe_ref, 120);
   const obs = safeStr(cleanNotesForDisplay(item?.notes), 260);
 
-  if (model) extras.push(`MODELO: ${model}`);
-  if (sn) extras.push(`S/N: ${sn}`);
-  if (nfe) extras.push(`NF-e: ${nfe}`);
+  // sempre mostra as três linhas ("—" quando vazio)
+  extras.push(`MODELO: ${model || '—'}`);
+  extras.push(`S/N: ${sn || '—'}`);
+  extras.push(`NF-e: ${nfe || '—'}`);
   if (obs) extras.push(`OBS: ${obs}`);
 
   return { baseDesc, extras };
@@ -435,7 +436,7 @@ function estimateRowHeightFromText({ baseDesc, extras }) {
   const extraLines = Math.min(8, extras.length); // allows OBS etc
 
   const rowBaseH = 60;
-  const boxesH = 26; // right-side boxes height budget
+  const boxesH = 0; // sem caixas à direita
 
   return rowBaseH + (baseLines - 1) * 12 + extraLines * 11 + boxesH;
 }
@@ -518,51 +519,7 @@ function drawRow(doc, item, cols, y, rowH, zebra, imageBuffer) {
     { width: cols.total.w - 6, align: 'right' }
   );
 
-  // ─────────────────────────────
-  // ✅ 3 Right-side boxes (MODELO / S/N / NF-e)
-  // ─────────────────────────────
-  const model = safeStr(item?.model, 120);
-  const sn = safeStr(item?.serial_number, 120);
-  const nfe = safeStr(item?.nfe_ref, 120);
-
-  // boxes inside row:
-  const boxesTop = y + 30;
-  const boxH = 18;
-  const padX = 6;
-
-  // Box 1 uses "qty + unit" area
-  const box1X = cols.qty.x;
-  const box1W = cols.qty.w + cols.unit.w;
-
-  // Box 2 uses "unitPrice"
-  const box2X = cols.unitPrice.x;
-  const box2W = cols.unitPrice.w;
-
-  // Box 3 uses "total"
-  const box3X = cols.total.x;
-  const box3W = cols.total.w;
-
-  function drawInfoBox(label, value, bx, bw) {
-    doc.save()
-      .rect(bx + 2, boxesTop, bw - 4, boxH)
-      .lineWidth(1)
-      .strokeColor(C.border)
-      .stroke()
-      .restore();
-
-    doc.font('Helvetica').fontSize(7).fillColor('#6B7280');
-    doc.text(label, bx + padX, boxesTop + 3, { width: bw - padX * 2 });
-
-    doc.font('Helvetica-Bold').fontSize(8).fillColor('#111827');
-    doc.text(value || '-', bx + padX, boxesTop + 10, {
-      width: bw - padX * 2,
-      ellipsis: true,
-    });
-  }
-
-  drawInfoBox('MODELO', model, box1X, box1W);
-  drawInfoBox('S/N', sn, box2X, box2W);
-  drawInfoBox('NF-e', nfe, box3X, box3W);
+  // Modelo / S/N / NF-e aparecem só embaixo da descrição (sem caixas à direita)
 
   // ─────────────────────────────
   // Row separator
