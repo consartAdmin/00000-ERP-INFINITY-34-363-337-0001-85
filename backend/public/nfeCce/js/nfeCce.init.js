@@ -6,121 +6,96 @@
 
 'use strict';
 
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
 import {
-    clearAll,
-    onConsultarStatus,
-    onEmitirCce,
-    onValidarCampos,
-    openLastDocument,
-    openManualDocument,
+    clearFilters, newCce, newCceFromEvent, onConsultarStatus, onEmitirCce, onRowAction,
+    openConsultaDocument, openConsultaStatus, openEventDocument, reloadList,
 } from './nfeCce.actions.js';
+import { updateCorrecaoCounter } from './nfeCce.form.js';
+import { onBuscarNfesEmitidas, onTabelaNfesEmitidasClick, renderNfesEmitidas } from './nfeCce.invoices.js';
 import {
-    onBuscarHistorico,
-    onTabelaEventosClick,
-    openSelectedEventDocument,
-} from './nfeCce.history.js';
-import {
-    clearDetalhesEvento,
-    clearResultadoEmissao,
-    renderEventos,
-    switchTab,
-    updateCorrecaoCounter,
-} from './nfeCce.render.js';
-import { bindCceModal, isAnyCceModalOpen } from './nfeCce.modal.js';
-import {
-    onBuscarNfesEmitidas,
-    onTabelaNfesEmitidasClick,
-    renderNfesEmitidas,
-} from './nfeCce.invoices.js';
-import { els } from './nfeCce.state.js';
-import { setFeedback, setJsonPreview } from './nfeCce.utils.js';
+    applyFilters, goToNextPage, goToPreviousPage, setPageSize, setRowHandlers, setSort,
+} from './nfeCce.list.js';
+import { configureModals, openNfeEmitidaModal } from './nfeCce.modal.js';
+import { state } from './nfeCce.state.js';
+import { $ } from './nfeCce.utils.js';
 
-function bindTabs() {
-    els.tabs.forEach((tab) => {
-        tab.addEventListener('click', () => {
-            switchTab(tab.dataset.tab);
-
-            if (tab.dataset.tab === 'tab-historico') {
-                void onBuscarHistorico();
-            }
-        });
+function onEnter(selector, handler) {
+    $(selector)?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') { event.preventDefault(); handler(); }
     });
 }
 
-function bindActions() {
-    els.correcao?.addEventListener('input', updateCorrecaoCounter);
-    els.btnExecutarBuscaNfeEmitida?.addEventListener('click', onBuscarNfesEmitidas);
-    els.tbodyNfesEmitidas?.addEventListener('click', onTabelaNfesEmitidasClick);
-    els.buscaNfeEmitida?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            void onBuscarNfesEmitidas();
-        }
-    });
-    els.btnBuscarNfeEmitida?.addEventListener('click', () => {
-        setTimeout(() => void onBuscarNfesEmitidas(), 0);
-    });
-    els.btnValidarCampos?.addEventListener('click', onValidarCampos);
-    els.btnEmitirCce?.addEventListener('click', onEmitirCce);
-    els.btnLimparTela?.addEventListener('click', clearAll);
-    els.btnConsultarStatus?.addEventListener('click', onConsultarStatus);
-    els.btnAbrirPdfUltimo?.addEventListener('click', () => openLastDocument('pdf'));
-    els.btnAbrirXmlUltimo?.addEventListener('click', () => openLastDocument('xml'));
-    els.btnAbrirPdf?.addEventListener('click', () => openManualDocument('pdf'));
-    els.btnAbrirXml?.addEventListener('click', () => openManualDocument('xml'));
-    els.btnBuscarHistorico?.addEventListener('click', onBuscarHistorico);
-    els.btnAtualizarHistorico?.addEventListener('click', onBuscarHistorico);
-    els.btnAbrirPdfEvento?.addEventListener('click', () =>
-        openSelectedEventDocument('pdf')
-    );
-    els.btnAbrirXmlEvento?.addEventListener('click', () =>
-        openSelectedEventDocument('xml')
-    );
-    els.tbodyEventosSalvos?.addEventListener('click', onTabelaEventosClick);
-}
+function bindEvents() {
+    // Lista
+    $('#btnNovaCce')?.addEventListener('click', () => newCce());
+    $('#btnAbrirConsultaStatus')?.addEventListener('click', openConsultaStatus);
+    $('#btnRecarregar')?.addEventListener('click', reloadList);
+    $('#btnBuscar')?.addEventListener('click', applyFilters);
+    $('#btnLimparFiltros')?.addEventListener('click', clearFilters);
+    $('#filtroStatus')?.addEventListener('change', applyFilters);
+    ['#busca', '#filtroNfeNumber', '#filtroChave'].forEach((s) => onEnter(s, applyFilters));
+    $('#btnPrev')?.addEventListener('click', goToPreviousPage);
+    $('#btnNext')?.addEventListener('click', goToNextPage);
+    $('#pageSize')?.addEventListener('change', (event) => setPageSize(event.target.value));
 
-function bindKeyboardShortcuts() {
+    // Nova CC-e + busca de NF-e (modal filho)
+    $('#correcao')?.addEventListener('input', updateCorrecaoCounter);
+    $('#formNovaCce')?.addEventListener('submit', onEmitirCce);
+    $('#btnBuscarNfeEmitida')?.addEventListener('click', () => {
+        openNfeEmitidaModal();
+        void onBuscarNfesEmitidas();
+    });
+    $('#btnExecutarBuscaNfeEmitida')?.addEventListener('click', onBuscarNfesEmitidas);
+    onEnter('#buscaNfeEmitida', onBuscarNfesEmitidas);
+    $('#tbodyNfesEmitidas')?.addEventListener('click', onTabelaNfesEmitidasClick);
+
+    // Detalhes
+    $('#btnAbrirPdfEvento')?.addEventListener('click', () => openEventDocument(state.selectedEvent, 'pdf'));
+    $('#btnAbrirXmlEvento')?.addEventListener('click', () => openEventDocument(state.selectedEvent, 'xml'));
+    $('#btnNovaCceMesmaNfe')?.addEventListener('click', () => newCceFromEvent(state.selectedEvent));
+
+    // Consultar status
+    $('#formConsultaStatus')?.addEventListener('submit', onConsultarStatus);
+    $('#btnConsultaPdf')?.addEventListener('click', () => openConsultaDocument('pdf'));
+    $('#btnConsultaXml')?.addEventListener('click', () => openConsultaDocument('xml'));
+
+    // Ctrl+Enter emite quando a Nova CC-e está aberta
     document.addEventListener('keydown', (event) => {
-        const target = event.target;
-        const isTyping =
-            target &&
-            (target.tagName === 'INPUT' ||
-                target.tagName === 'TEXTAREA' ||
-                target.tagName === 'SELECT' ||
-                target.isContentEditable);
-
-        if (event.key === 'F5') return;
-
-        if (event.key === 'Escape' && isAnyCceModalOpen()) return;
-
-        if (event.ctrlKey && event.key.toLowerCase() === 'enter') {
+        if (event.ctrlKey && event.key === 'Enter' && $('#modalNovaCce')?.classList.contains('is-open')) {
             event.preventDefault();
-            onEmitirCce();
-            return;
-        }
-
-        if (!isTyping && event.key === 'Escape') {
-            event.preventDefault();
-            clearAll();
+            void onEmitirCce();
         }
     });
 }
 
-export async function init() {
-    bindTabs();
-    bindActions();
-    bindCceModal();
-    bindKeyboardShortcuts();
-    updateCorrecaoCounter();
-    clearResultadoEmissao();
-    clearDetalhesEvento();
-    setJsonPreview(els.jsonRetorno, {});
-    setJsonPreview(els.jsonConsultaStatus, {});
-    setJsonPreview(els.jsonHistoricoRemoto, {});
-    renderEventos([]);
-    renderNfesEmitidas([]);
-    switchTab('tab-emissao');
-    await onBuscarHistorico();
+async function bootNfeCce() {
+    try {
+        configureModals();
+        setRowHandlers({ onAction: onRowAction });
+        bindEvents();
+        updateCorrecaoCounter();
+        renderNfesEmitidas([]);
+
+        createSortableTable({
+            table: '#cceTable',
+            defaultColumn: state.sortColumn,
+            defaultDirection: state.sortDirection,
+            allowedColumns: [
+                'numero_sequencia', 'nfe_number', 'customer_name', 'correcao',
+                'protocolo', 'status_label', 'created_by', 'created_at',
+            ],
+            onSort: setSort,
+        });
+
+        await reloadList();
+    } catch (error) {
+        console.error('[nfeCce] Falha na inicialização:', error);
+    }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootNfeCce, { once: true });
+} else {
+    bootNfeCce();
+}

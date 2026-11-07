@@ -791,7 +791,7 @@ export async function emitirCce(req, res) {
       return sendError(
         res,
         Number(envio?.status) || 400,
-        'Falha ao enviar CC-e para a TecnoSpeed.',
+        'Falha ao enviar a CC-e.',
         {
           error:
             envio?.error ||
