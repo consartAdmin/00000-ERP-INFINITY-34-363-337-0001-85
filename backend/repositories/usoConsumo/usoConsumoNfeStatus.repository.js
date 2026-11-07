@@ -7,6 +7,7 @@ import pool from '../../config/db.js';
 import {
   consultarNFe,
 } from '../nfe/nfe.index.js';
+import { companyAsCustomer } from './usoConsumoNfeEmission.repository.js';
 
 export async function refreshNfeStatus(usoConsumoId) {
   const id = Number(usoConsumoId);
@@ -383,6 +384,9 @@ export async function refreshNfeStatus(usoConsumoId) {
           ELSE issued_date
         END,
 
+        customer_name = COALESCE(NULLIF(TRIM(customer_name), ''), $8::text),
+        customer_tax_id = COALESCE(NULLIF(TRIM(customer_tax_id), ''), $9::text),
+
         updated_at = NOW()
     WHERE invoice_id = $7::bigint
     RETURNING *
@@ -395,6 +399,7 @@ export async function refreshNfeStatus(usoConsumoId) {
       danfeUrl,
       authorizedAt,
       Number(local.invoice_id),
+      ...companyAsCustomer(),
     ]
   );
 
