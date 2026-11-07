@@ -4,23 +4,11 @@
 // ║ CONSART ERP                                                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-/* =======================================================================
- * API
- * ======================================================================= */
 export const API_BASE = '/api/nfes/inutilizar';
 
-/* =======================================================================
- * Defaults
- * ======================================================================= */
-export const DEFAULTS = Object.freeze({
-  MODEL: '55',
-  LIST_LIMIT: 100,
-  LIST_OFFSET: 0,
-});
+/** A API devolve no máximo 500 por chamada: carregamos em lotes e filtramos na tela. */
+export const LIST_BATCH = 500;
 
-/* =======================================================================
- * Regras do formulário
- * ======================================================================= */
 export const RULES = Object.freeze({
   CNPJ_LENGTH: 14,
   MIN_YEAR: 2000,
@@ -28,19 +16,4 @@ export const RULES = Object.freeze({
   MAX_JUSTIFICATION: 255,
 });
 
-/* =======================================================================
- * Status padrão
- * ======================================================================= */
-export const STATUS = Object.freeze({
-  UNKNOWN: 'UNKNOWN',
-  PENDING: 'PENDING',
-  SENT: 'SENT',
-  PROCESSING: 'PROCESSING',
-  ERROR: 'ERROR',
-  REJECTED: 'REJECTED',
-  AUTHORIZED: 'AUTHORIZED',
-  DONE: 'DONE',
-  SUCCESS: 'SUCCESS',
-  CONCLUIDO: 'CONCLUIDO',
-  INUTILIZADA: 'INUTILIZADA',
-});
+export const MODEL_LABELS = Object.freeze({ 55: 'NF-e', 65: 'NFC-e' });
