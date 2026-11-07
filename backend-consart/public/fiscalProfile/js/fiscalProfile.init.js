@@ -1,72 +1,70 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ FILE: fiscalProfile.init.js                                         ║
-// ║ MODULE: Fiscal Profile — Initialization                             ║
-// ║ CONSART ERP                                                         ║
+// ║ FILE: fiscalProfile.init.js                                          ║
+// ║ MODULE: Fiscal Profile — Bootstrap                                 ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
 import {
+  applyFilters,
+  clearFilters,
+  goToNextPage,
+  goToPreviousPage,
   loadProfiles,
   newProfile,
-  nextPage,
-  previousPage,
-  returnToList,
-  showListPage,
-  submitProfile,
+  saveProfile,
+  setPageSize,
+  setSort,
+  toggleEditingActive,
 } from './fiscalProfile.actions.js';
-import { syncFiltersFromDom } from './fiscalProfile.filters.js';
-import { resetForm } from './fiscalProfile.form.js';
-import { dom, state } from './fiscalProfile.state.js';
+import { bindDecimalInputs, getProfileForm } from './fiscalProfile.form.js';
+import { configureModal } from './fiscalProfile.modal.js';
+import { state } from './fiscalProfile.state.js';
+import { $ } from './fiscalProfile.utils.js';
 
-function searchProfiles() {
-  syncFiltersFromDom();
-  state.page = 1;
-  loadProfiles();
-}
+function bindEvents() {
+  $('#btnNovo')?.addEventListener('click', newProfile);
+  $('#btnRecarregar')?.addEventListener('click', loadProfiles);
+  $('#btnBuscar')?.addEventListener('click', applyFilters);
+  $('#btnLimparFiltros')?.addEventListener('click', clearFilters);
+  $('#btnPrev')?.addEventListener('click', goToPreviousPage);
+  $('#btnNext')?.addEventListener('click', goToNextPage);
+  $('#pageSize')?.addEventListener('change', (event) => setPageSize(event.target.value));
+  $('#btnToggleActive')?.addEventListener('click', toggleEditingActive);
+  $('#filtroAtivo')?.addEventListener('change', applyFilters);
+  getProfileForm()?.addEventListener('submit', saveProfile);
 
-function bindNavigation() {
-  dom.newButton?.addEventListener('click', newProfile);
-  dom.backToListButton?.addEventListener('click', returnToList);
-}
-
-function bindFilters() {
-  dom.searchButton?.addEventListener('click', searchProfiles);
-
-  dom.searchInput?.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter') return;
-
-    event.preventDefault();
-    searchProfiles();
+  $('#busca')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { event.preventDefault(); applyFilters(); }
   });
 }
 
-function bindPagination() {
-  dom.previousButton?.addEventListener('click', previousPage);
-  dom.nextButton?.addEventListener('click', nextPage);
-  dom.pageSizeSelect?.addEventListener('change', (event) => {
-    state.pageSize = Number(event.target.value) || 50;
-    state.page = 1;
-    loadProfiles();
-  });
+async function bootFiscalProfile() {
+  try {
+    configureModal();
+    bindDecimalInputs();
+    bindEvents();
+
+    createSortableTable({
+      table: '#profileTable',
+      defaultColumn: state.sortColumn,
+      defaultDirection: state.sortDirection,
+      allowedColumns: [
+        'fiscal_profile_id', 'profile_name', 'icms_cst', 'mva_pct', 'pis_cst',
+        'cofins_cst', 'ipi_rate', 'cfop_exit', 'is_active',
+      ],
+      onSort: setSort,
+    });
+
+    await loadProfiles();
+  } catch (error) {
+    console.error('[fiscalProfile] Falha na inicialização:', error);
+  }
 }
 
-function bindForm() {
-  dom.clearButton?.addEventListener('click', resetForm);
-  dom.form?.addEventListener('submit', submitProfile);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootFiscalProfile, { once: true });
+} else {
+  bootFiscalProfile();
 }
-
-function init() {
-  console.log('[fiscalProfile] Init');
-
-  bindNavigation();
-  bindFilters();
-  bindPagination();
-  bindForm();
-
-  resetForm();
-  showListPage({ scroll: false });
-  loadProfiles();
-}
-
-document.addEventListener('DOMContentLoaded', init, { once: true });

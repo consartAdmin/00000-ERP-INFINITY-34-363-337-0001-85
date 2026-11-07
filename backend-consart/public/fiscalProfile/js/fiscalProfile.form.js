@@ -1,64 +1,103 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ FILE: fiscalProfile.form.js                                         ║
-// ║ MODULE: Fiscal Profile — Form                                       ║
-// ║ CONSART ERP                                                         ║
+// ║ FILE: fiscalProfile.form.js                                          ║
+// ║ MODULE: Fiscal Profile — Formulário do modal                      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
-import { dom } from './fiscalProfile.state.js';
-import { numberOrNull } from './fiscalProfile.utils.js';
+import {
+  $, $$, formatDecimal, toNullableNumber, toNullableText, toNumber,
+} from './fiscalProfile.utils.js';
 
-export function resetForm() {
-  dom.form?.reset();
+const TEXT_FIELDS = [
+  'profile_name', 'description', 'icms_cst', 'benefit_code',
+  'cfop_entry', 'cfop_exit', 'pis_cst', 'cofins_cst',
+];
 
-  dom.fields.id.value = '';
-  dom.fields.isActive.checked = true;
-  dom.formTitle.textContent = 'Novo Perfil Fiscal';
-  dom.formSubtitle.textContent = 'Preencha os campos e salve.';
+/** Alíquotas obrigatórias (NOT NULL no banco). */
+const RATE_FIELDS = ['icms_rate', 'icms_base_pct', 'pis_rate', 'cofins_rate', 'ipi_rate'];
+
+/** Colunas de ST: opcionais (vazio = sem ST). */
+const ST_FIELDS = ['mva_pct', 'icms_st_base_pct', 'icms_st_rate', 'icms_st_ret_base_pct', 'icms_st_ret_rate'];
+
+const field = (id) => $(`#${id}`);
+const decimalsOf = (input) => Number(input?.dataset.decimals) || 4;
+
+function setDecimal(id, value, { nullable = false } = {}) {
+  const input = field(id);
+  if (!input) return;
+  input.value = nullable && (value == null || value === '') ? '' : formatDecimal(value ?? 0, decimalsOf(input));
 }
 
-export function fillForm(profile) {
-  const fields = dom.fields;
-
-  fields.id.value = profile.fiscal_profile_id || '';
-  fields.profileName.value = profile.profile_name || '';
-  fields.description.value = profile.description || '';
-  fields.icmsCst.value = profile.icms_cst || '';
-  fields.icmsRate.value = profile.icms_rate ?? '';
-  fields.cfopEntry.value = profile.cfop_entry || '';
-  fields.cfopExit.value = profile.cfop_exit || '';
-  fields.originCode.value = profile.origin_code ?? '';
-  fields.pisCst.value = profile.pis_cst || '';
-  fields.pisRate.value = profile.pis_rate ?? '';
-  fields.cofinsCst.value = profile.cofins_cst || '';
-  fields.cofinsRate.value = profile.cofins_rate ?? '';
-  fields.benefitCode.value = profile.benefit_code || '';
-  fields.isActive.checked = profile.is_active !== false;
-
-  dom.formTitle.textContent = `Editar Perfil #${profile.fiscal_profile_id}`;
-  dom.formSubtitle.textContent = 'Altere os dados e salve para atualizar.';
+export function getProfileForm() {
+  return $('#formFiscalProfile');
 }
 
-export function readForm() {
-  const fields = dom.fields;
+/** Formata as alíquotas com casas fixas ao sair do campo (1,65 → 1,6500). */
+export function bindDecimalInputs() {
+  $$('#formFiscalProfile input[data-decimals]').forEach((input) => {
+    input.addEventListener('blur', () => {
+      if (input.hasAttribute('data-nullable') && !input.value.trim()) return;
+      input.value = formatDecimal(input.value, decimalsOf(input));
+    });
+    input.addEventListener('focus', () => input.select());
+  });
+}
 
-  return {
-    id: fields.id.value ? Number(fields.id.value) : null,
-    payload: {
-      profile_name: fields.profileName.value.trim(),
-      description: fields.description.value.trim() || null,
-      icms_cst: fields.icmsCst.value.trim() || null,
-      icms_rate: numberOrNull(fields.icmsRate.value) ?? 0,
-      cfop_entry: fields.cfopEntry.value.trim() || null,
-      cfop_exit: fields.cfopExit.value.trim() || null,
-      origin_code: fields.originCode.value.trim() || null,
-      pis_cst: fields.pisCst.value.trim() || null,
-      pis_rate: numberOrNull(fields.pisRate.value) ?? 0,
-      cofins_cst: fields.cofinsCst.value.trim() || null,
-      cofins_rate: numberOrNull(fields.cofinsRate.value) ?? 0,
-      benefit_code: fields.benefitCode.value.trim() || null,
-      is_active: fields.isActive.checked,
-    },
+function setToggleButton(row) {
+  const button = $('#btnToggleActive');
+  if (!button) return;
+  const show = !!row?.fiscal_profile_id;
+  button.style.display = show ? '' : 'none';
+  if (!show) return;
+  const active = row.is_active !== false;
+  button.textContent = active ? '⏸ Desativar' : '▶ Reativar';
+  button.className = `btn ${active ? 'btn-danger' : 'btn-new'} btn-sm btn-position-left`;
+}
+
+/** Preenche o modal. row = null → novo; copy = true → duplicar (sem ID). */
+export function fillProfileForm(row = null, { copy = false } = {}) {
+  const form = getProfileForm();
+  if (!form) return;
+  form.reset();
+
+  const data = row || {};
+  const isEdit = !!data.fiscal_profile_id && !copy;
+
+  field('fiscal_profile_id').value = isEdit ? data.fiscal_profile_id : '';
+  TEXT_FIELDS.forEach((id) => {
+    const input = field(id);
+    if (input) input.value = data[id] ?? '';
+  });
+  if (copy && data.profile_name) field('profile_name').value = `${data.profile_name} (cópia)`;
+
+  field('origin_code').value = data.origin_code == null ? '' : String(data.origin_code);
+  field('is_active').value = String(copy ? true : data.is_active !== false);
+  RATE_FIELDS.forEach((id) => setDecimal(id, data[id] ?? (id === 'icms_base_pct' ? 100 : 0)));
+  ST_FIELDS.forEach((id) => setDecimal(id, data[id], { nullable: true }));
+
+  const title = $('#formTitulo');
+  if (title) {
+    if (isEdit) title.textContent = `Editar perfil fiscal #${data.fiscal_profile_id} — ${data.profile_name || ''}`;
+    else if (copy) title.textContent = 'Duplicar perfil fiscal';
+    else title.textContent = 'Novo perfil fiscal';
+  }
+  setToggleButton(isEdit ? data : null);
+}
+
+export function readProfileForm() {
+  const value = (id) => field(id)?.value;
+  const id = value('fiscal_profile_id');
+
+  const payload = {
+    profile_name: String(value('profile_name') || '').trim(),
+    origin_code: toNullableText(value('origin_code')),
+    is_active: value('is_active') !== 'false',
   };
+  TEXT_FIELDS.filter((key) => key !== 'profile_name')
+    .forEach((key) => { payload[key] = toNullableText(value(key)); });
+  RATE_FIELDS.forEach((key) => { payload[key] = toNumber(value(key), key === 'icms_base_pct' ? 100 : 0); });
+  ST_FIELDS.forEach((key) => { payload[key] = toNullableNumber(value(key)); });
+
+  return { id: id ? Number(id) : null, payload };
 }

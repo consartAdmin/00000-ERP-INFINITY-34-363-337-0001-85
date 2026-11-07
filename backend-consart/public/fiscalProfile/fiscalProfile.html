@@ -1,335 +1,305 @@
-<!-- ╔══════════════════════════════════════════════════════════════════════╗
-     ║ FILE: fiscalProfile.html                                           ║
-     ║ MODULE: Fiscal Profile                                             ║
-     ║ CONSART ERP                                                        ║
-     ╚══════════════════════════════════════════════════════════════════════╝ -->
-
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ fiscalProfile.html — Perfil Fiscal | CONSART ERP                           ║
+     ║ Path: backend/public/fiscalProfile/fiscalProfile.html                      ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated + sortableTable + table-footer           ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Cadastro/edição: modals.css + modal.js (sem tela separada)              ║
+     ║ API: /api/v2/fiscal-profiles  (tabela "fiscalProfileV2")                   ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- 🟦 Favicons CONSART -->
-  <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/public/imagens/brasaoConsartInfinity.png" />
-  <link rel="icon" type="image/png" sizes="64x64" href="/public/imagens/brasaoConsartInfinity.png" />
-  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PERFIL FISCAL | CONSART ERP</title>
 
-  <!-- 🎨 Design System CONSART -->
-  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
 
-  <!-- CSS específico da página -->
-  <link rel="stylesheet" href="./fiscalProfile.css?v=3" />
+  <!-- Design system CONSART (importa modals, fields, summary, sortableTable, actionIcons...) -->
+  <link rel="stylesheet" href="/public/includes/css/style.css">
 </head>
 
-<body class="consart-theme p-page pw-page--full ph-page--xr page-fiscal-profile">
+<body class="consart-theme p-page pw-page--full ph-page--xr">
   <main class="consart-container consart-container--full consart-container--ultraslim">
 
-    <!-- ===================================================== -->
-    <!-- PAGE HEADER                                           -->
-    <!-- ===================================================== -->
+    <section class="table-layout-integrated table-max-height-700">
 
-    <header class="header header-h-9">
-      <div class="fields-lines fields-gap-3">
-
-        <div class="fields-inline fields-gap-3">
-          <div>
-            <h1>Perfil Fiscal</h1>
-            <p>Conjunto de regras tributárias que determina como uma empresa calcula impostos e emite documentos
-              fiscais.</p>
-          </div>
-
-          <div class="btn-position-right">
-            <button id="btnNovo" type="button" class="btn btn-secondary btn-sm" aria-controls="painel-form">
-              + Novo Perfil Fiscal
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </header>
-
-    <!-- ===================================================== -->
-    <!-- INTEGRATED TABLE                                      -->
-    <!-- ===================================================== -->
-
-    <section id="painel-lista" class="table-layout-integrated table-max-height-600" data-panel="list">
+      <!-- FILTROS + AÇÕES (div, não <header>: topGradientBar injeta o título) -->
       <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
 
-        <!-- ================================================= -->
-        <!-- FILTERS                                           -->
-        <!-- ================================================= -->
-
-        <div class="fields-inline fields-gap-3">
           <div class="fields fields-h-6 fields-w-20 fields-font-3">
-            <label for="busca">Buscar perfil fiscal</label>
-            <input id="busca" type="search" placeholder="Digite o nome ou a descrição do perfil..."
-              autocomplete="off" />
+            <label for="busca">Buscar</label>
+            <input id="busca" type="search" placeholder="Nome, descrição, CST ou CFOP..." autocomplete="off">
           </div>
 
-          <div class="btn-inline btn-gap-3">
-            <button id="btnBuscar" type="button" class="btn btn-new btn-sm">
-              Buscar
-            </button>
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="filtroAtivo">Status</label>
+            <select id="filtroAtivo">
+              <option value="true" selected>Ativos</option>
+              <option value="false">Inativos</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
+
+          <button id="btnBuscar" type="button" class="btn btn-filter btn-sm">Aplicar Filtros</button>
+          <button id="btnLimparFiltros" type="button" class="btn btn-clean btn-sm">Limpar</button>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnNovo" type="button" class="btn btn-new btn-sm">+ Novo perfil fiscal</button>
+            <button id="btnRecarregar" type="button" class="btn btn-toolbar btn-sm" title="Recarregar">🔄 Recarregar</button>
           </div>
         </div>
       </div>
 
-      <!-- ================================================= -->
-      <!-- TABLE                                             -->
-      <!-- ================================================= -->
-
-      <div class="table-scroll table-height-flex table-row-h-28" data-table-settings="fiscalprofile.tablebody">
-        <table class="table table-zebra table-zebra-hover table-sticky-head fp-table">
+      <!-- LISTA -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="fiscalprofile.bodytable">
+        <table id="profileTable" class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Nome do Perfil</th>
-              <th>ICMS</th>
-              <th>PIS / COFINS</th>
-              <th>CFOP Entrada / Saída</th>
-              <th>Origem</th>
-              <th>Ativo</th>
-              <th style="width: 130px;">Ações</th>
+              <th class="table-col-w-2 table-sortable" data-sort-column="fiscal_profile_id" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>ID <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="profile_name" aria-sort="ascending"><button
+                  type="button" class="table-sort-button is-sorted" data-sort-button
+                  data-sort-direction="asc">Perfil <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="table-col-w-8 table-sortable" data-sort-column="icms_cst" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>ICMS (CST · alíquota) <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="mva_pct" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>ICMS-ST <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="pis_cst" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>PIS <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="cofins_cst" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>COFINS <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="ipi_rate" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>IPI <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="cfop_exit" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>CFOP Entrada / Saída <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-3 table-sortable" data-sort-column="is_active" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4">Ações</th>
             </tr>
           </thead>
-
-          <tbody id="tableBody">
-            <!-- Linhas preenchidas via JavaScript -->
-          </tbody>
+          <tbody id="bodyTable"></tbody>
         </table>
       </div>
 
-      <!-- =================================================== -->
-      <!-- TABLE FOOTER                                        -->
-      <!-- =================================================== -->
-
+      <!-- RODAPÉ PADRÃO -->
       <footer class="table-footer">
         <div class="table-footer__info">
-          <div class="summary-pill summary-pill-success summary-width-5 summary-left-space-3">
-            <span id="apTableInfo">
-              0 Registros
-            </span>
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="apTableInfo">0 registros encontrados</span>
+          </div>
+
+          <div class="summary summary--center summary-gap-8">
+            <div class="summary-pill summary-pill--primary" id="sumActive">0 ativos</div>
+            <div class="summary-pill summary-pill--danger" id="sumInactive">0 inativos</div>
+            <div class="summary-pill summary-pill--warning" id="sumWithSt" style="display:none">0 com ST</div>
           </div>
         </div>
 
         <div class="table-footer__pagination">
-          <button id="btnPrevious" type="button" class="btn btn-toolbar btn-sm">
-            Anterior
-          </button>
-
-          <span id="pageInfo">
-            Página 1 de 1
-          </span>
-
-          <button id="btnNext" type="button" class="btn btn-toolbar btn-sm">
-            Próxima
-          </button>
+          <button type="button" id="btnPrev" class="btn btn-clean btn-sm">Anterior</button>
+          <span id="paginacaoInfo">Página 1 de 1</span>
+          <button type="button" id="btnNext" class="btn btn-new btn-sm">Próxima</button>
         </div>
+
         <div class="table-footer__page-size">
-          <label for="pageSize">
-            Mostrar
-          </label>
-          <div class="fields fields-h-6 fields-w-3 fields-font-3">
-            <select id="pageSize" class="table-footer__page-size-select">
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50" selected>50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
+          <label for="pageSize">Mostrar</label>
+          <select id="pageSize" class="table-footer__page-size-select" name="pageSize">
+            <option value="10">10 linhas</option>
+            <option value="20">20 linhas</option>
+            <option value="50" selected>50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
         </div>
       </footer>
     </section>
-
-    <!-- ===================================================== -->
-    <!-- FORM PANEL                                            -->
-    <!-- ===================================================== -->
-
-    <section id="painel-form" class="fp-panel" data-panel="form">
-
-      <section class="consart-panel fp-form-wrapper">
-
-        <div class="header header-h-6">
-          <div class="fields-lines fields-gap-2">
-            <div class="fields fields-h-6 fields-w-20 fields-font-3">
-              <h2 id="formTitulo">Novo Perfil Fiscal</h2>
-            </div>
-
-            <div class="fields fields-h-6 fields-w-20 fields-font-3">
-              <span id="formSubtitulo">
-                Preencha os campos e salve.
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <form id="formFiscalProfile" class="fields-lines fields-gap-4" autocomplete="off">
-          <input id="fiscal_profile_id" type="hidden" />
-
-          <!-- ================================================= -->
-          <!-- IDENTIFICATION                                    -->
-          <!-- ================================================= -->
-
-          <fieldset class="fieldset fp-fieldset">
-            <legend>Identificação</legend>
-
-            <div class="fields-lines fields-gap-3">
-              <div class="fields-inline fields-gap-3">
-
-                <div class="fields fields-h-6 fields-w-30 fields-font-3">
-                  <label for="profile_name">Nome do Perfil *</label>
-                  <input id="profile_name" name="profile_name" type="text" maxlength="100" required
-                    placeholder="Ex.: Varejo ST 18% / Isento PIS/COFINS" />
-                </div>
-
-                <div class="fields fields-h-6 fields-w-10 fields-font-3">
-                  <label for="origin_code">Origem (0 a 8)</label>
-                  <input id="origin_code" name="origin_code" type="number" min="0" max="8" step="1"
-                    placeholder="0 = Nacional" />
-                </div>
-
-              </div>
-
-              <div class="fields fields-w-100 fields-font-3">
-                <label for="description">Descrição</label>
-                <textarea id="description" name="description" class="textarea" rows="3"
-                  placeholder="Descrição interna para identificar a aplicação deste perfil."></textarea>
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- ================================================= -->
-          <!-- ICMS                                              -->
-          <!-- ================================================= -->
-
-          <fieldset class="fieldset fp-fieldset">
-            <legend>ICMS</legend>
-
-            <div class="fields-lines fields-gap-3">
-              <div class="fields-inline fields-gap-3">
-
-                <div class="fields fields-h-6 fields-w-12 fields-font-3">
-                  <label for="icms_cst">CST / CSOSN ICMS</label>
-                  <input id="icms_cst" name="icms_cst" type="text" maxlength="3"
-                    placeholder="Ex.: 00, 20, 40, 60, 101..." />
-                </div>
-
-                <div class="fields fields-h-6 fields-w-12 fields-font-3">
-                  <label for="icms_rate">Alíquota ICMS (%)</label>
-                  <input id="icms_rate" name="icms_rate" type="number" min="0" max="100" step="0.0001" placeholder="Ex.: 18" />
-                </div>
-
-                <div class="fields fields-h-6 fields-w-20 fields-font-3">
-                  <label for="benefit_code">Código de Benefício</label>
-                  <input id="benefit_code" name="benefit_code" type="text" maxlength="20" placeholder="Ex.: MG123456" />
-                </div>
-
-
-                <div class="fields-inline fields-gap-3">
-
-                  <div class="fields fields-h-6 fields-w-12 fields-font-3">
-                    <label for="cfop_entry">CFOP Entrada</label>
-                    <input id="cfop_entry" name="cfop_entry" type="text" maxlength="10" placeholder="Ex.: 1102" />
-                  </div>
-
-                  <div class="fields fields-h-6 fields-w-12 fields-font-3">
-                    <label for="cfop_exit">CFOP Saída</label>
-                    <input id="cfop_exit" name="cfop_exit" type="text" maxlength="10"
-                      placeholder="Ex.: 5102, 5403..." />
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- ================================================= -->
-          <!-- PIS / COFINS                                      -->
-          <!-- ================================================= -->
-
-          <fieldset class="fieldset fp-fieldset">
-            <legend>PIS / COFINS</legend>
-
-            <div class="fields-lines fields-gap-3">
-              <div class="fields-inline fields-gap-3">
-
-                <div class="fields fields-h-6 fields-w-12 fields-font-3">
-                  <label for="pis_cst">CST PIS</label>
-                  <input id="pis_cst" name="pis_cst" type="text" maxlength="3" placeholder="Ex.: 01, 04, 06..." />
-                </div>
-
-                <div class="fields fields-h-6 fields-w-12 fields-font-3">
-                  <label for="pis_rate">Alíquota PIS (%)</label>
-                  <input id="pis_rate" name="pis_rate" type="number" min="0" max="100" step="0.0001" placeholder="Ex.: 1.65" />
-                </div>
-
-                <div class="fields fields-h-6 fields-w-12 fields-font-3">
-                  <label for="cofins_cst">CST COFINS</label>
-                  <input id="cofins_cst" name="cofins_cst" type="text" maxlength="3"
-                    placeholder="Ex.: 01, 04, 06..." />
-                </div>
-
-                <div class="fields fields-h-6 fields-w-12 fields-font-3">
-                  <label for="cofins_rate">Alíquota COFINS (%)</label>
-                  <input id="cofins_rate" name="cofins_rate" type="number" min="0" max="100" step="0.0001" placeholder="Ex.: 7.6" />
-                </div>
-
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- ================================================= -->
-          <!-- STATUS                                            -->
-          <!-- ================================================= -->
-
-          <fieldset class="fieldset fp-fieldset">
-            <legend>Status</legend>
-
-            <div class="fields-inline">
-              <label class="checkbox" for="is_active">
-                <input id="is_active" name="is_active" type="checkbox" checked />
-                <span>Perfil ativo</span>
-              </label>
-            </div>
-          </fieldset>
-
-          <!-- ================================================= -->
-          <!-- FORM ACTIONS                                      -->
-          <!-- ================================================= -->
-
-          <footer class="form-footer fp-form-actions">
-            <div class="btn-inline fields-gap-3">
-              <button type="submit" class="btn btn-primary btn-sm">
-                Salvar
-              </button>
-
-              <button id="btnLimpar" type="button" class="btn btn-toolbar btn-sm">
-                Limpar
-              </button>
-
-              <button id="btnVoltarLista" type="button" class="btn btn-toolbar btn-sm" aria-controls="painel-lista">
-                Voltar para a lista
-              </button>
-            </div>
-          </footer>
-
-        </form>
-      </section>
-    </section>
-
   </main>
 
-  <!-- ======================================================= -->
-  <!-- SCRIPTS                                                 -->
-  <!-- ======================================================= -->
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — NOVO / EDITAR PERFIL FISCAL           │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-10 modal-header-color-3 modal-footer-color-3" id="profileModal" role="dialog"
+    aria-modal="true" aria-labelledby="formTitulo" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="formTitulo">Novo perfil fiscal</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="formFiscalProfile" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="fiscal_profile_id">
+
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+
+            <!-- IDENTIFICAÇÃO -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Identificação</h4>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="profile_name">Nome do perfil *</label>
+              <input id="profile_name" type="text" maxlength="100" required
+                placeholder="Ex.: Tributado integralmente – Lucro Real">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="origin_code">Origem da mercadoria</label>
+              <select id="origin_code">
+                <option value="">— Não informada —</option>
+                <option value="0">0 – Nacional</option>
+                <option value="1">1 – Estrangeira, importação direta</option>
+                <option value="2">2 – Estrangeira, adquirida no mercado interno</option>
+                <option value="3">3 – Nacional, conteúdo de importação &gt; 40% e ≤ 70%</option>
+                <option value="4">4 – Nacional, processos produtivos básicos (PPB)</option>
+                <option value="5">5 – Nacional, conteúdo de importação ≤ 40%</option>
+                <option value="6">6 – Estrangeira, importação direta sem similar (CAMEX)</option>
+                <option value="7">7 – Estrangeira, mercado interno sem similar (CAMEX)</option>
+                <option value="8">8 – Nacional, conteúdo de importação &gt; 70%</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="is_active">Status</label>
+              <select id="is_active">
+                <option value="true" selected>Ativo</option>
+                <option value="false">Inativo</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="description">Descrição interna</label>
+              <input id="description" type="text" placeholder="Onde este perfil é aplicado (ex.: revenda dentro do estado)...">
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- ICMS -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>ICMS e CFOP</h4>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="icms_cst">CST / CSOSN ICMS</label>
+              <input id="icms_cst" type="text" maxlength="3" inputmode="numeric" placeholder="00, 20, 60, 102...">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="icms_rate">Alíquota ICMS (%)</label>
+              <input id="icms_rate" type="text" inputmode="decimal" data-decimals="4" value="0,0000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="icms_base_pct">Base de cálculo (%)</label>
+              <input id="icms_base_pct" type="text" inputmode="decimal" data-decimals="4" value="100,0000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="benefit_code">Código de benefício</label>
+              <input id="benefit_code" type="text" maxlength="20" placeholder="Ex.: MG123456">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="cfop_entry">CFOP entrada</label>
+              <input id="cfop_entry" type="text" maxlength="10" inputmode="numeric" placeholder="Ex.: 1102">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="cfop_exit">CFOP saída</label>
+              <input id="cfop_exit" type="text" maxlength="10" inputmode="numeric" placeholder="Ex.: 5102">
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- ICMS-ST -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Substituição Tributária (ICMS-ST)</h4>
+              <small>Deixe em branco quando o perfil não tiver ST</small>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="mva_pct">MVA (%)</label>
+              <input id="mva_pct" type="text" inputmode="decimal" data-decimals="4" data-nullable placeholder="—">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="icms_st_base_pct">Base ST (%)</label>
+              <input id="icms_st_base_pct" type="text" inputmode="decimal" data-decimals="4" data-nullable placeholder="—">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="icms_st_rate">Alíquota ST (%)</label>
+              <input id="icms_st_rate" type="text" inputmode="decimal" data-decimals="4" data-nullable placeholder="—">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="icms_st_ret_base_pct">Base ST retido (%)</label>
+              <input id="icms_st_ret_base_pct" type="text" inputmode="decimal" data-decimals="4" data-nullable placeholder="—">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="icms_st_ret_rate">Alíquota ST retido (%)</label>
+              <input id="icms_st_ret_rate" type="text" inputmode="decimal" data-decimals="4" data-nullable placeholder="—">
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- PIS / COFINS / IPI -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>PIS / COFINS / IPI</h4>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pis_cst">CST PIS</label>
+              <input id="pis_cst" type="text" maxlength="3" inputmode="numeric" placeholder="01, 04, 06...">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pis_rate">Alíquota PIS (%)</label>
+              <input id="pis_rate" type="text" inputmode="decimal" data-decimals="4" value="0,0000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="cofins_cst">CST COFINS</label>
+              <input id="cofins_cst" type="text" maxlength="3" inputmode="numeric" placeholder="01, 04, 06...">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="cofins_rate">Alíquota COFINS (%)</label>
+              <input id="cofins_rate" type="text" inputmode="decimal" data-decimals="4" value="0,0000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="ipi_rate">Alíquota IPI (%)</label>
+              <input id="ipi_rate" type="text" inputmode="decimal" data-decimals="4" value="0,0000">
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button id="btnToggleActive" type="button" class="btn btn-danger btn-sm btn-position-left" style="display:none">⏸ Desativar</button>
+          <button type="button" class="btn btn-clean btn-sm" data-modal-close>Cancelar</button>
+          <button id="btnSalvar" type="submit" form="formFiscalProfile" class="btn btn-new btn-sm">💾 Salvar</button>
+        </footer>
+      </section>
+    </div>
+  </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="./js/fiscalProfile.init.js?v=3"></script>
+  <script type="module" src="/public/fiscalProfile/js/fiscalProfile.init.js?v=4"></script>
 </body>
 
 </html>
