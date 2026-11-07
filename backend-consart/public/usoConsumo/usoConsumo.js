@@ -522,40 +522,60 @@ function statusClass(status) { return status === 'AUTORIZADA' ? 'is-success' : [
 const isDraft = (row) => String(row.status || '').toUpperCase() === 'RASCUNHO';
 const nfeBlocksDelete = (row) => row.invoice_id && !['REJEITADA', 'CANCELADA', 'CANCELADO', 'DENEGADA'].includes(normalizeNfeStatus(row));
 
+// Botões no padrão de Notas Fiscais Emitidas (invoicesIssued.render.js).
+const NFE_ICON = {
+  xml: '/invoicesIssued/icons/xmlDanfe.png',
+  danfe: '/invoicesIssued/icons/pdfDanfe.png',
+};
+
+function iconBtn({ cls, title, attrs = '', inner }) {
+  return `<button type="button" class="action-btn ${cls}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}" ${attrs}>${inner}</button>`;
+}
+
+function iconLink({ cls, title, href, inner }) {
+  return `<a class="action-btn ${cls}" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${inner}</a>`;
+}
+
+const imgIcon = (src, alt) => `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" class="uc-nfe-icon">`;
+
 function actionButtons(row) {
   const id = escapeHtml(row.uso_consumo_id);
   const status = normalizeNfeStatus(row);
-  const buttons = [];
+  const parts = [];
 
   if (isDraft(row)) {
-    buttons.push(`<button class="uc-action is-primary" data-action="finish" data-id="${id}">Finalizar</button>`);
+    parts.push(iconBtn({ cls: 'text is-primary', title: 'Finalizar e baixar estoque', attrs: `data-action="finish" data-id="${id}"`, inner: 'Finalizar' }));
+    parts.push(actionIconsHtml([{ action: 'edit', title: 'Editar rascunho', attrs: { 'data-action': 'edit', 'data-id': row.uso_consumo_id } }]));
   } else {
-    if (!row.invoice_id) buttons.push(`<button class="uc-action is-primary" data-action="emit" data-id="${id}">Emitir NF-e</button>`);
-    if (row.invoice_id) buttons.push(`<button class="uc-action" data-action="status" data-id="${id}">Atualizar</button>`);
-    if (status === 'REJEITADA') buttons.push(`<button class="uc-action is-danger" data-action="retry" data-id="${id}">Reenviar</button>`);
+    if (!row.invoice_id) {
+      parts.push(iconBtn({ cls: 'text is-primary', title: 'Emitir NF-e', attrs: `data-action="emit" data-id="${id}"`, inner: 'Emitir NF-e' }));
+    } else {
+      parts.push(iconBtn({ cls: 'reconcile', title: 'Atualizar status da NF-e', attrs: `data-action="status" data-id="${id}"`, inner: '🔄' }));
+    }
+    if (status === 'REJEITADA') {
+      parts.push(iconBtn({ cls: 'text is-danger', title: 'Reenviar a NF-e rejeitada', attrs: `data-action="retry" data-id="${id}"`, inner: 'Reenviar' }));
+    }
     // XML pelo ERP (a URL da API Consart exige a chave, não abre direto no navegador).
-    if (row.xml_url) buttons.push(`<a class="uc-action" href="/api/invoices-issued/${encodeURIComponent(row.invoice_id)}/xml" target="_blank" rel="noopener noreferrer">XML</a>`);
+    if (row.invoice_id && row.xml_url) {
+      parts.push(iconLink({ cls: 'xml', title: 'Baixar XML', href: `/api/invoices-issued/${encodeURIComponent(row.invoice_id)}/xml`, inner: imgIcon(NFE_ICON.xml, 'XML') }));
+    }
     if (status === 'AUTORIZADA') {
-      buttons.push(`<a class="uc-action is-success" href="${API}/${encodeURIComponent(row.uso_consumo_id)}/nfe/danfe-consart" target="_blank" rel="noopener noreferrer" title="Abrir DANFE personalizado da Consart">Imprimir DANFE</a>`);
+      parts.push(iconLink({ cls: 'danfe', title: 'Imprimir DANFE', href: `${API}/${encodeURIComponent(row.uso_consumo_id)}/nfe/danfe-consart`, inner: imgIcon(NFE_ICON.danfe, 'DANFE') }));
+    }
+    parts.push(actionIconsHtml([{ action: 'view', title: 'Ver itens', attrs: { 'data-action': 'view', 'data-id': row.uso_consumo_id } }]));
+    if (status === 'AUTORIZADA') {
+      parts.push(iconBtn({ cls: 'cancel-nfe', title: 'Cancelar NF-e', attrs: `data-action="cancel-nfe" data-id="${id}"`, inner: '🚫' }));
     }
   }
 
-  const icons = [
-    isDraft(row)
-      ? { action: 'edit', title: 'Editar rascunho', attrs: { 'data-action': 'edit', 'data-id': row.uso_consumo_id } }
-      : { action: 'view', title: 'Ver itens', attrs: { 'data-action': 'view', 'data-id': row.uso_consumo_id } },
-    status === 'AUTORIZADA'
-      ? { action: 'cancel', title: 'Cancelar NF-e', attrs: { 'data-action': 'cancel-nfe', 'data-id': row.uso_consumo_id } }
-      : null,
-    {
-      action: 'delete',
-      title: nfeBlocksDelete(row) ? 'Cancele a NF-e antes de excluir' : (isDraft(row) ? 'Excluir rascunho' : 'Excluir e estornar estoque'),
-      disabled: Boolean(nfeBlocksDelete(row)),
-      attrs: { 'data-action': 'delete', 'data-id': row.uso_consumo_id },
-    },
-  ];
+  parts.push(actionIconsHtml([{
+    action: 'delete',
+    title: nfeBlocksDelete(row) ? 'Cancele a NF-e antes de excluir' : (isDraft(row) ? 'Excluir rascunho' : 'Excluir e estornar estoque'),
+    disabled: Boolean(nfeBlocksDelete(row)),
+    attrs: { 'data-action': 'delete', 'data-id': row.uso_consumo_id },
+  }]));
 
-  return buttons.join(' ') + actionIconsHtml(icons);
+  return parts.join('');
 }
 
 function renderFooter() {

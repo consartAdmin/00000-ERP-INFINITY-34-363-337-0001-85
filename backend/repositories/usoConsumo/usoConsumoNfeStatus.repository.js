@@ -104,6 +104,15 @@ export async function refreshNfeStatus(usoConsumoId) {
   const validDate = (value) => {
     if (!value) return null;
 
+    // "dd/mm/aaaa" (formato devolvido pela NF-e API / PlugNotas): new Date()
+    // leria como mm/dd e trocaria dia e mês (07/11 virava 11/07).
+    const br = String(value).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+    if (br) {
+      const [, dd, mm, yyyy, hh = '12', mi = '00', ss = '00'] = br;
+      const local = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}-03:00`);
+      return Number.isNaN(local.getTime()) ? null : local.toISOString();
+    }
+
     const date = new Date(value);
 
     return Number.isNaN(date.getTime())

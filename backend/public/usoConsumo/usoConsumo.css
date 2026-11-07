@@ -506,3 +506,73 @@ body.uc-modal-open {
 @media (max-width: 900px) {
   .uc-w-cfop, .uc-w-md, .uc-w-product, .uc-w-lot { width: 100%; }
 }
+
+
+/* Ações da lista no padrão de Notas Fiscais Emitidas */
+.uc-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.uc-row-actions .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 32px;
+    padding: 4px;
+    border: 1px solid #dbe3ef;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #0f172a;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .15s ease, background .15s ease;
+}
+
+.uc-row-actions .action-btn:hover {
+    background: #f8fafc;
+    transform: translateY(-1px);
+}
+
+.uc-row-actions .action-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.uc-row-actions .action-btn .uc-nfe-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.uc-row-actions .action-btn.text {
+    width: auto;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.uc-row-actions .action-btn.text.is-primary {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.uc-row-actions .action-btn.text.is-danger {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+
+.uc-row-actions .action-btn.cancel-nfe {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
