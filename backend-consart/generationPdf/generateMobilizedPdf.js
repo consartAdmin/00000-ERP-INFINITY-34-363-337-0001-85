@@ -422,9 +422,10 @@ function computeDescBlockLines(item) {
   const nfe = safeStr(item?.nfe_ref, 120);
   const obs = safeStr(cleanNotesForDisplay(item?.notes), 260);
 
-  if (model) extras.push(`MODELO: ${model}`);
-  if (sn) extras.push(`S/N: ${sn}`);
-  if (nfe) extras.push(`NF-e: ${nfe}`);
+  // sempre mostra as três linhas ("—" quando vazio)
+  extras.push(`MODELO: ${model || '—'}`);
+  extras.push(`S/N: ${sn || '—'}`);
+  extras.push(`NF-e: ${nfe || '—'}`);
   if (obs) extras.push(`OBS: ${obs}`);
 
   return { baseDesc, extras };
