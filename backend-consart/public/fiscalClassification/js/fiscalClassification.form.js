@@ -1,126 +1,125 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ FILE: fiscalClassification.form.js                                 ║
-// ║ MODULE: Fiscal Classification — Form                               ║
+// ║ MODULE: Fiscal Classification — Formulário do modal                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
-import { $, toNullableText, toNumber } from './fiscalClassification.utils.js';
+import { RATES_2026 } from './fiscalClassification.config.js';
+import {
+  $, $$, formatCest, formatDecimal, formatNcm, toNullableText, toNumber,
+} from './fiscalClassification.utils.js';
 
-function elements() {
-  return {
-    form: $('#formFiscalClassification'),
-    id: $('#fiscal_classification_id'),
-    name: $('#classification_name'),
-    description: $('#description'),
-    ncm: $('#ncm_code'),
-    exTipi: $('#ex_tipi'),
-    cest: $('#cest_code'),
-    ncmDescription: $('#ncm_description'),
-    cestDescription: $('#cest_description'),
-    profile: $('#fiscal_profile_id'),
-    isCst: $('#is_cst'),
-    isClassification: $('#is_classification'),
-    isRate: $('#is_rate'),
-    isSpecificRate: $('#is_specific_rate'),
-    isUnit: $('#is_unit'),
-    ibscbsCst: $('#ibscbs_cst'),
-    ibscbsClassification: $('#ibscbs_classification'),
-    ibsUfRate: $('#ibs_uf_rate'),
-    ibsMunicipalRate: $('#ibs_municipal_rate'),
-    cbsRate: $('#cbs_rate'),
-    donationIndicator: $('#donation_indicator'),
-    active: $('#is_active'),
-    title: $('#formTitulo'),
-    subtitle: $('#formSubtitulo'),
-  };
+const RATE_FIELDS = ['ibs_uf_rate', 'ibs_municipal_rate', 'cbs_rate', 'is_rate', 'is_specific_rate'];
+
+const TEXT_FIELDS = [
+  'classification_name', 'description', 'ncm_code', 'ex_tipi', 'cest_code',
+  'ncm_description', 'cest_description', 'is_cst', 'is_classification',
+  'ibscbs_cst', 'ibscbs_classification',
+];
+
+const field = (id) => $(`#${id}`);
+const decimalsOf = (input) => Number(input?.dataset.decimals) || 4;
+
+function setRate(id, value) {
+  const input = field(id);
+  if (input) input.value = formatDecimal(value ?? 0, decimalsOf(input));
 }
 
 export function getClassificationForm() {
-  return elements().form;
+  return $('#formFiscalClassification');
 }
 
-export function clearClassificationForm() {
-  const fields = elements();
-  if (!fields.form) return;
-
-  fields.form.reset();
-  if (fields.id) fields.id.value = '';
-  if (fields.profile) fields.profile.value = '';
-  if (fields.active) fields.active.checked = true;
-  if (fields.title) fields.title.textContent = 'Nova Classificação';
-  if (fields.subtitle) fields.subtitle.textContent = 'Preencha os dados e salve.';
+/** Formata as alíquotas com casas fixas ao sair do campo (0,1 → 0,1000). */
+export function bindDecimalInputs() {
+  $$('#formFiscalClassification input[data-decimals]').forEach((input) => {
+    input.addEventListener('blur', () => {
+      input.value = formatDecimal(input.value, decimalsOf(input));
+    });
+    input.addEventListener('focus', () => input.select());
+  });
+  field('ncm_code')?.addEventListener('blur', (event) => { event.target.value = formatNcm(event.target.value); });
+  field('cest_code')?.addEventListener('blur', (event) => { event.target.value = formatCest(event.target.value); });
 }
 
-export function fillClassificationForm(row) {
-  const fields = elements();
-  if (!fields.form) return;
+export function applyRates2026() {
+  Object.entries(RATES_2026).forEach(([id, value]) => setRate(id, value));
+}
 
-  fields.id.value = row.fiscal_classification_id || '';
-  fields.name.value = row.classification_name || '';
-  fields.description.value = row.description || '';
-  fields.ncm.value = row.ncm_code || '';
-  fields.exTipi.value = row.ex_tipi || '';
-  fields.cest.value = row.cest_code || '';
-  fields.ncmDescription.value = row.ncm_description || '';
-  fields.cestDescription.value = row.cest_description || '';
-  fields.isCst.value = row.is_cst || '';
-  fields.isClassification.value = row.is_classification || '';
-  fields.isRate.value = row.is_rate ?? 0;
-  fields.isSpecificRate.value = row.is_specific_rate ?? 0;
-  fields.isUnit.value = row.is_unit || 'UN';
-  fields.ibscbsCst.value = row.ibscbs_cst || '';
-  fields.ibscbsClassification.value = row.ibscbs_classification || '';
-  fields.ibsUfRate.value = row.ibs_uf_rate ?? 0;
-  fields.ibsMunicipalRate.value = row.ibs_municipal_rate ?? 0;
-  fields.cbsRate.value = row.cbs_rate ?? 0;
-  fields.donationIndicator.value = String(row.donation_indicator ?? 1);
-  if (fields.profile) {
-    fields.profile.value =
-      row.fiscal_profile_id == null ? '' : String(row.fiscal_profile_id);
+function setToggleButton(row) {
+  const button = $('#btnToggleActive');
+  if (!button) return;
+  const show = !!row?.fiscal_classification_id;
+  button.style.display = show ? '' : 'none';
+  if (!show) return;
+  const active = row.is_active !== false;
+  button.textContent = active ? '⏸ Desativar' : '▶ Reativar';
+  button.className = `btn ${active ? 'btn-danger' : 'btn-new'} btn-sm btn-position-left`;
+}
+
+/**
+ * Preenche o modal. row = null → nova; copy = true → duplicar (sem ID).
+ */
+export function fillClassificationForm(row = null, { copy = false } = {}) {
+  const form = getClassificationForm();
+  if (!form) return;
+  form.reset();
+
+  const data = row || {};
+  const isEdit = !!data.fiscal_classification_id && !copy;
+
+  field('fiscal_classification_id').value = isEdit ? data.fiscal_classification_id : '';
+  TEXT_FIELDS.forEach((id) => {
+    const input = field(id);
+    if (input) input.value = data[id] ?? '';
+  });
+  if (copy && data.classification_name) {
+    field('classification_name').value = `${data.classification_name} (cópia)`;
   }
-  fields.active.checked = row.is_active !== false;
-  fields.title.textContent =
-    `Editar Classificação #${row.fiscal_classification_id}`;
-  fields.subtitle.textContent = 'Altere os dados e salve para atualizar.';
+  field('ncm_code').value = formatNcm(data.ncm_code);
+  field('cest_code').value = formatCest(data.cest_code);
+  field('is_unit').value = data.is_unit || 'UN';
+  field('fiscal_profile_id').value = data.fiscal_profile_id == null ? '' : String(data.fiscal_profile_id);
+  field('donation_indicator').value = String(data.donation_indicator ?? 1);
+  field('is_active').value = String(copy ? true : data.is_active !== false);
+  RATE_FIELDS.forEach((id) => setRate(id, data[id]));
+
+  const title = $('#formTitulo');
+  if (title) {
+    if (isEdit) title.textContent = `Editar classificação #${data.fiscal_classification_id} — ${data.classification_name || ''}`;
+    else if (copy) title.textContent = 'Duplicar classificação';
+    else title.textContent = 'Nova classificação';
+  }
+  setToggleButton(isEdit ? data : null);
 }
 
 export function readClassificationForm() {
-  const fields = elements();
+  const value = (id) => field(id)?.value;
+  const id = value('fiscal_classification_id');
 
   return {
-    id: fields.id?.value ? Number(fields.id.value) : null,
+    id: id ? Number(id) : null,
     payload: {
-      classification_name: String(fields.name?.value || '').trim(),
-      description: toNullableText(fields.description?.value),
-      ncm_code: toNullableText(fields.ncm?.value),
-      ex_tipi: toNullableText(fields.exTipi?.value),
-      cest_code: toNullableText(fields.cest?.value),
-      ncm_description: toNullableText(fields.ncmDescription?.value),
-      cest_description: toNullableText(fields.cestDescription?.value),
-      fiscal_profile_id: fields.profile?.value
-        ? Number(fields.profile.value)
-        : null,
-      is_cst: toNullableText(fields.isCst?.value),
-      is_classification: toNullableText(fields.isClassification?.value),
-      is_rate: toNumber(fields.isRate?.value),
-      is_specific_rate: toNumber(fields.isSpecificRate?.value),
-      is_unit: toNullableText(fields.isUnit?.value) || 'UN',
-      ibscbs_cst: toNullableText(fields.ibscbsCst?.value),
-      ibscbs_classification: toNullableText(fields.ibscbsClassification?.value),
-      ibs_uf_rate: toNumber(fields.ibsUfRate?.value),
-      ibs_municipal_rate: toNumber(fields.ibsMunicipalRate?.value),
-      cbs_rate: toNumber(fields.cbsRate?.value),
-      donation_indicator: Number(fields.donationIndicator?.value ?? 1),
-      is_active: fields.active?.checked !== false,
+      classification_name: String(value('classification_name') || '').trim(),
+      description: toNullableText(value('description')),
+      ncm_code: toNullableText(value('ncm_code')),
+      ex_tipi: toNullableText(value('ex_tipi')),
+      cest_code: toNullableText(value('cest_code')),
+      ncm_description: toNullableText(value('ncm_description')),
+      cest_description: toNullableText(value('cest_description')),
+      fiscal_profile_id: value('fiscal_profile_id') ? Number(value('fiscal_profile_id')) : null,
+      is_cst: toNullableText(value('is_cst')),
+      is_classification: toNullableText(value('is_classification')),
+      is_rate: toNumber(value('is_rate')),
+      is_specific_rate: toNumber(value('is_specific_rate')),
+      is_unit: toNullableText(value('is_unit')) || 'UN',
+      ibscbs_cst: toNullableText(value('ibscbs_cst')),
+      ibscbs_classification: toNullableText(value('ibscbs_classification')),
+      ibs_uf_rate: toNumber(value('ibs_uf_rate')),
+      ibs_municipal_rate: toNumber(value('ibs_municipal_rate')),
+      cbs_rate: toNumber(value('cbs_rate')),
+      donation_indicator: Number(value('donation_indicator') ?? 1),
+      is_active: value('is_active') !== 'false',
     },
   };
-}
-
-export function focusClassificationName() {
-  elements().name?.focus();
-}
-
-export function getEditingClassificationId() {
-  return elements().id?.value || '';
 }
