@@ -1,34 +1,23 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ FILE: fiscalProfile.modal.js                                        ║
-// ║ MODULE: Fiscal Profile — Alerts and Confirmation                    ║
-// ║ CONSART ERP                                                         ║
+// ║ FILE: fiscalProfile.modal.js                                         ║
+// ║ MODULE: Fiscal Profile — Modal (modals.css + modal.js)             ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
-import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+// ESC, backdrop e [data-modal-close] já são tratados pelo Modal.setup().
+import { Modal } from '/public/includes/js/modal.js';
 
-export const toast = {
-  info(title, message, timeoutMs = 3800) {
-    return showCenterModal({ variant: 'info', title, message, timeoutMs });
-  },
+const MODAL_ID = 'profileModal';
 
-  success(title, message, timeoutMs = 4200) {
-    return showCenterModal({ variant: 'success', title, message, timeoutMs });
-  },
+export function configureModal() {
+  Modal.setup();
+}
 
-  warn(title, message) {
-    return showCenterModal({ variant: 'warning', title, message });
-  },
+export function openProfileModal() {
+  Modal.open(MODAL_ID, { focusSelector: '#profile_name' });
+}
 
-  error(title, message) {
-    return showCenterModal({ variant: 'error', title, message });
-  },
-};
-
-export function confirmDeleteProfile(profile) {
-  return window.confirm(
-    `Deseja realmente desativar o perfil fiscal "${profile.profile_name}" ` +
-    `(ID ${profile.fiscal_profile_id})?`,
-  );
+export function closeProfileModal() {
+  Modal.close(MODAL_ID);
 }

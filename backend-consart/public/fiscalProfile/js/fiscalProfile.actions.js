@@ -1,185 +1,167 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ FILE: fiscalProfile.actions.js                                      ║
-// ║ MODULE: Fiscal Profile — Actions                                    ║
-// ║ CONSART ERP                                                         ║
+// ║ FILE: fiscalProfile.actions.js                                       ║
+// ║ MODULE: Fiscal Profile — Actions                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
 import {
   createFiscalProfile,
-  deactivateFiscalProfile,
-  listFiscalProfiles,
+  listAllFiscalProfiles,
+  setFiscalProfileActive,
   updateFiscalProfile,
 } from './fiscalProfile.api.js';
-import { buildListParams } from './fiscalProfile.filters.js';
-import { fillForm, readForm, resetForm } from './fiscalProfile.form.js';
-import { confirmDeleteProfile, toast } from './fiscalProfile.modal.js';
+import { applyFiltersAndSort, resetFiltersDom, syncFiltersFromDom } from './fiscalProfile.filters.js';
+import { fillProfileForm, readProfileForm } from './fiscalProfile.form.js';
+import { closeProfileModal, openProfileModal } from './fiscalProfile.modal.js';
 import {
-  renderListError,
-  renderLoading,
-  renderPagination,
-  renderTable,
+  renderFooter, renderListError, renderListLoading, renderProfileTable,
 } from './fiscalProfile.render.js';
-import { dom, state } from './fiscalProfile.state.js';
-import { scrollToPageTop } from './fiscalProfile.utils.js';
+import { state } from './fiscalProfile.state.js';
+import { $, confirmCenter, logError, notify } from './fiscalProfile.utils.js';
 import { validateFiscalProfile } from './fiscalProfile.validation.js';
 
-function setPageVisibility(page, visible) {
-  if (!page) return;
+const handlers = {
+  onEdit: (row) => editProfile(row),
+  onCopy: (row) => copyProfile(row),
+  onToggle: (row) => toggleProfileActive(row),
+};
 
-  page.hidden = !visible;
-  page.classList.toggle('is-active', visible);
-  page.setAttribute('aria-hidden', String(!visible));
-}
-
-export function showListPage({ scroll = true } = {}) {
-  state.currentView = 'list';
-
-  setPageVisibility(dom.listPage, true);
-  setPageVisibility(dom.formPage, false);
-
-  if (scroll) {
-    scrollToPageTop();
-  }
-}
-
-export function showFormPage({ focus = false, scroll = true } = {}) {
-  state.currentView = 'form';
-
-  setPageVisibility(dom.listPage, false);
-  setPageVisibility(dom.formPage, true);
-
-  if (scroll) {
-    scrollToPageTop();
-  }
-
-  if (focus) {
-    dom.fields.profileName?.focus();
-  }
+/** Redesenha a lista com os filtros/ordenação/página atuais (sem ir à API). */
+export function refreshView() {
+  applyFiltersAndSort();
+  renderProfileTable(handlers);
+  renderFooter();
 }
 
 export async function loadProfiles() {
-  if (state.loading) return;
-
-  state.loading = true;
-  renderLoading();
-  let loadedSuccessfully = false;
-
+  renderListLoading();
   try {
-    const response = await listFiscalProfiles(buildListParams());
-    const rows = Array.isArray(response?.data)
-      ? response.data
-      : Array.isArray(response?.rows) ? response.rows : [];
-    const offset = (state.page - 1) * state.pageSize;
-    state.total = Number(response?.total ?? (offset + rows.length + (rows.length === state.pageSize ? 1 : 0)));
-
-    renderTable(rows, {
-      onEdit: editProfile,
-      onDelete: removeProfile,
-    });
-
-    loadedSuccessfully = true;
+    state.allRows = await listAllFiscalProfiles();
+    refreshView();
   } catch (error) {
-    console.error('[fiscalProfile] Erro ao carregar perfis', error);
-    renderListError();
-    toast.error(
-      'Erro ao carregar',
-      'Não foi possível carregar os perfis fiscais.',
-    );
-  } finally {
-    state.loading = false;
-
-    if (loadedSuccessfully) {
-      renderPagination();
-    }
+    logError('Erro ao carregar perfis', error);
+    state.allRows = [];
+    state.filteredRows = [];
+    renderListError(error.message);
+    renderFooter();
   }
+}
+
+export function applyFilters() {
+  syncFiltersFromDom();
+  refreshView();
+}
+
+export function clearFilters() {
+  resetFiltersDom();
+  applyFilters();
+}
+
+export function setSort({ column, direction }) {
+  state.sortColumn = column;
+  state.sortDirection = direction;
+  state.page = 1;
+  refreshView();
+}
+
+export function setPageSize(size) {
+  state.pageSize = Number(size) || 50;
+  state.page = 1;
+  refreshView();
+}
+
+export function goToPreviousPage() {
+  if (state.page <= 1) return;
+  state.page -= 1;
+  refreshView();
+}
+
+export function goToNextPage() {
+  const totalPages = Math.max(1, Math.ceil(state.filteredRows.length / state.pageSize));
+  if (state.page >= totalPages) return;
+  state.page += 1;
+  refreshView();
 }
 
 export function newProfile() {
-  resetForm();
-  showFormPage({ focus: true });
+  state.editingRow = null;
+  fillProfileForm(null);
+  openProfileModal();
 }
 
-export function editProfile(profile) {
-  fillForm(profile);
-  showFormPage();
+export function editProfile(row) {
+  state.editingRow = row;
+  fillProfileForm(row);
+  openProfileModal();
 }
 
-export function returnToList() {
-  resetForm();
-  showListPage();
+export function copyProfile(row) {
+  state.editingRow = null;
+  fillProfileForm(row, { copy: true });
+  openProfileModal();
 }
 
-export async function removeProfile(profile) {
-  const id = profile.fiscal_profile_id;
-  if (!id || !confirmDeleteProfile(profile)) return;
+export async function toggleProfileActive(row, { fromModal = false } = {}) {
+  const id = row?.fiscal_profile_id;
+  if (!id) return;
+  const activate = row.is_active === false;
+  const verb = activate ? 'Reativar' : 'Desativar';
+
+  const ok = await confirmCenter(
+    `${verb} o perfil fiscal "${row.profile_name}" (ID ${id})?` +
+    (activate ? '' : ' Ele deixa de aparecer para novas classificações, mas os vínculos existentes são mantidos.'),
+    { title: `${verb} perfil fiscal`, confirmLabel: verb },
+  );
+  if (!ok) return;
 
   try {
-    await deactivateFiscalProfile(id);
-
-    if (String(dom.fields.id.value) === String(id)) {
-      resetForm();
-    }
-
+    await setFiscalProfileActive(id, activate);
+    if (fromModal) closeProfileModal();
     await loadProfiles();
-
-    toast.success(
-      'Perfil desativado',
-      `O perfil "${profile.profile_name}" foi desativado com sucesso.`,
-    );
+    notify(`Perfil fiscal ${activate ? 'reativado' : 'desativado'} com sucesso.`);
   } catch (error) {
-    console.error('[fiscalProfile] Erro ao remover perfil', error);
-    toast.error(
-      'Erro ao desativar',
-      error.message || 'Não foi possível desativar o perfil fiscal.',
-    );
+    logError(`Erro ao ${verb.toLowerCase()} perfil`, error);
+    notify(`Erro ao ${verb.toLowerCase()} perfil fiscal: ${error.message}`, 'error');
   }
 }
 
-export async function submitProfile(event) {
-  event.preventDefault();
+export function toggleEditingActive() {
+  if (state.editingRow) toggleProfileActive(state.editingRow, { fromModal: true });
+}
 
-  const { id, payload } = readForm();
+let saving = false;
+
+export async function saveProfile(event) {
+  event?.preventDefault();
+  if (saving) return;
+
+  const { id, payload } = readProfileForm();
   const validation = validateFiscalProfile(payload);
 
-  if (!validation.valid) {
-    toast.warn(validation.title, validation.message);
-    dom.fields[validation.field]?.focus();
+  if (!validation.isValid) {
+    const [first] = validation.errors;
+    notify(first.message, 'warning');
+    $(`#${first.field}`)?.focus();
     return;
   }
 
+  const saveButton = $('#btnSalvar');
+  saving = true;
+  if (saveButton) saveButton.disabled = true;
+
   try {
-    if (id) {
-      await updateFiscalProfile(id, payload);
-    } else {
-      await createFiscalProfile(payload);
-    }
+    if (id) await updateFiscalProfile(id, payload);
+    else await createFiscalProfile(payload);
 
-    resetForm();
+    closeProfileModal();
     await loadProfiles();
-    showListPage();
-
-    toast.success('Perfil salvo', 'Perfil fiscal salvo com sucesso.');
+    notify(id ? 'Perfil fiscal atualizado.' : 'Perfil fiscal cadastrado.');
   } catch (error) {
-    console.error('[fiscalProfile] Erro ao salvar perfil', error);
-    toast.error(
-      'Erro ao salvar',
-      error.message || 'Não foi possível salvar o perfil fiscal.',
-    );
+    logError('Erro ao salvar perfil', error);
+    notify(`Erro ao salvar perfil fiscal: ${error.message}`, 'error');
+  } finally {
+    saving = false;
+    if (saveButton) saveButton.disabled = false;
   }
-}
-
-export function previousPage() {
-  if (state.loading || state.page <= 1) return;
-
-  state.page -= 1;
-  loadProfiles();
-}
-
-export function nextPage() {
-  if (state.loading) return;
-
-  state.page += 1;
-  loadProfiles();
 }
