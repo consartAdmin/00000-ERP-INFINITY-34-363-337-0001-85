@@ -1016,7 +1016,7 @@
         <!-- 🧩 Grades (antes era a aba Grade) -->
         <header class="entity-header">
 
-          <form id="formGradeProduct" novalidate>
+          <form id="formGradeProduct" novalidate style="display:flex; flex-direction:column; gap:12px;">
 
             <!-- ===================================================== -->
             <!-- Header -->
@@ -1028,32 +1028,20 @@
                 🧩 Grades do Produto
               </div>
 
-              <button type="submit" class="btn btn-toolbar btn-sm">
-                ➕ Adicionar Grade
-              </button>
-
             </div>
 
             <!-- ===================================================== -->
             <!-- Informações -->
             <!-- ===================================================== -->
 
-            <div class="entity-header__grid">
-
-              <label class="field-group" for="gradeSelect">
-                <span>Grade</span>
-
+            <div class="fields fields-h-6 fields-w-full fields-value-bold">
+              <span>Adicionar grade ao produto</span>
+              <div class="inline-field">
                 <select id="gradeSelect" name="gradeSelect">
                   <option value="">— Selecione uma grade —</option>
                 </select>
-              </label>
-
-              <label class="field-group" for="gradeStock">
-                <span>Estoque</span>
-
-                <input type="number" id="gradeStock" name="gradeStock" min="0" step="1" value="0">
-              </label>
-
+                <button type="submit" class="btn btn-toolbar btn-sm">➕ Adicionar</button>
+              </div>
             </div>
 
           </form>
@@ -1070,18 +1058,16 @@
                   aria-label="Grades do produto">
 
                   <colgroup>
-                    <col style="width:200px">
+                    <col style="width:160px">
                     <col>
-                    <col style="width:200px">
-                    <col style="width:200px">
-                    <col style="width:200px">
+                    <col style="width:120px">
+                    <col style="width:110px">
                   </colgroup>
 
                   <thead>
                     <tr>
                       <th>Grade</th>
                       <th>Descrição</th>
-                      <th>Estoque</th>
                       <th>Status</th>
                       <th>Ações</th>
                     </tr>
