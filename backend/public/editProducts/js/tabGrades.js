@@ -146,7 +146,8 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
             grade_id: pg.grade_id == null ? null : Number(pg.grade_id),
             grade: pg.grade ?? pg.grade_name ?? pg.nome ?? '',
             description: pg.description ?? pg.desc ?? pg.descricao ?? '',
-            stock: pg.stock == null ? (pg.qty ?? pg.quantidade ?? 0) : Number(pg.stock),
+            // Estoque real = soma dos lotes da grade (productsStockLots); pg.stock não é usado.
+            lot_stock: Number(pg.lot_stock ?? 0) || 0,
             is_active: pg.is_active !== false && pg.ativo !== false,
           }))
           .filter((pg) => Number.isInteger(pg.product_grade_id) || Number.isInteger(pg.grade_id));
@@ -200,6 +201,12 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
     });
   }
 
+  const fmtQty = (n) => {
+    const v = Number(n) || 0;
+    if (ctx?.Num?.formatBR) return ctx.Num.formatBR(v, 3);
+    return v.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  };
+
   function renderGradesTable(rows = []) {
     const tbody = qGrade('tbody');
     if (!tbody) return;
@@ -217,15 +224,7 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
         <td class="col-grade" title="${gradeLabel}">${gradeLabel}</td>
         <td class="col-desc" title="${desc}">${desc}</td>
 
-        <td class="col-stock">
-          <input
-            type="number"
-            class="inp-stock"
-            value="${sanitizeInt(r.stock)}"
-            min="0"
-            inputmode="numeric"
-          />
-        </td>
+        <td class="col-stock" title="Soma dos lotes ativos desta grade">${fmtQty(r.lot_stock)}</td>
 
         <td class="col-status">
           <button type="button" class="btn btn-toolbar btn-sm act-toggle">
@@ -261,7 +260,6 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
   // ─────────────────────────────────────────────────────────────
   async function addGrade() {
     const sel = qGrade('sel');
-    const stockEl = qGrade('stock');
 
     if (!sel || !sel.value) {
       ctx.toast('Selecione a grade.', 'error');
@@ -270,7 +268,7 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
     }
 
     const grade_id = Number(sel.value);
-    const stock = sanitizeInt(stockEl?.value ?? 0);
+    const stock = 0; // estoque da grade vem dos lotes
 
     await GradesApi.create({
       product_id: finalProductId,                    // ✅ obrigatório
@@ -283,22 +281,12 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
     ctx.toast('✅ Grade adicionada ao produto!', 'success');
 
     if (sel) sel.value = '';
-    if (stockEl) stockEl.value = '0';
     await loadProductGrades();
   }
 
   async function setGradeActive(product_grade_id, flag) {
     await GradesApi.update(product_grade_id, { is_active: !!flag });
     await loadProductGrades();
-  }
-
-  async function updateGradeStock(product_grade_id, stock) {
-    try {
-      await GradesApi.update(product_grade_id, { stock: sanitizeInt(stock) });
-    } catch (err) {
-      ctx.toast(`❌ Falha ao atualizar estoque: ${err.message}`, 'error');
-      await loadProductGrades();
-    }
   }
 
   async function removeGrade(product_grade_id) {
@@ -345,19 +333,6 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
       tbody.addEventListener('click', tbody.__boundClick);
 
       if (tbody.__boundChange) tbody.removeEventListener('change', tbody.__boundChange);
-      tbody.__boundChange = (e) => {
-        const inp = e.target.closest('.inp-stock');
-        if (!inp) return;
-
-        const tr = inp.closest('tr');
-        if (!tr) return;
-
-        const id = Number(tr.dataset.id);
-        if (!Number.isInteger(id)) return;
-
-        updateGradeStock(id, inp.value);
-      };
-      tbody.addEventListener('change', tbody.__boundChange);
     }
   }
 
