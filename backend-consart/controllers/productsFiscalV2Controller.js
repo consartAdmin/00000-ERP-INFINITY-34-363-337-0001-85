@@ -113,6 +113,8 @@ export async function batchList(req, res) {
     const data = await svc.listBatchProducts({
       search,
       linked: bool(req.query.linked),
+      sort: req.query.sort,
+      dir: req.query.dir,
       ...page(req.query),
     });
 
@@ -122,6 +124,8 @@ export async function batchList(req, res) {
       ok: true,
       rows: data.rows,
       total: data.total,
+      linked_total: data.linked_total,
+      unlinked_total: data.unlinked_total,
     });
   } catch (error) {
     return sendError(res, error);

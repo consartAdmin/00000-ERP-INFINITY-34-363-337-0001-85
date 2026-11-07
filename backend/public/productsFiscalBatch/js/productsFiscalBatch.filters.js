@@ -13,6 +13,12 @@ export function syncFiltersFromDom() {
   state.linkedFilter = dom.linkedFilter?.value || '';
 }
 
+export function clearFilters() {
+  if (dom.searchInput) dom.searchInput.value = '';
+  if (dom.linkedFilter) dom.linkedFilter.value = '';
+  syncFiltersFromDom();
+}
+
 export function resetPage() {
   state.page = 1;
 }
@@ -23,5 +29,7 @@ export function buildListParams() {
     pageSize: state.pageSize,
     search: state.search,
     linkedFilter: state.linkedFilter,
+    sort: state.sortColumn,
+    dir: state.sortDirection,
   };
 }

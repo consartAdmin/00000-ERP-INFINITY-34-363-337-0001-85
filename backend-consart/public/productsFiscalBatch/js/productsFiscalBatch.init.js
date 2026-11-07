@@ -6,19 +6,29 @@
 
 'use strict';
 
+import { Modal } from '/public/includes/js/modal.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
+
 import {
   applyBatchLink,
-  loadFiscalProfiles,
   loadProducts,
+  openLinkModal,
   pickClassification,
+  unlinkSelected,
 } from './productsFiscalBatch.actions.js';
 import {
+  clearFilters,
   resetPage,
   syncFiltersFromDom,
 } from './productsFiscalBatch.filters.js';
 import { toggleAllVisibleProducts } from './productsFiscalBatch.products.js';
 import { dom, state } from './productsFiscalBatch.state.js';
 import { debounce } from './productsFiscalBatch.utils.js';
+
+const SORT_COLUMNS = [
+  'product_id', 'product_code', 'description', 'ncm_code', 'cest_code',
+  'classification_name', 'profile_name', 'fiscal_is_linked',
+];
 
 function searchProducts() {
   syncFiltersFromDom();
@@ -30,16 +40,20 @@ function bindEvents() {
   const debouncedSearch = debounce(searchProducts, 500);
 
   dom.searchButton?.addEventListener('click', searchProducts);
+  dom.reloadButton?.addEventListener('click', () => loadProducts());
+  dom.clearButton?.addEventListener('click', () => {
+    clearFilters();
+    resetPage();
+    loadProducts();
+  });
 
   dom.searchInput?.addEventListener('keyup', (event) => {
     if (event.key === 'Enter') {
       searchProducts();
       return;
     }
-
-    if (!dom.searchInput.value || dom.searchInput.value.trim().length >= 3) {
-      debouncedSearch();
-    }
+    const value = dom.searchInput.value.trim();
+    if (!value || value.length >= 3) debouncedSearch();
   });
 
   dom.linkedFilter?.addEventListener('change', searchProducts);
@@ -66,25 +80,34 @@ function bindEvents() {
     loadProducts();
   });
 
-  dom.pickClassificationButton?.addEventListener(
-    'click',
-    pickClassification
-  );
-
+  dom.openLinkButton?.addEventListener('click', () => openLinkModal());
+  dom.unlinkSelectedButton?.addEventListener('click', unlinkSelected);
+  dom.pickClassificationButton?.addEventListener('click', pickClassification);
   dom.applyButton?.addEventListener('click', applyBatchLink);
 }
 
 export async function bootstrapProductsFiscalBatch() {
+  Modal.setup();
   state.pageSize = Number(dom.pageSize?.value) || state.pageSize;
   syncFiltersFromDom();
   bindEvents();
 
-  await loadFiscalProfiles();
+  if (dom.table) {
+    createSortableTable({
+      table: dom.table,
+      defaultColumn: state.sortColumn,
+      defaultDirection: state.sortDirection,
+      allowedColumns: SORT_COLUMNS,
+      onSort: async ({ column, direction }) => {
+        state.sortColumn = column;
+        state.sortDirection = direction;
+        state.page = 1;
+        await loadProducts({ force: true });
+      },
+    });
+  }
+
   await loadProducts();
 }
 
-document.addEventListener(
-  'DOMContentLoaded',
-  bootstrapProductsFiscalBatch,
-  { once: true }
-);
+document.addEventListener('DOMContentLoaded', bootstrapProductsFiscalBatch, { once: true });

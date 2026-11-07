@@ -6,45 +6,53 @@
 
 'use strict';
 
+import { createActionIcons } from '/public/includes/js/actionIcons.js';
 import { dom, state } from './productsFiscalBatch.state.js';
 import {
+  isLinked,
   syncSelectAllState,
   toggleProductSelection,
   updateSelectionSummary,
 } from './productsFiscalBatch.products.js';
 
+const COLUMNS = 10;
+const nf = new Intl.NumberFormat('pt-BR');
+
 function createCell(value, className = '') {
   const cell = document.createElement('td');
-  cell.textContent = value ?? '-';
+  cell.textContent = value === null || value === undefined || value === '' ? '—' : String(value);
   if (className) cell.className = className;
   return cell;
 }
 
-function createEmptyRow(message) {
+function createMessageRow(message) {
   const row = document.createElement('tr');
   const cell = document.createElement('td');
-
-  cell.colSpan = 8;
+  cell.colSpan = COLUMNS;
   cell.textContent = message;
-  cell.style.textAlign = 'center';
-  cell.style.padding = '16px';
-
   row.appendChild(cell);
   return row;
 }
 
-export function renderProducts(onUnlink) {
+function createStatusPill(linked) {
+  const pill = document.createElement('span');
+  pill.className = `summary-pill ${linked ? 'summary-pill--primary' : 'summary-pill--warning'}`;
+  pill.textContent = linked ? 'Vinculado' : 'Sem vínculo';
+  return pill;
+}
+
+/**
+ * @param {{ onLink: Function, onUnlink: Function }} handlers
+ */
+export function renderProducts({ onLink, onUnlink }) {
   if (!dom.productsBody) return;
 
   dom.productsBody.replaceChildren();
 
   if (!state.products.length) {
-    const message =
-      state.search && state.search.length >= 3
-        ? 'Nenhum produto encontrado para a busca.'
-        : 'Nenhum produto encontrado.';
-
-    dom.productsBody.appendChild(createEmptyRow(message));
+    dom.productsBody.appendChild(createMessageRow(
+      state.search ? 'Nenhum produto encontrado para a busca.' : 'Nenhum produto encontrado.'
+    ));
     syncSelectAllState();
     updateSelectionSummary();
     return;
@@ -53,64 +61,48 @@ export function renderProducts(onUnlink) {
   const fragment = document.createDocumentFragment();
 
   state.products.forEach((product) => {
-    const productId = product.product_id;
-    const productCode = String(product.product_code || '').trim();
-    const sku = productCode || '-';
-    const description =
-      product.product_description || product.description || '-';
-    const classification =
-      product.classification_name || '-';
-    const profile = product.profile_name || '-';
-    const isLinked =
-      product.fiscal_is_linked === true ||
-      product.fiscal_is_linked === 1 ||
-      product.fiscal_is_linked === '1' ||
-      product.fiscal_is_linked === 'true';
-
+    const code = String(product.product_code || '').trim();
+    const linked = isLinked(product);
     const row = document.createElement('tr');
 
     const checkboxCell = document.createElement('td');
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.dataset.productId = productCode;
-    checkbox.checked = state.selected.has(productCode);
-    checkbox.setAttribute(
-      'aria-label',
-      `Selecionar produto ${sku}`
-    );
-
-    checkbox.addEventListener('change', () => {
-      toggleProductSelection(productCode, checkbox.checked);
-    });
-
+    checkbox.dataset.productCode = code;
+    checkbox.checked = state.selected.has(code);
+    checkbox.setAttribute('aria-label', `Selecionar produto ${code}`);
+    checkbox.addEventListener('change', () => toggleProductSelection(product, checkbox.checked));
     checkboxCell.appendChild(checkbox);
 
     const statusCell = document.createElement('td');
-    const badge = document.createElement('span');
-    badge.className = `pfb-status-badge ${isLinked ? 'ok' : 'no'}`;
-    badge.textContent = isLinked ? '✔️ Vinculado' : '❌ Não vinculado';
-    statusCell.appendChild(badge);
+    statusCell.appendChild(createStatusPill(linked));
 
-    const unlinkCell = document.createElement('td');
-    unlinkCell.className = 'pfb-unlink-cell';
-
-    const unlinkButton = document.createElement('button');
-    unlinkButton.type = 'button';
-    unlinkButton.className = 'btn btn-toolbar btn-sm';
-    unlinkButton.textContent = 'Desvincular';
-    unlinkButton.disabled = !isLinked;
-    unlinkButton.addEventListener('click', () => onUnlink(productId, sku));
-    unlinkCell.appendChild(unlinkButton);
+    const actionsCell = document.createElement('td');
+    actionsCell.appendChild(createActionIcons([
+      {
+        action: 'edit',
+        title: linked ? 'Trocar classificação fiscal' : 'Vincular classificação fiscal',
+        onClick: () => onLink(product),
+      },
+      {
+        action: 'cancel',
+        title: 'Desvincular',
+        disabled: !linked,
+        onClick: () => onUnlink([product]),
+      },
+    ]));
 
     row.append(
       checkboxCell,
-      createCell(productId),
-      createCell(sku),
-      createCell(description),
-      createCell(classification),
-      createCell(profile),
+      createCell(product.product_id),
+      createCell(code),
+      createCell(product.product_description || product.description, 'td-left'),
+      createCell(product.ncm_code),
+      createCell(product.cest_code),
+      createCell(product.classification_name, 'td-left'),
+      createCell(product.profile_name, 'td-left'),
       statusCell,
-      unlinkCell
+      actionsCell,
     );
 
     fragment.appendChild(row);
@@ -121,51 +113,35 @@ export function renderProducts(onUnlink) {
   updateSelectionSummary();
 }
 
+export function renderLoadingRow() {
+  if (!dom.productsBody) return;
+  dom.productsBody.replaceChildren(createMessageRow('Carregando produtos...'));
+}
+
 export function renderPagination() {
-  const firstRecord =
-    state.total > 0 ? (state.page - 1) * state.pageSize + 1 : 0;
+  const first = state.total > 0 ? (state.page - 1) * state.pageSize + 1 : 0;
+  const last = Math.min(state.page * state.pageSize, state.total);
 
-  const lastRecord = Math.min(
-    state.page * state.pageSize,
-    state.total
-  );
-
-  if (dom.pageInfo) {
-    dom.pageInfo.textContent =
-      `Página ${state.page} de ${state.totalPages}`;
-  }
+  if (dom.pageInfo) dom.pageInfo.textContent = `Página ${state.page} de ${state.totalPages}`;
 
   if (dom.tableInfo) {
-    dom.tableInfo.textContent =
-      state.total > 0
-        ? `${firstRecord}–${lastRecord} de ${state.total} registros`
-        : '0 Registros';
+    dom.tableInfo.textContent = state.total > 0
+      ? `${nf.format(first)}–${nf.format(last)} de ${nf.format(state.total)} registros`
+      : '0 registros encontrados';
   }
 
-  if (dom.previousButton) {
-    dom.previousButton.disabled = state.loading || state.page <= 1;
-  }
+  if (dom.sumLinked) dom.sumLinked.textContent = `${nf.format(state.linkedTotal)} vinculados`;
+  if (dom.sumUnlinked) dom.sumUnlinked.textContent = `${nf.format(state.unlinkedTotal)} sem vínculo`;
 
-  if (dom.nextButton) {
-    dom.nextButton.disabled =
-      state.loading || state.page >= state.totalPages;
-  }
+  if (dom.previousButton) dom.previousButton.disabled = state.loading || state.page <= 1;
+  if (dom.nextButton) dom.nextButton.disabled = state.loading || state.page >= state.totalPages;
 }
 
 export function setLoading(loading) {
   state.loading = loading;
 
-  [
-    dom.searchButton,
-    dom.previousButton,
-    dom.nextButton,
-    dom.pageSize,
-    dom.linkedFilter,
-  ].forEach((element) => {
+  [dom.searchButton, dom.clearButton, dom.reloadButton, dom.previousButton,
+    dom.nextButton, dom.pageSize, dom.linkedFilter].forEach((element) => {
     if (element) element.disabled = loading;
   });
-
-  if (dom.searchButton) {
-    dom.searchButton.textContent = loading ? 'Buscando...' : 'Buscar';
-  }
 }

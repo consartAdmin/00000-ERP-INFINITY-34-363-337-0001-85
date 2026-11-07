@@ -62,9 +62,30 @@ export async function list({
 // LISTAR PRODUTOS PARA A TELA DE VÍNCULO EM LOTE
 // ============================================================================
 
+// Colunas que a tela de Vínculos Fiscais pode ordenar (whitelist -> SQL).
+const BATCH_SORT_COLUMNS = Object.freeze({
+  product_id: 'p.product_id',
+  product_code: 'p.product_code',
+  description: 'p.description',
+  ncm_code: 'fc.ncm_code',
+  cest_code: 'fc.cest_code',
+  classification_name: 'fc.classification_name',
+  profile_name: 'fp.profile_name',
+  fiscal_is_linked: '(pf.products_fiscal_id IS NOT NULL)',
+});
+
+function batchOrderBy(sort, dir) {
+  const column = BATCH_SORT_COLUMNS[String(sort ?? '').trim()] || BATCH_SORT_COLUMNS.product_code;
+  const direction = String(dir ?? '').toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+  const tieBreak = column === 'p.product_code' ? '' : ', p.product_code ASC';
+  return `ORDER BY ${column} ${direction} NULLS LAST${tieBreak}`;
+}
+
 export async function listBatchProducts({
   search,
   linked,
+  sort,
+  dir,
   limit = 20,
   offset = 0,
 } = {}) {
@@ -86,6 +107,9 @@ export async function listBatchProducts({
         OR p.description ILIKE $${position}
         OR COALESCE(p.barcode, '') ILIKE $${position}
         OR CAST(p.product_id AS TEXT) ILIKE $${position}
+        OR COALESCE(fc.ncm_code, '') ILIKE $${position}
+        OR COALESCE(fc.cest_code, '') ILIKE $${position}
+        OR COALESCE(fc.classification_name, '') ILIKE $${position}
       )
     `);
   }
@@ -114,13 +138,18 @@ export async function listBatchProducts({
   const countResult = await db.query(
     `
       SELECT
-        COUNT(*)::integer AS total
+        COUNT(*)::integer AS total,
+        COUNT(pf.products_fiscal_id)::integer AS linked_total
 
       FROM public.products p
 
       LEFT JOIN ${TABLE} pf
         ON pf.product_code = p.product_code
        AND ${CURRENT_WHERE}
+
+      LEFT JOIN ${FISCAL_CLASSIFICATION_V2_TABLE} fc
+        ON fc.fiscal_classification_id =
+           pf.fiscal_classification_id
 
       ${whereSql}
     `,
@@ -180,7 +209,7 @@ export async function listBatchProducts({
 
       ${whereSql}
 
-      ORDER BY p.product_code
+      ${batchOrderBy(sort, dir)}
 
       LIMIT $${limitPosition}
       OFFSET $${offsetPosition}
@@ -188,11 +217,14 @@ export async function listBatchProducts({
     listValues
   );
 
+  const total = Number(countResult.rows[0]?.total || 0);
+  const linkedTotal = Number(countResult.rows[0]?.linked_total || 0);
+
   return {
     rows: rowsResult.rows,
-    total: Number(
-      countResult.rows[0]?.total || 0
-    ),
+    total,
+    linked_total: linkedTotal,
+    unlinked_total: Math.max(total - linkedTotal, 0),
   };
 }
 
