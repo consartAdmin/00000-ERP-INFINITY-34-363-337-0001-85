@@ -846,3 +846,46 @@
   opacity: 0.35;
   pointer-events: none;
 }
+
+/* ====================================================================
+   ADD BUTTON (.btn-add) — botão "Novo ..." padrão Consart
+   Uso: <button class="btn btn-add" type="button">Novo Uso e Consumo</button>
+   Ícone ⊕ verde via máscara SVG (sem precisar de emoji no texto).
+==================================================================== */
+
+.btn-add {
+  gap: 8px;
+  height: 34px;
+  padding: 0 16px 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: var(--btn-radius-lg);
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bd);
+  color: #14532d;
+  box-shadow: var(--btn-shadow);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.btn-add::before {
+  content: "";
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  background: #16a34a;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cpath d='M12 7.5v9M7.5 12h9'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cpath d='M12 7.5v9M7.5 12h9'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.btn-add:hover {
+  background: var(--btn-primary-hover-bg);
+  border-color: var(--btn-primary-hover-bd);
+  color: #14532d;
+  box-shadow: var(--btn-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.btn-add:active {
+  transform: translateY(0);
+  box-shadow: var(--btn-shadow);
+}
