@@ -1,12 +1,20 @@
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ usoConsumoNfeEmission.repository.js — Emissão / reenvio NF-e       ║
-// ║ emitNfe + retryNfe (PlugNotas via tecnoSpeedNfeApi)                ║
+// ║ emitNfe + retryNfe (API Consart ou PlugNotas, conforme NFE_PROVIDER)║
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
 import {
   emitirNFeUsoConsumo,
 } from '../nfe/nfe.index.js';
+
+// Status que o provedor devolveu na hora (NF-e API é síncrona; PlugNotas não).
+function initialStatus(emission) {
+  const status = String(emission?.provider_status || '').toUpperCase();
+  if (status.includes('AUTORIZ')) return 'AUTORIZADA';
+  if (status.includes('REJEIT') || status.includes('DENEG')) return 'REJEITADA';
+  return 'PROCESSANDO';
+}
 
 export async function emitNfe(usoConsumoId) {
   const id = Number(usoConsumoId);
@@ -137,14 +145,14 @@ export async function emitNfe(usoConsumoId) {
         VALUES (
           NULL,
           $1,
-          NULL,
-          'PROCESSANDO',
-          NULL,
+          $5,
+          $6::varchar(20),
+          $7,
           $2,
-          NULL,
-          NULL,
-          NULL,
-          NULL,
+          $8,
+          $9,
+          CASE WHEN $6::varchar(20) = 'AUTORIZADA' THEN NOW() END,
+          CASE WHEN $6::varchar(20) = 'AUTORIZADA' THEN CURRENT_DATE END,
           $3,
           $4,
           NOW(),
@@ -157,6 +165,11 @@ export async function emitNfe(usoConsumoId) {
         environment,
         totalAmount,
         providerId,
+        emission.nfe_key || null,
+        initialStatus(emission),
+        emission.nfe_protocol || null,
+        emission.xml_url || null,
+        emission.danfe_url || null,
       ]
     );
 
@@ -193,7 +206,9 @@ export async function emitNfe(usoConsumoId) {
       invoice,
       plugnotas: {
         id: providerId,
-        status: 'PROCESSANDO',
+        provider: emission.provider || null,
+        status: invoice.nfe_status,
+        message: emission.provider_message || null,
         environment,
       },
     };
@@ -323,13 +338,13 @@ export async function retryNfe(usoConsumoId) {
       `
         UPDATE public."invoicesIssued"
         SET nfe_provider_id = $1,
-            nfe_status = 'PROCESSANDO',
-            nfe_key = NULL,
-            nfe_protocol = NULL,
-            xml_url = NULL,
-            danfe_url = NULL,
-            issued_at = NULL,
-            issued_date = NULL,
+            nfe_status = $4::varchar(20),
+            nfe_key = $5,
+            nfe_protocol = $6,
+            xml_url = $7,
+            danfe_url = $8,
+            issued_at = CASE WHEN $4::varchar(20) = 'AUTORIZADA' THEN NOW() END,
+            issued_date = CASE WHEN $4::varchar(20) = 'AUTORIZADA' THEN CURRENT_DATE END,
             nfe_retry_count = $2,
             updated_at = NOW()
         WHERE invoice_id = $3
@@ -340,6 +355,11 @@ export async function retryNfe(usoConsumoId) {
         providerId,
         nextRetry,
         current.invoice_id,
+        initialStatus(emission),
+        emission.nfe_key || null,
+        emission.nfe_protocol || null,
+        emission.xml_url || null,
+        emission.danfe_url || null,
       ]
     );
 
@@ -358,7 +378,8 @@ export async function retryNfe(usoConsumoId) {
         attempt: nextRetry,
         id_integracao: idIntegracao,
         provider_id: providerId,
-        status: 'PROCESSANDO',
+        status: updateResult.rows[0].nfe_status,
+        message: emission.provider_message || null,
       },
     };
   } catch (error) {

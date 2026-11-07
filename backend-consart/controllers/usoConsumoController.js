@@ -169,6 +169,17 @@ export async function finishBudget(req, res) {
  * 🧾 Emitir NF-e de Uso e Consumo
  * ========================================================================= */
 
+// Mensagem conforme o retorno imediato do provedor (a API Consart responde na hora).
+function emissionMessage(status, providerMessage, fallback) {
+  if (status === 'AUTORIZADA') return 'NF-e autorizada pela SEFAZ.';
+  if (status === 'REJEITADA') {
+    return providerMessage
+      ? `NF-e rejeitada. Motivo: ${providerMessage}\nCorrija e use o botão Reenviar.`
+      : 'NF-e rejeitada. Use o botão Reenviar depois de corrigir.';
+  }
+  return fallback;
+}
+
 export async function emitNfe(req, res) {
   try {
     const usoConsumoId = Number(req.params.id);
@@ -184,8 +195,11 @@ export async function emitNfe(req, res) {
     const data = await api.emitNfe(usoConsumoId);
 
     return ok(res, data, {
-      message:
+      message: emissionMessage(
+        data?.invoice?.nfe_status,
+        data?.plugnotas?.message,
         'NF-e de Uso e Consumo enviada para processamento.',
+      ),
     });
   } catch (error) {
     console.error(
@@ -231,7 +245,10 @@ export async function refreshNfeStatus(req, res) {
     if (status === 'AUTORIZADA') {
       message = 'NF-e autorizada pela SEFAZ.';
     } else if (status === 'REJEITADA') {
-      message = 'NF-e rejeitada pela SEFAZ.';
+      const reason = data?.provider?.reason;
+      message = reason
+        ? `NF-e rejeitada. Motivo: ${reason}\nCorrija e use o botão Reenviar.`
+        : 'NF-e rejeitada. Use o botão Reenviar depois de corrigir.';
     } else if (status === 'CANCELADA') {
       message = 'NF-e cancelada.';
     } else if (status === 'PROCESSANDO') {
@@ -261,7 +278,11 @@ export async function retryNfe(req, res) {
     const data = await api.retryNfe(req.params.id);
 
     return ok(res, data, {
-      message: 'NF-e reenviada para processamento.',
+      message: emissionMessage(
+        data?.invoice?.nfe_status,
+        data?.retry?.message,
+        'NF-e reenviada para processamento.',
+      ),
     });
   } catch (error) {
     console.error(

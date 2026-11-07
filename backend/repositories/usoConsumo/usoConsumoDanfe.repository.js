@@ -1,11 +1,12 @@
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ usoConsumoDanfe.repository.js — generateDanfeConsart               ║
-// ║ Baixa o XML na PlugNotas e gera o DANFE Consart (PDF)              ║
+// ║ Baixa o XML no provedor (API Consart/PlugNotas) e gera o DANFE     ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
 
 import { generateDanfeFromXml } from '../../services/danfeConsartService.js';
+import { obterXml } from '../nfe/nfe.index.js';
 
 export async function generateDanfeConsart(usoConsumoId) {
   const id = Number(usoConsumoId);
@@ -57,65 +58,25 @@ export async function generateDanfeConsart(usoConsumoId) {
 
   if (!invoice.nfe_provider_id) {
     throw new Error(
-      'Identificador da NF-e na PlugNotas não encontrado.'
+      'Identificador da NF-e no provedor não encontrado.'
     );
   }
 
-  const baseUrl = String(
-    process.env.PLUGNOTAS_BASE_URL ||
-    'https://api.plugnotas.com.br'
-  ).replace(/\/+$/, '');
+  // XML pelo provedor da nota: chave de 44 dígitos = API Consart; senão PlugNotas.
+  const xmlResult = await obterXml(String(invoice.nfe_provider_id).trim());
 
-  const ambiente = String(
-    process.env.NFE_AMBIENTE || 'homologacao'
-  ).toLowerCase();
-
-  const apiKey =
-    ambiente === 'producao'
-      ? (
-        process.env.PLUGNOTAS_API_KEY_REAL ||
-        process.env.PLUGNOTAS_API_KEY
-      )
-      : (
-        process.env.PLUGNOTAS_API_KEY_HOMOLOG ||
-        process.env.PLUGNOTAS_API_KEY
-      );
-
-  if (!apiKey) {
-    throw new Error(
-      'Chave da API PlugNotas não configurada.'
-    );
-  }
-
-  const xmlResponse = await fetch(
-    `${baseUrl}/nfe/${encodeURIComponent(
-      invoice.nfe_provider_id
-    )}/xml`,
-    {
-      method: 'GET',
-      headers: {
-        'x-api-key': apiKey,
-        Accept: 'application/xml, text/xml',
-      },
-      signal: AbortSignal.timeout(60000),
-    }
-  );
-
-  const xmlContent = await xmlResponse.text();
-
-  if (!xmlResponse.ok) {
+  if (!xmlResult?.ok) {
     console.error(
       '[usoConsumoApi][generateDanfeConsart][XML ERROR]',
-      {
-        status: xmlResponse.status,
-        response: xmlContent,
-      }
+      { status: xmlResult?.status, error: xmlResult?.error }
     );
 
     throw new Error(
-      `Erro ao baixar XML da PlugNotas: HTTP ${xmlResponse.status}.`
+      `Erro ao baixar o XML da NF-e: HTTP ${xmlResult?.status || '?'}.`
     );
   }
+
+  const xmlContent = String(xmlResult.xml || '');
 
   if (
     !xmlContent ||
@@ -125,7 +86,7 @@ export async function generateDanfeConsart(usoConsumoId) {
     )
   ) {
     throw new Error(
-      'A PlugNotas não retornou um XML válido.'
+      'O provedor de NF-e não retornou um XML válido.'
     );
   }
 

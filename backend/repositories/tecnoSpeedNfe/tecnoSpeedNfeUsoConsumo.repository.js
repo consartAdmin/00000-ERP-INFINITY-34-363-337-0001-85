@@ -30,8 +30,19 @@ import {
   loadFiscalBySku,
 } from '../nfe/nfeProducts.repository.js';
 import {
-  emitirNFe,
+  emitirNFe as emitirNFeTecnospeed,
 } from './tecnoSpeedNfeEmit.repository.js';
+import {
+  routeProvider,
+  resolveBudgetIssueTarget,
+} from '../nfeApi/nfeApi.index.js';
+
+/*
+ * Mesmo caminho dos orçamentos: com NFE_PROVIDER=nfe-api emite pela API
+ * Consart (api-consart-fiscal); senão, PlugNotas. O payload continua no
+ * formato PlugNotas e é convertido em nfeApi.mappers.js.
+ */
+const emitirNFe = routeProvider('emitirNFe', emitirNFeTecnospeed);
 
 /* =========================================================================
  * 🧾 Emitir NF-e de Uso e Consumo
@@ -403,9 +414,11 @@ export async function emitirNFeUsoConsumo(
     };
   });
 
+  // NF-e API em homologação numera sozinha (não consome a sequência real).
+  const target = await resolveBudgetIssueTarget();
   const numero = retry
     ? requestedNfeNumber
-    : await getNextNfeNumberFromBasicTable();
+    : (target.apiNumbering ? null : await getNextNfeNumberFromBasicTable());
   const serie = Number(process.env.NFE_SERIE || 1);
 
   const totalProdutos = round2(
@@ -524,7 +537,8 @@ export async function emitirNFeUsoConsumo(
     serie,
     totalProdutos,
     quantidadeItens: nfeItems.length,
-    ambiente: getAmbiente(),
+    ambiente: target.environment || getAmbiente(),
+    provider: target.provider,
   });
 
   if (NFE_DEBUG) {
@@ -540,7 +554,7 @@ export async function emitirNFeUsoConsumo(
     throw new Error(
       result?.message ||
       result?.error?.message ||
-      '[NFE USO E CONSUMO] A PlugNotas recusou a emissão.'
+      '[NFE USO E CONSUMO] O provedor de NF-e recusou a emissão.'
     );
   }
 
@@ -571,10 +585,18 @@ export async function emitirNFeUsoConsumo(
     uso_consumo_id: id,
     retry,
     id_integracao: nfe.idIntegracao,
-    nfe_number: numero,
+    nfe_number: numero || Number(document?.numero) || null,
     nfe_series: serie,
-    nfe_environment: getAmbiente(),
+    nfe_environment: document?.ambiente || target.environment || getAmbiente(),
+    provider: target.provider,
     plugnotas_id: plugnotasId,
+    // A NF-e API responde na hora (autorizada/rejeitada); a PlugNotas não.
+    provider_status: document?.status ? String(document.status).toUpperCase() : null,
+    provider_message: document?.mensagem || null,
+    nfe_key: /^\d{44}$/.test(String(document?.chave || '')) ? String(document.chave) : null,
+    nfe_protocol: document?.protocolo ? String(document.protocolo) : null,
+    xml_url: document?.xml || null,
+    danfe_url: document?.pdf || null,
     total_amount: totalProdutos,
     provider_response: responseData,
   };

@@ -533,7 +533,8 @@ function actionButtons(row) {
     if (!row.invoice_id) buttons.push(`<button class="uc-action is-primary" data-action="emit" data-id="${id}">Emitir NF-e</button>`);
     if (row.invoice_id) buttons.push(`<button class="uc-action" data-action="status" data-id="${id}">Atualizar</button>`);
     if (status === 'REJEITADA') buttons.push(`<button class="uc-action is-danger" data-action="retry" data-id="${id}">Reenviar</button>`);
-    if (row.xml_url) buttons.push(`<a class="uc-action" href="${escapeHtml(row.xml_url)}" target="_blank" rel="noopener noreferrer">XML</a>`);
+    // XML pelo ERP (a URL da API Consart exige a chave, não abre direto no navegador).
+    if (row.xml_url) buttons.push(`<a class="uc-action" href="/api/invoices-issued/${encodeURIComponent(row.invoice_id)}/xml" target="_blank" rel="noopener noreferrer">XML</a>`);
     if (status === 'AUTORIZADA') {
       buttons.push(`<a class="uc-action is-success" href="${API}/${encodeURIComponent(row.uso_consumo_id)}/nfe/danfe-consart" target="_blank" rel="noopener noreferrer" title="Abrir DANFE personalizado da Consart">Imprimir DANFE</a>`);
     }
@@ -703,7 +704,9 @@ async function fiscalAction(action, id, button) {
   try {
     const json = await request(`${API}/${config.path}`, { method: config.method, ...(config.method === 'POST' ? { headers: { 'Content-Type': 'application/json' } } : {}) });
     await loadRows();
-    notify(json.message || 'Operação realizada com sucesso.', 'success');
+    const nfeStatus = String(json.data?.invoice?.nfe_status || json.data?.provider?.status || '').toUpperCase();
+    const variant = nfeStatus === 'REJEITADA' ? 'error' : nfeStatus === 'PROCESSANDO' ? 'warning' : 'success';
+    notify(json.message || 'Operação realizada com sucesso.', variant);
   } catch (error) { console.error(error); notify(error.message, 'error'); }
   finally { if (button.isConnected) { button.disabled = false; button.textContent = original; } }
 }

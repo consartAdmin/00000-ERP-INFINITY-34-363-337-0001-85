@@ -55,8 +55,12 @@ export async function refreshNfeStatus(usoConsumoId) {
       status.includes('REJEIT') ||
       status.includes('DENEG') ||
       status.includes('FALHA') ||
-      status.includes('ERRO')
+      status.includes('ERRO') ||
+      status.includes('EXCEPTION') ||
+      status.includes('EXCECAO')
     ) {
+      // EXCEPTION = a PlugNotas não conseguiu processar a nota (erro de
+      // validação/schema). Fica REJEITADA para liberar o "Reenviar".
       return 'REJEITADA';
     }
 
@@ -223,6 +227,42 @@ export async function refreshNfeStatus(usoConsumoId) {
 
   const normalizedStatus = normalizeNfeStatus(rawStatus);
 
+  // Motivo da rejeição/erro (vários formatos da PlugNotas e da SEFAZ).
+  const textOf = (value) => {
+    if (!value) return null;
+    if (typeof value === 'string') return value.trim() || null;
+    if (Array.isArray(value)) {
+      const parts = value.map(textOf).filter(Boolean);
+      return parts.length ? parts.join(' | ') : null;
+    }
+    if (typeof value === 'object') {
+      const code = value.codigo || value.code || value.cStat;
+      const text = textOf(value.mensagem || value.message || value.motivo || value.descricao || value.xMotivo);
+      return text ? (code ? `${code} - ${text}` : text) : null;
+    }
+    return String(value);
+  };
+  const reason = normalizedStatus === 'REJEITADA'
+    ? textOf(firstValue(
+        document.mensagem,
+        document.motivo,
+        document.message,
+        document.xMotivo,
+        document.erros,
+        document.errors,
+        document.retorno?.mensagem,
+        document.sefaz?.mensagem,
+        document.error,
+        payload.mensagem,
+        payload.message,
+        payload.erros,
+        payload.error,
+        root.mensagem,
+        root.message,
+        root.error,
+      ))
+    : null;
+
   const accessKey = validAccessKey(
     firstValue(
       document.chave,
@@ -374,6 +414,7 @@ export async function refreshNfeStatus(usoConsumoId) {
       provider_id: providerId,
       provider_status: rawStatus,
       local_status: normalizedStatus,
+      reason,
       nfe_number: invoice.nfe_number,
       nfe_key: invoice.nfe_key,
     }
@@ -386,6 +427,7 @@ export async function refreshNfeStatus(usoConsumoId) {
       id: providerId,
       raw_status: rawStatus,
       status: normalizedStatus,
+      reason,
       response: root,
     },
   };
