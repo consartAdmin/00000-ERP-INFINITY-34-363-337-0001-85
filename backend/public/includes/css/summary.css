@@ -435,3 +435,15 @@
   border-color: var(--summary-pill-primary-bd);
   color: var(--summary-pill-primary-tx);
 }
+/* ══════════════════════════════════════════════════════════════════════
+   Small pill — selos de status dentro de linhas de tabela
+   Uso: <span class="summary-pill summary-pill--success summary-pill--sm">Ativo</span>
+   ══════════════════════════════════════════════════════════════════════ */
+
+.summary-pill--sm {
+  min-height: 18px;
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+}

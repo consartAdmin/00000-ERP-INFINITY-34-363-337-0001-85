@@ -39,8 +39,8 @@ function stCell(row) {
 
 function statusPill(row) {
   return row.is_active === false
-    ? '<span class="summary-pill summary-pill--danger">Inativo</span>'
-    : '<span class="summary-pill summary-pill--success">Ativo</span>';
+    ? '<span class="summary-pill summary-pill--danger summary-pill--sm">Inativo</span>'
+    : '<span class="summary-pill summary-pill--success summary-pill--sm">Ativo</span>';
 }
 
 export function renderProfileTable(handlers) {
