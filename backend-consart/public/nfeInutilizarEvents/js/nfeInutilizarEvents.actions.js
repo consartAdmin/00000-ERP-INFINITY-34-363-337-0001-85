@@ -1,241 +1,153 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ nfeInutilizarEvents.actions.js — Ações, binds e fluxo do módulo     ║
+// ║ nfeInutilizarEvents.actions.js — Fluxo do módulo                    ║
 // ║ MODULE: NF-e Inutilização de Numeração                              ║
 // ║ CONSART ERP                                                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { state } from './nfeInutilizarEvents.state.js';
-import { getElements } from './nfeInutilizarEvents.utils.js';
 import {
-  consultarInutilizacao,
-  createInutilizacao,
-  getInutilizacaoById,
-  listInutilizacoes,
+  consultarInutilizacao, createInutilizacao, getInutilizacaoById, listAllInutilizacoes,
 } from './nfeInutilizarEvents.api.js';
 import {
-  applyCnpjMask,
-  applyDefaultYear,
-  buildFilterParams,
-  buildPayload,
-  resetFilters,
-  resetForm,
-  updateJustificationCounter,
-  updateSummary,
-} from './nfeInutilizarEvents.form.js';
-import { validatePayload } from './nfeInutilizarEvents.validation.js';
+  applyFiltersAndSort, resetFiltersDom, syncFiltersFromDom,
+} from './nfeInutilizarEvents.filters.js';
+import { buildPayload, fillForm, validatePayload } from './nfeInutilizarEvents.form.js';
 import {
-  renderDetails,
-  renderDetailsError,
-  renderTable,
-  setDetailLoading,
-  setFeedback,
-  setRefreshLoading,
-  setSubmitLoading,
-  setTableStatus,
-  setTotalRows,
+  closeDetailsModal, closeNewModal, openDetailsModal, openNewModal,
+} from './nfeInutilizarEvents.modal.js';
+import {
+  renderDetails, renderFooter, renderListError, renderListLoading, renderTable,
 } from './nfeInutilizarEvents.render.js';
+import { state } from './nfeInutilizarEvents.state.js';
+import { messageText, statusInfo } from './nfeInutilizarEvents.status.js';
+import {
+  $, confirmCenter, formatCnpj, logError, notify, plural,
+} from './nfeInutilizarEvents.utils.js';
 
-/* =======================================================================
- * Listagem
- * ======================================================================= */
-export async function loadList(el, params = new URLSearchParams()) {
+const handlers = {
+  onView: (row) => viewDetails(row),
+  onConsult: (row, button) => consult(row, button),
+  onCopy: (row) => newInutilizacao(row),
+};
+
+export function refreshView() {
+  applyFiltersAndSort();
+  renderTable(handlers);
+  renderFooter();
+}
+
+export async function loadList() {
+  renderListLoading();
   try {
-    state.loading = true;
-    setRefreshLoading(el, true);
-    setTableStatus(el, 'Carregando registros...');
-    setFeedback(el, 'Buscando inutilizações...', 'info');
-
-    const result = await listInutilizacoes(params);
-    state.items = Array.isArray(result?.data) ? result.data : [];
-
-    renderTable(el);
-    setTableStatus(
-      el,
-      state.items.length
-        ? `${state.items.length} registro(s) carregado(s).`
-        : 'Nenhum registro encontrado.'
-    );
-    setFeedback(el, 'Lista atualizada com sucesso.', 'success');
+    state.allRows = await listAllInutilizacoes();
+    refreshView();
   } catch (error) {
-    console.error('[nfeInutilizarEvents.actions] loadList error:', error);
-    state.items = [];
-    renderTable(el);
-    setTotalRows(el, 0);
-    setTableStatus(el, 'Falha ao carregar registros.');
-    setFeedback(el, error?.message || 'Erro ao carregar inutilizações.', 'error');
-  } finally {
-    state.loading = false;
-    setRefreshLoading(el, false);
+    logError('loadList', error);
+    state.allRows = [];
+    state.filteredRows = [];
+    renderListError(error?.message);
+    renderFooter();
   }
 }
 
-/* =======================================================================
- * Detalhes
- * ======================================================================= */
-export async function loadDetails(el, id) {
-  if (!id) return;
+/* Filtros / paginação / ordenação ----------------------------------- */
+export function applyFilters() { syncFiltersFromDom(); refreshView(); }
+export function clearFilters() { resetFiltersDom(); syncFiltersFromDom(); refreshView(); }
+export function goToPreviousPage() { if (state.page > 1) { state.page -= 1; refreshView(); } }
+export function goToNextPage() { state.page += 1; refreshView(); }
+export function setPageSize(value) { state.pageSize = Number(value) || 50; state.page = 1; refreshView(); }
+export function setSort({ column, direction }) {
+  state.sortColumn = column;
+  state.sortDirection = direction;
+  refreshView();
+}
 
-  setDetailLoading(el, true);
-
-  if (el.detailTitleBadge) {
-    el.detailTitleBadge.textContent = `Registro #${id}`;
-  }
-
+/* Detalhes ----------------------------------------------------------- */
+async function viewDetails(row) {
+  state.current = row;
+  renderDetails(row);
+  openDetailsModal();
   try {
-    const result = await getInutilizacaoById(id);
-    renderDetails(el, result?.data || null);
+    const result = await getInutilizacaoById(row.id);
+    if (result?.data && state.current?.id === row.id) {
+      state.current = result.data;
+      renderDetails(result.data);
+    }
   } catch (error) {
-    console.error('[nfeInutilizarEvents.actions] loadDetails error:', error);
-    renderDetailsError(el, id, error);
-  } finally {
-    state.loadingDetail = false;
+    logError('viewDetails', error);
   }
 }
 
-/* =======================================================================
- * Consulta de status na SEFAZ / provider
- * ======================================================================= */
-async function consultStatus(el, id, button) {
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = 'Consultando...';
-
+/* Consulta na SEFAZ -------------------------------------------------- */
+async function consult(row, button) {
+  if (!row?.id) return;
+  if (button) button.disabled = true;
   try {
-    setFeedback(el, `Consultando status do registro #${id}...`, 'warning');
-
-    await consultarInutilizacao(id);
-    await loadList(el, buildFilterParams(el));
-    await loadDetails(el, id);
-
-    setFeedback(el, `Consulta do registro #${id} concluída.`, 'success');
+    await consultarInutilizacao(row.id);
+    await loadList();
+    const updated = state.allRows.find((item) => item.id === row.id) || row;
+    if (state.current?.id === row.id) renderDetails(updated);
+    const info = statusInfo(updated);
+    notify(`Inutilização #${row.id}: ${info.label}.\n${messageText(updated) || ''}`.trim(),
+      info.label === 'Inutilizada' ? 'success' : 'info');
   } catch (error) {
-    console.error('[nfeInutilizarEvents.actions] consultar error:', error);
-    setFeedback(el, error?.message || 'Falha ao consultar status.', 'error');
-    await loadDetails(el, id);
+    logError('consult', error);
+    notify(error?.message || 'Falha ao consultar a SEFAZ.', 'error');
   } finally {
-    button.disabled = false;
-    button.textContent = originalText;
+    if (button) button.disabled = false;
   }
 }
 
-/* =======================================================================
- * Submit da nova inutilização
- * ======================================================================= */
-async function handleSubmit(el, event) {
-  event.preventDefault();
+export function consultCurrent() {
+  if (state.current) consult(state.current, $('#btnConsultar'));
+}
 
+/* Nova inutilização -------------------------------------------------- */
+export function newInutilizacao(base = null) {
+  closeDetailsModal();
+  const fallbackCnpj = state.allRows.find((row) => row.companyCnpj)?.companyCnpj || '';
+  fillForm(base
+    ? { ...base, numberStart: '', numberEnd: '', justification: base.justification }
+    : { companyCnpj: fallbackCnpj });
+  openNewModal();
+}
+
+export function duplicateCurrent() {
+  if (state.current) newInutilizacao(state.current);
+}
+
+export async function submitInutilizacao(event) {
+  event?.preventDefault();
   if (state.submitting) return;
 
-  const payload = buildPayload(el);
+  const payload = buildPayload();
   const errors = validatePayload(payload);
-
   if (errors.length) {
-    setFeedback(el, errors.join(' '), 'error');
+    notify(errors.join('\n'), 'warning');
     return;
   }
 
+  const total = payload.numberEnd - payload.numberStart + 1;
+  const range = total === 1 ? payload.numberStart : `${payload.numberStart} a ${payload.numberEnd}`;
+  const ok = await confirmCenter(
+    `Inutilizar ${plural(total, 'número', 'números')} (${range}) do modelo ${payload.model}, série ${payload.serie}/${payload.year}, `
+    + `CNPJ ${formatCnpj(payload.companyCnpj)}?\n\nDepois de homologada pela SEFAZ, a inutilização não pode ser desfeita.`,
+    { title: 'Enviar inutilização', confirmLabel: 'Enviar à SEFAZ' },
+  );
+  if (!ok) return;
+
+  const button = $('#btnSubmit');
+  state.submitting = true;
+  if (button) { button.disabled = true; button.textContent = 'Enviando...'; }
   try {
-    setSubmitLoading(el, true);
-    setFeedback(el, 'Enviando inutilização...', 'info');
-
     const result = await createInutilizacao(payload);
-
-    setFeedback(el, result?.message || 'Inutilização enviada com sucesso.', 'success');
-
-    await loadList(el);
-
-    if (result?.data?.id) {
-      state.selectedId = result.data.id;
-    }
+    closeNewModal();
+    await loadList();
+    notify(result?.message || 'Inutilização enviada à SEFAZ.', 'success');
   } catch (error) {
-    console.error('[nfeInutilizarEvents.actions] create error:', error);
-
-    const message =
-      error?.payload?.error ||
-      error?.payload?.message ||
-      (Array.isArray(error?.payload?.errors)
-        ? error.payload.errors.join(' ')
-        : '') ||
-      error?.message ||
-      'Erro ao enviar inutilização.';
-
-    setFeedback(el, message, 'error');
+    logError('submit', error);
+    notify(error?.message || 'Erro ao enviar a inutilização.', 'error');
   } finally {
-    setSubmitLoading(el, false);
+    state.submitting = false;
+    if (button) { button.disabled = false; button.textContent = 'Enviar à SEFAZ'; }
   }
-}
-
-/* =======================================================================
- * Binds
- * ======================================================================= */
-function bindFormEvents(el) {
-  el.companyCnpj?.addEventListener('input', () => applyCnpjMask(el.companyCnpj));
-  el.filterCompanyCnpj?.addEventListener('input', () => applyCnpjMask(el.filterCompanyCnpj));
-
-  el.numberStart?.addEventListener('input', () => updateSummary(el));
-  el.numberEnd?.addEventListener('input', () => updateSummary(el));
-
-  el.justification?.addEventListener('input', () => updateJustificationCounter(el));
-
-  el.formInutilizacao?.addEventListener('submit', (event) => handleSubmit(el, event));
-
-  el.btnLimparForm?.addEventListener('click', () => {
-    resetForm(el);
-    setFeedback(el, 'Formulário limpo.', 'info');
-  });
-}
-
-function bindFilterEvents(el) {
-  el.formFiltros?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    await loadList(el, buildFilterParams(el));
-  });
-
-  el.btnRefresh?.addEventListener('click', async () => {
-    await loadList(el, buildFilterParams(el));
-  });
-
-  el.btnLimparFiltros?.addEventListener('click', async () => {
-    resetFilters(el);
-    setFeedback(el, 'Filtros limpos.', 'info');
-    await loadList(el);
-  });
-}
-
-// Delegação no tbody: o bind é feito uma vez e sobrevive aos re-renders.
-function bindTableEvents(el) {
-  el.tbodyInutilizacoes?.addEventListener('click', async (event) => {
-    const button = event.target.closest('button[data-action]');
-    if (!button) return;
-
-    const id = Number.parseInt(button.dataset.id, 10);
-    if (!Number.isFinite(id)) return;
-
-    state.selectedId = id;
-
-    if (button.dataset.action === 'view') {
-      await loadDetails(el, id);
-    } else if (button.dataset.action === 'consult') {
-      await consultStatus(el, id, button);
-    }
-  });
-}
-
-/* =======================================================================
- * Init
- * ======================================================================= */
-export async function initNfeInutilizarEventsActions() {
-  const el = getElements();
-
-  bindFormEvents(el);
-  bindFilterEvents(el);
-  bindTableEvents(el);
-
-  applyDefaultYear(el);
-  updateSummary(el);
-  updateJustificationCounter(el);
-  setFeedback(el, 'Pronto para operação.', 'info');
-  setTableStatus(el, 'Inicializando módulo...');
-
-  await loadList(el);
 }

@@ -1,70 +1,20 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ nfeInutilizarEvents.modal.js — Controle do modal de inutilização    ║
+// ║ nfeInutilizarEvents.modal.js — Modais (modals.css + modal.js)       ║
 // ║ MODULE: NF-e Inutilização de Numeração                              ║
 // ║ CONSART ERP                                                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-const MODAL_ID = 'modalNovaInutilizacao';
-const OPEN_BUTTON_ID = 'btnNovaInutilizacao';
-const FIRST_FIELD_ID = 'companyCnpj';
-const CLOSE_SELECTOR = '[data-modal-inutilizacao-close]';
+// ESC, backdrop e [data-modal-close] já são tratados pelo Modal.setup().
+import { Modal } from '/public/includes/js/modal.js';
 
-let elementFocusedBeforeOpen = null;
+export const NEW_MODAL_ID = 'novaInutilizacaoModal';
+export const DETAILS_MODAL_ID = 'detalhesModal';
 
-function getModal() {
-  return document.getElementById(MODAL_ID);
+export function configureModals() {
+  Modal.setup();
 }
 
-export function openModal() {
-  const modal = getModal();
-
-  if (!modal) {
-    console.error(`Modal #${MODAL_ID} não encontrado.`);
-    return;
-  }
-
-  elementFocusedBeforeOpen = document.activeElement;
-
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden', 'false');
-
-  document.body.style.overflow = 'hidden';
-
-  requestAnimationFrame(() => {
-    document.getElementById(FIRST_FIELD_ID)?.focus();
-  });
-}
-
-export function closeModal() {
-  const modal = getModal();
-  if (!modal) return;
-
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden', 'true');
-
-  document.body.style.removeProperty('overflow');
-
-  if (elementFocusedBeforeOpen instanceof HTMLElement) {
-    elementFocusedBeforeOpen.focus();
-  }
-}
-
-function handleKeydown(event) {
-  if (event.key === 'Escape' && getModal()?.classList.contains('is-open')) {
-    closeModal();
-  }
-}
-
-export function initModal() {
-  const modal = getModal();
-
-  document
-    .getElementById(OPEN_BUTTON_ID)
-    ?.addEventListener('click', openModal);
-
-  modal?.querySelectorAll(CLOSE_SELECTOR).forEach((button) => {
-    button.addEventListener('click', closeModal);
-  });
-
-  document.addEventListener('keydown', handleKeydown);
-}
+export const openNewModal = () => Modal.open(NEW_MODAL_ID, { focusSelector: '#companyCnpj' });
+export const closeNewModal = () => Modal.close(NEW_MODAL_ID);
+export const openDetailsModal = () => Modal.open(DETAILS_MODAL_ID);
+export const closeDetailsModal = () => Modal.close(DETAILS_MODAL_ID);
