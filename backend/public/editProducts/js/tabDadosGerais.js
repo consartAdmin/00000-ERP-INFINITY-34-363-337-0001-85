@@ -33,6 +33,16 @@ export function initDadosGeraisTab(ctx) {
 
   const ACTIVE_SELECTOR = '#produtoAtivo';
 
+  // Código de barras da unidade padrão (aba Unidades / productsBarCode).
+  const standardBarcode = { value: '', hasStandard: false };
+
+  document.addEventListener('editproducts:standard-barcode', (e) => {
+    standardBarcode.value = ctx.normalizeBarcode(e.detail?.barcode ?? '');
+    standardBarcode.hasStandard = !!e.detail?.hasStandard;
+    const el = getEl(FIELDS.barcode);
+    if (el) el.value = standardBarcode.value;
+  });
+
   const getEl = (s) => (s ? ctx.$(s) : null);
   const getVal = (s) => (getEl(s)?.value ?? '');
   const setVal = (s, v) => {
@@ -631,10 +641,9 @@ export function initDadosGeraisTab(ctx) {
   async function preencherFormulario(p) {
     setVal(FIELDS.product_code, p.product_code ?? p.sku ?? '');
     setVal(FIELDS.description, p.description ?? p.descricao ?? '');
-    setVal(
-      FIELDS.barcode,
-      ctx.normalizeBarcode(p.barcode ?? p.codigo_barras ?? p.ean ?? p.gtin ?? '')
-    );
+    // Código de Barras: só exibe o da unidade padrão (aba Unidades).
+    // Preenchido pelo evento 'editproducts:standard-barcode' do tabUnits.js.
+    setVal(FIELDS.barcode, standardBarcode.value);
     setVal(FIELDS.manufacturer_ref, p.manufacturer_ref ?? p.ref_fabricante ?? '');
 
     setVal(FIELDS.product_group_id, p.product_group_id ?? p.group_id ?? '');
@@ -710,7 +719,11 @@ export function initDadosGeraisTab(ctx) {
     return {
       product_code: getVal(FIELDS.product_code)?.trim(),
       description: getVal(FIELDS.description)?.trim(),
-      barcode: ctx.normalizeBarcode(getVal(FIELDS.barcode)),
+      // Só envia o barcode quando há unidade padrão: mantém products.barcode
+      // igual ao da unidade padrão e não apaga nada se ainda não houver uma.
+      ...(standardBarcode.hasStandard
+        ? { barcode: ctx.normalizeBarcode(standardBarcode.value) }
+        : {}),
       manufacturer_ref: getVal(FIELDS.manufacturer_ref)?.trim(),
 
       product_group_id: n(getVal(FIELDS.product_group_id)),

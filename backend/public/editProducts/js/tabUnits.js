@@ -478,6 +478,20 @@ export async function initUnitsTab(ctx, { productId, productCode }) {
       loadUnitImages(),
     ]);
     renderUnitsTable(rows, imagesByBarcode);
+    notifyStandardBarcode(rows);
+  }
+
+  // Avisa a aba Dados Gerais qual é o código de barras da unidade padrão
+  // (o campo "Código de Barras" de lá só exibe esse valor).
+  function notifyStandardBarcode(rows = []) {
+    const std = rows.find((r) => r.standard && r.is_active) || rows.find((r) => r.standard) || null;
+    document.dispatchEvent(new CustomEvent('editproducts:standard-barcode', {
+      detail: {
+        barcode: std?.barcode || '',
+        unit: std?.unit || '',
+        hasStandard: !!std,
+      },
+    }));
   }
 
   function pickUnitImage(barcodeId) {
