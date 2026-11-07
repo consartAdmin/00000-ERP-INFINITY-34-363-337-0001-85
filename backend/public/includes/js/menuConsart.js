@@ -16,7 +16,7 @@ const MENU_CACHE_KEY = 'consart:menu-config';
 let MENU_CONFIG = [];
 
 // Tema visual do menu: 'dark' (barra grafite) ou 'light' (barra branca).
-const MENU_THEME = 'dark';
+const MENU_THEME = window.CONSART_MENU_THEME || 'dark';
 
 function readMenuCache() {
   try {
