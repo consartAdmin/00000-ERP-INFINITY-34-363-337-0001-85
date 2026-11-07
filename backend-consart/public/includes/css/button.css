@@ -889,3 +889,20 @@
   transform: translateY(0);
   box-shadow: var(--btn-shadow);
 }
+
+/* Só ícone: <button class="btn btn-add btn-add--icon" type="button"
+                    title="Novo Uso e Consumo" aria-label="Novo Uso e Consumo"></button>
+   O texto vai no title (tooltip) e no aria-label (acessibilidade). */
+.btn-add--icon {
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+  gap: 0;
+  font-size: 0;
+}
+
+.btn-add--icon::before {
+  flex-basis: 18px;
+  width: 18px;
+  height: 18px;
+}
