@@ -465,7 +465,7 @@
         </button>
 
         <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-estoque">
-          📦 Estoque
+          📦 Estoque / Grade
         </button>
 
         <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-fiscal">
@@ -474,10 +474,6 @@
 
         <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-unidades">
           📏 Unidades
-        </button>
-
-        <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-grade">
-          🧩 Grade
         </button>
 
         <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-registros">
@@ -854,6 +850,94 @@
           </header>
 
         </form>
+
+        <!-- 🧩 Grades (antes era a aba Grade) -->
+        <header class="entity-header">
+
+          <form id="formGradeProduct" novalidate>
+
+            <!-- ===================================================== -->
+            <!-- Header -->
+            <!-- ===================================================== -->
+
+            <div class="entity-header__top">
+
+              <div class="entity-header__title">
+                🧩 Grades do Produto
+              </div>
+
+              <button type="submit" class="btn btn-toolbar btn-sm">
+                ➕ Adicionar Grade
+              </button>
+
+            </div>
+
+            <!-- ===================================================== -->
+            <!-- Informações -->
+            <!-- ===================================================== -->
+
+            <div class="entity-header__grid">
+
+              <label class="field-group" for="gradeSelect">
+                <span>Grade</span>
+
+                <select id="gradeSelect" name="gradeSelect">
+                  <option value="">— Selecione uma grade —</option>
+                </select>
+              </label>
+
+              <label class="field-group" for="gradeStock">
+                <span>Estoque</span>
+
+                <input type="number" id="gradeStock" name="gradeStock" min="0" step="1" value="0">
+              </label>
+
+            </div>
+
+          </form>
+
+          <!-- ===================================================== -->
+          <!-- Tabela -->
+          <!-- ===================================================== -->
+
+          <div class="entity-header__table">
+
+            <section class="table-layout">
+              <div class="table-scroll table-scroll--flex" data-table-settings="editproducts.gradestablebody">
+                <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head"
+                  aria-label="Grades do produto">
+
+                  <colgroup>
+                    <col style="width:200px">
+                    <col>
+                    <col style="width:200px">
+                    <col style="width:200px">
+                    <col style="width:200px">
+                  </colgroup>
+
+                  <thead>
+                    <tr>
+                      <th>Grade</th>
+                      <th>Descrição</th>
+                      <th>Estoque</th>
+                      <th>Status</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+
+                  <tbody id="gradesTableBody">
+
+                    <!-- Carregado via JavaScript -->
+
+                  </tbody>
+
+                </table>
+
+              </div>
+            </section>
+          </div>
+
+        </header>
 
         <header id="lot-wrap" class="entity-header">
 
@@ -1415,100 +1499,6 @@
               </table>
 
             </div>
-
-        </header>
-
-      </div>
-
-    </section>
-
-    <!-- 🧩 Grade -->
-    <section id="aba-grade" class="aba" role="tabpanel">
-
-      <div class="consart-panel">
-
-        <header class="entity-header">
-
-          <form id="formGradeProduct" novalidate>
-
-            <!-- ===================================================== -->
-            <!-- Header -->
-            <!-- ===================================================== -->
-
-            <div class="entity-header__top">
-
-              <div class="entity-header__title">
-                🧩 Grades do Produto
-              </div>
-
-              <button type="submit" class="btn btn-toolbar btn-sm">
-                ➕ Adicionar Grade
-              </button>
-
-            </div>
-
-            <!-- ===================================================== -->
-            <!-- Informações -->
-            <!-- ===================================================== -->
-
-            <div class="entity-header__grid">
-
-              <label class="field-group" for="gradeSelect">
-                <span>Grade</span>
-
-                <select id="gradeSelect" name="gradeSelect">
-                  <option value="">— Selecione uma grade —</option>
-                </select>
-              </label>
-
-              <label class="field-group" for="gradeStock">
-                <span>Estoque</span>
-
-                <input type="number" id="gradeStock" name="gradeStock" min="0" step="1" value="0">
-              </label>
-
-            </div>
-
-          </form>
-
-          <!-- ===================================================== -->
-          <!-- Tabela -->
-          <!-- ===================================================== -->
-
-          <div class="entity-header__table">
-
-            <section class="table-layout">
-              <div class="table-scroll table-scroll--flex" data-table-settings="editproducts.gradestablebody">
-                <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head"
-                  aria-label="Grades do produto">
-
-                  <colgroup>
-                    <col style="width:200px">
-                    <col>
-                    <col style="width:200px">
-                    <col style="width:200px">
-                    <col style="width:200px">
-                  </colgroup>
-
-                  <thead>
-                    <tr>
-                      <th>Grade</th>
-                      <th>Descrição</th>
-                      <th>Estoque</th>
-                      <th>Status</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-
-                  <tbody id="gradesTableBody">
-
-                    <!-- Carregado via JavaScript -->
-
-                  </tbody>
-
-                </table>
-
-              </div>
 
         </header>
 
