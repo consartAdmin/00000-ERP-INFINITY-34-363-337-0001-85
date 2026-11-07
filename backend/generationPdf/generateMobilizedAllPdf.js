@@ -255,6 +255,9 @@ async function resolveMobilizedItemImageBuffer(
 ) {
   const base = String(apiBase || '').replace(/\/+$/, '');
 
+  // 0) imagem enviada pela tela (mobilizedAttachments → GCS), baixada no controller
+  if (Buffer.isBuffer(item?.image_buffer) && item.image_buffer.length) return item.image_buffer;
+
   // 1. New mobilizedAttachments image
   const attachmentUrl =
     item?.primary_attachment?.public_url ||
