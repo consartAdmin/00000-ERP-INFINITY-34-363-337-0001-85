@@ -1,105 +1,88 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ nfeInutilizarEvents.form.js — Leitura, máscaras e resumo do form    ║
+// ║ nfeInutilizarEvents.form.js — Formulário de nova inutilização       ║
 // ║ MODULE: NF-e Inutilização de Numeração                              ║
 // ║ CONSART ERP                                                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-import { DEFAULTS } from './nfeInutilizarEvents.config.js';
+import { RULES } from './nfeInutilizarEvents.config.js';
 import {
-  formatCnpj,
-  onlyDigits,
-  toInt,
+  $, formatCnpj, onlyDigits, plural, toInt,
 } from './nfeInutilizarEvents.utils.js';
 
-/* =======================================================================
- * Payload de criação
- * ======================================================================= */
-export function buildPayload(el) {
+export const getForm = () => $('#formInutilizacao');
+
+export function buildPayload() {
   return {
-    companyCnpj: onlyDigits(el.companyCnpj?.value),
-    model: String(el.model?.value || DEFAULTS.MODEL).trim(),
-    serie: toInt(el.serie?.value, 0),
-    numberStart: toInt(el.numberStart?.value, 0),
-    numberEnd: toInt(el.numberEnd?.value, 0),
-    year: toInt(el.year?.value, new Date().getFullYear()),
-    justification: String(el.justification?.value || '').trim(),
+    companyCnpj: onlyDigits($('#companyCnpj')?.value),
+    model: String($('#model')?.value || '55'),
+    serie: toInt($('#serie')?.value, -1),
+    numberStart: toInt($('#numberStart')?.value, 0),
+    numberEnd: toInt($('#numberEnd')?.value, 0),
+    year: toInt($('#year')?.value, 0),
+    justification: String($('#justification')?.value || '').trim(),
   };
 }
 
-/* =======================================================================
- * Parâmetros dos filtros
- * ======================================================================= */
-export function buildFilterParams(el) {
-  const params = new URLSearchParams();
+export function validatePayload(payload) {
+  const errors = [];
+  if (payload.companyCnpj.length !== RULES.CNPJ_LENGTH) errors.push('Informe um CNPJ válido com 14 dígitos.');
+  if (payload.serie < 0) errors.push('Informe a série.');
+  if (payload.numberStart < 1) errors.push('Informe o número inicial.');
+  if (payload.numberEnd < 1) errors.push('Informe o número final.');
+  if (payload.numberStart && payload.numberEnd && payload.numberEnd < payload.numberStart) {
+    errors.push('O número final não pode ser menor que o inicial.');
+  }
+  if (payload.year < RULES.MIN_YEAR) errors.push('Informe o ano.');
+  const size = payload.justification.length;
+  if (size < RULES.MIN_JUSTIFICATION || size > RULES.MAX_JUSTIFICATION) {
+    errors.push(`A justificativa deve ter entre ${RULES.MIN_JUSTIFICATION} e ${RULES.MAX_JUSTIFICATION} caracteres.`);
+  }
+  return errors;
+}
 
-  const map = {
-    status: el.filterStatus?.value,
-    model: el.filterModel?.value,
-    serie: el.filterSerie?.value,
-    year: el.filterYear?.value,
-    number: el.filterNumber?.value,
-    protocol: el.filterProtocol?.value,
-    companyCnpj: onlyDigits(el.filterCompanyCnpj?.value),
-  };
+export function updateSummary() {
+  const start = toInt($('#numberStart')?.value, 0);
+  const end = toInt($('#numberEnd')?.value, 0);
+  const total = start > 0 && end >= start ? end - start + 1 : 0;
 
-  Object.entries(map).forEach(([key, value]) => {
-    const text = String(value ?? '').trim();
-    if (text) params.set(key, text);
+  const range = $('#summaryRange');
+  if (range) range.textContent = total ? `Faixa: ${start === end ? start : `${start} a ${end}`}` : 'Faixa: —';
+  const count = $('#summaryTotal');
+  if (count) count.textContent = plural(total, 'número', 'números');
+}
+
+export function updateJustificationCounter() {
+  const counter = $('#justificationCounter');
+  if (!counter) return;
+  const size = ($('#justification')?.value || '').trim().length;
+  counter.textContent = `${size} / ${RULES.MAX_JUSTIFICATION} · mínimo ${RULES.MIN_JUSTIFICATION}`;
+  counter.classList.toggle('summary-pill--warning', size < RULES.MIN_JUSTIFICATION);
+  counter.classList.toggle('summary-pill--success', size >= RULES.MIN_JUSTIFICATION);
+}
+
+/** Preenche o formulário (nova em branco ou usando um registro como modelo). */
+export function fillForm(base = {}) {
+  getForm()?.reset();
+  const set = (selector, value) => { const el = $(selector); if (el) el.value = value ?? ''; };
+  set('#companyCnpj', formatCnpj(base.companyCnpj || ''));
+  set('#model', String(base.model || '55'));
+  set('#serie', base.serie ?? '1');
+  set('#year', base.year || new Date().getFullYear());
+  set('#numberStart', base.numberStart ?? '');
+  set('#numberEnd', base.numberEnd ?? '');
+  set('#justification', base.justification || '');
+  updateSummary();
+  updateJustificationCounter();
+}
+
+export function bindFormInputs() {
+  const cnpj = $('#companyCnpj');
+  cnpj?.addEventListener('input', () => { cnpj.value = formatCnpj(cnpj.value); });
+  ['#serie', '#year', '#numberStart', '#numberEnd', '#filtroSerie', '#filtroAno', '#filtroNumero'].forEach((selector) => {
+    const input = $(selector);
+    input?.addEventListener('input', () => { input.value = onlyDigits(input.value); });
   });
-
-  return params;
-}
-
-/* =======================================================================
- * Máscaras
- * ======================================================================= */
-export function applyCnpjMask(input) {
-  if (!input) return;
-  input.value = formatCnpj(input.value);
-}
-
-/* =======================================================================
- * Resumo da faixa e contador da justificativa
- * ======================================================================= */
-export function updateSummary(el) {
-  const start = toInt(el.numberStart?.value, 0);
-  const end = toInt(el.numberEnd?.value, 0);
-
-  const total = start > 0 && end >= start ? (end - start) + 1 : 0;
-
-  if (el.summaryRange) {
-    el.summaryRange.textContent = total > 0 ? `${start} até ${end}` : '—';
-  }
-
-  if (el.summaryTotal) {
-    el.summaryTotal.textContent = String(total);
-  }
-}
-
-export function updateJustificationCounter(el) {
-  if (!el.justificationCounter || !el.justification) return;
-
-  const total = (el.justification.value || '').length;
-  el.justificationCounter.textContent = `${total} caracteres`;
-}
-
-/* =======================================================================
- * Defaults e limpeza
- * ======================================================================= */
-export function applyDefaultYear(el) {
-  if (el.year && !el.year.value) {
-    el.year.value = String(new Date().getFullYear());
-  }
-}
-
-export function resetForm(el) {
-  el.formInutilizacao?.reset();
-
-  applyDefaultYear(el);
-  updateSummary(el);
-  updateJustificationCounter(el);
-}
-
-export function resetFilters(el) {
-  el.formFiltros?.reset();
+  $('#numberStart')?.addEventListener('input', updateSummary);
+  $('#numberEnd')?.addEventListener('input', updateSummary);
+  $('#justification')?.addEventListener('input', updateJustificationCounter);
 }

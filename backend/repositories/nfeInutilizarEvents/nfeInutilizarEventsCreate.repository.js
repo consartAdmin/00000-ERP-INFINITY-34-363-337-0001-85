@@ -11,6 +11,7 @@ import {
   toInt,
   nowYear,
   normalizeStatusValue,
+  toMessageText,
 } from './nfeInutilizarEvents.sanitizers.js';
 import { mapRow } from './nfeInutilizarEvents.mappers.js';
 
@@ -30,7 +31,7 @@ export async function create(payload = {}) {
   const protocol = payload.protocol ? String(payload.protocol).trim() : null;
   const xmlRequest = payload.xmlRequest ? String(payload.xmlRequest) : null;
   const xmlResponse = payload.xmlResponse ? String(payload.xmlResponse) : null;
-  const message = payload.message ? String(payload.message) : null;
+  const message = toMessageText(payload.message);
   const requestPayload = payload.requestPayload ?? null;
   const responsePayload = payload.responsePayload ?? null;
   const locked = Boolean(payload.locked ?? false);

@@ -5,9 +5,13 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 export const state = {
-  items: [],
-  loading: false,
+  allRows: [],
+  filteredRows: [],
+  filters: { query: '', status: '', model: '', serie: '', year: '', number: '' },
+  sortColumn: 'id',
+  sortDirection: 'desc',
+  page: 1,
+  pageSize: 50,
+  current: null,
   submitting: false,
-  loadingDetail: false,
-  selectedId: null,
 };

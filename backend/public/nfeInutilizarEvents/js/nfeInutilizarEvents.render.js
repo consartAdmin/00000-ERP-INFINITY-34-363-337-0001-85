@@ -1,256 +1,205 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ nfeInutilizarEvents.render.js — Tabela, detalhes e feedback visual  ║
+// ║ nfeInutilizarEvents.render.js — Lista, rodapé e detalhes            ║
 // ║ MODULE: NF-e Inutilização de Numeração                              ║
 // ║ CONSART ERP                                                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { MODEL_LABELS } from './nfeInutilizarEvents.config.js';
+import { currentPageRows } from './nfeInutilizarEvents.filters.js';
 import { state } from './nfeInutilizarEvents.state.js';
 import {
-  escapeHtml,
-  formatCnpj,
-  formatDateTime,
-  getMessageText,
-  prettyJson,
-  safeJsonString,
-  truncate,
-} from './nfeInutilizarEvents.utils.js';
+  canConsult, messageText, statusInfo, statusKey,
+} from './nfeInutilizarEvents.status.js';
 import {
-  getDisplayStatus,
-  getDisplayStatusClass,
-} from './nfeInutilizarEvents.validation.js';
+  $, escapeHtml, formatCnpj, formatDateTime, plural, prettyJson,
+} from './nfeInutilizarEvents.utils.js';
 
-/* =======================================================================
- * Feedback / loading states
- * ======================================================================= */
-export function setFeedback(el, message, type = 'info') {
-  if (!el?.feedback) return;
+const COLUMNS = 9;
 
-  el.feedback.textContent = message || 'Pronto para operação.';
-  el.feedback.className = 'nfei-feedback';
-  el.feedback.dataset.type = type;
+const rangeTotal = (row) => {
+  const total = Number(row.numberEnd) - Number(row.numberStart) + 1;
+  return Number.isFinite(total) && total > 0 ? total : 0;
+};
 
-  if (type) el.feedback.classList.add(`is-${type}`);
+const rangeText = (row) => (Number(row.numberStart) === Number(row.numberEnd)
+  ? String(row.numberStart ?? '—')
+  : `${row.numberStart ?? '—'} a ${row.numberEnd ?? '—'}`);
+
+const modelText = (row) => `${row.model ?? '—'}${MODEL_LABELS[row.model] ? ` - ${MODEL_LABELS[row.model]}` : ''}`;
+
+const statusPill = (row) => {
+  const info = statusInfo(row);
+  return `<span class="summary-pill ${info.pill}">${escapeHtml(info.label)}</span>`;
+};
+
+function messageRow(text) {
+  return `<tr><td colspan="${COLUMNS}">${escapeHtml(text)}</td></tr>`;
 }
 
-export function setTableStatus(el, message) {
-  if (!el?.tableStatus) return;
-  el.tableStatus.textContent = message || '—';
-}
+export function renderTable(handlers) {
+  const tableBody = $('#bodyTable');
+  if (!tableBody) return;
 
-export function setTotalRows(el, total) {
-  if (!el?.totalRows) return;
-  el.totalRows.textContent = String(total ?? 0);
-}
-
-export function setSubmitLoading(el, loading) {
-  state.submitting = Boolean(loading);
-
-  if (!el?.btnSubmit) return;
-  el.btnSubmit.disabled = state.submitting;
-  el.btnSubmit.textContent = state.submitting
-    ? 'Enviando...'
-    : 'Enviar inutilização';
-}
-
-export function setRefreshLoading(el, loading) {
-  if (!el?.btnRefresh) return;
-  el.btnRefresh.disabled = Boolean(loading);
-  el.btnRefresh.textContent = loading
-    ? 'Atualizando...'
-    : 'Atualizar lista';
-}
-
-export function setDetailLoading(el, loading) {
-  state.loadingDetail = Boolean(loading);
-
-  if (loading && el?.detailsPanel) {
-    el.detailsPanel.innerHTML = `
-      <div class="nfei-empty-box">Carregando detalhes...</div>
-    `;
-  }
-}
-
-/* =======================================================================
- * Tabela
- * ======================================================================= */
-function getRowMessage(item) {
-  if (typeof item?.message === 'string') return item.message;
-  if (item?.message != null) return safeJsonString(item.message);
-  return '';
-}
-
-function renderEmptyRow(el) {
-  el.tbodyInutilizacoes.innerHTML = `
-    <tr>
-      <td colspan="11" class="nfei-empty">Nenhum registro encontrado.</td>
-    </tr>
-  `;
-}
-
-function renderRow(item) {
-  const displayStatus = getDisplayStatus(item);
-
-  const rawMessage = getRowMessage(item);
-  const escapedMessage = rawMessage ? escapeHtml(rawMessage) : '—';
-
-  const protocol = item?.protocol ? escapeHtml(String(item.protocol)) : '—';
-  const cnpj = item?.companyCnpj ? formatCnpj(item.companyCnpj) : '—';
-  const faixa = `${item?.numberStart ?? '—'} → ${item?.numberEnd ?? '—'}`;
-  const createdAt = formatDateTime(item?.createdAt);
-  const id = escapeHtml(String(item?.id ?? ''));
-
-  return `
-    <tr data-id="${id}">
-      <td class="mono">${escapeHtml(String(item?.id ?? '—'))}</td>
-
-      <td>
-        <span class="status-chip ${getDisplayStatusClass(item)}">
-          ${escapeHtml(displayStatus)}
-        </span>
-      </td>
-
-      <td class="mono">${escapeHtml(cnpj)}</td>
-      <td>${escapeHtml(String(item?.model ?? '—'))}</td>
-      <td>${escapeHtml(String(item?.serie ?? '—'))}</td>
-      <td class="mono">${escapeHtml(faixa)}</td>
-      <td>${escapeHtml(String(item?.year ?? '—'))}</td>
-      <td class="mono">${protocol}</td>
-      <td title="${escapedMessage}">${truncate(escapedMessage, 80)}</td>
-      <td>${escapeHtml(createdAt)}</td>
-
-      <td>
-        <div class="row-actions">
-          <button type="button" data-action="view" data-id="${id}">
-            Detalhes
-          </button>
-        </div>
-      </td>
-    </tr>
-  `;
-}
-
-export function renderTable(el) {
-  const items = Array.isArray(state.items) ? state.items : [];
-
-  setTotalRows(el, items.length);
-
-  if (!el?.tbodyInutilizacoes) return;
-
-  if (!items.length) {
-    renderEmptyRow(el);
+  const rows = currentPageRows();
+  if (!rows.length) {
+    tableBody.innerHTML = messageRow(state.allRows.length
+      ? 'Nenhuma inutilização encontrada com esses filtros.'
+      : 'Nenhuma inutilização registrada.');
     return;
   }
 
-  el.tbodyInutilizacoes.innerHTML = items.map(renderRow).join('');
+  tableBody.innerHTML = '';
+  rows.forEach((row) => {
+    const message = messageText(row);
+    const total = rangeTotal(row);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(row.id ?? '')}</td>
+      <td>${statusPill(row)}</td>
+      <td>${escapeHtml(formatCnpj(row.companyCnpj) || '—')}</td>
+      <td>${escapeHtml(modelText(row))}<br><small>Série ${escapeHtml(row.serie ?? '—')}</small></td>
+      <td><b>${escapeHtml(rangeText(row))}</b><br><small>${plural(total, 'número', 'números')}</small></td>
+      <td>${escapeHtml(row.year ?? '—')}</td>
+      <td class="td-left" title="${escapeHtml(message)}">${escapeHtml(message || '—')}${row.protocol
+        ? `<br><small>Protocolo ${escapeHtml(row.protocol)}</small>` : ''}</td>
+      <td>${escapeHtml(formatDateTime(row.createdAt))}</td>
+      <td>${actionIconsHtml([
+        { action: 'view', title: 'Detalhes', attrs: { 'data-action': 'view' } },
+        canConsult(row)
+          ? { action: 'search', title: 'Consultar na SEFAZ', attrs: { 'data-action': 'consult' } }
+          : null,
+        { action: 'copy', title: 'Usar como modelo para nova inutilização', attrs: { 'data-action': 'copy' } },
+      ])}</td>`;
+
+    tr.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action]');
+      const action = button?.dataset.action || 'view';
+      if (button) event.stopPropagation();
+      if (action === 'consult') handlers.onConsult(row, button);
+      else if (action === 'copy') handlers.onCopy(row);
+      else handlers.onView(row);
+    });
+    tableBody.appendChild(tr);
+  });
+}
+
+export function renderFooter() {
+  const total = state.filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+  const start = total === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
+  const end = Math.min(total, state.page * state.pageSize);
+
+  const info = $('#apTableInfo');
+  if (info) {
+    info.textContent = total > state.pageSize
+      ? `${start}–${end} de ${plural(total, 'registro', 'registros')}`
+      : plural(total, 'registro', 'registros');
+  }
+
+  const pageInfo = $('#paginacaoInfo');
+  if (pageInfo) pageInfo.textContent = `Página ${state.page} de ${totalPages}`;
+  if ($('#btnPrev')) $('#btnPrev').disabled = state.page <= 1;
+  if ($('#btnNext')) $('#btnNext').disabled = state.page >= totalPages;
+
+  // Selos: contam todas as inutilizações
+  const count = (keys) => state.allRows.filter((row) => keys.includes(statusKey(row))).length;
+  const done = count(['done']);
+  const processing = count(['processing', 'pending']);
+  const errors = count(['error', 'rejected']);
+
+  const set = (id, text, visible = true) => {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = text;
+    el.style.display = visible ? '' : 'none'; // summary-pill ignora [hidden]
+  };
+  set('#sumDone', plural(done, 'inutilizada', 'inutilizadas'));
+  set('#sumProcessing', `${processing} em processamento`, processing > 0);
+  set('#sumError', `${errors} com erro`, errors > 0);
+}
+
+export function renderListLoading() {
+  const tableBody = $('#bodyTable');
+  if (tableBody) tableBody.innerHTML = messageRow('Carregando inutilizações...');
+}
+
+export function renderListError(message) {
+  const tableBody = $('#bodyTable');
+  if (tableBody) tableBody.innerHTML = messageRow(`Erro ao carregar inutilizações: ${message || ''}`);
 }
 
 /* =======================================================================
- * Detalhes
+ * Modal de detalhes
  * ======================================================================= */
-function detailItem(label, value) {
+function field(label, value, span = '') {
   return `
-    <div class="nfei-detail-item">
+    <div class="fields fields-h-6 fields-w-full fields-font-3 ${span}">
       <label>${escapeHtml(label)}</label>
-      <div>${value ?? '—'}</div>
-    </div>
-  `;
+      <input type="text" readonly value="${escapeHtml(value ?? '—')}">
+    </div>`;
 }
 
-export function renderDetailsError(el, id, error) {
-  if (el?.detailTitleBadge) {
-    el.detailTitleBadge.textContent = `Registro #${id}`;
-  }
-
-  if (el?.detailsPanel) {
-    el.detailsPanel.innerHTML = `
-      <div class="nfei-empty-box">
-        Não foi possível carregar os detalhes: ${escapeHtml(error?.message || 'Erro desconhecido')}
-      </div>
-    `;
-  }
+function textBlock(label, value, rows = 3) {
+  return `
+    <div class="fields fields-w-full fields-font-3 modal-field--span-full">
+      <label>${escapeHtml(label)}</label>
+      <textarea readonly rows="${rows}"
+        class="textarea textarea-border-1 textarea-radius-4 textarea-w-10 textarea-resize-vertical">${escapeHtml(value || '—')}</textarea>
+    </div>`;
 }
 
-export function renderDetails(el, item) {
-  if (!el?.detailsPanel) return;
+function section(title, extra = '') {
+  return `
+    <div class="summary summary--between summary-gap-8 modal-field--span-full">
+      <h4>${escapeHtml(title)}</h4>${extra}
+    </div>`;
+}
 
-  if (!item) {
-    if (el.detailTitleBadge) {
-      el.detailTitleBadge.textContent = 'Detalhes';
-    }
+const DIVIDER = '<div class="modal-divider modal-divider--soft modal-field--span-full"></div>';
 
-    el.detailsPanel.innerHTML = `
-      <div class="nfei-empty-box">Registro não encontrado.</div>
-    `;
-    return;
-  }
+export function renderDetails(row) {
+  const body = $('#detalhesBody');
+  if (!body) return;
 
-  const displayStatus = getDisplayStatus(item);
+  const title = $('#detalhesTitulo');
+  if (title) title.textContent = `Inutilização #${row.id} · ${modelText(row)} série ${row.serie ?? '—'}`;
 
-  if (el.detailTitleBadge) {
-    el.detailTitleBadge.textContent = `#${item?.id ?? '—'} • ${displayStatus}`;
-  }
+  const total = rangeTotal(row);
+  const technical = [
+    ['Envio ao provedor (JSON)', prettyJson(row.requestPayload)],
+    ['Retorno do provedor (JSON)', prettyJson(row.responsePayload)],
+    ['XML enviado', row.xmlRequest],
+    ['XML de retorno', row.xmlResponse],
+  ].filter(([, value]) => value);
 
-  el.detailsPanel.innerHTML = `
-    <div class="nfei-detail-grid">
-      ${detailItem('ID', escapeHtml(String(item?.id ?? '—')))}
-      ${detailItem(
-        'Status',
-        `<span class="status-chip ${getDisplayStatusClass(item)}">${escapeHtml(displayStatus)}</span>`
-      )}
-      ${detailItem(
-        'CNPJ',
-        `<span class="mono">${escapeHtml(formatCnpj(item?.companyCnpj || '')) || '—'}</span>`
-      )}
-      ${detailItem('Modelo', escapeHtml(String(item?.model ?? '—')))}
+  body.innerHTML = `
+    <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+      ${section('Situação', statusPill(row))}
+      ${field('Retorno SEFAZ', messageText(row) || '—', 'modal-field--span-4')}
+      ${field('Protocolo', row.protocol || '—', 'modal-field--span-2')}
+      ${field('Criado em', formatDateTime(row.createdAt), 'modal-field--span-3')}
+      ${field('Atualizado em', formatDateTime(row.updatedAt), 'modal-field--span-3')}
 
-      ${detailItem('Série', escapeHtml(String(item?.serie ?? '—')))}
-      ${detailItem(
-        'Número inicial',
-        `<span class="mono">${escapeHtml(String(item?.numberStart ?? '—'))}</span>`
-      )}
-      ${detailItem(
-        'Número final',
-        `<span class="mono">${escapeHtml(String(item?.numberEnd ?? '—'))}</span>`
-      )}
-      ${detailItem('Ano', escapeHtml(String(item?.year ?? '—')))}
+      ${DIVIDER}
+      ${section('Faixa inutilizada', `<div class="summary-pill summary-pill--primary">${plural(total, 'número', 'números')}</div>`)}
+      ${field('CNPJ', formatCnpj(row.companyCnpj) || '—', 'modal-field--span-2')}
+      ${field('Modelo', modelText(row))}
+      ${field('Série', row.serie)}
+      ${field('Ano', row.year)}
+      ${field('Faixa', rangeText(row))}
+      ${textBlock('Justificativa', row.justification, 2)}
 
-      ${detailItem(
-        'Protocolo',
-        `<span class="mono">${escapeHtml(item?.protocol || '—')}</span>`
-      )}
-      ${detailItem('Locked', escapeHtml(String(Boolean(item?.locked))))}
-      ${detailItem('Criado em', escapeHtml(formatDateTime(item?.createdAt)))}
-      ${detailItem('Atualizado em', escapeHtml(formatDateTime(item?.updatedAt)))}
-    </div>
+      ${technical.length ? `
+        ${DIVIDER}
+        <details class="modal-field--span-full">
+          <summary><b>Dados técnicos</b> <small>(JSON e XML trocados com o provedor/SEFAZ)</small></summary>
+          <div class="modal-form-grid modal-form-grid--6">
+            ${technical.map(([label, value]) => textBlock(label, value, 8)).join('')}
+          </div>
+        </details>` : ''}
+    </div>`;
 
-    <div class="nfei-detail-item" style="margin-bottom:14px;">
-      <label>Justificativa</label>
-      <div>${escapeHtml(item?.justification || '—')}</div>
-    </div>
-
-    <div class="nfei-detail-item" style="margin-bottom:14px;">
-      <label>Mensagem</label>
-      <div>${escapeHtml(getMessageText(item?.message))}</div>
-    </div>
-
-    <div class="nfei-json-block">
-      <h3>Request Payload</h3>
-      <pre>${escapeHtml(prettyJson(item?.requestPayload))}</pre>
-    </div>
-
-    <div class="nfei-json-block">
-      <h3>Response Payload</h3>
-      <pre>${escapeHtml(prettyJson(item?.responsePayload))}</pre>
-    </div>
-
-    <div class="nfei-json-block">
-      <h3>XML Request</h3>
-      <pre>${escapeHtml(item?.xmlRequest || '—')}</pre>
-    </div>
-
-    <div class="nfei-json-block">
-      <h3>XML Response</h3>
-      <pre>${escapeHtml(item?.xmlResponse || '—')}</pre>
-    </div>
-  `;
+  const consult = $('#btnConsultar');
+  if (consult) consult.style.display = canConsult(row) ? '' : 'none';
 }

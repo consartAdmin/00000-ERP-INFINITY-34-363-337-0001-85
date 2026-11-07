@@ -6,7 +6,7 @@
 import pool from '../../config/db.js';
 import { TABLE } from './nfeInutilizarEvents.constants.js';
 import { RETURNING_FIELDS } from './nfeInutilizarEvents.sql.js';
-import { toInt, normalizeStatusValue } from './nfeInutilizarEvents.sanitizers.js';
+import { toInt, normalizeStatusValue, toMessageText } from './nfeInutilizarEvents.sanitizers.js';
 import { mapRow } from './nfeInutilizarEvents.mappers.js';
 import { findById } from './nfeInutilizarEventsQuery.repository.js';
 
@@ -40,7 +40,7 @@ export async function updateStatus(id, payload = {}) {
 
   if (payload.message !== undefined) {
     fields.push(`message = $${idx++}`);
-    values.push(payload.message ? String(payload.message) : null);
+    values.push(toMessageText(payload.message));
   }
 
   if (payload.requestPayload !== undefined) {
