@@ -14,7 +14,6 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
   // ─────────────────────────────────────────────────────────────
   const UI_GRADES = {
     sel:   ['#gradeSelect'],
-    stock: ['#gradeStock'],
     form:  ['#formGradeProduct'],
     tbody: ['#gradesTableBody'],
   };
@@ -146,8 +145,6 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
             grade_id: pg.grade_id == null ? null : Number(pg.grade_id),
             grade: pg.grade ?? pg.grade_name ?? pg.nome ?? '',
             description: pg.description ?? pg.desc ?? pg.descricao ?? '',
-            // Estoque real = soma dos lotes da grade (productsStockLots); pg.stock não é usado.
-            lot_stock: Number(pg.lot_stock ?? 0) || 0,
             is_active: pg.is_active !== false && pg.ativo !== false,
           }))
           .filter((pg) => Number.isInteger(pg.product_grade_id) || Number.isInteger(pg.grade_id));
@@ -201,12 +198,6 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
     });
   }
 
-  const fmtQty = (n) => {
-    const v = Number(n) || 0;
-    if (ctx?.Num?.formatBR) return ctx.Num.formatBR(v, 3);
-    return v.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-  };
-
   function renderGradesTable(rows = []) {
     const tbody = qGrade('tbody');
     if (!tbody) return;
@@ -223,8 +214,6 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
       tr.innerHTML = `
         <td class="col-grade" title="${gradeLabel}">${gradeLabel}</td>
         <td class="col-desc" title="${desc}">${desc}</td>
-
-        <td class="col-stock" title="Soma dos lotes ativos desta grade">${fmtQty(r.lot_stock)}</td>
 
         <td class="col-status">
           <button type="button" class="btn btn-toolbar btn-sm act-toggle">
@@ -268,13 +257,11 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
     }
 
     const grade_id = Number(sel.value);
-    const stock = 0; // estoque da grade vem dos lotes
 
     await GradesApi.create({
       product_id: finalProductId,                    // ✅ obrigatório
       product_code: finalProductCode || undefined,   // opcional (compat)
       grade_id,
-      stock,
       is_active: true,
     });
 

@@ -28,25 +28,6 @@ export async function listByProduct(
         g.grade,
         g.description,
         pg.stock,
-        -- Estoque real da grade: soma dos lotes ativos (mesma regra de productsStock.stock_qty)
-        COALESCE((
-          SELECT SUM(l.qty_on_hand - l.qty_reserved)
-            FROM public."productsStockLots" l
-           WHERE COALESCE(l.is_active, TRUE) = TRUE
-             AND (
-                  l.product_grade_id = pg.product_grade_id
-                  -- lotes sem grade aparecem como "Padrão": somam na grade Padrão do produto
-               OR (
-                    l.product_grade_id IS NULL
-                AND UPPER(TRIM(g.grade)) IN ('PADRÃO', 'PADRAO')
-                AND l.product_stock_id IN (
-                      SELECT pr.product_stock_id
-                        FROM public.products pr
-                       WHERE TRIM(pr.product_id::text) = TRIM(pg.product_id)
-                    )
-                  )
-             )
-        ), 0)::float8 AS lot_stock,
         pg.is_active,
         pg.created_at,
         pg.updated_at
