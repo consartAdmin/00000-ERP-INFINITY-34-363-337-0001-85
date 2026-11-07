@@ -60,22 +60,48 @@ export async function listMobilized(filters = {}) {
 
   const whereSql = where.length ? ` WHERE ${where.join(' AND ')} ` : '';
 
-  // ✅ items_total: soma do total_value (gerado no DB)
+  // ✅ items_total: soma do total_value (gerado no DB = quantity * unit_price)
+  // ✅ items_missing_price: itens sem valor unitário (total fica R$ 0,00)
   const sql = `
     SELECT m.*,
-      (SELECT COUNT(*) FROM ${TB_I} i WHERE i.mobilized_id = m.mobilized_id) AS items_count,
-      (SELECT COALESCE(SUM(i.total_value), 0)::numeric(15,2)
-         FROM ${TB_I} i
-        WHERE i.mobilized_id = m.mobilized_id
-      ) AS items_total
+      COALESCE(agg.items_count, 0)::int AS items_count,
+      COALESCE(agg.items_total, 0)::numeric(15,2) AS items_total,
+      COALESCE(agg.items_missing_price, 0)::int AS items_missing_price
     FROM ${TB_M} m
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*) AS items_count,
+             SUM(i.total_value) AS items_total,
+             COUNT(*) FILTER (WHERE COALESCE(i.unit_price, 0) = 0) AS items_missing_price
+        FROM ${TB_I} i
+       WHERE i.mobilized_id = m.mobilized_id
+    ) agg ON TRUE
     ${whereSql}
     ${orderSql}
     LIMIT ${limit} OFFSET ${offset};
   `;
 
-  const countSql = `SELECT COUNT(*)::int AS total FROM ${TB_M} m ${whereSql};`;
+  // total de registros + resumo do filtro inteiro (rodapé)
+  const countSql = `
+    SELECT COUNT(DISTINCT m.mobilized_id)::int AS total,
+           COUNT(i.mobilized_item_id)::int AS items_count,
+           COALESCE(SUM(i.total_value), 0)::numeric(15,2) AS items_total,
+           COUNT(i.mobilized_item_id) FILTER (WHERE COALESCE(i.unit_price, 0) = 0)::int AS items_missing_price
+      FROM ${TB_M} m
+      LEFT JOIN ${TB_I} i ON i.mobilized_id = m.mobilized_id
+    ${whereSql};
+  `;
 
   const [rowsRes, countRes] = await Promise.all([q(sql, params), q(countSql, params)]);
-  return { rows: rowsRes.rows, total: countRes.rows[0]?.total ?? 0, limit, offset };
+  const summary = countRes.rows[0] || {};
+  return {
+    rows: rowsRes.rows,
+    total: summary.total ?? 0,
+    limit,
+    offset,
+    summary: {
+      items_count: summary.items_count ?? 0,
+      items_total: summary.items_total ?? '0',
+      items_missing_price: summary.items_missing_price ?? 0,
+    },
+  };
 }

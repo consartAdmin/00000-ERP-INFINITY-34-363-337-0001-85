@@ -1,35 +1,42 @@
 'use strict';
 
+import { DEFAULT_LIMIT } from './mobilized.config.js';
+
 export const state = {
-  rows: [], total: 0, limit: 50, offset: 0,
+  rows: [], total: 0, limit: DEFAULT_LIMIT, offset: 0,
+  summary: { items_count: 0, items_total: 0, items_missing_price: 0 },
+  sortColumn: 'acquired_at', sortDirection: 'desc',
   selectedId: null, selectedRow: null, items: [], attachments: [], selectedItemsTotal: 0,
-  detailsReady: false, lastFocusedElement: null,
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
 
 export const dom = {
-  list: $('#tableBody'), listMeta: $('#listMeta'), form: $('#formMobilized'), itemsBody: $('#itemsBody'),
-  q: $('#q'), statusFilter: $('#statusFilter'),
-  btnNew: $('#btnNew'), btnRefresh: $('#btnRefresh'), btnSearch: $('#btnSearch'),
-  btnPrev: $('#btnPrev'), btnNext: $('#btnNext'), btnSave: $('#btnSave'),
-  btnDelete: $('#btnDelete'), btnAddItem: $('#btnAddItem'), btnOpenPdf: $('#btnOpenPdf'),
-  btnPdfAll: $('#btnPdfAll'), btnPdfDownload: $('#btnPdfDownload'),
+  table: $('#mobilizedTable'), list: $('#tableBody'), form: $('#formMobilized'), itemsBody: $('#itemsBody'),
+  q: $('#q'), statusFilter: $('#statusFilter'), periodFilter: $('#periodFilter'),
+  btnNew: $('#btnNew'), btnRefresh: $('#btnRefresh'), btnSearch: $('#btnSearch'), btnClearFilters: $('#btnClearFilters'),
+  // rodapé padrão
+  tableInfo: $('#apTableInfo'), pageInfo: $('#infoPagina'), perPage: $('#perPage'),
+  btnPrev: $('#pagAnterior'), btnNext: $('#pagProxima'),
+  sumItems: $('#sumItems'), sumTotal: $('#sumTotal'), sumMissing: $('#sumMissing'),
+  // modal detalhes
+  detailsModal: $('#detailsModal'), detailsTitle: $('#detailsModalTitle'),
+  btnSave: $('#btnSave'), btnDelete: $('#btnDelete'), btnAddItem: $('#btnAddItem'),
+  btnPdfAll: $('#btnPdfAll'), btnPdfDownload: $('#btnPdfDownload'), btnOpenPdf: $('#btnOpenPdf'),
   btnPdfPickUpload: $('#btnPdfPickUpload'), btnPdfGenerateUpload: $('#btnPdfGenerateUpload'),
-  pdfFile: $('#pdfFile'), kpiItemsCount: $('#kpiItemsCount'),
-  kpiItemsTotal: $('#kpiItemsTotal'), itemsFootTotal: $('#itemsFootTotal'),
-  editor: $('.mz-editor'), itemBackdrop: $('#itemModalBackdrop'), itemModal: $('#itemModal'),
-  btnCloseItemModal: $('#btnCloseItemModal'), btnItemCancel: $('#btnItemCancel'),
-  btnItemSave: $('#btnItemSave'), btnItemSetImageUrl: $('#btnItemSetImageUrl'),
-  btnItemClearImageUrl: $('#btnItemClearImageUrl'), itemImgPreview: $('#item_img_preview'),
+  pdfFile: $('#pdfFile'), pdfInfo: $('#pdfInfo'),
+  kpiItemsCount: $('#kpiItemsCount'), kpiItemsTotal: $('#kpiItemsTotal'), kpiItemsMissing: $('#kpiItemsMissing'),
+  itemsFootTotal: $('#itemsFootTotal'),
+  // modal item
+  itemModal: $('#itemModal'), itemModalTitle: $('#itemModalTitle'), btnItemSave: $('#btnItemSave'),
+  btnItemSetImageUrl: $('#btnItemSetImageUrl'), btnItemClearImageUrl: $('#btnItemClearImageUrl'),
+  itemImgPreview: $('#item_img_preview'),
 };
 
 export const fields = {
   mobilized_id: $('#mobilized_id'), title: $('#title'), status: $('#status'),
   acquired_at: $('#acquired_at'), source_system: $('#source_system'),
-  external_ref: $('#external_ref'), notes: $('#notes'), pdf_storage: $('#pdf_storage'),
-  pdf_path: $('#pdf_path'), pdf_filename: $('#pdf_filename'), pdf_version: $('#pdf_version'),
-  pdf_uploaded_at: $('#pdf_uploaded_at'), pdf_size_bytes: $('#pdf_size_bytes'), pdf_sha256: $('#pdf_sha256'),
+  external_ref: $('#external_ref'), notes: $('#notes'),
 };
 
 export const itemFields = {
@@ -40,5 +47,5 @@ export const itemFields = {
 };
 
 export const itemImageFile = Object.assign(document.createElement('input'), {
-  type: 'file', accept: 'image/*', hidden: true,
+  type: 'file', accept: 'image/jpeg,image/png,image/webp', hidden: true,
 });

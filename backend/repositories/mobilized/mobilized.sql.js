@@ -10,11 +10,14 @@ export function parseOrder(orderBy) {
     ['acquired_at', 'm.acquired_at'],
     ['created_at', 'm.created_at'],
     ['updated_at', 'm.updated_at'],
+    // colunas calculadas na listagem (aliases do SELECT)
+    ['items_count', 'items_count'],
+    ['items_total', 'items_total'],
   ]);
 
   if (!orderBy) return ' ORDER BY m.mobilized_id DESC ';
   const [colRaw, dirRaw] = String(orderBy).trim().split(/\s+/);
   const col = allowed.get(colRaw);
   const dir = /^(asc|desc)$/i.test(dirRaw || '') ? dirRaw.toUpperCase() : 'DESC';
-  return col ? ` ORDER BY ${col} ${dir} ` : ' ORDER BY m.mobilized_id DESC ';
+  return col ? ` ORDER BY ${col} ${dir} NULLS LAST, m.mobilized_id DESC ` : ' ORDER BY m.mobilized_id DESC ';
 }

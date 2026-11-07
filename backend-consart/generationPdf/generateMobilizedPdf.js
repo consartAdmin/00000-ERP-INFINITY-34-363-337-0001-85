@@ -314,7 +314,9 @@ function drawHeader(doc, { mobilized, company }) {
   const { left, right } = doc.page.margins;
 
   const title = safeStr(mobilized?.title, 180) || `MOBILIZADO #${mobilized?.mobilized_id ?? ''}`;
-  const status = safeStr(mobilized?.status, 20) || '';
+  const STATUS_PT = { ACTIVE: 'Ativo', ARCHIVED: 'Arquivado', CANCELED: 'Cancelado' };
+  const statusRaw = safeStr(mobilized?.status, 20) || '';
+  const status = STATUS_PT[statusRaw.toUpperCase()] || statusRaw;
   const acquired = formatDateTimeBR(mobilized?.acquired_at);
   const externalRef = safeStr(mobilized?.external_ref, 80);
   const sourceSystem = safeStr(mobilized?.source_system, 60);
@@ -590,7 +592,7 @@ export async function generateMobilizedPdf({
     margins: { top: 36, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 12 },
     bufferPages: true,
     info: {
-      Title: safeStr(mobilized?.title, 180) || `Mobilized ${mobilized?.mobilized_id ?? ''}`,
+      Title: safeStr(mobilized?.title, 180) || `Mobilizado ${mobilized?.mobilized_id ?? ''}`,
       Author: safeStr(company?.name || company?.razao_social || 'CONSART ERP', 120),
     },
   });

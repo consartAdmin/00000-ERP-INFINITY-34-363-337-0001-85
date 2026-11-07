@@ -534,7 +534,9 @@ function drawMobilizedHeader(doc, { mobilized, company, globalTitle }) {
   const { left, right } = doc.page.margins;
 
   const title = safeStr(mobilized?.title, 180) || `MOBILIZADO #${mobilized?.mobilized_id ?? ''}`;
-  const status = safeStr(mobilized?.status, 20) || '';
+  const STATUS_PT = { ACTIVE: 'Ativo', ARCHIVED: 'Arquivado', CANCELED: 'Cancelado' };
+  const statusRaw = safeStr(mobilized?.status, 20) || '';
+  const status = STATUS_PT[statusRaw.toUpperCase()] || statusRaw;
   const acquired = formatDateTimeBR(mobilized?.acquired_at);
   const externalRef = safeStr(mobilized?.external_ref, 80);
   const sourceSystem = safeStr(mobilized?.source_system, 60);
@@ -573,7 +575,7 @@ function drawMobilizedHeader(doc, { mobilized, company, globalTitle }) {
 ────────────────────────────────────────────────────────────── */
 export async function generateMobilizedAllPdf({
   mobilizedList = [], // [{...mobilized, items:[...]}]
-  title = 'Mobilized — Inventário (Todos)',
+  title = 'Mobilizado — Inventário (Todos)',
 
   company = null,
   apiBase = '',
