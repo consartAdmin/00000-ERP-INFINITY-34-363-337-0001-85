@@ -1250,8 +1250,20 @@
                 </div>
 
                 <div class="fields fields-h-6 fields-w-full">
-                  <span>Validade</span>
-                  <input id="mExpiresAt" type="date">
+                  <span>Fabricação</span>
+                  <input id="mManufacturedMonth" type="text" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="mm/aaaa">
+                </div>
+
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Validade (meses)</span>
+                  <input id="mShelfLifeMonths" type="number" min="1" max="600" step="1" placeholder="Ex.: 36">
+                </div>
+
+                <div class="fields fields-h-6 fields-w-full">
+                  <span>Vencimento</span>
+                  <input id="mExpiresMonth" type="text" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="mm/aaaa"
+                    title="Fabricação + validade. Sem fabricação, informe o vencimento direto.">
+                  <input id="mExpiresAt" type="hidden">
                 </div>
 
                 <div class="fields fields-h-6 fields-w-full">
@@ -1270,7 +1282,7 @@
                 </div>
 
                 <!-- Origem da NF-e -->
-                <div class="fields fields-h-6 fields-w-full modal-field--span-4">
+                <div class="fields fields-h-6 fields-w-full modal-field--span-3">
                   <span>Chave NF-e de entrada</span>
                   <div class="inline-field">
                     <input id="mNfeKey" type="text" maxlength="44" readonly aria-readonly="true" class="is-readonly mono"

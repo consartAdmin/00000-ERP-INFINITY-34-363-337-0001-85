@@ -106,6 +106,9 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     gradeStock: '#newGradeStock',
     mLotCode: '#mLotCode',
     mExpiresAt: '#mExpiresAt',
+    mManufacturedMonth: '#mManufacturedMonth',
+    mShelfLifeMonths: '#mShelfLifeMonths',
+    mExpiresMonth: '#mExpiresMonth',
     mQtyOnHand: '#mQtyOnHand',
     mCostUnit: '#mCostUnit',
     mNfeKey: '#mNfeKey',
@@ -2483,6 +2486,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
         setVal(LOT_FIELDS.mProductGradeId, '');
         setVal(LOT_FIELDS.mLotCode, '');
         setVal(LOT_FIELDS.mExpiresAt, '');
+        fillLotValidity(null);
         setVal(LOT_FIELDS.mQtyOnHand, '0');
         setVal(LOT_FIELDS.mCostUnit, '');
         setVal(LOT_FIELDS.mNfeKey, '');
@@ -2517,7 +2521,8 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
         Modal.setup();
         if (!Modal.isOpen(dlg)) Modal.open(dlg);
 
-        bindEnterToSaveLotModal();
+        bindLotValidity();
+      bindEnterToSaveLotModal();
 
         setTimeout(() => {
           const gradeEl = $(LOT_FIELDS.mProductGradeId);
@@ -2544,6 +2549,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       setVal(LOT_FIELDS.mProductGradeId, row.product_grade_id ?? '');
       setVal(LOT_FIELDS.mLotCode, row.lot_code ?? '');
       setVal(LOT_FIELDS.mExpiresAt, row.expires_at ? String(row.expires_at).slice(0, 10) : '');
+      fillLotValidity(row);
       setVal(LOT_FIELDS.mQtyOnHand, row.qty_on_hand ?? 0);
       setVal(LOT_FIELDS.mCostUnit, row.cost_unit ?? '');
       setVal(LOT_FIELDS.mNfeKey, row.nfe_key ?? '');
@@ -2639,6 +2645,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       Modal.setup();
       if (!Modal.isOpen(dlg)) Modal.open(dlg);
 
+      bindLotValidity();
       bindEnterToSaveLotModal();
 
       setTimeout(() => {
@@ -2662,6 +2669,101 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     function modalLotId() {
       const id = Number(getVal(LOT_FIELDS.mLotId) || 0);
       return id > 0 ? id : null;
+    }
+
+    /* ── Fabricação (mm/aaaa) + Validade (meses) → Vencimento (mm/aaaa) ──
+       expires_at (FEFO/alertas) = último dia do mês do vencimento. */
+    // Campos mm/aaaa em texto (o Firefox não tem <input type="month">).
+    const monthOf = (v) => {
+      const m = String(v || '').match(/^(\d{4})-(\d{2})/);
+      return m ? `${m[2]}/${m[1]}` : '';
+    };
+
+    // "05/2026" → "2026-05" ('' se inválido)
+    const ymOf = (v) => {
+      const m = String(v || '').trim().match(/^(\d{1,2})\/(\d{4})$/);
+      if (!m) return '';
+      const mm = Number(m[1]);
+      if (mm < 1 || mm > 12) return '';
+      return `${m[2]}-${String(mm).padStart(2, '0')}`;
+    };
+
+    const maskMonthInput = (el) => {
+      const digits = String(el.value || '').replace(/\D/g, '').slice(0, 6);
+      el.value = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+    };
+
+    const addMonthsYm = (ym, months) => {
+      const m = String(ym || '').match(/^(\d{4})-(\d{2})$/);
+      const n = Number.parseInt(months, 10);
+      if (!m || !Number.isInteger(n) || n <= 0) return '';
+      const total = Number(m[1]) * 12 + (Number(m[2]) - 1) + n;
+      return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, '0')}`;
+    };
+
+    const lastDayOfYm = (ym) => {
+      const m = String(ym || '').match(/^(\d{4})-(\d{2})$/);
+      if (!m) return '';
+      const last = new Date(Date.UTC(Number(m[1]), Number(m[2]), 0)).getUTCDate();
+      return `${m[1]}-${m[2]}-${String(last).padStart(2, '0')}`;
+    };
+
+    function syncLotValidity() {
+      const fab = ymOf(getVal(LOT_FIELDS.mManufacturedMonth));
+      const months = getVal(LOT_FIELDS.mShelfLifeMonths);
+      const expEl = $(LOT_FIELDS.mExpiresMonth);
+      const computed = addMonthsYm(fab, months);
+
+      if (expEl) {
+        if (computed) expEl.value = monthOf(computed);
+        // Com fabricação + meses o vencimento é calculado; sem eles, digita direto.
+        expEl.readOnly = !!computed;
+        expEl.classList.toggle('is-readonly', !!computed);
+      }
+
+      setVal(LOT_FIELDS.mExpiresAt, lastDayOfYm(ymOf(getVal(LOT_FIELDS.mExpiresMonth))));
+    }
+
+    function fillLotValidity(row) {
+      setVal(LOT_FIELDS.mManufacturedMonth, monthOf(row?.manufactured_at));
+      setVal(LOT_FIELDS.mShelfLifeMonths, row?.shelf_life_months ?? '');
+      setVal(LOT_FIELDS.mExpiresMonth, monthOf(row?.expires_at));
+      syncLotValidity();
+      // Mantém o dia exato vindo da NF-e enquanto o usuário não mexer no vencimento.
+      if (row?.expires_at && !getVal(LOT_FIELDS.mManufacturedMonth)) {
+        setVal(LOT_FIELDS.mExpiresAt, String(row.expires_at).slice(0, 10));
+      }
+    }
+
+    function bindLotValidity() {
+      const fabEl = $(LOT_FIELDS.mManufacturedMonth);
+      if (!fabEl || fabEl.dataset.validityBound) return;
+      fabEl.dataset.validityBound = '1';
+      [LOT_FIELDS.mManufacturedMonth, LOT_FIELDS.mShelfLifeMonths, LOT_FIELDS.mExpiresMonth]
+        .forEach((sel) => {
+          const el = $(sel);
+          if (el && el.type === 'text') el.addEventListener('input', () => maskMonthInput(el));
+          $(sel)?.addEventListener('input', syncLotValidity);
+          $(sel)?.addEventListener('change', syncLotValidity);
+        });
+    }
+
+    async function saveLotExtras(lotId) {
+      const id = Number(lotId);
+      if (!Number.isInteger(id) || id <= 0) return;
+      const fab = ymOf(getVal(LOT_FIELDS.mManufacturedMonth));
+      const months = Number.parseInt(getVal(LOT_FIELDS.mShelfLifeMonths), 10);
+      try {
+        await ctx.jfetch(`/api/productsStockLots/${id}/extras`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            manufactured_at: fab ? `${fab}-01` : null,
+            shelf_life_months: Number.isInteger(months) && months > 0 ? months : null,
+          }),
+        });
+      } catch (err) {
+        ctx.toast?.(`⚠️ Lote salvo, mas fabricação/validade não: ${err.message}`, 'warning');
+      }
     }
 
     function modalPayload() {
@@ -2731,6 +2833,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
         return;
       }
 
+      syncLotValidity();
       const payload = modalPayload();
       if (!payload.lot_code) {
         ctx.toast?.('⚠️ Informe o lote.', 'warning');
@@ -2741,12 +2844,14 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       const id = modalLotId();
 
       if (!id) {
-        await LotsApi.create(payload);
+        const created = await LotsApi.create(payload);
+        await saveLotExtras(created?.lot_id ?? created?.id);
         ctx.toast?.('✅ Lote criado/adicionado!', 'success');
       } else {
         const patch = { ...payload };
         delete patch.product_stock_id;
         await LotsApi.update(id, patch);
+        await saveLotExtras(id);
         ctx.toast?.('✅ Lote atualizado!', 'success');
       }
 
