@@ -168,12 +168,78 @@
       min-width: 0;
     }
 
+    /* Mesmas cores do bloco Descrição (entity-header) */
     .product-images-card {
       min-height: 220px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      background: var(--card);
+      padding: var(--entity-header-padding, 14px);
+      border: 1px solid var(--entity-header-border, var(--line));
+      border-radius: var(--entity-header-radius, var(--radius-sm));
+      background: var(--entity-header-bg, var(--card));
+    }
+
+    /* Descrição / Imagens lado a lado: os dois blocos com a mesma altura */
+    #aba-descricao #formDescricaoProduto,
+    #aba-descricao #formDescricaoProduto > .entity-header {
+      height: 100%;
+    }
+
+    /* Áreas de conteúdo em branco sobre o fundo cinza do bloco */
+    #aba-descricao textarea,
+    #aba-descricao .product-images-gallery,
+    #aba-descricao .product-images-empty {
+      background: #fff;
+    }
+
+    /* Área das imagens com a mesma borda da caixa de texto (fields.css) */
+    #aba-descricao .product-images-gallery {
+      border: var(--fields-border-width, 1px) solid var(--fields-border-color, #1f2937);
+      border-radius: var(--fields-border-radius, 6px);
+    }
+
+    #aba-descricao .product-images-empty {
+      border: 0;
+    }
+
+    /* Botões das duas colunas na mesma linha (rodapé de cada bloco) */
+    #aba-descricao .product-images-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    #aba-descricao .product-images-card__actions {
+      margin-top: auto;
+    }
+
+    #aba-descricao .product-images-unit-picker span {
+      white-space: nowrap;
+    }
+
+    /* Caixa de texto e área das imagens com o mesmo topo e o mesmo fim */
+    #aba-descricao .description-product-fields,
+    #aba-descricao .description-product-fields > .field-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    #aba-descricao .description-product-fields textarea {
+      flex: 1;
+      min-height: 130px;
+    }
+
+    #aba-descricao .product-images-card {
+      gap: var(--entity-header-gap, 12px);
+    }
+
+    #aba-descricao .product-images-gallery {
+      flex: 1;
+      margin: 0;
+    }
+
+    #aba-descricao #descricaoProdutoStatus:empty {
+      display: none;
     }
 
     .product-images-card__header,
@@ -226,17 +292,13 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: var(--muted);
-      font-size: .8rem;
+      color: var(--fields-color);
+      font-size: var(--fields-font-size);
     }
 
+    /* select usa o padrão .fields do style.css */
     .product-images-unit-picker select {
-      height: 26px;
-      padding: 0 6px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--card);
-      font-size: .8rem;
+      flex: 1;
     }
 
     .unit-image-cell {
@@ -453,11 +515,7 @@
         </button>
 
         <button type="button" class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-descricao">
-          📝 Descrição
-        </button>
-
-        <button type="button" class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-imagens">
-          🖼️ Imagens
+          📝 Descrição / Imagens
         </button>
 
         <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-precos">
@@ -627,53 +685,13 @@
 
     </section>
 
-    <!-- 🖼️ Imagens (saiu de Dados Gerais) -->
-    <section id="aba-imagens" class="aba" role="tabpanel" aria-label="Imagens do produto">
-
-      <div class="consart-panel">
-
-        <section id="productsImagens" class="product-images-card" aria-labelledby="productsImagensTitle">
-          <div class="product-images-card__header">
-            <div>
-              <div id="productsImagensTitle" class="product-images-card__title">🖼️ Imagens do Produto</div>
-              <div class="product-images-card__hint">JPG, PNG ou WebP</div>
-            </div>
-            <span id="productsImagensCount" class="badge">0 imagens</span>
-          </div>
-
-          <div id="productsImagensGallery" class="product-images-gallery" aria-live="polite">
-            <div id="productsImagensEmpty" class="product-images-empty">
-              Nenhuma imagem cadastrada para este produto.
-            </div>
-          </div>
-
-          <div class="product-images-card__actions">
-            <input id="productsImagensInput" class="product-images-input" type="file" name="productsImagens[]"
-              accept="image/jpeg,image/png,image/webp" multiple>
-            <label for="productsImagensInput" class="btn btn-primary btn-sm" role="button">
-              📤 Selecionar imagens
-            </label>
-            <label class="product-images-unit-picker" title="Unidade à qual as novas imagens serão vinculadas">
-              <span>Vincular a</span>
-              <select id="productsImagensUploadUnit" aria-label="Unidade das novas imagens">
-                <option value="">Geral (produto)</option>
-              </select>
-            </label>
-            <button type="button" id="btnUploadProductsImagens" class="btn btn-save btn-sm" disabled>
-              💾 Enviar imagens
-            </button>
-          </div>
-        </section>
-
-      </div>
-
-    </section>
-
     <!-- 📝 Descrição -->
     <section id="aba-descricao" class="aba" role="tabpanel" aria-label="Descrição do produto">
 
       <div class="consart-panel">
 
+        <!-- Descrição e Imagens lado a lado -->
+        <div class="c-grid g-2 gap-16 a-stretch">
         <form id="formDescricaoProduto" data-section="description" class="form-stack" novalidate>
 
           <header class="entity-header">
@@ -690,31 +708,66 @@
                 </div>
               </div>
 
-              <button type="submit" id="btnSalvarDescricaoProduto" class="btn btn-save btn-sm">
-                💾 Salvar Descrição
-              </button>
-
             </div>
 
             <div class="description-product-fields">
 
               <label class="field-group" for="descricaoDetalhada">
 
-                <span>Descrição detalhada</span>
-
-                <textarea id="code_template"
+                <textarea id="code_template" aria-label="Descrição detalhada"
                   class="textarea textarea-border-1 textarea-radius-4 textarea-h-3 textarea-w-10 textarea-resize-vertical textarea-padding-5"
                   spellcheck="false" placeholder="Digite a descrição completa do produto..."></textarea>
 
               </label>
             </div>
 
-            <div id="descricaoProdutoStatus" class="description-status" role="status" aria-live="polite">
+            <div id="descricaoProdutoStatus" class="description-status" role="status" aria-live="polite"></div>
+
+            <!-- Salvar no rodapé do bloco, na mesma linha dos botões das imagens -->
+            <div class="btn-inline" style="display: flex; width: 100%; justify-content: flex-end; margin-top: auto;">
+              <button type="submit" id="btnSalvarDescricaoProduto" class="btn btn-save btn-sm">
+                💾 Salvar Descrição
+              </button>
             </div>
 
           </header>
 
         </form>
+
+        <!-- 🖼️ Imagens do produto (antes era a aba Imagens) -->
+        <section id="productsImagens" class="product-images-card" aria-labelledby="productsImagensTitle">
+          <div class="entity-header__top">
+            <div>
+              <div id="productsImagensTitle" class="entity-header__title">🖼️ Imagens do Produto</div>
+              <div class="entity-header__subtitle">Fotos do produto e das unidades (JPG, PNG ou WebP).</div>
+            </div>
+            <span id="productsImagensCount" class="badge">0 imagens</span>
+          </div>
+
+          <div id="productsImagensGallery" class="product-images-gallery" aria-live="polite">
+            <div id="productsImagensEmpty" class="product-images-empty">
+              Nenhuma imagem cadastrada para este produto.
+            </div>
+          </div>
+
+          <div class="product-images-card__actions">
+            <input id="productsImagensInput" class="product-images-input" type="file" name="productsImagens[]"
+              accept="image/jpeg,image/png,image/webp" multiple>
+            <label for="productsImagensInput" class="btn btn-primary btn-sm" role="button">
+              📤 Selecionar imagens
+            </label>
+            <label class="product-images-unit-picker fields fields-h-6 fields-w-20 fields-value-bold" title="Unidade à qual as novas imagens serão vinculadas">
+              <span>Vincular a</span>
+              <select id="productsImagensUploadUnit" aria-label="Unidade das novas imagens">
+                <option value="">Geral (produto)</option>
+              </select>
+            </label>
+            <button type="button" id="btnUploadProductsImagens" class="btn btn-save btn-sm" disabled>
+              💾 Enviar imagens
+            </button>
+          </div>
+        </section>
+        </div>
 
       </div>
 

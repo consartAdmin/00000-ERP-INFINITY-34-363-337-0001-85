@@ -373,8 +373,9 @@ function initTabs({
   });
 
   const usp = new URLSearchParams(location.search);
-  // A aba Grade foi unida à aba Estoque: links antigos (?tab=grade) abrem o Estoque.
-  const tabParam = usp.get('tab') === 'grade' ? 'estoque' : usp.get('tab');
+  // Abas unidas: links antigos (?tab=grade / ?tab=imagens) abrem Estoque / Grade e Descrição / Imagens.
+  const TAB_ALIASES = { grade: 'estoque', imagens: 'descricao' };
+  const tabParam = TAB_ALIASES[usp.get('tab')] || usp.get('tab');
   const hashId = location.hash?.slice(1);
   const startPanel =
     (hashId && document.getElementById(hashId)) ? hashId
