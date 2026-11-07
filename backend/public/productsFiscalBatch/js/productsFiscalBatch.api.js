@@ -59,21 +59,22 @@ export async function listProducts(params) {
     searchParams.set('linked', 'false');
   }
 
+  if (params.sort) {
+    searchParams.set('sort', params.sort);
+    searchParams.set('dir', params.dir === 'desc' ? 'desc' : 'asc');
+  }
+
   searchParams.set('_ts', String(Date.now()));
 
   const payload = await requestJson(
     `${ROUTES.batchList}?${searchParams.toString()}`
   );
 
-  return normalizeListPayload(payload);
-}
-
-export async function listFiscalProfiles() {
-  const payload = await requestJson(
-    `${ROUTES.fiscalProfileList}?active=true&limit=200&offset=0`
-  );
-
-  return normalizeListPayload(payload).rows;
+  return {
+    ...normalizeListPayload(payload),
+    linkedTotal: Number(payload?.linked_total ?? 0) || 0,
+    unlinkedTotal: Number(payload?.unlinked_total ?? 0) || 0,
+  };
 }
 
 export function linkProductsFiscal(payload) {
