@@ -81,7 +81,8 @@
 .action-icon--view:hover,
 .action-icon--search:hover,
 .action-icon--document:hover,
-.action-icon--copy:hover { color: var(--action-icon-view); }
+.action-icon--copy:hover,
+.action-icon--code:hover { color: var(--action-icon-view); }
 .action-icon--pause:hover { color: var(--action-icon-warning); }
 .action-icon--add:hover,
 .action-icon--confirm:hover,

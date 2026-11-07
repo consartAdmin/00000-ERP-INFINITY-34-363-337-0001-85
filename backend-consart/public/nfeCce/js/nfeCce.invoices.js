@@ -6,17 +6,21 @@
 
 'use strict';
 
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { listarNfesEmitidas } from './nfeCce.api.js';
+import { fillNovaCceInvoice } from './nfeCce.form.js';
 import { closeNfeEmitidaModal } from './nfeCce.modal.js';
-import { els, state } from './nfeCce.state.js';
-import { normalizeText, parseErrorMessage, setFeedback } from './nfeCce.utils.js';
+import { state } from './nfeCce.state.js';
+import {
+    $, escapeHtml, formatDate, formatMoney, formatNfeKey, normalizeText, notify, parseErrorMessage,
+} from './nfeCce.utils.js';
+
+const COLUMNS = 7;
 
 function pick(row, ...keys) {
     for (const key of keys) {
         const value = row?.[key];
-        if (value !== undefined && value !== null && String(value).trim() !== '') {
-            return value;
-        }
+        if (value !== undefined && value !== null && String(value).trim() !== '') return value;
     }
     return '';
 }
@@ -28,139 +32,81 @@ function normalizeInvoice(row) {
         nfe_number: pick(row, 'nfe_number', 'nfeNumber', 'numero'),
         nfe_key: pick(row, 'nfe_key', 'nfeKey', 'chave'),
         nfe_status: pick(row, 'nfe_status', 'nfeStatus', 'status'),
-        nfe_protocol: pick(row, 'nfe_protocol', 'nfeProtocol', 'protocol'),
-        nfe_environment: pick(row, 'nfe_environment', 'nfeEnvironment', 'environment'),
-        issued_at: pick(row, 'issued_at', 'issuedAt'),
-        issued_date: pick(row, 'issued_date', 'issuedDate'),
+        customer_name: pick(row, 'customer_name', 'customerName', 'trade_name', 'company_name', 'recipient_name'),
+        issued_at: pick(row, 'issued_at', 'issuedAt', 'issued_date', 'issuedDate'),
         total_amount: pick(row, 'total_amount', 'totalAmount', 'valorTotal'),
         nfe_provider_id: pick(
-            row,
-            'nfe_provider_id',
-            'nfeProviderId',
-            'nfe_plugnotas_id',
-            'nfePlugnotasId',
-            'provider_id',
-            'providerId'
+            row, 'nfe_provider_id', 'nfeProviderId', 'nfe_plugnotas_id', 'nfePlugnotasId', 'provider_id', 'providerId'
         ),
-        raw: row,
     };
 }
 
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+function invoiceStatusPill(status) {
+    const text = String(status || '').toUpperCase();
+    if (!text) return '—';
+    const variant = /AUTORIZ|CONCLU|EMITID/.test(text) ? 'success'
+        : (/CANCEL|REJEI|DENEG|ERRO/.test(text) ? 'danger' : 'warning');
+    return `<span class="summary-pill summary-pill--${variant}">${escapeHtml(status)}</span>`;
 }
 
-function formatMoney(value) {
-    const number = Number(value);
-    if (!Number.isFinite(number)) return '—';
-    return number.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const isBlocked = (row) => /CANCEL|DENEG|INUTIL/.test(String(row.nfe_status || '').toUpperCase());
+
+function setInfo(text) {
+    const info = $('#nfesEmitidasInfo');
+    if (info) info.textContent = text;
 }
 
-function formatDate(value) {
-    if (!value) return '—';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    return date.toLocaleDateString('pt-BR');
-}
-
-export function renderNfesEmitidas(rows = []) {
-    if (!els.tbodyNfesEmitidas) return;
+export function renderNfesEmitidas(rows = [], emptyText = 'Pesquise pelo número, chave ou pedido.') {
+    const tbody = $('#tbodyNfesEmitidas');
+    if (!tbody) return;
 
     if (!rows.length) {
-        els.tbodyNfesEmitidas.innerHTML = `
-            <tr>
-                <td colspan="8" class="text-center">Nenhuma NF-e emitida encontrada.</td>
-            </tr>`;
-        if (els.nfesEmitidasInfo) els.nfesEmitidasInfo.textContent = '0 NF-e encontrada';
+        tbody.innerHTML = `<tr><td colspan="${COLUMNS}">${escapeHtml(emptyText)}</td></tr>`;
+        setInfo('0 NF-e encontradas');
         return;
     }
 
-    els.tbodyNfesEmitidas.innerHTML = rows.map((row, index) => `
-        <tr>
-            <td>${escapeHtml(row.invoice_id || '—')}</td>
-            <td>${escapeHtml(row.nfe_number || '—')}</td>
+    tbody.innerHTML = rows.map((row, index) => {
+        const blocked = isBlocked(row);
+        return `
+        <tr${blocked ? ' title="NF-e cancelada/denegada não aceita CC-e"' : ` data-select-invoice-index="${index}"`}>
+            <td><b>${escapeHtml(row.nfe_number || '—')}</b></td>
             <td>${escapeHtml(row.order_id || '—')}</td>
-            <td title="${escapeHtml(row.nfe_key)}">${escapeHtml(row.nfe_key || '—')}</td>
-            <td>${escapeHtml(row.nfe_status || '—')}</td>
-            <td>${escapeHtml(formatDate(row.issued_at || row.issued_date))}</td>
+            <td class="td-left"><small>${escapeHtml(formatNfeKey(row.nfe_key) || '—')}</small></td>
+            <td>${invoiceStatusPill(row.nfe_status)}</td>
+            <td>${escapeHtml(formatDate(row.issued_at))}</td>
             <td>${escapeHtml(formatMoney(row.total_amount))}</td>
-            <td>
-                <button type="button" class="btn btn-new btn-sm" data-select-invoice-index="${index}">
-                    Selecionar
-                </button>
-            </td>
-        </tr>`).join('');
+            <td>${actionIconsHtml([
+        blocked
+            ? { action: 'confirm', title: 'NF-e cancelada/denegada não aceita CC-e', disabled: true }
+            : { action: 'confirm', title: 'Usar esta NF-e', attrs: { 'data-select-invoice-index': index } },
+    ])}</td>
+        </tr>`;
+    }).join('');
 
-    if (els.nfesEmitidasInfo) {
-        els.nfesEmitidasInfo.textContent = `${rows.length} NF-e(s) encontrada(s)`;
-    }
+    setInfo(`${rows.length} NF-e encontrada${rows.length === 1 ? '' : 's'}`);
 }
 
 export async function onBuscarNfesEmitidas() {
     try {
-        const search = normalizeText(els.buscaNfeEmitida?.value);
-        if (els.nfesEmitidasInfo) els.nfesEmitidasInfo.textContent = 'Carregando...';
-
-        const rows = await listarNfesEmitidas(search);
+        setInfo('Carregando...');
+        const rows = await listarNfesEmitidas(normalizeText($('#buscaNfeEmitida')?.value));
         state.nfesEmitidas = rows.map(normalizeInvoice);
-        renderNfesEmitidas(state.nfesEmitidas);
+        renderNfesEmitidas(state.nfesEmitidas, 'Nenhuma NF-e emitida encontrada.');
     } catch (error) {
         state.nfesEmitidas = [];
-        renderNfesEmitidas([]);
-        setFeedback(
-            parseErrorMessage(error, 'Falha ao carregar as NF-e emitidas.'),
-            'error'
-        );
+        renderNfesEmitidas([], 'Não foi possível carregar as NF-e emitidas.');
+        notify(parseErrorMessage(error, 'Falha ao carregar as NF-e emitidas.'), 'error');
     }
-}
-
-export function applyInvoiceToCce(invoice) {
-    if (!invoice) return;
-
-    state.nfeEmitidaSelecionada = invoice;
-
-    if (els.invoiceId) els.invoiceId.value = invoice.invoice_id || '';
-    if (els.nfeNumber) els.nfeNumber.value = invoice.nfe_number || '';
-    if (els.orderId) els.orderId.value = invoice.order_id || '';
-    if (els.nfeKey) els.nfeKey.value = invoice.nfe_key || '';
-    if (els.nfePlugnotasId) els.nfePlugnotasId.value = invoice.nfe_provider_id || '';
-
-    // O endpoint atual da CC-e aceita idOuChave. Prioriza o ID do provedor
-    // e usa a chave de 44 dígitos como fallback.
-    if (els.idOuChave) {
-        els.idOuChave.value = invoice.nfe_provider_id || invoice.nfe_key || '';
-    }
-
-    setFeedback(
-        `NF-e ${invoice.nfe_number || invoice.invoice_id || ''} carregada de invoicesIssued.`,
-        'success'
-    );
-
-    closeNfeEmitidaModal();
-    els.correcao?.focus();
 }
 
 export function onTabelaNfesEmitidasClick(event) {
-    const button = event.target.closest('[data-select-invoice-index]');
-    if (!button) return;
-
-    const index = Number(button.dataset.selectInvoiceIndex);
-    const invoice = state.nfesEmitidas[index];
+    const target = event.target.closest('[data-select-invoice-index]');
+    if (!target) return;
+    const invoice = state.nfesEmitidas[Number(target.dataset.selectInvoiceIndex)];
     if (!invoice) return;
 
-    applyInvoiceToCce(invoice);
-}
-
-export function clearSelectedInvoice() {
-    state.nfeEmitidaSelecionada = null;
-    state.nfesEmitidas = [];
-    if (els.invoiceId) els.invoiceId.value = '';
-    if (els.nfeNumber) els.nfeNumber.value = '';
-    if (els.buscaNfeEmitida) els.buscaNfeEmitida.value = '';
-    renderNfesEmitidas([]);
+    fillNovaCceInvoice(invoice);
+    closeNfeEmitidaModal();
+    $('#correcao')?.focus();
 }

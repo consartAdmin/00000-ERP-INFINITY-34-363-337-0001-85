@@ -1,207 +1,143 @@
 /* ╔══════════════════════════════════════════════════════════════════════╗
    ║ FILE: nfeCce.render.js                                             ║
    ║ MODULE: NF-e | Carta de Correção Eletrônica (CC-e)                 ║
+   ║ Lista (actionIcons) + rodapé padrão + modal de detalhes.           ║
    ╚══════════════════════════════════════════════════════════════════════╝ */
 
 'use strict';
 
-import { els, state } from './nfeCce.state.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { state } from './nfeCce.state.js';
 import {
-    canOpenDocumentFromRow,
-    formatDateTime,
-    setJsonPreview,
+    $, escapeHtml, formatDateTime, formatNfeKey, getBestEventIdentifier, statusPillHtml,
 } from './nfeCce.utils.js';
 
-export function switchTab(tabId) {
-    els.tabs.forEach((tab) => {
-        tab.classList.toggle('active', tab.dataset.tab === tabId);
-    });
-    els.panels.forEach((panel) => {
-        panel.classList.toggle('active', panel.id === tabId);
-    });
+const COLUMNS = 9;
+const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+
+function messageRow(text) {
+    return `<tr><td colspan="${COLUMNS}">${escapeHtml(text)}</td></tr>`;
 }
 
-export function updateCorrecaoCounter() {
-    const value = els.correcao?.value || '';
-    if (els.contadorCorrecao) {
-        els.contadorCorrecao.textContent = `${value.length} / 1000`;
-    }
+function shortText(text, max = 90) {
+    const value = String(text ?? '').trim();
+    return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
-export function clearResultadoEmissao() {
-    if (els.retornoStatus) els.retornoStatus.textContent = '—';
-    if (els.retornoProtocolo) els.retornoProtocolo.textContent = '—';
-    if (els.retornoSequencia) els.retornoSequencia.textContent = '—';
-    if (els.retornoCstat) els.retornoCstat.textContent = '—';
-
-    setJsonPreview(els.jsonRetorno, {});
-    state.ultimoStatusPayload = null;
-    state.ultimoIdentificador = '';
-
-    if (els.btnAbrirPdfUltimo) els.btnAbrirPdfUltimo.disabled = true;
-    if (els.btnAbrirXmlUltimo) els.btnAbrirXmlUltimo.disabled = true;
+export function currentPageRows() {
+    const start = (state.page - 1) * state.pageSize;
+    return state.filteredRows.slice(start, start + state.pageSize);
 }
 
-export function clearDetalhesEvento() {
-    if (els.detNfeKey) els.detNfeKey.textContent = '—';
-    if (els.detPlugnotasId) els.detPlugnotasId.textContent = '—';
-    if (els.detProtocolo) els.detProtocolo.textContent = '—';
-    if (els.detStatus) els.detStatus.textContent = '—';
-    if (els.detRespostaSefaz) els.detRespostaSefaz.textContent = '—';
-    if (els.detCorrecao) els.detCorrecao.value = '';
+export function renderEventosTable(handlers) {
+    const tbody = $('#tbodyEventosSalvos');
+    if (!tbody) return;
 
-    if (els.btnAbrirPdfEvento) els.btnAbrirPdfEvento.disabled = true;
-    if (els.btnAbrirXmlEvento) els.btnAbrirXmlEvento.disabled = true;
-    state.ultimoEventoSelecionado = null;
-}
-
-export function renderStatus(extracted) {
-    if (els.retornoStatus) els.retornoStatus.textContent = extracted.status;
-    if (els.retornoProtocolo) {
-        els.retornoProtocolo.textContent = extracted.protocolo;
-    }
-    if (els.retornoSequencia) {
-        els.retornoSequencia.textContent = extracted.numeroSequencia;
-    }
-    if (els.retornoCstat) els.retornoCstat.textContent = extracted.cstat;
-}
-
-function getEventStatus(row = {}) {
-    const raw = row.raw_response || row.rawResponse || {};
-
-    return (
-        row.status ||
-        raw?.status?.data?.status ||
-        raw?.status?.data?.situacao ||
-        raw?.status?.message ||
-        raw?.envio?.message ||
-        '—'
-    );
-}
-
-function getEventCstat(row = {}) {
-    const raw = row.raw_response || row.rawResponse || {};
-
-    return (
-        row.cstat ||
-        raw?.status?.data?.cStat ||
-        raw?.status?.data?.cstat ||
-        raw?.status?.data?.codigo ||
-        '—'
-    );
-}
-
-export function renderEventos(eventos = []) {
-    state.eventosSalvos = Array.isArray(eventos) ? eventos : [];
-
-    if (els.cceTableInfo) {
-        const total = state.eventosSalvos.length;
-        els.cceTableInfo.textContent =
-            `${total} ${total === 1 ? 'evento encontrado' : 'eventos encontrados'}`;
-    }
-
-    if (!els.tbodyEventosSalvos) return;
-
-    if (!state.eventosSalvos.length) {
-        els.tbodyEventosSalvos.innerHTML = `
-            <tr>
-                <td colspan="8" class="empty-state">Nenhum evento encontrado.</td>
-            </tr>
-        `;
-        clearDetalhesEvento();
-        return;
-    }
-
-    els.tbodyEventosSalvos.innerHTML = state.eventosSalvos
-        .map((row, index) => {
-            const id = row.id ?? index;
-            const enabled = canOpenDocumentFromRow(row);
-
-            const status = getEventStatus(row);
-            const cstat = getEventCstat(row);
-
-            return `
-        <tr data-event-id="${id}">
-            <td>${row.numero_sequencia ?? row.numeroSequencia ?? '—'}</td>
-            <td>${row.nfe_number || row.nfeNumber || '—'}</td>
-            <td>${row.customer_name || row.customerName || '—'}</td>
-            <td>${row.protocolo || '—'}</td>
-            <td>${status}</td>
-            <td>${cstat}</td>
-            <td>${row.created_by || row.createdBy || '—'}</td>
-            <td>${formatDateTime(row.created_at || row.createdAt)}</td>
-
-            <td>
-                <button
-                    type="button"
-                    class="btn-row-action"
-                    data-action="select"
-                    data-event-id="${id}">
-                    Selecionar
-                </button>
-            </td>
-
-            <td>
-                <button
-                    type="button"
-                    class="btn-row-action"
-                    data-action="pdf"
-                    data-event-id="${id}"
-                    ${enabled ? '' : 'disabled'}>
-                    PDF
-                </button>
-
-                <button
-                    type="button"
-                    class="btn-row-action"
-                    data-action="xml"
-                    data-event-id="${id}"
-                    ${enabled ? '' : 'disabled'}>
-                    XML
-                </button>
-            </td>
-        </tr>
-    `;
-        })
-        .join('');
-
-    selectEvento(state.eventosSalvos[0].id ?? 0);
-}
-
-export function selectEvento(eventId) {
-    const selected = state.eventosSalvos.find(
-        (row, index) => String(row.id ?? index) === String(eventId)
-    );
-
-    if (!selected) {
-        clearDetalhesEvento();
-        return;
-    }
-
-    state.ultimoEventoSelecionado = selected;
-    if (els.detNfeKey) {
-        els.detNfeKey.textContent = selected.nfe_key || selected.nfeKey || '—';
-    }
-    if (els.detPlugnotasId) {
-        els.detPlugnotasId.textContent =
-            selected.nfe_plugnotas_id || selected.nfePlugnotasId || '—';
-    }
-    if (els.detProtocolo) els.detProtocolo.textContent = selected.protocolo || '—';
-    if (els.detStatus) els.detStatus.textContent = selected.status || '—';
-    if (els.detRespostaSefaz) {
-        els.detRespostaSefaz.textContent =
-            selected.resposta_sefaz || selected.respostaSefaz || '—';
-    }
-    if (els.detCorrecao) els.detCorrecao.value = selected.correcao || '';
-
-    const enabled = canOpenDocumentFromRow(selected);
-    if (els.btnAbrirPdfEvento) els.btnAbrirPdfEvento.disabled = !enabled;
-    if (els.btnAbrirXmlEvento) els.btnAbrirXmlEvento.disabled = !enabled;
-
-    els.tbodyEventosSalvos?.querySelectorAll('tr').forEach((row) => {
-        row.classList.toggle(
-            'selected',
-            String(row.dataset.eventId) === String(selected.id ?? eventId)
+    const rows = currentPageRows();
+    if (!rows.length) {
+        tbody.innerHTML = messageRow(
+            state.allRows.length ? 'Nenhuma CC-e encontrada com esses filtros.' : 'Nenhuma carta de correção emitida.'
         );
+        return;
+    }
+
+    tbody.innerHTML = '';
+    rows.forEach((row) => {
+        const hasDocs = Boolean(getBestEventIdentifier(row));
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+      <td><b>${escapeHtml(row.numero_sequencia ?? '—')}</b></td>
+      <td><b>${escapeHtml(row.nfe_number || '—')}</b>${row.order_id ? `<br><small>Pedido ${escapeHtml(row.order_id)}</small>` : ''}</td>
+      <td class="td-left">${escapeHtml(row.customer_name || '—')}</td>
+      <td class="td-left" title="${escapeHtml(row.correcao || '')}"><small>${escapeHtml(shortText(row.correcao) || '—')}</small></td>
+      <td>${escapeHtml(row.protocolo || '—')}${row.cstat ? `<br><small>cStat ${escapeHtml(row.cstat)}</small>` : ''}</td>
+      <td>${statusPillHtml(row.status_key)}</td>
+      <td><small>${escapeHtml(row.created_by || '—')}</small></td>
+      <td><small>${escapeHtml(formatDateTime(row.created_at))}</small></td>
+      <td>${actionIconsHtml([
+            { action: 'view', title: 'Ver detalhes', attrs: { 'data-action': 'view' } },
+            { action: 'document', title: 'Abrir PDF', attrs: { 'data-action': 'pdf' }, disabled: !hasDocs },
+            { action: 'code', title: 'Abrir XML', attrs: { 'data-action': 'xml' }, disabled: !hasDocs },
+            { action: 'add', title: 'Nova CC-e desta NF-e', attrs: { 'data-action': 'new' } },
+        ])}</td>`;
+
+        tr.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-action]');
+            if (button?.disabled) return;
+            const action = button?.dataset.action || 'view';
+            if (button) event.stopPropagation();
+            handlers.onAction(action, row);
+        });
+        tbody.appendChild(tr);
     });
+}
+
+export function renderFooter() {
+    const total = state.filteredRows.length;
+    const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+    const start = total === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
+    const end = Math.min(total, state.page * state.pageSize);
+
+    const info = $('#apTableInfo');
+    if (info) {
+        info.textContent = total > state.pageSize
+            ? `${start}–${end} de ${plural(total, 'registro', 'registros')}`
+            : plural(total, 'registro encontrado', 'registros encontrados');
+    }
+
+    const pageInfo = $('#paginacaoInfo');
+    if (pageInfo) pageInfo.textContent = `Página ${state.page} de ${totalPages}`;
+    if ($('#btnPrev')) $('#btnPrev').disabled = state.page <= 1;
+    if ($('#btnNext')) $('#btnNext').disabled = state.page >= totalPages;
+
+    // Selos contam tudo o que veio da API (não só a página/filtro de status).
+    const count = (key) => state.allRows.filter((row) => row.status_key === key).length;
+    const pills = [
+        ['#sumRegistradas', count('registrada'), 'registrada', 'registradas', true],
+        ['#sumProcessando', count('processando'), 'processando', 'processando', false],
+        ['#sumRejeitadas', count('rejeitada'), 'rejeitada', 'rejeitadas', false],
+    ];
+    pills.forEach(([selector, n, one, many, alwaysVisible]) => {
+        const pill = $(selector);
+        if (!pill) return;
+        pill.textContent = plural(n, one, many);
+        // summary-pill ignora [hidden]: usar style.display
+        pill.style.display = n || alwaysVisible ? '' : 'none';
+    });
+}
+
+export function renderListLoading() {
+    const tbody = $('#tbodyEventosSalvos');
+    if (tbody) tbody.innerHTML = messageRow('Carregando cartas de correção...');
+}
+
+export function renderListError(message) {
+    const tbody = $('#tbodyEventosSalvos');
+    if (tbody) tbody.innerHTML = messageRow(`Erro ao carregar as cartas de correção: ${message || ''}`);
+}
+
+export function renderDetalhes(row) {
+    const set = (selector, value) => { const el = $(selector); if (el) el.value = value ?? ''; };
+    const title = $('#modalDetalhesEventoTitle');
+    if (title) {
+        title.textContent = `CC-e nº ${row.numero_sequencia ?? '—'} · NF-e ${row.nfe_number || '—'}`;
+    }
+    const status = $('#detStatus');
+    if (status) status.innerHTML = statusPillHtml(row.status_key);
+
+    set('#detNfeNumber', row.nfe_number || '—');
+    set('#detOrderId', row.order_id || '—');
+    set('#detCliente', row.customer_name || '—');
+    set('#detNfeKey', formatNfeKey(row.nfe_key) || '—');
+    set('#detPlugnotasId', row.nfe_plugnotas_id || '—');
+    set('#detSequencia', row.numero_sequencia ?? '—');
+    set('#detProtocolo', row.protocolo || '—');
+    set('#detCstat', row.cstat || '—');
+    set('#detCriado', `${row.created_by || '—'} · ${formatDateTime(row.created_at)}`);
+    set('#detRespostaSefaz', row.resposta_sefaz || '—');
+    set('#detCorrecao', row.correcao || '');
+
+    const hasDocs = Boolean(getBestEventIdentifier(row));
+    if ($('#btnAbrirPdfEvento')) $('#btnAbrirPdfEvento').disabled = !hasDocs;
+    if ($('#btnAbrirXmlEvento')) $('#btnAbrirXmlEvento').disabled = !hasDocs;
 }
