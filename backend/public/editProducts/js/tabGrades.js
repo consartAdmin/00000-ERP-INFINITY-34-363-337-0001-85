@@ -332,4 +332,13 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
   await loadGradesCatalog();
   await loadProductGrades();
   attachHandlers();
+
+  // Grade criada/vinculada pelo "+" do modal de lote
+  if (!document.__gradesCreatedBound) {
+    document.__gradesCreatedBound = true;
+    document.addEventListener('consart:product-grade-created', () => {
+      loadGradesCatalog().catch(() => {});
+      loadProductGrades().catch(() => {});
+    });
+  }
 }

@@ -70,6 +70,7 @@ async function runEnsure() {
   await pool.query(`
     ALTER TABLE ${TB_LOTS}
       ADD COLUMN IF NOT EXISTS manufactured_at date NULL,
+      ADD COLUMN IF NOT EXISTS shelf_life_months integer NULL,
       ADD COLUMN IF NOT EXISTS blocked_at timestamp without time zone NULL,
       ADD COLUMN IF NOT EXISTS block_reason text NULL;
   `);
@@ -492,12 +493,37 @@ export async function listPanel(filters = {}) {
 /* ──────────────────────────────────────────────────────────────
    Extras do lote (fabricação) e bloqueio
 ────────────────────────────────────────────────────────────── */
-export async function updateLotExtras(lotId, { manufactured_at } = {}) {
+export async function updateLotExtras(lotId, body = {}) {
   await ensurePanelSchema();
-  const value = /^\d{4}-\d{2}-\d{2}$/.test(String(manufactured_at || '')) ? manufactured_at : null;
+
+  // Só altera os campos enviados (a tela de Estoque por Lote manda só manufactured_at).
+  const sets = [];
+  const params = [Number(lotId)];
+
+  if (Object.prototype.hasOwnProperty.call(body, 'manufactured_at')) {
+    const v = /^\d{4}-\d{2}-\d{2}$/.test(String(body.manufactured_at || '')) ? body.manufactured_at : null;
+    params.push(v);
+    sets.push(`manufactured_at = $${params.length}`);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'shelf_life_months')) {
+    const n = Number.parseInt(body.shelf_life_months, 10);
+    params.push(Number.isInteger(n) && n > 0 && n <= 600 ? n : null);
+    sets.push(`shelf_life_months = $${params.length}`);
+  }
+
+  if (!sets.length) {
+    const cur = await pool.query(
+      `SELECT lot_id, manufactured_at, shelf_life_months FROM ${TB_LOTS} WHERE lot_id = $1`,
+      [Number(lotId)],
+    );
+    return cur.rows[0] || null;
+  }
+
   const res = await pool.query(
-    `UPDATE ${TB_LOTS} SET manufactured_at = $2 WHERE lot_id = $1 RETURNING lot_id, manufactured_at`,
-    [Number(lotId), value],
+    `UPDATE ${TB_LOTS} SET ${sets.join(', ')} WHERE lot_id = $1
+     RETURNING lot_id, manufactured_at, shelf_life_months`,
+    params,
   );
   return res.rows[0] || null;
 }

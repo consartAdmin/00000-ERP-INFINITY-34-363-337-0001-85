@@ -14,6 +14,7 @@
 'use strict';
 
 import { showCenterModal } from "../../includes/js/centerAlertModal.js";
+import { Modal } from "/public/includes/js/modal.js";
 
 /**
  * Alias compatível com seu selectLoads.js
@@ -103,8 +104,13 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     gradeDialogSave: '#btnSaveCreateGrade',
     gradeCatalog: '#newGradeId',
     gradeStock: '#newGradeStock',
+    gradeNewCode: '#newGradeCode',
+    gradeNewDesc: '#newGradeDesc',
     mLotCode: '#mLotCode',
     mExpiresAt: '#mExpiresAt',
+    mManufacturedMonth: '#mManufacturedMonth',
+    mShelfLifeMonths: '#mShelfLifeMonths',
+    mExpiresMonth: '#mExpiresMonth',
     mQtyOnHand: '#mQtyOnHand',
     mCostUnit: '#mCostUnit',
     mNfeKey: '#mNfeKey',
@@ -286,8 +292,8 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     if (isSimple) {
       const dialog = $(LOT_FIELDS.modalDialog);
 
-      if (dialog?.open) {
-        dialog.close();
+      if (dialog && Modal.isOpen(dialog)) {
+        Modal.close(dialog);
       }
     }
   }
@@ -432,6 +438,14 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       const handleDialogClose = () => {
         if (!finished) finish(false);
       };
+
+      if (!dialog.dataset.escIsolated) {
+        dialog.dataset.escIsolated = '1';
+        // Esc no alerta não pode chegar ao modal.js (fecharia o modal de lote atrás)
+        dialog.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') event.stopPropagation();
+        });
+      }
 
       btnOk?.addEventListener('click', handleOk);
       btnCancel?.addEventListener('click', handleCancel);
@@ -2061,7 +2075,9 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
         '',
       ).trim();
 
-      return { gradeId, description };
+      const grade = String(row.grade ?? row.code ?? '').trim();
+
+      return { gradeId, grade, description };
     }
 
     async function fetchFirst(urls) {
@@ -2112,7 +2128,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
           const opt = document.createElement('option');
           opt.value = String(row.gradeId);
           const linked = linkedByGradeId.has(row.gradeId);
-          opt.textContent = `${row.gradeId}${row.description ? ` — ${row.description}` : ''}${linked ? ' (já vinculada)' : ''}`;
+          opt.textContent = `${row.grade || row.gradeId}${row.description && row.description !== row.grade ? ` — ${row.description}` : ''}${linked ? ' (já vinculada)' : ''}`;
           opt.dataset.productGradeId = linked ? String(linkedByGradeId.get(row.gradeId)) : '';
           select.appendChild(opt);
         }
@@ -2175,17 +2191,41 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       setVal(LOT_FIELDS.gradeStock, '0');
       await loadCatalog();
 
-      if (!dlg.open) dlg.showModal();
-      setTimeout(() => $(LOT_FIELDS.gradeCatalog)?.focus(), 50);
+      setVal(LOT_FIELDS.gradeNewCode, '');
+      setVal(LOT_FIELDS.gradeNewDesc, '');
+
+      Modal.setup();
+      Modal.open(dlg, { focusSelector: LOT_FIELDS.gradeCatalog });
     }
 
     function close() {
       const dlg = dialog();
-      if (dlg?.open) dlg.close();
+      if (dlg) Modal.close(dlg);
+    }
+
+    // Cadastra a grade no catálogo (POST /api/grades faz upsert pelo código).
+    async function createCatalogGrade(code, description) {
+      const resp = await ctx.jfetch('/api/grades', {
+        method: 'POST',
+        body: JSON.stringify({ grade: code, description: description || code }),
+      });
+      const row = resp?.data?.data ?? resp?.data ?? resp?.row ?? resp;
+      const id = Number(row?.grade_id ?? row?.id ?? 0);
+      if (!id) throw new Error('Não foi possível cadastrar a grade.');
+      return id;
     }
 
     async function save() {
       const select = $(LOT_FIELDS.gradeCatalog);
+      const newCode = String(getVal(LOT_FIELDS.gradeNewCode) || '').trim();
+      const newDesc = String(getVal(LOT_FIELDS.gradeNewDesc) || '').trim();
+
+      if (newCode) {
+        const createdGradeId = await createCatalogGrade(newCode, newDesc);
+        await loadCatalog();
+        if (select) select.value = String(createdGradeId);
+      }
+
       const gradeId = Number(select?.value || 0);
       const stock = Math.max(0, toNum(getVal(LOT_FIELDS.gradeStock), 0));
 
@@ -2285,11 +2325,6 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       const dlg = dialog();
       if (dlg && !dlg.dataset.gradeQuickBound) {
         dlg.dataset.gradeQuickBound = 'true';
-        dlg.addEventListener('cancel', event => {
-          event.preventDefault();
-          close();
-        });
-
         dlg.addEventListener('keydown', event => {
           if (event.key !== 'Enter') return;
           if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
@@ -2474,6 +2509,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
         setVal(LOT_FIELDS.mProductGradeId, '');
         setVal(LOT_FIELDS.mLotCode, '');
         setVal(LOT_FIELDS.mExpiresAt, '');
+        fillLotValidity(null);
         setVal(LOT_FIELDS.mQtyOnHand, '0');
         setVal(LOT_FIELDS.mCostUnit, '');
         setVal(LOT_FIELDS.mNfeKey, '');
@@ -2505,9 +2541,11 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
         $(LOT_FIELDS.btnUnreserve).disabled = true;
         $(LOT_FIELDS.btnConsume).disabled = true;
 
-        if (!dlg.open) dlg.showModal();
+        Modal.setup();
+        if (!Modal.isOpen(dlg)) Modal.open(dlg);
 
-        bindEnterToSaveLotModal();
+        bindLotValidity();
+      bindEnterToSaveLotModal();
 
         setTimeout(() => {
           const gradeEl = $(LOT_FIELDS.mProductGradeId);
@@ -2534,6 +2572,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       setVal(LOT_FIELDS.mProductGradeId, row.product_grade_id ?? '');
       setVal(LOT_FIELDS.mLotCode, row.lot_code ?? '');
       setVal(LOT_FIELDS.mExpiresAt, row.expires_at ? String(row.expires_at).slice(0, 10) : '');
+      fillLotValidity(row);
       setVal(LOT_FIELDS.mQtyOnHand, row.qty_on_hand ?? 0);
       setVal(LOT_FIELDS.mCostUnit, row.cost_unit ?? '');
       setVal(LOT_FIELDS.mNfeKey, row.nfe_key ?? '');
@@ -2626,8 +2665,10 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       $(LOT_FIELDS.btnUnreserve).disabled = false;
       $(LOT_FIELDS.btnConsume).disabled = false;
 
-      if (!dlg.open) dlg.showModal();
+      Modal.setup();
+      if (!Modal.isOpen(dlg)) Modal.open(dlg);
 
+      bindLotValidity();
       bindEnterToSaveLotModal();
 
       setTimeout(() => {
@@ -2645,12 +2686,107 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
 
       dlg.onkeydown = null;
 
-      if (dlg.open) dlg.close();
+      Modal.close(dlg);
     }
 
     function modalLotId() {
       const id = Number(getVal(LOT_FIELDS.mLotId) || 0);
       return id > 0 ? id : null;
+    }
+
+    /* ── Fabricação (mm/aaaa) + Validade (meses) → Vencimento (mm/aaaa) ──
+       expires_at (FEFO/alertas) = último dia do mês do vencimento. */
+    // Campos mm/aaaa em texto (o Firefox não tem <input type="month">).
+    const monthOf = (v) => {
+      const m = String(v || '').match(/^(\d{4})-(\d{2})/);
+      return m ? `${m[2]}/${m[1]}` : '';
+    };
+
+    // "05/2026" → "2026-05" ('' se inválido)
+    const ymOf = (v) => {
+      const m = String(v || '').trim().match(/^(\d{1,2})\/(\d{4})$/);
+      if (!m) return '';
+      const mm = Number(m[1]);
+      if (mm < 1 || mm > 12) return '';
+      return `${m[2]}-${String(mm).padStart(2, '0')}`;
+    };
+
+    const maskMonthInput = (el) => {
+      const digits = String(el.value || '').replace(/\D/g, '').slice(0, 6);
+      el.value = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+    };
+
+    const addMonthsYm = (ym, months) => {
+      const m = String(ym || '').match(/^(\d{4})-(\d{2})$/);
+      const n = Number.parseInt(months, 10);
+      if (!m || !Number.isInteger(n) || n <= 0) return '';
+      const total = Number(m[1]) * 12 + (Number(m[2]) - 1) + n;
+      return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, '0')}`;
+    };
+
+    const lastDayOfYm = (ym) => {
+      const m = String(ym || '').match(/^(\d{4})-(\d{2})$/);
+      if (!m) return '';
+      const last = new Date(Date.UTC(Number(m[1]), Number(m[2]), 0)).getUTCDate();
+      return `${m[1]}-${m[2]}-${String(last).padStart(2, '0')}`;
+    };
+
+    function syncLotValidity() {
+      const fab = ymOf(getVal(LOT_FIELDS.mManufacturedMonth));
+      const months = getVal(LOT_FIELDS.mShelfLifeMonths);
+      const expEl = $(LOT_FIELDS.mExpiresMonth);
+      const computed = addMonthsYm(fab, months);
+
+      if (expEl) {
+        if (computed) expEl.value = monthOf(computed);
+        // Com fabricação + meses o vencimento é calculado; sem eles, digita direto.
+        expEl.readOnly = !!computed;
+        expEl.classList.toggle('is-readonly', !!computed);
+      }
+
+      setVal(LOT_FIELDS.mExpiresAt, lastDayOfYm(ymOf(getVal(LOT_FIELDS.mExpiresMonth))));
+    }
+
+    function fillLotValidity(row) {
+      setVal(LOT_FIELDS.mManufacturedMonth, monthOf(row?.manufactured_at));
+      setVal(LOT_FIELDS.mShelfLifeMonths, row?.shelf_life_months ?? '');
+      setVal(LOT_FIELDS.mExpiresMonth, monthOf(row?.expires_at));
+      syncLotValidity();
+      // Mantém o dia exato vindo da NF-e enquanto o usuário não mexer no vencimento.
+      if (row?.expires_at && !getVal(LOT_FIELDS.mManufacturedMonth)) {
+        setVal(LOT_FIELDS.mExpiresAt, String(row.expires_at).slice(0, 10));
+      }
+    }
+
+    function bindLotValidity() {
+      const fabEl = $(LOT_FIELDS.mManufacturedMonth);
+      if (!fabEl || fabEl.dataset.validityBound) return;
+      fabEl.dataset.validityBound = '1';
+      [LOT_FIELDS.mManufacturedMonth, LOT_FIELDS.mShelfLifeMonths, LOT_FIELDS.mExpiresMonth]
+        .forEach((sel) => {
+          const el = $(sel);
+          if (el && el.type === 'text') el.addEventListener('input', () => maskMonthInput(el));
+          $(sel)?.addEventListener('input', syncLotValidity);
+          $(sel)?.addEventListener('change', syncLotValidity);
+        });
+    }
+
+    async function saveLotExtras(lotId) {
+      const id = Number(lotId);
+      if (!Number.isInteger(id) || id <= 0) return;
+      const fab = ymOf(getVal(LOT_FIELDS.mManufacturedMonth));
+      const months = Number.parseInt(getVal(LOT_FIELDS.mShelfLifeMonths), 10);
+      try {
+        await ctx.jfetch(`/api/productsStockLots/${id}/extras`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            manufactured_at: fab ? `${fab}-01` : null,
+            shelf_life_months: Number.isInteger(months) && months > 0 ? months : null,
+          }),
+        });
+      } catch (err) {
+        ctx.toast?.(`⚠️ Lote salvo, mas fabricação/validade não: ${err.message}`, 'warning');
+      }
     }
 
     function modalPayload() {
@@ -2720,6 +2856,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
         return;
       }
 
+      syncLotValidity();
       const payload = modalPayload();
       if (!payload.lot_code) {
         ctx.toast?.('⚠️ Informe o lote.', 'warning');
@@ -2730,12 +2867,14 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       const id = modalLotId();
 
       if (!id) {
-        await LotsApi.create(payload);
+        const created = await LotsApi.create(payload);
+        await saveLotExtras(created?.lot_id ?? created?.id);
         ctx.toast?.('✅ Lote criado/adicionado!', 'success');
       } else {
         const patch = { ...payload };
         delete patch.product_stock_id;
         await LotsApi.update(id, patch);
+        await saveLotExtras(id);
         ctx.toast?.('✅ Lote atualizado!', 'success');
       }
 
@@ -2880,12 +3019,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       $(LOT_FIELDS.btnCloseModal)?.addEventListener('click', closeModal);
       $(LOT_FIELDS.btnCancelModal)?.addEventListener('click', closeModal);
 
-      // dialog cancel (ESC / click backdrop)
-      const dlg = $(LOT_FIELDS.modalDialog);
-      dlg?.addEventListener('cancel', (ev) => {
-        ev.preventDefault();
-        closeModal();
-      });
+      // ESC / clique no fundo: tratados pelo modal.js (data-modal-close)
 
       // modal save/delete
       $(LOT_FIELDS.btnSaveModal)?.addEventListener('click', () => saveModal().catch(e => ctx.toast?.(e.message, 'error')));
