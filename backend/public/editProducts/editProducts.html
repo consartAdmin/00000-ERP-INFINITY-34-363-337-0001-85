@@ -176,6 +176,20 @@
       gap: 12px;
     }
 
+    .product-general-right {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-self: stretch;
+      min-width: 0;
+    }
+
+    .product-general-save {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: auto;
+    }
+
     .product-units-form {
       display: flex;
       flex-direction: column;
@@ -595,10 +609,6 @@
               <div class="entity-header__title">
                 📦 Dados Gerais do Produto
               </div>
-
-              <button type="submit" form="formDadosGerais" id="btnSalvarDadosGerais" class="btn btn-save btn-sm">
-                💾 Salvar Dados Gerais
-              </button>
             </div>
 
             <div class="product-general-layout fields-value-bold">
@@ -711,8 +721,8 @@
                 </div>
               </form>
 
-              <!-- Coluna direita: unidades (imagens ficam na aba Descrição / Imagens) -->
-              <div class="c-grid gap-12">
+              <!-- Coluna direita: unidades + Salvar (imagens ficam na aba Descrição / Imagens) -->
+              <div class="product-general-right">
                 <!-- 5) Unidades (antes era a aba Unidades) -->
                 <div class="section section-white section-border-thin section-radius-2 section-p-3 section-column section-gap-2 product-units-card">
                   <form id="formUnitProduct" class="product-units-form" novalidate>
@@ -789,6 +799,12 @@
                       <tbody id="unitsTableBody"></tbody>
                     </table>
                   </div>
+                </div>
+
+                <div class="product-general-save">
+                  <button type="submit" form="formDadosGerais" id="btnSalvarDadosGerais" class="btn btn-save btn-sm">
+                    💾 Salvar Dados Gerais
+                  </button>
                 </div>
               </div>
             </div>
