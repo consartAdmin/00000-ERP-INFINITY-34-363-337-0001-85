@@ -231,9 +231,13 @@
       font-weight: 800;
     }
 
-    .product-fiscal-actions {
+    #aba-precos .price-fiscal-footer {
+      display: flex;
       flex-wrap: wrap;
       justify-content: flex-end;
+      gap: 8px;
+      width: 100%;
+      margin-top: 16px;
     }
 
     .product-general-right {
@@ -982,9 +986,6 @@
                 💲 Formação de Preços
               </div>
 
-              <button type="submit" class="btn btn-save btn-sm">
-                💾 Salvar Tabela de Preços
-              </button>
             </div>
 
             <div class="c-grid g-4 gap-12 price-tax-grid">
@@ -1067,21 +1068,6 @@
 
           </div>
 
-          <div class="page-toolbar__group product-fiscal-actions">
-
-            <button type="button" id="btnVincularClassificacaoFiscal" class="btn btn-primary btn-sm">
-              🔍 Vincular / Alterar Classificação
-            </button>
-
-            <button type="button" id="btnRemoverClassificacaoFiscal" class="btn btn-danger btn-sm">
-              ❌ Remover Vínculo Fiscal
-            </button>
-
-            <button id="btnConfirmarVinculoFiscal" type="button" class="btn btn-save btn-sm">
-              ✔️ Confirmar Vínculo Fiscal
-            </button>
-
-          </div>
 
           <!-- Classificação + Perfil Fiscal numa planilha só -->
           <div class="fiscal-sheet-wrap">
@@ -1144,6 +1130,25 @@
           </div>
 
         </header>
+        </div>
+
+        <!-- Ações da aba Preços / Fiscal (embaixo à direita) -->
+        <div class="price-fiscal-footer">
+          <button type="button" id="btnVincularClassificacaoFiscal" class="btn btn-primary btn-sm">
+            🔍 Vincular / Alterar Classificação
+          </button>
+
+          <button type="button" id="btnRemoverClassificacaoFiscal" class="btn btn-danger btn-sm">
+            ❌ Remover Vínculo Fiscal
+          </button>
+
+          <button id="btnConfirmarVinculoFiscal" type="button" class="btn btn-save btn-sm">
+            ✔️ Confirmar Vínculo Fiscal
+          </button>
+
+          <button type="submit" form="formPrecos" class="btn btn-save btn-sm">
+            💾 Salvar Tabela de Preços
+          </button>
         </div>
 
       </div>
