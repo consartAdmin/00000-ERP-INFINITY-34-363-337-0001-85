@@ -6,6 +6,7 @@
      ║  - Lista: table-layout-integrated + sortableTable + table-footer           ║
      ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
      ║  - Modal: modals.css + modal.js · Datas: brDateTimeInput (dd/mm/aaaa)      ║
+     ║  - Relatórios: GET /api/price-commissions/export?format=pdf|xlsx           ║
      ║ API: /api/price-commissions                                                ║
      ╚════════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
@@ -64,6 +65,16 @@
           <button id="btnClear" type="button" class="btn btn-clean btn-sm">Limpar</button>
 
           <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnExportPdf" type="button" class="btn btn-toolbar btn-sm"
+              title="Relatório em PDF (respeita os filtros e a ordenação)">
+              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar PDF</span>
+            </button>
+            <button id="btnExportExcel" type="button" class="btn btn-toolbar btn-sm"
+              title="Relatório em Excel (respeita os filtros e a ordenação)">
+              <img src="/iconsImagens/excelIcons.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar Excel</span>
+            </button>
             <button id="btnNew" type="button" class="btn btn-new btn-sm">+ Nova Comissão</button>
           </div>
         </div>
@@ -209,7 +220,7 @@
   </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/priceCommissions/js/priceComissions.init.js?v=2"></script>
+  <script type="module" src="/public/priceCommissions/js/priceComissions.init.js?v=3"></script>
 </body>
 
 </html>

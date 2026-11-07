@@ -7,7 +7,8 @@
 export const ROUTES = Object.freeze({
   base: '/api/price-commissions',
   prices: '/api/price-commissions/prices',
-  sellers: '/api/price-commissions/sellers'
+  sellers: '/api/price-commissions/sellers',
+  export: '/api/price-commissions/export'
 });
 
 /** Colunas aceitas na ordenação (mesma lista do backend). */
@@ -35,6 +36,8 @@ const DOM_IDS = [
   'btnSearch',
   'btnClear',
   'btnNew',
+  'btnExportPdf',
+  'btnExportExcel',
   'commissionsTable',
   'tbody',
   'tableInfo',

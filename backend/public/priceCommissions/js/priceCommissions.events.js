@@ -17,6 +17,7 @@ import {
   savePriceCommission,
   searchPriceCommissions
 } from './priceCommissions.actions.js';
+import { exportPriceCommissions } from './priceCommissions.export.js';
 import { syncCommissionTypeFields } from './priceCommissions.form.js';
 import { showToast } from './priceCommissions.utils.js';
 
@@ -45,6 +46,8 @@ export function bindPriceCommissionEvents() {
 
   dom.btnClear.addEventListener('click', () => runAsync(clearAndSearchPriceCommissions));
   dom.btnNew.addEventListener('click', newPriceCommission);
+  dom.btnExportPdf.addEventListener('click', () => runAsync(() => exportPriceCommissions('pdf', dom.btnExportPdf)));
+  dom.btnExportExcel.addEventListener('click', () => runAsync(() => exportPriceCommissions('xlsx', dom.btnExportExcel)));
 
   dom.btnPrevious.addEventListener('click', () => runAsync(() => goToPage(-1)));
   dom.btnNext.addEventListener('click', () => runAsync(() => goToPage(1)));
