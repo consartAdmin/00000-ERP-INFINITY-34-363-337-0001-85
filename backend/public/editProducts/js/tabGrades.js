@@ -8,13 +8,14 @@
 
 'use strict';
 
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+
 export async function initGradesTab(ctx, { productId, productCode } = {}) {
   // ─────────────────────────────────────────────────────────────
   // UI MAP + Query helper (RESTAUROU qGrade)
   // ─────────────────────────────────────────────────────────────
   const UI_GRADES = {
     sel:   ['#gradeSelect'],
-    stock: ['#gradeStock'],
     form:  ['#formGradeProduct'],
     tbody: ['#gradesTableBody'],
   };
@@ -146,7 +147,6 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
             grade_id: pg.grade_id == null ? null : Number(pg.grade_id),
             grade: pg.grade ?? pg.grade_name ?? pg.nome ?? '',
             description: pg.description ?? pg.desc ?? pg.descricao ?? '',
-            stock: pg.stock == null ? (pg.qty ?? pg.quantidade ?? 0) : Number(pg.stock),
             is_active: pg.is_active !== false && pg.ativo !== false,
           }))
           .filter((pg) => Number.isInteger(pg.product_grade_id) || Number.isInteger(pg.grade_id));
@@ -217,30 +217,21 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
         <td class="col-grade" title="${gradeLabel}">${gradeLabel}</td>
         <td class="col-desc" title="${desc}">${desc}</td>
 
-        <td class="col-stock">
-          <input
-            type="number"
-            class="inp-stock"
-            value="${sanitizeInt(r.stock)}"
-            min="0"
-            inputmode="numeric"
-          />
-        </td>
-
         <td class="col-status">
-          <button type="button" class="btn btn-toolbar btn-sm act-toggle">
+          <span class="summary-pill ${r.is_active ? 'summary-pill--success' : 'summary-pill--danger'}">
             ${r.is_active ? 'Ativa' : 'Inativa'}
-          </button>
+          </span>
         </td>
 
         <td class="col-actions">
-          <div class="cell-actions">
-            <button
-              type="button"
-              class="btn btn-danger btn-sm act-remove"
-              title="Remover"
-            >Remover</button>
-          </div>
+          ${actionIconsHtml([
+            {
+              action: r.is_active ? 'pause' : 'play',
+              title: r.is_active ? 'Inativar grade' : 'Ativar grade',
+              attrs: { 'data-act': 'toggle', 'data-active': r.is_active ? '1' : '0' },
+            },
+            { action: 'delete', title: 'Remover grade', attrs: { 'data-act': 'remove' } },
+          ])}
         </td>
       `;
 
@@ -261,7 +252,6 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
   // ─────────────────────────────────────────────────────────────
   async function addGrade() {
     const sel = qGrade('sel');
-    const stockEl = qGrade('stock');
 
     if (!sel || !sel.value) {
       ctx.toast('Selecione a grade.', 'error');
@@ -270,35 +260,23 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
     }
 
     const grade_id = Number(sel.value);
-    const stock = sanitizeInt(stockEl?.value ?? 0);
 
     await GradesApi.create({
       product_id: finalProductId,                    // ✅ obrigatório
       product_code: finalProductCode || undefined,   // opcional (compat)
       grade_id,
-      stock,
       is_active: true,
     });
 
     ctx.toast('✅ Grade adicionada ao produto!', 'success');
 
     if (sel) sel.value = '';
-    if (stockEl) stockEl.value = '0';
     await loadProductGrades();
   }
 
   async function setGradeActive(product_grade_id, flag) {
     await GradesApi.update(product_grade_id, { is_active: !!flag });
     await loadProductGrades();
-  }
-
-  async function updateGradeStock(product_grade_id, stock) {
-    try {
-      await GradesApi.update(product_grade_id, { stock: sanitizeInt(stock) });
-    } catch (err) {
-      ctx.toast(`❌ Falha ao atualizar estoque: ${err.message}`, 'error');
-      await loadProductGrades();
-    }
   }
 
   async function removeGrade(product_grade_id) {
@@ -335,29 +313,16 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
         const id = Number(tr.dataset.id);
         if (!Number.isInteger(id)) return;
 
-        if (btn.classList.contains('act-toggle')) {
-          const isActive = btn.textContent?.trim() === 'Ativa';
-          setGradeActive(id, !isActive);
-        } else if (btn.classList.contains('act-remove')) {
+        const act = btn.dataset.act;
+        if (act === 'toggle') {
+          setGradeActive(id, btn.dataset.active !== '1');
+        } else if (act === 'remove') {
           removeGrade(id);
         }
       };
       tbody.addEventListener('click', tbody.__boundClick);
 
       if (tbody.__boundChange) tbody.removeEventListener('change', tbody.__boundChange);
-      tbody.__boundChange = (e) => {
-        const inp = e.target.closest('.inp-stock');
-        if (!inp) return;
-
-        const tr = inp.closest('tr');
-        if (!tr) return;
-
-        const id = Number(tr.dataset.id);
-        if (!Number.isInteger(id)) return;
-
-        updateGradeStock(id, inp.value);
-      };
-      tbody.addEventListener('change', tbody.__boundChange);
     }
   }
 
