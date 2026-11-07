@@ -453,11 +453,7 @@
         </button>
 
         <button type="button" class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-descricao">
-          📝 Descrição
-        </button>
-
-        <button type="button" class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-imagens">
-          🖼️ Imagens
+          📝 Descrição / Imagens
         </button>
 
         <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-precos">
@@ -627,48 +623,6 @@
 
     </section>
 
-    <!-- 🖼️ Imagens (saiu de Dados Gerais) -->
-    <section id="aba-imagens" class="aba" role="tabpanel" aria-label="Imagens do produto">
-
-      <div class="consart-panel">
-
-        <section id="productsImagens" class="product-images-card" aria-labelledby="productsImagensTitle">
-          <div class="product-images-card__header">
-            <div>
-              <div id="productsImagensTitle" class="product-images-card__title">🖼️ Imagens do Produto</div>
-              <div class="product-images-card__hint">JPG, PNG ou WebP</div>
-            </div>
-            <span id="productsImagensCount" class="badge">0 imagens</span>
-          </div>
-
-          <div id="productsImagensGallery" class="product-images-gallery" aria-live="polite">
-            <div id="productsImagensEmpty" class="product-images-empty">
-              Nenhuma imagem cadastrada para este produto.
-            </div>
-          </div>
-
-          <div class="product-images-card__actions">
-            <input id="productsImagensInput" class="product-images-input" type="file" name="productsImagens[]"
-              accept="image/jpeg,image/png,image/webp" multiple>
-            <label for="productsImagensInput" class="btn btn-primary btn-sm" role="button">
-              📤 Selecionar imagens
-            </label>
-            <label class="product-images-unit-picker" title="Unidade à qual as novas imagens serão vinculadas">
-              <span>Vincular a</span>
-              <select id="productsImagensUploadUnit" aria-label="Unidade das novas imagens">
-                <option value="">Geral (produto)</option>
-              </select>
-            </label>
-            <button type="button" id="btnUploadProductsImagens" class="btn btn-save btn-sm" disabled>
-              💾 Enviar imagens
-            </button>
-          </div>
-        </section>
-
-      </div>
-
-    </section>
-
     <!-- 📝 Descrição -->
     <section id="aba-descricao" class="aba" role="tabpanel" aria-label="Descrição do produto">
 
@@ -715,6 +669,40 @@
           </header>
 
         </form>
+
+        <!-- 🖼️ Imagens do produto (antes era a aba Imagens) -->
+        <section id="productsImagens" class="product-images-card" aria-labelledby="productsImagensTitle">
+          <div class="product-images-card__header">
+            <div>
+              <div id="productsImagensTitle" class="product-images-card__title">🖼️ Imagens do Produto</div>
+              <div class="product-images-card__hint">JPG, PNG ou WebP</div>
+            </div>
+            <span id="productsImagensCount" class="badge">0 imagens</span>
+          </div>
+
+          <div id="productsImagensGallery" class="product-images-gallery" aria-live="polite">
+            <div id="productsImagensEmpty" class="product-images-empty">
+              Nenhuma imagem cadastrada para este produto.
+            </div>
+          </div>
+
+          <div class="product-images-card__actions">
+            <input id="productsImagensInput" class="product-images-input" type="file" name="productsImagens[]"
+              accept="image/jpeg,image/png,image/webp" multiple>
+            <label for="productsImagensInput" class="btn btn-primary btn-sm" role="button">
+              📤 Selecionar imagens
+            </label>
+            <label class="product-images-unit-picker" title="Unidade à qual as novas imagens serão vinculadas">
+              <span>Vincular a</span>
+              <select id="productsImagensUploadUnit" aria-label="Unidade das novas imagens">
+                <option value="">Geral (produto)</option>
+              </select>
+            </label>
+            <button type="button" id="btnUploadProductsImagens" class="btn btn-save btn-sm" disabled>
+              💾 Enviar imagens
+            </button>
+          </div>
+        </section>
 
       </div>
 
