@@ -1052,7 +1052,7 @@
         <!-- 🧩 Grades (antes era a aba Grade) -->
         <header class="entity-header">
 
-          <form id="formGradeProduct" novalidate>
+          <form id="formGradeProduct" novalidate style="display:flex; flex-direction:column; gap:12px;">
 
             <!-- ===================================================== -->
             <!-- Header -->
@@ -1064,27 +1064,20 @@
                 🧩 Grades do Produto
               </div>
 
-              <button type="submit" class="btn btn-toolbar btn-sm">
-                ➕ Adicionar Grade
-              </button>
-
             </div>
 
             <!-- ===================================================== -->
             <!-- Informações -->
             <!-- ===================================================== -->
 
-            <div class="entity-header__grid">
-
-              <label class="field-group" for="gradeSelect">
-                <span>Grade</span>
-
+            <div class="fields fields-h-6 fields-w-full fields-value-bold">
+              <span>Adicionar grade ao produto</span>
+              <div class="inline-field">
                 <select id="gradeSelect" name="gradeSelect">
                   <option value="">— Selecione uma grade —</option>
                 </select>
-              </label>
-
-
+                <button type="submit" class="btn btn-toolbar btn-sm">➕ Adicionar</button>
+              </div>
             </div>
 
           </form>
@@ -1101,10 +1094,10 @@
                   aria-label="Grades do produto">
 
                   <colgroup>
-                    <col style="width:200px">
+                    <col style="width:160px">
                     <col>
-                    <col style="width:140px">
-                    <col style="width:140px">
+                    <col style="width:120px">
+                    <col style="width:110px">
                   </colgroup>
 
                   <thead>

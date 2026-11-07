@@ -8,6 +8,8 @@
 
 'use strict';
 
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+
 export async function initGradesTab(ctx, { productId, productCode } = {}) {
   // ─────────────────────────────────────────────────────────────
   // UI MAP + Query helper (RESTAUROU qGrade)
@@ -216,19 +218,20 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
         <td class="col-desc" title="${desc}">${desc}</td>
 
         <td class="col-status">
-          <button type="button" class="btn btn-toolbar btn-sm act-toggle">
+          <span class="summary-pill ${r.is_active ? 'summary-pill--success' : 'summary-pill--danger'}">
             ${r.is_active ? 'Ativa' : 'Inativa'}
-          </button>
+          </span>
         </td>
 
         <td class="col-actions">
-          <div class="cell-actions">
-            <button
-              type="button"
-              class="btn btn-danger btn-sm act-remove"
-              title="Remover"
-            >Remover</button>
-          </div>
+          ${actionIconsHtml([
+            {
+              action: r.is_active ? 'pause' : 'play',
+              title: r.is_active ? 'Inativar grade' : 'Ativar grade',
+              attrs: { 'data-act': 'toggle', 'data-active': r.is_active ? '1' : '0' },
+            },
+            { action: 'delete', title: 'Remover grade', attrs: { 'data-act': 'remove' } },
+          ])}
         </td>
       `;
 
@@ -310,10 +313,10 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
         const id = Number(tr.dataset.id);
         if (!Number.isInteger(id)) return;
 
-        if (btn.classList.contains('act-toggle')) {
-          const isActive = btn.textContent?.trim() === 'Ativa';
-          setGradeActive(id, !isActive);
-        } else if (btn.classList.contains('act-remove')) {
+        const act = btn.dataset.act;
+        if (act === 'toggle') {
+          setGradeActive(id, btn.dataset.active !== '1');
+        } else if (act === 'remove') {
           removeGrade(id);
         }
       };
