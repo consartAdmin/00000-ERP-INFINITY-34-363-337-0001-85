@@ -703,7 +703,9 @@ async function fiscalAction(action, id, button) {
   try {
     const json = await request(`${API}/${config.path}`, { method: config.method, ...(config.method === 'POST' ? { headers: { 'Content-Type': 'application/json' } } : {}) });
     await loadRows();
-    notify(json.message || 'Operação realizada com sucesso.', 'success');
+    const nfeStatus = String(json.data?.invoice?.nfe_status || json.data?.provider?.status || '').toUpperCase();
+    const variant = nfeStatus === 'REJEITADA' ? 'error' : nfeStatus === 'PROCESSANDO' ? 'warning' : 'success';
+    notify(json.message || 'Operação realizada com sucesso.', variant);
   } catch (error) { console.error(error); notify(error.message, 'error'); }
   finally { if (button.isConnected) { button.disabled = false; button.textContent = original; } }
 }

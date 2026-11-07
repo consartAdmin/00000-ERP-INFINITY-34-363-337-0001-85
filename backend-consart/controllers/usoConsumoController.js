@@ -231,7 +231,10 @@ export async function refreshNfeStatus(req, res) {
     if (status === 'AUTORIZADA') {
       message = 'NF-e autorizada pela SEFAZ.';
     } else if (status === 'REJEITADA') {
-      message = 'NF-e rejeitada pela SEFAZ.';
+      const reason = data?.provider?.reason;
+      message = reason
+        ? `NF-e rejeitada. Motivo: ${reason}\nCorrija e use o botão Reenviar.`
+        : 'NF-e rejeitada. Use o botão Reenviar depois de corrigir.';
     } else if (status === 'CANCELADA') {
       message = 'NF-e cancelada.';
     } else if (status === 'PROCESSANDO') {
