@@ -173,7 +173,7 @@ export async function initPricesTab(ctx, { productCode }) {
         </td>
         
       <td>
-        <div class="fields fields-w-30 fields-h-6 fields-font-5 fields-center fields-input-center">
+        <div class="fields fields-w-full fields-h-6 fields-font-5 fields-center fields-input-center">
           <input 
             type="text" 
             inputmode="decimal" 
@@ -181,9 +181,10 @@ export async function initPricesTab(ctx, { productCode }) {
             style="text-align:center;"
             value="${ctx.Num.formatBR(current.markup_percent ?? '')}" 
           />
+        </div>
         </td>
         <td>
-         <div class="fields fields-w-30 fields-h-6 fields-font-5 fields-center fields-input-center">
+         <div class="fields fields-w-full fields-h-6 fields-font-5 fields-center fields-input-center">
           <input 
             type="text" 
             inputmode="decimal" 
@@ -191,10 +192,11 @@ export async function initPricesTab(ctx, { productCode }) {
             style="text-align:center;"
             value="${ctx.Num.formatBR(current.gross_profit_pct ?? '')}" 
           />
+        </div>
         </td>
 
         <td>
-         <div class="fields fields-w-30 fields-h-6 fields-font-5 fields-center fields-input-center">
+         <div class="fields fields-w-full fields-h-6 fields-font-5 fields-center fields-input-center">
           <input 
             type="text" 
             inputmode="decimal" 
@@ -202,6 +204,7 @@ export async function initPricesTab(ctx, { productCode }) {
             style="text-align:center;"  
             value="${ctx.Num.formatBR(current.sale_price ?? '')}" 
           />
+        </div>
         </td>
       `;
 

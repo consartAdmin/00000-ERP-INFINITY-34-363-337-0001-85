@@ -54,6 +54,25 @@
       gap: 12px;
     }
 
+    /* Todos os campos do lote numa linha só */
+    #dlgLot .lot-main-row {
+      display: grid;
+      grid-template-columns:
+        minmax(105px, 1fr) minmax(105px, 1fr) minmax(80px, .75fr) minmax(115px, .95fr)
+        minmax(80px, .75fr) minmax(80px, .75fr) minmax(80px, .7fr) minmax(85px, .8fr)
+        minmax(300px, 3fr) minmax(78px, .65fr);
+      gap: 10px;
+      align-items: end;
+    }
+
+    #dlgLot .lot-main-row > .fields { min-width: 0; }
+    #dlgLot .lot-main-row > .fields > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    @media (max-width: 1400px) {
+      #dlgLot .lot-main-row { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      #dlgLot .lot-main-row > .fields:nth-child(9) { grid-column: span 3; }
+    }
+
     #dlgLot .lot-ops__row {
       display: flex;
       align-items: flex-end;
@@ -140,15 +159,93 @@
       gap: 12px;
     }
 
+    .price-fiscal-row > form,
+    .price-fiscal-row > .entity-header,
     .stock-grade-row > form,
     .stock-grade-row > .entity-header {
       min-width: 0;
       margin: 0;
     }
 
+    .price-fiscal-row #formPrecos > .entity-header,
     .stock-grade-row #form-estoque > .entity-header {
       height: 100%;
       margin: 0;
+    }
+
+    /* Tabela de preços cabe na metade esquerda (sem rolagem lateral) */
+    .price-fiscal-row #formPrecos .table.table-fixed {
+      width: 100%;
+    }
+
+    .product-fiscal-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .fiscal-sheet-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--card);
+      overflow: hidden;
+    }
+
+    .fiscal-sheet {
+      width: 100%;
+      margin: 0;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .fiscal-sheet th,
+    .fiscal-sheet td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fiscal-sheet tbody tr:last-child > * { border-bottom: 0; }
+
+    .fiscal-sheet-wrap .fiscal-sheet tbody th[scope="row"],
+    .fiscal-sheet-wrap .fiscal-sheet tbody td {
+      text-align: left;
+    }
+
+    .fiscal-sheet tbody th[scope="row"] {
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .fiscal-sheet td {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fiscal-sheet__group th {
+      background: var(--surface-2, #f1f5f9);
+      font-weight: 800;
+    }
+
+    /* Os dois quadros com a mesma altura; ações embaixo à direita de cada um */
+    .price-fiscal-row #formPrecos > .entity-header,
+    .price-fiscal-row > .product-fiscal-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #aba-precos .price-fiscal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 4px;
     }
 
     .product-general-right {
@@ -437,32 +534,46 @@
       font-size: .84rem;
     }
 
-    #dlgLot .lot-fiscal-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(130px, 1fr));
-      gap: 10px;
-    }
-
-    #dlgLot .lot-fiscal-field {
-      min-width: 0;
-      padding: 10px;
+    #dlgLot .lot-sheet-wrap {
+      width: 100%;
+      overflow-x: auto;
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
       background: var(--card);
     }
 
-    #dlgLot .lot-fiscal-field span {
-      display: block;
-      margin-bottom: 4px;
-      color: var(--muted);
-      font-size: .78rem;
-    }
-
-    #dlgLot .lot-fiscal-field strong {
-      display: block;
-      overflow-wrap: anywhere;
+    #dlgLot .lot-sheet {
+      width: 100%;
+      min-width: 980px;
+      margin: 0;
+      border-collapse: collapse;
       font-variant-numeric: tabular-nums;
     }
+
+    #dlgLot .lot-sheet th,
+    #dlgLot .lot-sheet td {
+      padding: 8px 12px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #dlgLot .lot-sheet tr > :last-child { border-right: 0; }
+    #dlgLot .lot-sheet tbody tr:last-child > * { border-bottom: 0; }
+
+    #dlgLot .lot-sheet thead th {
+      white-space: normal;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    #dlgLot .lot-sheet tbody td { font-weight: 800; }
+    #dlgLot .lot-sheet .is-l { text-align: left; }
+    #dlgLot .lot-sheet .is-c { text-align: center; }
+    #dlgLot .lot-sheet .is-r { text-align: right; }
 
     #dlgLot .fiscal-status {
       display: inline-flex;
@@ -497,17 +608,8 @@
       #dlgLot .lot-nfe-grid {
         grid-template-columns: 1fr;
       }
-
-      #dlgLot .lot-fiscal-grid {
-        grid-template-columns: repeat(2, minmax(130px, 1fr));
-      }
     }
 
-    @media (max-width: 560px) {
-      #dlgLot .lot-fiscal-grid {
-        grid-template-columns: 1fr;
-      }
-    }
   </style>
 </head>
 
@@ -551,15 +653,11 @@
         </button>
 
         <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-precos">
-          💲 Preços
+          💲 Preços / Fiscal
         </button>
 
         <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-estoque">
           📦 Estoque / Grade
-        </button>
-
-        <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-fiscal">
-          🧾 Fiscal
         </button>
 
         <button class="btn btn-flat toolbar-btn aba-btn" data-aba="aba-registros">
@@ -885,6 +983,8 @@
 
       <div class="consart-panel">
 
+        <!-- Formação de Preços + Dados Fiscais lado a lado -->
+        <div class="c-grid g-2 gap-16 a-stretch price-fiscal-row">
         <form id="formPrecos" data-section="prices" class="form-stack" novalidate>
 
           <header class="entity-header">
@@ -894,45 +994,42 @@
                 💲 Formação de Preços
               </div>
 
-              <button type="submit" class="btn btn-save btn-sm">
-                💾 Salvar Tabela de Preços
-              </button>
             </div>
 
-            <div class="fields-inline fields-gap-3">
+            <div class="c-grid g-4 gap-12 price-tax-grid">
 
-              <div class="fields fields-h-6 fields-w-10">
+              <div class="fields fields-h-6 fields-w-full">
                 <span>💰 Preço Custo</span>
                 <input type="text" inputmode="decimal" id="cost_price" name="cost_price" data-field="cost_price"
                   class="price-input" required>
               </div>
 
-              <div class="fields fields-h-6 fields-w-10">
+              <div class="fields fields-h-6 fields-w-full">
                 <span>ICMS Venda (%)</span>
                 <input type="text" id="tax_icms_credit_percent" class="price-input tax-input" value="0,00">
               </div>
 
-              <div class="fields fields-h-6 fields-w-10">
+              <div class="fields fields-h-6 fields-w-full">
                 <span>PIS Venda (%)</span>
                 <input type="text" id="tax_pis_credit_percent" class="price-input tax-input" value="0,00">
               </div>
 
-              <div class="fields fields-h-6 fields-w-10">
+              <div class="fields fields-h-6 fields-w-full">
                 <span>COFINS Venda (%)</span>
                 <input type="text" id="tax_cofins_credit_percent" class="price-input tax-input" value="0,00">
               </div>
 
-              <div class="fields fields-h-6 fields-w-10">
+              <div class="fields fields-h-6 fields-w-full">
                 <span>ICMS-ST R$</span>
                 <input type="text" id="tax_icms_st_value" class="price-input tax-input" value="0,00">
               </div>
 
-              <div class="fields fields-h-6 fields-w-10">
+              <div class="fields fields-h-6 fields-w-full">
                 <span>IPI R$</span>
                 <input type="text" id="tax_ipi_value" class="price-input tax-input" value="0,00">
               </div>
 
-              <div class="fields fields-h-6 fields-w-18">
+              <div class="fields fields-h-6 fields-w-full" style="grid-column: span 2;">
                 <span>Custo com Impostos da Venda</span>
                 <input type="text" id="final_cost_price" class="price-input final-cost-input" readonly>
               </div>
@@ -954,10 +1051,115 @@
                   <tbody id="corpoTabelaPrecos"></tbody>
                 </table>
               </div>
+            </section>
+
+            <div class="price-fiscal-actions">
+              <button type="submit" class="btn btn-save btn-sm">
+                💾 Salvar Tabela de Preços
+              </button>
+            </div>
 
           </header>
 
         </form>
+
+        <!-- 🧾 Dados Fiscais (lado direito) -->
+        <header class="entity-header product-fiscal-block">
+
+          <div class="entity-header__top">
+
+            <div>
+              <div class="entity-header__title">
+                🧾 Dados Fiscais
+              </div>
+
+              <div class="entity-header__subtitle">
+                Os dados fiscais são vinculados através da
+                <strong>Classificação Fiscal</strong> e do
+                <strong>Perfil Fiscal</strong>.
+              </div>
+            </div>
+
+          </div>
+
+
+          <!-- Classificação + Perfil Fiscal numa planilha só -->
+          <div class="fiscal-sheet-wrap">
+            <table class="table fiscal-sheet" aria-label="Classificação e perfil fiscal do produto">
+              <colgroup>
+                <col style="width: 32%">
+                <col>
+              </colgroup>
+              <tbody>
+                <tr class="fiscal-sheet__group">
+                  <th colspan="2" scope="colgroup">📂 Classificação Fiscal</th>
+                </tr>
+                <tr>
+                  <th scope="row">Classificação</th>
+                  <td id="classificacao_desc">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">NCM</th>
+                  <td id="ncm_texto">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">CEST</th>
+                  <td id="cest_texto">—</td>
+                </tr>
+                <tr class="fiscal-sheet__group">
+                  <th colspan="2" scope="colgroup">🔗 Perfil Fiscal Vinculado</th>
+                </tr>
+                <tr>
+                  <th scope="row">Nome</th>
+                  <td id="perfil_nome">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">CST</th>
+                  <td id="perfil_cst">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">ICMS</th>
+                  <td id="perfil_aliq">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">Origem</th>
+                  <td id="perfil_origem">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">CFOP Entrada</th>
+                  <td id="perfil_cfop_entrada">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">CFOP Saída</th>
+                  <td id="perfil_cfop_saida">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="entity-header__footnote">
+            Ao confirmar, o produto terá o
+            <strong>Produto Fiscal</strong>
+            atualizado automaticamente.
+          </div>
+
+          <div class="price-fiscal-actions">
+            <button type="button" id="btnVincularClassificacaoFiscal" class="btn btn-primary btn-sm">
+              🔍 Vincular / Alterar Classificação
+            </button>
+
+            <button type="button" id="btnRemoverClassificacaoFiscal" class="btn btn-danger btn-sm">
+              ❌ Remover Vínculo Fiscal
+            </button>
+
+            <button id="btnConfirmarVinculoFiscal" type="button" class="btn btn-save btn-sm">
+              ✔️ Confirmar Vínculo Fiscal
+            </button>
+          </div>
+
+        </header>
+        </div>
+
 
       </div>
 
@@ -1229,7 +1431,7 @@
 
               <input type="hidden" id="mLotId">
 
-              <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+              <div class="lot-main-row fields-value-bold">
                 <div class="fields fields-h-6 fields-w-full">
                   <span>Grade
                     <button type="button" id="btnCreateGradeFromLot" class="quick-add-btn"
@@ -1278,12 +1480,12 @@
                 </div>
 
                 <!-- Origem da NF-e -->
-                <div class="fields fields-h-6 fields-w-full modal-field--span-3">
+                <div class="fields fields-h-6 fields-w-full">
                   <span>Chave NF-e de entrada</span>
                   <div class="inline-field">
                     <input id="mNfeKey" type="text" maxlength="44" readonly aria-readonly="true" class="is-readonly mono"
                       placeholder="Sem chave vinculada">
-                    <button type="button" id="btnCopyLotNfeKey" class="btn btn-flat btn-sm" title="Copiar chave da NF-e">📋 Copiar</button>
+                    <button type="button" id="btnCopyLotNfeKey" class="btn btn-flat btn-sm" title="Copiar chave da NF-e" aria-label="Copiar chave da NF-e">📋</button>
                   </div>
                 </div>
 
@@ -1317,58 +1519,38 @@
                   </div>
                 </div>
 
-                <div class="lot-fiscal-grid">
-
-                  <div class="lot-fiscal-field">
-                    <span>Nota de entrada</span>
-                    <strong id="mInboundInvoiceId">—</strong>
-                  </div>
-
-                  <div class="lot-fiscal-field">
-                    <span>Item interno</span>
-                    <strong id="mInboundItemId">—</strong>
-                  </div>
-
-                  <div class="lot-fiscal-field">
-                    <span>Código do fornecedor</span>
-                    <strong id="mSupplierProductCode">—</strong>
-                  </div>
-
-                  <div class="lot-fiscal-field">
-                    <span>CST de entrada</span>
-                    <strong id="mIcmsCst">—</strong>
-                  </div>
-
-                  <div class="lot-fiscal-field">
-                    <span>Base ICMS</span>
-                    <strong id="mIcmsBase">—</strong>
-                  </div>
-
-                  <div class="lot-fiscal-field">
-                    <span>Alíquota ICMS</span>
-                    <strong id="mIcmsRate">—</strong>
-                  </div>
-
-                  <div class="lot-fiscal-field">
-                    <span>Valor ICMS</span>
-                    <strong id="mIcmsValue">—</strong>
-                  </div>
-
-                  <div class="lot-fiscal-field">
-                    <span>Base ICMS-ST retido</span>
-                    <strong id="mIcmsStBase">—</strong>
-                  </div>
-
-                  <div class="lot-fiscal-field">
-                    <span>Alíquota ICMS-ST</span>
-                    <strong id="mIcmsStRate">—</strong>
-                  </div>
-
-                  <div class="lot-fiscal-field">
-                    <span>ICMS-ST retido</span>
-                    <strong id="mIcmsStValue">—</strong>
-                  </div>
-
+                <!-- Tabela estilo planilha: valores da NF-e de entrada -->
+                <div class="lot-sheet-wrap">
+                  <table class="table table-fixed lot-sheet" aria-label="Origem fiscal da entrada">
+                    <thead>
+                      <tr>
+                        <th scope="col" class="is-l">Nota de entrada</th>
+                        <th scope="col" class="is-l">Item interno</th>
+                        <th scope="col" class="is-l">Cód. fornecedor</th>
+                        <th scope="col" class="is-c">CST</th>
+                        <th scope="col" class="is-r">Base ICMS</th>
+                        <th scope="col" class="is-r">Alíq. ICMS</th>
+                        <th scope="col" class="is-r">Valor ICMS</th>
+                        <th scope="col" class="is-r">Base ICMS-ST retido</th>
+                        <th scope="col" class="is-r">Alíq. ICMS-ST</th>
+                        <th scope="col" class="is-r">ICMS-ST retido</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td id="mInboundInvoiceId" class="is-l">—</td>
+                        <td id="mInboundItemId" class="is-l">—</td>
+                        <td id="mSupplierProductCode" class="is-l">—</td>
+                        <td id="mIcmsCst" class="is-c">—</td>
+                        <td id="mIcmsBase" class="is-r">—</td>
+                        <td id="mIcmsRate" class="is-r">—</td>
+                        <td id="mIcmsValue" class="is-r">—</td>
+                        <td id="mIcmsStBase" class="is-r">—</td>
+                        <td id="mIcmsStRate" class="is-r">—</td>
+                        <td id="mIcmsStValue" class="is-r">—</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </section>
 
@@ -1455,133 +1637,6 @@
 
           </section>
         </div>
-      </div>
-
-    </section>
-
-    <!-- 🧾 Fiscal -->
-    <section id="aba-fiscal" class="aba" role="tabpanel">
-
-      <div class="consart-panel">
-
-        <header class="entity-header">
-
-          <div class="entity-header__top">
-
-            <div>
-              <div class="entity-header__title">
-                🧾 Dados Fiscais
-              </div>
-
-              <div class="entity-header__subtitle">
-                Os dados fiscais são vinculados através da
-                <strong>Classificação Fiscal</strong> e do
-                <strong>Perfil Fiscal</strong>.
-              </div>
-            </div>
-
-            <div class="page-toolbar__group">
-
-              <button type="button" id="btnVincularClassificacaoFiscal" class="btn btn-primary btn-sm">
-                🔍 Vincular / Alterar Classificação
-              </button>
-
-              <button type="button" id="btnRemoverClassificacaoFiscal" class="btn btn-danger btn-sm">
-                ❌ Remover Vínculo Fiscal
-              </button>
-
-              <button id="btnConfirmarVinculoFiscal" type="button" class="btn btn-save btn-sm">
-                ✔️ Confirmar Vínculo Fiscal
-              </button>
-
-            </div>
-
-          </div>
-
-          <!-- ===================================================== -->
-          <!-- Classificação Fiscal                                  -->
-          <!-- ===================================================== -->
-
-          <div class="entity-header__table">
-
-            <div class="entity-header__table-title">
-              📂 Classificação Fiscal
-            </div>
-
-            <section class="table-layout">
-              <div class="table-scroll--rounded table-scroll--flex table-row-h-35" data-table-settings="editproducts.table-3">
-                <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head">
-                  <thead>
-                    <tr>
-                      <th>Classificação</th>
-                      <th>NCM</th>
-                      <th>CEST</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    <tr>
-                      <td id="classificacao_desc">—</td>
-                      <td id="ncm_texto">—</td>
-                      <td id="cest_texto">—</td>
-                    </tr>
-                  </tbody>
-
-                </table>
-
-              </div>
-
-              <!-- ===================================================== -->
-              <!-- Perfil Fiscal                                         -->
-              <!-- ===================================================== -->
-
-              <div class="entity-header__table">
-
-                <div class="entity-header__table-title">
-                  🔗 Perfil Fiscal Vinculado
-                </div>
-
-                <section class="table-layout">
-                  <div class="table-scroll--rounded table-scroll--flex " data-table-settings="editproducts.table-4">
-                    <table class="table table-fixed table-zebra table-zebra-hover table-sticky-head">
-                      <thead>
-                        <tr>
-                          <th>Nome</th>
-                          <th>CST</th>
-                          <th>ICMS</th>
-                          <th>Origem</th>
-                          <th>CFOP Entrada</th>
-                          <th>CFOP Saída</th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        <tr>
-                          <td id="perfil_nome">—</td>
-                          <td id="perfil_cst">—</td>
-                          <td id="perfil_aliq">—</td>
-                          <td id="perfil_origem">—</td>
-                          <td id="perfil_cfop_entrada">—</td>
-                          <td id="perfil_cfop_saida">—</td>
-                        </tr>
-                      </tbody>
-
-                    </table>
-
-                  </div>
-
-                  <div class="entity-header__footer">
-
-                    <div class="entity-header__footnote">
-                      Ao confirmar, o produto terá o
-                      <strong>Produto Fiscal</strong>
-                      atualizado automaticamente.
-                    </div>
-
-                  </div>
-
-        </header>
-
       </div>
 
     </section>
