@@ -1,103 +1,56 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║ OrdersLogisticsPackingRoutes.js — Routes Packing/Volumes                ║
+// ║ OrdersLogisticsPackingRoutes.js — Montar Pedido para Despacho           ║
 // ║ Path: backend/routes/OrdersLogisticsPackingRoutes.js                    ║
 // ║ CONSART ERP | ESM | Express                                             ║
+// ║ server.js: app.use('/api/packing', ordersLogisticsPackingRoutes);        ║
 // ║                                                                          ║
-// ║ Base sugerida no server.js:                                              ║
-// ║   import packingRoutes from './routes/OrdersLogisticsPackingRoutes.js'   ║
-// ║   app.use('/api/packing', packingRoutes);                                ║
+// ║ :source = ORDER (pedido) | BUDGET (orçamento)                            ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
 import { Router } from 'express';
 import {
-  // Summary / Lists
-  getOrderSummary,
-  getNotPacked,
-  listVolumes,
-  listVolumeItems,
-
-  // Volumes CRUD
+  searchSources,
+  getSummary,
+  getPackingPdf,
+  getPackingLabelsPdf,
   createVolume,
   updateVolume,
   deleteVolume,
-
-  // Volume Items CRUD
   addItemToVolume,
+  allocateRemaining,
   updateVolumeItem,
   deleteVolumeItem,
   moveVolumeItem,
-
-  // Search (Modal)
-  searchOrders,
-
-  // PDF
-  getOrderPackingPdf,
 } from '../controllers/OrdersLogisticsPackingController.js';
 
 const router = Router();
 
-/* ──────────────────────────────────────────────────────────────
-   🔎 Orders Search (Modal)
-   GET /api/packing/orders/search?q=...&limit=...
-────────────────────────────────────────────────────────────── */
-router.get('/orders/search', searchOrders);
+/* 🔎 Pesquisa de pedidos e orçamentos
+   GET /api/packing/search?q=&source=ALL|ORDER|BUDGET&situation=PENDING|ALL */
+router.get('/search', searchSources);
 
-/* ──────────────────────────────────────────────────────────────
-   📦 Order Summary (tudo que a tela precisa)
-   GET /api/packing/orders/:orderId/summary
-────────────────────────────────────────────────────────────── */
-router.get('/orders/:orderId/summary', getOrderSummary);
+/* 📦 Pedido ou orçamento: itens + volumes + totais */
+router.get('/sources/:source/:id/summary', getSummary);
+router.get('/sources/:source/:id/pdf', getPackingPdf);
+router.get('/sources/:source/:id/labels', getPackingLabelsPdf);
+router.post('/sources/:source/:id/volumes', createVolume);
 
-/* ──────────────────────────────────────────────────────────────
-   🧾 PDF do Packing
-   GET /api/packing/orders/:orderId/pdf
-────────────────────────────────────────────────────────────── */
-router.get('/orders/:orderId/pdf', getOrderPackingPdf);
-
-/* ──────────────────────────────────────────────────────────────
-   🧩 Itens não alocados (fallback, se precisar chamar separado)
-   GET /api/packing/orders/:orderId/not-packed
-────────────────────────────────────────────────────────────── */
-router.get('/orders/:orderId/not-packed', getNotPacked);
-
-/* ──────────────────────────────────────────────────────────────
-   📦 Volumes do pedido
-   GET  /api/packing/orders/:orderId/volumes
-   POST /api/packing/orders/:orderId/volumes
-────────────────────────────────────────────────────────────── */
-router.get('/orders/:orderId/volumes', listVolumes);
+/* Compatibilidade (rotas antigas = pedido) */
+router.get('/orders/:orderId/summary', getSummary);
+router.get('/orders/:orderId/pdf', getPackingPdf);
 router.post('/orders/:orderId/volumes', createVolume);
 
-/* ──────────────────────────────────────────────────────────────
-   ✏️ Atualiza / remove volume
-   PATCH  /api/packing/volumes/:volumeId
-   DELETE /api/packing/volumes/:volumeId
-────────────────────────────────────────────────────────────── */
+/* ✏️ Volume */
 router.patch('/volumes/:volumeId', updateVolume);
 router.delete('/volumes/:volumeId', deleteVolume);
 
-/* ──────────────────────────────────────────────────────────────
-   📦 Itens do volume
-   GET  /api/packing/volumes/:volumeId/items
-   POST /api/packing/volumes/:volumeId/items
-────────────────────────────────────────────────────────────── */
-router.get('/volumes/:volumeId/items', listVolumeItems);
+/* 📥 Itens no volume */
 router.post('/volumes/:volumeId/items', addItemToVolume);
-
-/* ──────────────────────────────────────────────────────────────
-   ✏️ Atualiza / remove item no volume
-   PATCH  /api/packing/volume-items/:volumeItemId
-   DELETE /api/packing/volume-items/:volumeItemId
-────────────────────────────────────────────────────────────── */
+router.post('/volumes/:volumeId/allocate-remaining', allocateRemaining);
 router.patch('/volume-items/:volumeItemId', updateVolumeItem);
 router.delete('/volume-items/:volumeItemId', deleteVolumeItem);
-
-/* ──────────────────────────────────────────────────────────────
-   🔁 Move item entre volumes
-   PATCH /api/packing/volume-items/:volumeItemId/move
-────────────────────────────────────────────────────────────── */
 router.patch('/volume-items/:volumeItemId/move', moveVolumeItem);
 
 export default router;

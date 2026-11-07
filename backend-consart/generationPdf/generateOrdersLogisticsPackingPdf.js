@@ -351,13 +351,15 @@ export async function generateOrdersLogisticsPackingPdf(summary, { orderId } = {
   ────────────────────────────────────────────────────────────── */
   ensurePage();
 
-  h1(`Packing & Volumes — Pedido #${order?.order_id ?? orderId ?? '—'}`);
+  const srcLabel = summary?.sourceLabel || 'Pedido';
+  h1(`Romaneio de Volumes — ${srcLabel} #${order?.order_id ?? orderId ?? '—'}`);
 
-  kvRow('Order ID', order?.order_id ?? orderId ?? '—');
+  kvRow(srcLabel, order?.order_id ?? orderId ?? '—');
+  if (order?.carrier_name) kvRow('Transportadora', order.carrier_name);
   kvRow('Status', order?.status ?? '—');
   kvRow('Cliente', order?.customer_name ?? order?.cliente ?? order?.razao_social ?? '—');
   kvRow('CNPJ/CPF', order?.cnpj_cpf ?? order?.cnpj ?? order?.cpf ?? '—');
-  kvRow('Criado em', fmtDate(order?.created_at ?? order?.createdAt));
+  kvRow('Data', order?.issue_date_br ?? fmtDate(order?.created_at ?? order?.createdAt));
 
   divider();
 
@@ -566,6 +568,96 @@ export async function generateOrdersLogisticsPackingPdf(summary, { orderId } = {
   doc.end();
 
   const buffer = await bufferPromise;
-  const filename = `packing_pedido_${order?.order_id ?? orderId ?? 'sem_id'}.pdf`;
+  const filename = `romaneio_${String(srcLabel).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}_${order?.order_id ?? orderId ?? 'sem_id'}.pdf`;
   return { buffer, filename };
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Etiquetas dos volumes (4 por página A4)
+   summary: retorno de buildSummary (head, volumes, volumeItems, sourceLabel)
+────────────────────────────────────────────────────────────── */
+export async function generateOrdersLogisticsPackingLabelsPdf(summary, { onlyVolumeId = null } = {}) {
+  const head = summary?.head || {};
+  const allVolumes = Array.isArray(summary?.volumes) ? summary.volumes : [];
+  const volumes = onlyVolumeId ? allVolumes.filter((v) => Number(v.id) === Number(onlyVolumeId)) : allVolumes;
+  const total = allVolumes.length;
+  const items = groupByVolume(summary?.volumeItems || []);
+  const srcLabel = summary?.sourceLabel || 'Pedido';
+  const typeLabel = { BOX: 'CAIXA', PALLET: 'PALETE', BUNDLE: 'FARDO', BAG: 'SACO', OTHER: 'OUTRO' };
+
+  const doc = new PDFDocument({ size: 'A4', margin: 24, autoFirstPage: false });
+  const bufferPromise = collectBuffer(doc);
+
+  const W = 595.28, H = 841.89, M = 24, GAP = 14;
+  const cw = (W - M * 2 - GAP) / 2;
+  const ch = (H - M * 2 - GAP) / 2;
+
+  volumes.forEach((v, idx) => {
+    const slot = idx % 4;
+    if (slot === 0) doc.addPage();
+    const x = M + (slot % 2) * (cw + GAP);
+    const y = M + Math.floor(slot / 2) * (ch + GAP);
+    const pad = 16;
+    const iw = cw - pad * 2;
+
+    doc.save();
+    doc.roundedRect(x, y, cw, ch, 10).lineWidth(1.2).strokeColor('#0F172A').stroke();
+
+    let cy = y + pad;
+    doc.fillColor('#6B7280').font('Helvetica').fontSize(9)
+      .text(`${srcLabel} nº ${head.id ?? ''}`, x + pad, cy, { width: iw });
+    cy += 14;
+    doc.fillColor('#111827').font('Helvetica-Bold').fontSize(13)
+      .text(fitText(doc, head.customer_name || '—', iw), x + pad, cy, { width: iw, lineBreak: false });
+    cy += 20;
+    if (head.carrier_name) {
+      doc.fillColor('#374151').font('Helvetica').fontSize(9)
+        .text(fitText(doc, `Transportadora: ${head.carrier_name}`, iw), x + pad, cy, { width: iw, lineBreak: false });
+      cy += 14;
+    }
+
+    cy += 10;
+    doc.fillColor('#111827').font('Helvetica-Bold').fontSize(44)
+      .text(`${v.volume_number}/${total}`, x + pad, cy, { width: iw, align: 'center' });
+    cy += 54;
+    doc.font('Helvetica-Bold').fontSize(11)
+      .text(`VOLUME ${v.volume_number} · ${typeLabel[v.volume_type] || v.volume_type || ''}`, x + pad, cy, { width: iw, align: 'center' });
+    cy += 22;
+
+    doc.moveTo(x + pad, cy).lineTo(x + cw - pad, cy).lineWidth(0.6).strokeColor('#E5E7EB').stroke();
+    cy += 10;
+
+    doc.font('Helvetica').fontSize(10).fillColor('#111827');
+    doc.text(`Peso: ${fmtKg(v.weight_kg)}`, x + pad, cy, { width: iw / 2 });
+    doc.text(`Cubagem: ${fmtM3(v.volume_m3)}`, x + pad + iw / 2, cy, { width: iw / 2, align: 'right' });
+    cy += 15;
+    doc.text(`Medidas: ${fmtNum(v.height_cm)} × ${fmtNum(v.width_cm)} × ${fmtNum(v.length_cm)} cm`, x + pad, cy, { width: iw });
+    cy += 20;
+
+    doc.fillColor('#6B7280').font('Helvetica-Bold').fontSize(8).text('CONTEÚDO', x + pad, cy, { width: iw });
+    cy += 12;
+    doc.font('Helvetica').fontSize(8.5).fillColor('#111827');
+    const list = items.get(v.id) || [];
+    const maxY = y + ch - pad - 12;
+    for (let i = 0; i < list.length; i++) {
+      if (cy > maxY - 11) {
+        doc.fillColor('#6B7280').text(`+ ${list.length - i} item(ns)`, x + pad, cy, { width: iw });
+        break;
+      }
+      const it = list[i];
+      doc.text(fitText(doc, `${fmtNum(it.quantity)} ${it.unit || ''} · ${it.description || ''}`, iw), x + pad, cy, { width: iw, lineBreak: false });
+      cy += 11;
+    }
+    doc.restore();
+  });
+
+  if (!volumes.length) {
+    doc.addPage();
+    doc.font('Helvetica').fontSize(12).text('Nenhum volume.', M, M);
+  }
+
+  doc.end();
+  const buffer = await bufferPromise;
+  return { buffer, filename: `etiquetas_volumes_${head.id ?? 'sem_id'}.pdf` };
 }

@@ -1,1306 +1,783 @@
-/*╔══════════════════════════════════════════════════════════════════════╗
-  ║ OrdersLogisticsPacking.js — Packing & Volumes (CONSART ERP)           ║
-  ║ Path: backend/public/OrdersLogisticsPacking/OrdersLogisticsPacking.js  ║
-  ║ Stack: Vanilla JS | Fetch | HTML5 Drag&Drop                           ║
-  ╚══════════════════════════════════════════════════════════════════════╝*/
+/*╔══════════════════════════════════════════════════════════════════════════╗
+  ║ OrdersLogisticsPacking.js — Montar Pedido para Despacho (CONSART ERP)    ║
+  ║ Path: backend/public/OrdersLogisticsPacking/OrdersLogisticsPacking.js     ║
+  ║ Vanilla JS | Fetch | HTML5 Drag&Drop | modal.js | centerAlertModal.js     ║
+  ║                                                                           ║
+  ║ Origem: PEDIDO (ORDER) ou ORÇAMENTO (BUDGET)                              ║
+  ║  - Itens à esquerda (pedido / embalado / restante)                        ║
+  ║  - Volumes em cards à direita (volume ativo recebe o leitor de código)    ║
+  ╚══════════════════════════════════════════════════════════════════════════╝*/
 
 'use strict';
 
+import { Modal } from '/public/includes/js/modal.js';
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
-const API_BASE =
-  (typeof window !== 'undefined' && (window.apiBase || window.API_BASE)) ||
-  (typeof window !== 'undefined' ? window.location.origin : '');
+/* ──────────────────────────────────────────────────────────────
+   Config / rotas
+────────────────────────────────────────────────────────────── */
+const API = `${window.apiBase || window.location.origin}/api/packing`;
+const enc = encodeURIComponent;
 
-// Rotas do seu backend (Packing)
 const ROUTES = Object.freeze({
-  // modal search
-  searchOrders: (q, limit = 25) =>
-    `${API_BASE}/api/packing/orders/search?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(limit)}`,
-
-  // summary
-  summary: (orderId) => `${API_BASE}/api/packing/orders/${encodeURIComponent(orderId)}/summary`,
-
-  // ✅ PDF
-  pdf: (orderId) => `${API_BASE}/api/packing/orders/${encodeURIComponent(orderId)}/pdf`,
-
-  // volumes
-  createVolume: (orderId) => `${API_BASE}/api/packing/orders/${encodeURIComponent(orderId)}/volumes`,
-  deleteVolume: (volumeId) => `${API_BASE}/api/packing/volumes/${encodeURIComponent(volumeId)}`,
-
-  // volume items
-  addItemToVolume: (volumeId) => `${API_BASE}/api/packing/volumes/${encodeURIComponent(volumeId)}/items`,
-
-  updateVolumeItem: (volumeItemId) => `${API_BASE}/api/packing/volume-items/${encodeURIComponent(volumeItemId)}`,
-
-  updateVolume: (volumeId) =>
-    `${API_BASE}/api/packing/volumes/${encodeURIComponent(volumeId)}`,
-
-  deleteVolumeItem: (volumeItemId) => `${API_BASE}/api/packing/volume-items/${encodeURIComponent(volumeItemId)}`,
-
-  moveVolumeItem: (volumeItemId) => `${API_BASE}/api/packing/volume-items/${encodeURIComponent(volumeItemId)}/move`,
-
-  productUnits: (sku) =>
-    `${API_BASE}/api/barcodes/active-units?product_code=${encodeURIComponent(sku)}`,
+  search: (p) => `${API}/search?${new URLSearchParams(p)}`,
+  summary: (s, id) => `${API}/sources/${enc(s)}/${enc(id)}/summary`,
+  pdf: (s, id) => `${API}/sources/${enc(s)}/${enc(id)}/pdf`,
+  labels: (s, id, volumeId) => `${API}/sources/${enc(s)}/${enc(id)}/labels${volumeId ? `?volume_id=${enc(volumeId)}` : ''}`,
+  createVolume: (s, id) => `${API}/sources/${enc(s)}/${enc(id)}/volumes`,
+  volume: (volumeId) => `${API}/volumes/${enc(volumeId)}`,
+  addItem: (volumeId) => `${API}/volumes/${enc(volumeId)}/items`,
+  allocate: (volumeId) => `${API}/volumes/${enc(volumeId)}/allocate-remaining`,
+  volumeItem: (viId) => `${API}/volume-items/${enc(viId)}`,
+  moveItem: (viId) => `${API}/volume-items/${enc(viId)}/move`,
 });
 
-// Helpers DOM
-const qs = (s, el = document) => el.querySelector(s);
+const SOURCE_LABEL = { ORDER: 'Pedido', BUDGET: 'Orçamento' };
+const TYPE_LABEL = { BOX: 'CAIXA', PALLET: 'PALETE', BUNDLE: 'FARDO', BAG: 'SACO', OTHER: 'OUTRO' };
 
-function toNum(v, def = 0) {
-  const n = Number(String(v ?? '').replace(',', '.'));
+/* ──────────────────────────────────────────────────────────────
+   Helpers
+────────────────────────────────────────────────────────────── */
+const $ = (id) => document.getElementById(id);
+
+const toNum = (v, def = 0) => {
+  if (v === null || v === undefined || v === '') return def;
+  const n = Number(String(v).replace(',', '.'));
   return Number.isFinite(n) ? n : def;
-}
-function toInt(v) {
+};
+const toInt = (v) => {
   const n = Number.parseInt(v, 10);
-  return Number.isFinite(n) ? n : null;
-}
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+const fmtQty = (v) => toNum(v, 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+const fmtKg = (v) => `${toNum(v, 0).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg`;
+const fmtM3 = (v) => `${toNum(v, 0).toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} m³`;
+const fmtCm = (v) => toNum(v, 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+const fmtMoney = (v) => (v === null || v === undefined ? '—'
+  : toNum(v, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+const fmtDate = (v) => {
+  if (!v) return '—';
+  const s = String(v).slice(0, 10);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
+};
+const esc = (s) => String(s ?? '')
+  .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
-function fmtKg(v) {
-  const n = toNum(v, NaN);
-  if (!Number.isFinite(n)) return '—';
-  return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg`;
-}
-function fmtCm(v) {
-  const n = toNum(v, NaN);
-  if (!Number.isFinite(n)) return '—';
-  return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} cm`;
-}
-function fmtM3(v) {
-  const n = toNum(v, NaN);
-  if (!Number.isFinite(n)) return '—';
-  return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 6, maximumFractionDigits: 6 })} m³`;
-}
+const pill = (text, kind = 'info', extra = '') =>
+  `<span class="summary-pill summary-pill--${kind} summary-pill--sm" ${extra}>${text}</span>`;
 
-function escapeHtml(s) {
-  return String(s ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
+const pctKind = (pct) => (pct >= 100 ? 'success' : pct > 0 ? 'warning' : 'danger');
 
-function setText(el, value) {
-  if (!el) return;
-  el.textContent = value;
-}
-
-// Fetch helper
 async function api(url, opts = {}) {
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
     ...opts,
+    headers: {
+      Accept: 'application/json',
+      ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(opts.headers || {}),
+    },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok || data.ok === false) {
-    const msg = data?.error || `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
+  if (!res.ok || data.ok === false) throw new Error(data?.error || `HTTP ${res.status}`);
   return data;
 }
+const post = (url, body) => api(url, { method: 'POST', body: JSON.stringify(body || {}) });
+const patch = (url, body) => api(url, { method: 'PATCH', body: JSON.stringify(body || {}) });
+const del = (url) => api(url, { method: 'DELETE' });
+
+const notifyError = (err, title = 'Atenção') =>
+  showCenterModal({ variant: 'error', title, message: esc(err?.message || err || 'Falha na operação.') });
+const notifyOk = (message) => showCenterModal({ variant: 'success', title: 'Pronto', message, timeoutMs: 1800 });
+const confirmCenter = (title, message, okText = 'Confirmar') =>
+  showCenterModal({ variant: 'warning', title, message, okText, closeText: 'Cancelar' });
 
 /* ──────────────────────────────────────────────────────────────
-   State
+   Estado
 ────────────────────────────────────────────────────────────── */
 const state = {
-  orderId: null,
-  summary: null,
+  source: 'ORDER',
+  id: null,
+  data: null,
+  activeVolumeId: null,
+  itemsFilter: 'PENDING',
+  search: { rows: [], index: -1 },
 };
 
 /* ──────────────────────────────────────────────────────────────
-   Elements
+   Carregar
 ────────────────────────────────────────────────────────────── */
-const elOrderId = qs('#olpOrderId');
-const btnLoadOrder = qs('#btnLoadOrder');
-const btnRefresh = qs('#btnRefresh');
-const btnOpenOrderSearch = qs('#btnOpenOrderSearch');
-const btnCreateVolume = qs('#btnCreateVolume');
-const btnPdf = qs('#btnPdf');
-
-const kpiOrder = qs('#kpiOrder');
-const kpiVolumes = qs('#kpiVolumes');
-const kpiNotPacked = qs('#kpiNotPacked');
-const kpiWeight = qs('#kpiWeight');
-const kpiM3 = qs('#kpiM3');
-
-const notPackedMeta = qs('#notPackedMeta');
-const notPackedList = qs('#notPackedList');
-const notPackedEmpty = qs('#notPackedEmpty');
-const volumesWrap = qs('#volumesWrap');
-const volumesEmpty = qs('#volumesEmpty');
-
-const toastWrap = qs('#toast');
-
-/* ──────────────────────────────────────────────────────────────
-   Modal: Search Orders
-────────────────────────────────────────────────────────────── */
-const modal = qs('#orderSearchModal');
-const modalBackdrop = qs('.olp-modal__backdrop', modal);
-const btnCloseModal = qs('#btnCloseOrderSearch');
-const inputSearch = qs('#orderSearchInput');
-const btnSearchGo = qs('#btnOrderSearchGo');
-const thead = qs('#orderSearchThead');
-const tbody = qs('#orderSearchTbody');
-const hint = qs('#orderSearchHint');
-
-/* ──────────────────────────────────────────────────────────────
-   Modal: Create Volume (Dimensões)
-────────────────────────────────────────────────────────────── */
-const cvModal = qs('#createVolumeModal');
-const cvBackdrop = qs('.olp-modal__backdrop', cvModal);
-const cvForm = qs('#formCreateVolume');
-const btnCloseCreateVolume = qs('#btnCloseCreateVolume');
-const btnCancelCreateVolume = qs('#btnCancelCreateVolume');
-
-const cvType = qs('#cvType');
-const cvDesc = qs('#cvDesc');
-const cvH = qs('#cvH');
-const cvW = qs('#cvW');
-const cvL = qs('#cvL');
-const cvTare = qs('#cvTare');
-const cvNotes = qs('#cvNotes');
-
-/* ──────────────────────────────────────────────────────────────
-   Toast
-────────────────────────────────────────────────────────────── */
-function toast(msg, type = 'ok', ms = 2800) {
-  if (!toastWrap) return;
-
-  const div = document.createElement('div');
-  div.className = `olp-toast__item ${type === 'err' ? 'is-error' : ''}`;
-  div.innerHTML = `<b>${type === 'err' ? 'Erro' : 'OK'}</b><span>${escapeHtml(msg)}</span>`;
-
-  toastWrap.appendChild(div);
-  setTimeout(() => div.remove(), ms);
+function syncSourceLabels() {
+  const label = SOURCE_LABEL[$('fSource').value] || 'Pedido';
+  $('fIdLabel').textContent = `Nº do ${label.toLowerCase()}`;
+  $('fId').placeholder = $('fSource').value === 'BUDGET' ? 'Ex: 1532' : 'Ex: 724';
 }
 
-/* ──────────────────────────────────────────────────────────────
-   Modal open/close helpers
-────────────────────────────────────────────────────────────── */
-function openModal() {
-  if (!modal) return;
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden', 'false');
-
-  // ✅ limpa seleção anterior
-  setActiveSearchRow(-1);
-
-  setTimeout(() => {
-    inputSearch?.focus();
-    // opcional: deixa texto selecionado
-    try { inputSearch?.select?.(); } catch { }
-  }, 60);
-}
-function closeModal() {
-  if (!modal) return;
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden', 'true');
-}
-
-function openCreateVolumeModal() {
-  if (!cvModal) return;
-  cvModal.classList.add('is-open');
-  cvModal.setAttribute('aria-hidden', 'false');
-  setTimeout(() => cvType?.focus(), 60);
-}
-function closeCreateVolumeModal() {
-  if (!cvModal) return;
-  cvModal.classList.remove('is-open');
-  cvModal.setAttribute('aria-hidden', 'true');
-}
-
-function escHandler(e) {
-  if (e.key !== 'Escape') return;
-  if (modal?.classList.contains('is-open')) closeModal();
-  if (cvModal?.classList.contains('is-open')) closeCreateVolumeModal();
-}
-
-/* ──────────────────────────────────────────────────────────────
-   Debounce
-────────────────────────────────────────────────────────────── */
-function debounce(fn, wait = 250) {
-  let t = null;
-  return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), wait);
-  };
-}
-
-/* ──────────────────────────────────────────────────────────────
-   Search Orders — Keyboard Navigation
-────────────────────────────────────────────────────────────── */
-const searchState = {
-  cols: ['order_id'],
-  rows: [],
-  activeIndex: -1,
-};
-
-function setActiveSearchRow(idx) {
-  const rowsCount = searchState.rows.length;
-
-  // limpa highlights atuais
-  const trsAll = [...(tbody?.querySelectorAll('tr') || [])];
-  trsAll.forEach(tr => tr.classList.remove('is-active'));
-
-  if (!rowsCount) {
-    searchState.activeIndex = -1;
+async function load(source = $('fSource').value, id = $('fId').value, { quiet = false } = {}) {
+  const n = toInt(id);
+  if (!n) {
+    notifyError(`Informe o número do ${String(SOURCE_LABEL[source] || 'pedido').toLowerCase()}.`);
     return;
   }
-
-  // clamp circular
-  if (idx < 0) idx = rowsCount - 1;
-  if (idx >= rowsCount) idx = 0;
-
-  searchState.activeIndex = idx;
-
-  const trs = [...(tbody?.querySelectorAll('tr[data-order-id]') || [])];
-  const tr = trs[idx];
-  if (tr) {
-    tr.classList.add('is-active');
-    tr.scrollIntoView({ block: 'nearest' });
-  }
-}
-
-function selectActiveSearchRow() {
-  const idx = searchState.activeIndex;
-  const row = searchState.rows[idx];
-  if (!row) return false;
-
-  const id = row.order_id;
-  if (!id) return false;
-
-  elOrderId.value = id;
-  closeModal();
-  loadOrder(id);
-  return true;
-}
-
-/* ──────────────────────────────────────────────────────────────
-   Search Orders
-────────────────────────────────────────────────────────────── */
-function renderSearchTable(cols = ['order_id'], rows = []) {
-  thead.innerHTML = '';
-  tbody.innerHTML = '';
-
-  // ✅ guarda estado p/ teclado
-  searchState.cols = cols;
-  searchState.rows = rows;
-  searchState.activeIndex = -1;
-
-  for (const c of cols) {
-    const th = document.createElement('th');
-    th.textContent = c;
-    thead.appendChild(th);
-  }
-
-  if (!rows.length) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = cols.length;
-    td.style.color = '#6b7280';
-    td.textContent = 'Nenhum pedido encontrado.';
-    tr.appendChild(td);
-    tbody.appendChild(tr);
-    return;
-  }
-
-  rows.forEach((r, i) => {
-    const tr = document.createElement('tr');
-    tr.dataset.orderId = r.order_id;
-    tr.dataset.index = String(i);
-
-    tr.addEventListener('click', () => {
-      const id = r.order_id;
-      if (!id) return;
-      elOrderId.value = id;
-      closeModal();
-      loadOrder(id);
-    });
-
-    // ✅ mouse define seleção também (UX premium)
-    tr.addEventListener('mouseenter', () => setActiveSearchRow(i));
-
-    for (const c of cols) {
-      const td = document.createElement('td');
-      const v = r[c];
-      td.textContent = (v === null || v === undefined || v === '') ? '—' : String(v);
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  });
-
-  // ✅ já seleciona o primeiro resultado
-  setActiveSearchRow(0);
-}
-
-async function doSearchOrders() {
-  const q = String(inputSearch?.value || '').trim();
-  if (!q) {
-    if (hint) hint.textContent = 'Digite algo e clique em Buscar.';
-    renderSearchTable(['order_id'], []);
-    return;
-  }
-
-  if (hint) hint.textContent = 'Buscando...';
-  try {
-    const data = await api(ROUTES.searchOrders(q, 25), { method: 'GET' });
-    const cols = data.cols || ['order_id'];
-    const rows = data.rows || [];
-    renderSearchTable(cols, rows);
-    if (hint) hint.textContent = `${rows.length} resultado(s). Use ↑/↓ e Enter, ou clique para selecionar.`;
-  } catch (err) {
-    if (hint) hint.textContent = 'Falha ao buscar. Veja o toast.';
-    toast(err.message || 'Erro ao pesquisar pedidos.', 'err');
-  }
-}
-const doSearchOrdersDebounced = debounce(doSearchOrders, 250);
-
-/* ──────────────────────────────────────────────────────────────
-   Load Summary
-────────────────────────────────────────────────────────────── */
-async function loadOrder(orderId) {
-  const id = toInt(orderId ?? elOrderId?.value);
-  if (!id) {
-    toast('Informe um Order ID válido.', 'err');
-    return;
-  }
-
-  state.orderId = id;
 
   try {
-    const data = await api(ROUTES.summary(id), { method: 'GET' });
-    state.summary = data;
+    const data = await api(ROUTES.summary(source, n));
+    state.source = source;
+    state.id = n;
+    state.data = data;
+    $('fSource').value = source;
+    $('fId').value = n;
+    syncSourceLabels();
 
-    const order = data.order;
-    const volumes = data.volumes || [];
-    const notPacked = data.notPacked || [];
-    const volumeItems = data.volumeItems || [];
-
-    setText(kpiOrder, order?.order_id ? String(order.order_id) : String(id));
-    setText(kpiVolumes, String(volumes.length));
-    setText(kpiNotPacked, String(notPacked.length));
-
-    if (notPackedMeta) setText(notPackedMeta, `${notPacked.length} item(ns)`);
-
-    const totalWeight = volumes.reduce((acc, v) => acc + toNum(v.weight_kg, 0), 0);
-    const totalM3 = volumes.reduce((acc, v) => acc + toNum(v.volume_m3, 0), 0);
-
-    setText(kpiWeight, totalWeight ? fmtKg(totalWeight) : '—');
-    setText(kpiM3, totalM3 ? fmtM3(totalM3) : '—');
-
-    renderNotPacked(notPacked);
-    renderVolumes(volumes, volumeItems);
-
-    toast(`Pedido ${id} carregado.`, 'ok');
-  } catch (err) {
-    toast(err.message || 'Falha ao carregar pedido.', 'err');
-  }
-}
-
-function openPackingPdf() {
-  const orderId = state.orderId ?? toInt(elOrderId?.value);
-  if (!orderId) {
-    toast('Carregue um pedido antes de gerar o PDF.', 'err');
-    return;
-  }
-  window.open(ROUTES.pdf(orderId), '_blank', 'noopener');
-}
-
-/* ──────────────────────────────────────────────────────────────
-   Render Not Packed
-────────────────────────────────────────────────────────────── */
-function renderNotPacked(rows = []) {
-  if (!notPackedList) return;
-
-  notPackedList.innerHTML = '';
-  if (!rows.length) {
-    if (notPackedEmpty) notPackedEmpty.classList.add('is-show');
-    return;
-  }
-  if (notPackedEmpty) notPackedEmpty.classList.remove('is-show');
-
-  for (const r of rows) {
-    const card = document.createElement('div');
-    card.className = 'olp-item';
-    card.draggable = true;
-
-    const orderItemId = r.order_item_id ?? r.orderItemId ?? null;
-    const sku = r.sku ?? '';
-    const desc = r.description ?? r.descricao ?? '(sem descrição)';
-    const unit = r.unit ?? r.unidade ?? '';
-
-    // ✅ Quantidade do item NO PEDIDO (total)
-    const orderedQty =
-      r.ordered_qty ??
-      r.order_qty ??
-      r.order_quantity ??
-      r.qty_ordered ??
-      r.quantity_ordered ??
-      r.qtd_pedido ??
-      r.qtd ??
-      r.qty ??
-      r.quantity ??
-      0;
-
-    // ✅ Quantidade já alocada/embalada (se vier do backend)
-    const packedQty =
-      r.packed_qty ??
-      r.qty_packed ??
-      r.quantity_packed ??
-      r.alocado ??
-      r.alocated_qty ??
-      r.allocated_qty ??
-      0;
-
-    // ✅ Restante (preferimos o que vem do backend; senão calculamos)
-    let remaining =
-      r.remaining_qty ??
-      r.remaining ??
-      r.qty_remaining ??
-      r.restante ??
-      r.quantity_remaining ??
-      null;
-
-    if (remaining === null || remaining === undefined) {
-      // calcula restante = pedido - embalado
-      remaining = toNum(orderedQty, 0) - toNum(packedQty, 0);
+    const vols = data.volumes || [];
+    if (!vols.some((v) => Number(v.id) === Number(state.activeVolumeId))) {
+      state.activeVolumeId = vols.length ? vols[vols.length - 1].id : null;
     }
 
-    // não deixa negativo
-    remaining = Math.max(0, toNum(remaining, 0));
+    const url = new URL(window.location.href);
+    url.searchParams.set('source', source);
+    url.searchParams.set('id', n);
+    url.searchParams.delete('order_id');
+    window.history.replaceState(null, '', url);
 
-    // ✅ peso/dimensões do produto (vêm de join com productsBarCode)
-    const unit_weight_kg = r.unit_weight_kg ?? r.weight_kg ?? r.peso_kg ?? r.peso ?? 0;
-    const unit_height_cm = r.unit_height_cm ?? r.height_cm ?? r.altura_cm ?? r.altura ?? 0;
-    const unit_width_cm = r.unit_width_cm ?? r.width_cm ?? r.largura_cm ?? r.largura ?? 0;
-    const unit_length_cm = r.unit_length_cm ?? r.length_cm ?? r.comprimento_cm ?? r.comprimento ?? 0;
-
-    card.addEventListener('dragstart', (e) => {
-      const payload = {
-        kind: 'notPacked',
-        order_item_id: orderItemId,
-        sku,
-        description: desc,
-        unit,
-        remaining: toNum(remaining, 0),
-
-        // ✅ vai junto pro POST /volumes/:id/items
-        unit_weight_kg: toNum(unit_weight_kg, 0),
-        unit_height_cm: toNum(unit_height_cm, 0),
-        unit_width_cm: toNum(unit_width_cm, 0),
-        unit_length_cm: toNum(unit_length_cm, 0),
-      };
-
-      e.dataTransfer.setData('application/json', JSON.stringify(payload));
-      e.dataTransfer.effectAllowed = 'copy';
-    });
-
-    const metaParts = [
-      `U.M: <b>${escapeHtml(unit || '—')}</b>`,
-      `Pedido: <b>${escapeHtml(String(toNum(orderedQty, 0)))}</b>`,
-      `Restante: <b>${escapeHtml(String(remaining))}</b>`,
-      `Peso: <b>${escapeHtml(fmtKg(unit_weight_kg))}</b>`,
-      `Dim: <b>${escapeHtml(`${fmtCm(unit_height_cm)} × ${fmtCm(unit_width_cm)} × ${fmtCm(unit_length_cm)}`)}</b>`,
-    ];
-
-    card.innerHTML = `
-      <div class="olp-item__top">
-        <div>
-          <div class="olp-item__title">${escapeHtml(sku ? `${sku} — ${desc}` : desc)}</div>
-          <div class="olp-item__sku">Item ID: ${escapeHtml(orderItemId ?? '—')}</div>
-        </div>
-        <div class="olp-chip">${escapeHtml(String(remaining))}</div>
-      </div>
-
-      <div class="olp-item__meta">
-        <span>${metaParts.join(' • ')}</span>
-      </div>
-    `;
-
-    notPackedList.appendChild(card);
+    render();
+  } catch (err) {
+    if (!quiet) notifyError(err, 'Não foi possível carregar');
   }
 }
 
+const reload = () => (state.id ? load(state.source, state.id, { quiet: false }) : null);
+
 /* ──────────────────────────────────────────────────────────────
-   Render Volumes
+   Render
 ────────────────────────────────────────────────────────────── */
-function renderVolumes(volumes = [], volumeItems = []) {
-  if (!volumesWrap) return;
+function render() {
+  const d = state.data;
+  const loaded = !!d;
 
-  volumesWrap.innerHTML = '';
+  ['btnPdf', 'btnLabels', 'btnNewVolume', 'fScan'].forEach((k) => { $(k).disabled = !loaded; });
+  $('btnLabels').disabled = !loaded || !(d.volumes || []).length;
 
-  if (!volumes.length) {
-    if (volumesEmpty) volumesEmpty.classList.add('is-show');
+  renderInfo();
+  renderItems();
+  renderVolumes();
+}
+
+function renderInfo() {
+  const d = state.data;
+  const box = $('infoPills');
+  if (!d) {
+    box.innerHTML = '<div class="summary-pill summary-pill--info summary-width-auto">Informe a origem e o número e clique em Carregar.</div>';
     return;
   }
-  if (volumesEmpty) volumesEmpty.classList.remove('is-show');
+  const h = d.head || {};
+  const t = d.totals || {};
+  const pct = toNum(t.packed_pct, 0);
+  const pills = [
+    `<div class="summary-pill summary-pill--primary summary-width-auto"><b>${esc(d.sourceLabel)} ${esc(h.id)}</b>&nbsp;· ${esc(h.customer_name || 'Sem cliente')} · ${fmtDate(h.issue_date)}${h.status ? ` · ${esc(h.status)}` : ''}</div>`,
+  ];
+  if (h.carrier_name) pills.push(`<div class="summary-pill summary-pill--info summary-width-auto">Transportadora: ${esc(h.carrier_name)}</div>`);
+  pills.push(`<div class="summary-pill summary-pill--${t.volumes ? 'success' : 'warning'} summary-width-auto">${t.volumes || 0} volume(s)</div>`);
+  pills.push(t.pending_items
+    ? `<div class="summary-pill summary-pill--warning summary-width-auto">${t.pending_items} item(ns) pendente(s) (${fmtQty(t.pending_qty)})</div>`
+    : `<div class="summary-pill summary-pill--success summary-width-auto">Tudo embalado</div>`);
+  pills.push(`<div class="summary-pill summary-pill--${pctKind(pct)} summary-width-auto">Embalado ${fmtQty(pct)}%</div>`);
+  pills.push(`<div class="summary-pill summary-pill--info summary-width-auto">Peso ${fmtKg(t.weight_kg)}</div>`);
+  pills.push(`<div class="summary-pill summary-pill--info summary-width-auto">Cubagem ${fmtM3(t.volume_m3)}</div>`);
+  box.innerHTML = pills.join('');
+}
 
-  // group items by volume_id
-  const map = new Map();
-  for (const it of volumeItems) {
-    const vid = it.volume_id ?? it.volumeId;
-    if (!map.has(vid)) map.set(vid, []);
-    map.get(vid).push(it);
+function renderItems() {
+  const d = state.data;
+  const body = $('itemsBody');
+  $('itemsTitle').textContent = `Itens do ${String(SOURCE_LABEL[state.source]).toLowerCase()}`;
+
+  if (!d) {
+    body.innerHTML = '<tr><td colspan="6" class="text-muted">Nenhum pedido carregado.</td></tr>';
+    $('itemsInfo').textContent = '0 itens';
+    $('btnAllocateAll').disabled = true;
+    return;
   }
 
-  for (const v of volumes) {
-    const volumeId = v.id;
-    const volNum = v.volume_number ?? '—';
-    const status = v.status ?? 'OPEN';
+  const items = d.items || [];
+  const filter = state.itemsFilter;
+  const rows = items.filter((it) =>
+    filter === 'ALL' ? true : filter === 'DONE' ? it.remaining_qty <= 0 : it.remaining_qty > 0);
 
-    const dims = `${toNum(v.height_cm, 0)}x${toNum(v.width_cm, 0)}x${toNum(v.length_cm, 0)} cm`;
-    const w = fmtKg(v.weight_kg);
-    const m3 = fmtM3(v.volume_m3);
+  const done = items.filter((it) => it.remaining_qty <= 0).length;
+  $('itemsInfo').textContent = `${items.length} itens · ${done} completo(s)`;
 
-    const vol = document.createElement('div');
-    vol.className = 'olp-volume';
-    vol.dataset.volumeId = volumeId;
+  const active = activeVolume();
+  const pending = items.some((it) => it.remaining_qty > 0);
+  $('btnAllocateAll').disabled = !active || !pending;
+  $('btnAllocateAll').textContent = active
+    ? `Alocar todos os pendentes no Volume ${active.volume_number}`
+    : 'Alocar todos os pendentes';
 
-    const items = map.get(volumeId) || [];
+  if (!rows.length) {
+    const msg = !items.length ? 'Sem itens.' : filter === 'PENDING' ? 'Nenhum item pendente. Tudo embalado!' : 'Nenhum item.';
+    body.innerHTML = `<tr><td colspan="6" class="text-muted">${msg}</td></tr>`;
+    return;
+  }
 
-    vol.innerHTML = `
-      <div class="olp-volume__head">
-        <div>
-          <div class="olp-volume__title">Volume #${escapeHtml(String(volNum))}</div>
-          <div class="olp-volume__sub">Status: ${escapeHtml(String(status))} • Dim: ${escapeHtml(dims)} • Peso: ${escapeHtml(w)} • Cubagem: ${escapeHtml(m3)}</div>
-        </div>
-        <div class="olp-volume__actions">
-           <button class="olp-mini soft" data-action="dims" title="Editar dimensões">📐 Medidas</button>
-           <button class="olp-mini soft" data-action="reload" title="Recarregar">↻</button>
-           <button class="olp-mini danger olp-icon-btn" data-action="delete" title="Excluir volume" aria-label="Excluir volume">🗑️</button>        </div>
-      </div>
+  body.innerHTML = rows.map((it) => {
+    const pendingRow = it.remaining_qty > 0;
+    return `
+      <tr data-item-id="${esc(it.item_id)}" ${pendingRow ? 'draggable="true" style="cursor:grab"' : ''}>
+        <td class="td-left"><b>${esc(it.product_code)}</b> · ${esc(it.description)}</td>
+        <td>${esc(it.unit)}</td>
+        <td class="td-right">${fmtQty(it.ordered_qty)}</td>
+        <td class="td-right">${fmtQty(it.packed_qty)}</td>
+        <td class="td-right">${pendingRow ? pill(fmtQty(it.remaining_qty), 'warning') : pill('OK', 'success')}</td>
+        <td>${pendingRow ? actionIconsHtml([{ action: 'add', title: 'Adicionar ao volume', attrs: { 'data-act': 'add' } }]) : ''}</td>
+      </tr>`;
+  }).join('');
+}
 
-      <div class="olp-volume__body">
-        <div class="olp-dropzone" data-dropzone="1">
-          <div class="olp-volumeItems" data-items="1"></div>
-        </div>
-      </div>
-    `;
+function activeVolume() {
+  return (state.data?.volumes || []).find((v) => Number(v.id) === Number(state.activeVolumeId)) || null;
+}
 
-    // actions
-    const btnDims = qs('[data-action="dims"]', vol);
-    const btnDel = qs('[data-action="delete"]', vol);
-    const btnReload = qs('[data-action="reload"]', vol);
+function renderVolumes() {
+  const grid = $('volumesGrid');
+  const vols = state.data?.volumes || [];
+  const items = state.data?.volumeItems || [];
+  // section.css usa display:flex, então controla pelo style (o atributo hidden não basta)
+  $('volumesEmpty').style.display = vols.length ? 'none' : '';
 
-    btnDims?.addEventListener('click', async () => {
-      const mode = await showCenterModal({
-        variant: 'info',
-        title: 'Medidas do volume',
-        message: 'Escolha qual origem de medidas deseja usar para este volume.',
-        buttons: [
-          { label: 'Cancelar', variant: 'cancel', action: () => null },
-          { label: 'Do volume', variant: 'primary', action: () => 'VOLUME' },
-          { label: 'Dos produtos/caixas', variant: 'success', action: () => 'PRODUCTS' }
-        ]
-      });
+  const active = activeVolume();
+  $('activeVolumePill').textContent = active ? `Ativo: Volume ${active.volume_number}` : 'Nenhum volume ativo';
+  $('fScanLabel').textContent = active ? `Bipar código de barras → Volume ${active.volume_number}` : 'Bipar código de barras';
 
-      if (!mode) return;
+  grid.innerHTML = vols.map((v) => {
+    const isActive = Number(v.id) === Number(state.activeVolumeId);
+    const list = items.filter((x) => Number(x.volume_id) === Number(v.id));
+    const dims = `${fmtCm(v.height_cm)} × ${fmtCm(v.width_cm)} × ${fmtCm(v.length_cm)} cm`;
+    const rows = list.length
+      ? list.map((x) => `
+          <tr data-vi-id="${esc(x.id)}" draggable="true" style="cursor:grab">
+            <td class="td-left">${esc(x.description)}</td>
+            <td>${esc(x.unit)}</td>
+            <td class="td-right">${fmtQty(x.quantity)}</td>
+            <td class="td-right">${fmtQty(x.line_weight_kg)}</td>
+            <td>${actionIconsHtml([
+        { action: 'edit', title: 'Alterar quantidade', attrs: { 'data-act': 'vi-edit' } },
+        { action: 'cancel', title: 'Remover do volume', attrs: { 'data-act': 'vi-del' } },
+      ])}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="5" class="text-muted">Volume vazio.</td></tr>';
 
-      if (mode === 'VOLUME') {
-        openEditVolumeModal(v);
-        return;
-      }
-
-      if (mode === 'PRODUCTS') {
-        const volumeItems = items || [];
-
-        if (!volumeItems.length) {
-          toast('Este volume não possui itens para calcular medidas.', 'err');
-          return;
-        }
-
-        const height_cm = Math.max(...volumeItems.map(i =>
-          toNum(i.unit_height_cm ?? i.height_cm, 0)
-        ));
-
-        const width_cm = Math.max(...volumeItems.map(i =>
-          toNum(i.unit_width_cm ?? i.width_cm, 0)
-        ));
-
-        const length_cm = Math.max(...volumeItems.map(i =>
-          toNum(i.unit_length_cm ?? i.length_cm, 0)
-        ));
-
-        if (!height_cm || !width_cm || !length_cm) {
-          toast('Os produtos/caixas deste volume estão sem dimensões.', 'err');
-          return;
-        }
-
-        await api(ROUTES.updateVolume(volumeId), {
-          method: 'PATCH',
-          body: JSON.stringify({
-            height_cm,
-            width_cm,
-            length_cm,
-          }),
-        });
-
-        toast('Medidas do volume atualizadas pelos produtos/caixas.', 'ok');
-        await loadOrder(state.orderId);
-        return;
-      }
-
-      if (!mode) return;
-
-      if (mode === '1') {
-        openCreateVolumeModal(); // depois melhoramos para editar o volume atual
-        return;
-      }
-
-      if (mode === '2') {
-        toast('Próximo passo: calcular medidas pelos produtos/caixas.', 'ok');
-        return;
-      }
-
-      toast('Opção inválida.', 'err');
-    });
-
-    btnDel?.addEventListener('click', async () => {
-      const okDelete = await showCenterModal({
-        variant: 'warning',
-        title: 'Excluir volume',
-        message: `Deseja excluir o Volume #${volNum}?`,
-        buttons: [
-          { label: 'Cancelar', variant: 'cancel', action: () => false },
-          { label: 'Excluir', variant: 'danger', action: () => true }
-        ]
-      });
-
-      if (!okDelete) return;
-
-      try {
-        await api(ROUTES.deleteVolume(volumeId), { method: 'DELETE' });
-        toast('Volume excluído.', 'ok');
-        await loadOrder(state.orderId);
-      } catch (err) {
-        toast(err.message || 'Falha ao excluir volume.', 'err');
-      }
-    });
-
-    btnReload?.addEventListener('click', async () => loadOrder(state.orderId));
-
-    // dropzone drag events
-    const dropzone = qs('[data-dropzone="1"]', vol);
-
-    dropzone?.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropzone.classList.add('is-over');
-      e.dataTransfer.dropEffect = 'copy';
-    });
-
-    dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('is-over'));
-
-    dropzone?.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      dropzone.classList.remove('is-over');
-
-      let payload = null;
-      try { payload = JSON.parse(e.dataTransfer.getData('application/json')); } catch { }
-      if (!payload) return;
-
-      // 1) drop from NOT packed -> addItemToVolume
-      if (payload.kind === 'notPacked') {
-        const remaining = toNum(payload.remaining, 0);
-        const selected = await openPackingUnitModal(payload, remaining);
-
-        if (!selected) return;
-
-
-
-        console.log('[PACKING POST]', {
-          volumeId,
-          orderId: state.orderId,
-          order_item_id: payload.order_item_id,
-          sku: payload.sku,
-          description: payload.description,
-          selected,
-          payload
-        });
-
-        try {
-          console.log('==== PACKING ====');
-          console.log(selected);
-          await api(ROUTES.addItemToVolume(volumeId), {
-            method: 'POST',
-            body: JSON.stringify({
-              order_item_id: payload.order_item_id,
-              quantity: selected.quantity,
-
-              product_unit_id: selected.product_unit_id,
-              unit: selected.unit,
-              fator: selected.fator,
-
-              weight_source: selected.weight_source,
-              dimensions_source: selected.dimensions_source,
-
-              unit_weight_kg: selected.weight_kg,
-              unit_height_cm: selected.height_cm,
-              unit_width_cm: selected.width_cm,
-              unit_length_cm: selected.length_cm,
-            })
-          });
-          toast('Item adicionado ao volume.', 'ok');
-          await loadOrder(state.orderId);
-        } catch (err) {
-          toast(err.message || 'Falha ao adicionar item.', 'err');
-        }
-        return;
-      }
-
-      // 2) drop from another volume -> moveVolumeItem
-      if (payload.kind === 'volumeItem') {
-        if (!payload.volume_item_id) return;
-        if (Number(payload.from_volume_id) === Number(volumeId)) return;
-
-        try {
-          await api(ROUTES.moveVolumeItem(payload.volume_item_id), {
-            method: 'POST',
-            body: JSON.stringify({ to_volume_id: volumeId }),
-          });
-          toast('Item movido para outro volume.', 'ok');
-          await loadOrder(state.orderId);
-        } catch (err) {
-          toast(err.message || 'Falha ao mover item.', 'err');
-        }
-        return;
-      }
-    });
-
-    // render items
-    const itemsWrap = qs('[data-items="1"]', vol);
-
-    if (!items.length) {
-      itemsWrap.innerHTML = `
-        <div class="olp-dropHint" style="margin:0;">
-          <div class="olp-dropHint__box"></div>
-          <div class="olp-dropHint__text">Arraste itens aqui.</div>
-        </div>`;
-    } else {
-      itemsWrap.innerHTML = '';
-      for (const it of items) {
-        const viId = it.id ?? it.volume_item_id ?? it.volumeItemId;
-        const sku = it.sku ?? '';
-        const desc = it.description ?? '(sem descrição)';
-        const unit = it.unit ?? '';
-        const qty = it.quantity ?? 0;
-
-        // ✅ tenta ler peso/dim também do item do volume
-        const unitWeightKg = it.unit_weight_kg ?? it.weight_kg ?? it.peso_kg ?? it.peso ?? 0;
-
-        const lineWeightKg =
-          it.line_weight_kg ??
-          it.total_weight_kg ??
-          (toNum(unitWeightKg, 0) * toNum(qty, 0));
-
-        const hCm = it.unit_height_cm ?? it.height_cm ?? it.altura_cm ?? it.altura ?? 0;
-        const wCm = it.unit_width_cm ?? it.width_cm ?? it.largura_cm ?? it.largura ?? 0;
-        const lCm = it.unit_length_cm ?? it.length_cm ?? it.comprimento_cm ?? it.comprimento ?? 0;
-
-        const card = document.createElement('div');
-        card.className = 'olp-volumeItem';
-        card.draggable = true;
-        card.dataset.volumeItemId = viId;
-        card.dataset.volumeId = volumeId;
-
-        card.addEventListener('dragstart', (e) => {
-          const payload = {
-            kind: 'volumeItem',
-            volume_item_id: viId,
-            from_volume_id: volumeId,
-          };
-          e.dataTransfer.setData('application/json', JSON.stringify(payload));
-          e.dataTransfer.effectAllowed = 'move';
-        });
-
-        card.innerHTML = `
-          <div class="olp-volumeItem__row">
-            <div>
-              <div class="olp-volumeItem__name">${escapeHtml(sku ? `${sku} — ${desc}` : desc)}</div>
-              <div class="olp-volumeItem__meta">
-                U.M: ${escapeHtml(unit || '—')}
-                • Qtd: ${escapeHtml(String(qty))}
-                • Peso Unit.: ${escapeHtml(fmtKg(unitWeightKg))}
-                • Peso Total: ${escapeHtml(fmtKg(lineWeightKg))}
-                • Dim: ${escapeHtml(`${fmtCm(hCm)} × ${fmtCm(wCm)} × ${fmtCm(lCm)}`)}
-                • VI ID: ${escapeHtml(String(viId))}
-              </div>
-            </div>
-            <div class="olp-volumeItem__actions">
-              <button class="olp-mini soft olp-icon-btn" data-act="edit" title="Editar quantidade" aria-label="Editar quantidade">
-              ✏️
-              </button>
-              <button class="olp-mini danger" data-act="del" title="Excluir do volume">X</button>
-            </div>
+    return `
+      <div class="section ${isActive ? 'section-blue section-border-medium' : 'section-border-thin'} section-p-3 section-gap-2"
+           data-volume-id="${esc(v.id)}" style="cursor:pointer">
+        <div class="consart-lr-header">
+          <div>
+            <b>Volume ${esc(v.volume_number)}</b>
+            ${pill(TYPE_LABEL[v.volume_type] || esc(v.volume_type || ''), 'primary')}
+            ${isActive ? pill('ATIVO', 'success') : ''}
+            <div class="text-muted">${dims} · ${fmtM3(v.volume_m3)} · ${fmtKg(v.weight_kg)}</div>
+            ${v.description ? `<div class="text-muted">${esc(v.description)}</div>` : ''}
           </div>
-        `;
-
-        qs('[data-act="edit"]', card)?.addEventListener('click', async () => {
-          const ask = prompt('Nova quantidade:', String(qty));
-          const newQty = toNum(String(ask || '').replace(',', '.'), 0);
-          if (!(newQty > 0)) return;
-
-          try {
-            await api(ROUTES.updateVolumeItem(viId), {
-              method: 'PATCH',
-              body: JSON.stringify({ quantity: newQty }),
-            });
-            toast('Quantidade atualizada.', 'ok');
-            await loadOrder(state.orderId);
-          } catch (err) {
-            toast(err.message || 'Falha ao atualizar quantidade.', 'err');
-          }
-        });
-
-        qs('[data-act="del"]', card)?.addEventListener('click', async () => {
-          if (!confirm('Remover item do volume?')) return;
-          try {
-            await api(ROUTES.deleteVolumeItem(viId), { method: 'DELETE' });
-            toast('Item removido.', 'ok');
-            await loadOrder(state.orderId);
-          } catch (err) {
-            toast(err.message || 'Falha ao remover item.', 'err');
-          }
-        });
-
-        itemsWrap.appendChild(card);
-      }
-    }
-
-    volumesWrap.appendChild(vol);
-  }
-}
-
-function openEditVolumeModal(volume) {
-  if (!cvModal) return;
-
-  cvModal.dataset.mode = 'edit';
-  cvModal.dataset.volumeId = volume.id;
-
-  if (cvType) cvType.value = volume.volume_type || 'BOX';
-  if (cvDesc) cvDesc.value = volume.description || '';
-  if (cvH) cvH.value = toNum(volume.height_cm, 0);
-  if (cvW) cvW.value = toNum(volume.width_cm, 0);
-  if (cvL) cvL.value = toNum(volume.length_cm, 0);
-  if (cvTare) cvTare.value = toNum(volume.tare_kg, 0);
-  if (cvNotes) cvNotes.value = volume.notes || '';
-
-  qs('#cvTitle').textContent = 'Editar volume';
-  qs('#formCreateVolume button[type="submit"]').textContent = 'Salvar volume';
-
-  openCreateVolumeModal();
+          ${actionIconsHtml([
+      { action: 'edit', title: 'Editar volume (tipo, medidas, tara)', attrs: { 'data-act': 'vol-edit' } },
+      { action: 'document', title: 'Etiqueta deste volume', attrs: { 'data-act': 'vol-label' } },
+      { action: 'delete', title: 'Excluir volume', attrs: { 'data-act': 'vol-del' } },
+    ])}
+        </div>
+        <table class="table table-zebra">
+          <thead><tr><th class="th-left">Produto</th><th>U.M.</th><th class="th-right">Qtd</th><th class="th-right">Peso</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="section section-gray section-border-thin section-center section-p-2 text-muted" data-dropzone>
+          Arraste itens aqui
+        </div>
+      </div>`;
+  }).join('');
 }
 
 /* ──────────────────────────────────────────────────────────────
-   Create Volume — via MODAL (sem prompt)
+   Pesquisa (modal)
 ────────────────────────────────────────────────────────────── */
-function resetCreateVolumeForm() {
-  if (!cvForm) return;
-  cvForm.reset();
-  if (cvType) cvType.value = 'BOX';
-  if (cvH) cvH.value = '';
-  if (cvW) cvW.value = '';
-  if (cvL) cvL.value = '';
-  if (cvTare) cvTare.value = '';
-  if (cvDesc) cvDesc.value = '';
-  if (cvNotes) cvNotes.value = '';
+let searchTimer = null;
+let searchSeq = 0;
+
+function openSearch() {
+  $('sSource').value = 'ALL';
+  Modal.open('searchModal', { focusSelector: '#sQ' });
+  doSearch();
 }
 
-async function submitCreateVolume() {
-  const orderId = state.orderId ?? toInt(elOrderId?.value);
-  if (!orderId) {
-    toast('Carregue um pedido antes de criar volumes.', 'err');
+async function doSearch() {
+  const seq = ++searchSeq;
+  $('searchHint').textContent = 'Buscando...';
+  try {
+    const data = await api(ROUTES.search({
+      q: $('sQ').value.trim(),
+      source: $('sSource').value,
+      situation: $('sSituation').value,
+      limit: 50,
+    }));
+    if (seq !== searchSeq) return;
+    state.search.rows = data.rows || [];
+    renderSearch();
+    $('searchHint').textContent = `${state.search.rows.length} resultado(s) · ↑/↓ e Enter para selecionar`;
+  } catch (err) {
+    if (seq !== searchSeq) return;
+    $('searchHint').textContent = 'Falha ao buscar.';
+    notifyError(err);
+  }
+}
+
+function renderSearch() {
+  const rows = state.search.rows;
+  state.search.index = rows.length ? 0 : -1;
+  $('searchBody').innerHTML = rows.length
+    ? rows.map((r, i) => `
+      <tr data-index="${i}" style="cursor:pointer">
+        <td>${pill(esc(r.label), r.source === 'BUDGET' ? 'info' : 'primary')}</td>
+        <td>${esc(r.id)}</td>
+        <td class="td-left">${esc(r.customer_name || '—')}</td>
+        <td>${fmtDate(r.issue_date)}</td>
+        <td>${esc(r.status || '—')}</td>
+        <td class="td-right">${fmtMoney(r.total_amount)}</td>
+        <td>${pill(`${fmtQty(r.packed_pct)}%`, pctKind(toNum(r.packed_pct, 0)))}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" class="text-muted">Nenhum pedido ou orçamento encontrado.</td></tr>';
+  highlightSearch();
+}
+
+function highlightSearch() {
+  [...$('searchBody').querySelectorAll('tr[data-index]')].forEach((tr) => {
+    const on = Number(tr.dataset.index) === state.search.index;
+    tr.style.outline = on ? '2px solid #2563eb' : '';
+    tr.style.outlineOffset = on ? '-2px' : '';
+    if (on) tr.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+function pickSearch(index) {
+  const r = state.search.rows[index];
+  if (!r) return;
+  Modal.close('searchModal');
+  state.activeVolumeId = null;
+  load(r.source, r.id);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Volume (modal criar/editar)
+────────────────────────────────────────────────────────────── */
+function openVolumeModal(volume = null) {
+  const editing = !!volume;
+  $('volumeTitle').textContent = editing ? `Editar Volume ${volume.volume_number}` : 'Criar volume';
+  $('btnSaveVolume').textContent = editing ? 'Salvar' : 'Criar volume';
+  $('vId').value = editing ? volume.id : '';
+  $('vType').value = volume?.volume_type || 'BOX';
+  $('vDesc').value = volume?.description || '';
+  $('vH').value = editing ? toNum(volume.height_cm, 0) : '';
+  $('vW').value = editing ? toNum(volume.width_cm, 0) : '';
+  $('vL').value = editing ? toNum(volume.length_cm, 0) : '';
+  $('vTare').value = editing ? toNum(volume.tare_kg, 0) : '';
+  $('vNotes').value = volume?.notes || '';
+  $('vCopies').value = 1;
+  $('vCopiesWrap').hidden = editing;
+  Modal.open('volumeModal', { focusSelector: '#vType' });
+}
+
+async function saveVolume(e) {
+  e.preventDefault();
+  const body = {
+    volume_type: $('vType').value,
+    description: $('vDesc').value,
+    height_cm: toNum($('vH').value, 0),
+    width_cm: toNum($('vW').value, 0),
+    length_cm: toNum($('vL').value, 0),
+    tare_kg: toNum($('vTare').value, 0),
+    notes: $('vNotes').value,
+  };
+  if ([body.height_cm, body.width_cm, body.length_cm, body.tare_kg].some((v) => v < 0)) {
+    notifyError('Medidas e tara não podem ser negativas.');
     return;
   }
+  const id = toInt($('vId').value);
+  try {
+    if (id) {
+      await patch(ROUTES.volume(id), body);
+    } else {
+      const out = await post(ROUTES.createVolume(state.source, state.id), { ...body, copies: toInt($('vCopies').value) || 1 });
+      const created = out.rows || [];
+      if (created.length) state.activeVolumeId = created[created.length - 1].id;
+    }
+    Modal.close('volumeModal');
+    await reload();
+  } catch (err) {
+    notifyError(err);
+  }
+}
 
-  const volume_type = String(cvType?.value || 'BOX').trim().toUpperCase();
-  const description = String(cvDesc?.value || '').trim() || null;
+async function deleteVolume(volume) {
+  const ok = await confirmCenter(
+    'Excluir volume',
+    `Excluir o <b>Volume ${esc(volume.volume_number)}</b>? Os itens dele voltam para pendentes e os volumes seguintes são renumerados.`,
+    'Sim, excluir'
+  );
+  if (ok !== true) return;
+  try {
+    await del(ROUTES.volume(volume.id));
+    if (Number(state.activeVolumeId) === Number(volume.id)) state.activeVolumeId = null;
+    await reload();
+  } catch (err) {
+    notifyError(err);
+  }
+}
 
-  const height_cm = toNum(cvH?.value, 0);
-  const width_cm = toNum(cvW?.value, 0);
-  const length_cm = toNum(cvL?.value, 0);
-  const tare_kg = toNum(cvTare?.value, 0);
-  const notes = String(cvNotes?.value || '').trim() || null;
+/* ──────────────────────────────────────────────────────────────
+   Item → volume (modal)
+────────────────────────────────────────────────────────────── */
+const itemModalCtx = { item: null };
 
-  if ([height_cm, width_cm, length_cm, tare_kg].some(v => v < 0)) {
-    toast('Dimensões/Tara não podem ser negativas.', 'err');
+function findItem(itemId) {
+  return (state.data?.items || []).find((x) => Number(x.item_id) === Number(itemId)) || null;
+}
+
+function unitOptionsFor(item) {
+  // primeira opção = unidade do item; depois as demais unidades ativas do produto
+  const opts = [{ value: '', label: `${item.unit} (unidade do item)`, fator: item.conversion_factor || 1, weight: item.unit_weight_kg }];
+  for (const u of item.units || []) {
+    if (Number(u.barcode_id) === Number(item.unit_barcode_id)) continue;
+    opts.push({ value: String(u.barcode_id), label: `${u.unit} (fator ${fmtQty(u.fator)})`, fator: u.fator || 1, weight: u.weight_kg });
+  }
+  return opts;
+}
+
+function updateItemModalTotals() {
+  const item = itemModalCtx.item;
+  if (!item) return;
+  const opt = itemModalCtx.units.find((o) => o.value === $('iUnit').value) || itemModalCtx.units[0];
+  const factorItem = item.conversion_factor || 1;
+  const qtyItem = (toNum($('iQty').value, 0) * opt.fator) / factorItem;
+  const w = toNum($('iWeight').value, 0);
+  $('iTotalWeight').value = fmtKg(qtyItem * w);
+  const remainingInUnit = (item.remaining_qty * factorItem) / opt.fator;
+  $('iQtyLabel').textContent = `Quantidade (restante ${fmtQty(remainingInUnit)})`;
+}
+
+function openItemModal(itemId, volumeId = state.activeVolumeId) {
+  const item = findItem(itemId);
+  if (!item) return;
+  const vols = state.data?.volumes || [];
+  if (!vols.length) {
+    notifyError('Crie um volume antes de adicionar itens.');
     return;
   }
+  itemModalCtx.item = item;
+  itemModalCtx.units = unitOptionsFor(item);
+
+  $('iItemId').value = item.item_id;
+  $('iProduct').value = `${item.product_code} · ${item.description}`;
+  $('iVolume').innerHTML = vols.map((v) =>
+    `<option value="${esc(v.id)}">Volume ${esc(v.volume_number)} · ${esc(TYPE_LABEL[v.volume_type] || v.volume_type)}</option>`).join('');
+  $('iVolume').value = String(volumeId || vols[vols.length - 1].id);
+  $('iUnit').innerHTML = itemModalCtx.units.map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('');
+  $('iQty').value = item.remaining_qty;
+  $('iWeight').value = toNum(item.unit_weight_kg, 0);
+  $('iWeightLabel').textContent = `Peso por ${item.unit} (kg)`;
+  $('iDims').value = `${fmtCm(item.unit_height_cm)} × ${fmtCm(item.unit_width_cm)} × ${fmtCm(item.unit_length_cm)}`;
+  $('itemTitle').textContent = 'Adicionar ao volume';
+  updateItemModalTotals();
+  Modal.open('itemModal', { focusSelector: '#iQty' });
+  setTimeout(() => $('iQty').select?.(), 80);
+}
+
+async function saveItem(e) {
+  e.preventDefault();
+  const item = itemModalCtx.item;
+  const volumeId = toInt($('iVolume').value);
+  const qty = toNum($('iQty').value, 0);
+  if (!item || !volumeId) return;
+  if (!(qty > 0)) {
+    notifyError('Informe uma quantidade maior que zero.');
+    return;
+  }
+  const body = { item_id: item.item_id, quantity: qty };
+  if ($('iUnit').value) body.unit_barcode_id = toInt($('iUnit').value);
+  const w = toNum($('iWeight').value, NaN);
+  if (Number.isFinite(w) && Math.abs(w - toNum(item.unit_weight_kg, 0)) > 0.00001) body.unit_weight_kg = w;
 
   try {
-    const isEdit = cvModal?.dataset.mode === 'edit';
-    const volumeId = cvModal?.dataset.volumeId;
-
-    const url = isEdit
-      ? ROUTES.deleteVolume(volumeId)
-      : ROUTES.createVolume(orderId);
-
-    await api(url, {
-      method: isEdit ? 'PATCH' : 'POST',
-      body: JSON.stringify({
-        volume_type,
-        description,
-        height_cm,
-        width_cm,
-        length_cm,
-        tare_kg,
-        notes,
-      }),
-    });
-
-    toast(isEdit ? 'Volume atualizado.' : 'Volume criado com dimensões.', 'ok');
-
-    cvModal.dataset.mode = 'create';
-    cvModal.dataset.volumeId = '';
-    qs('#cvTitle').textContent = 'Criar volume';
-    qs('#formCreateVolume button[type="submit"]').textContent = 'Criar volume';
-    closeCreateVolumeModal();
-    resetCreateVolumeForm();
-    await loadOrder(orderId);
+    await post(ROUTES.addItem(volumeId), body);
+    state.activeVolumeId = volumeId;
+    Modal.close('itemModal');
+    await reload();
   } catch (err) {
-    toast(err.message || 'Falha ao criar volume.', 'err');
+    notifyError(err);
   }
 }
 
-async function openPackingUnitModal(item, remainingQty = 0) {
-  const data = await api(ROUTES.productUnits(item.sku), {
-    method: 'GET',
-  });
-
-  const units =
-    Array.isArray(data) ? data :
-      Array.isArray(data.rows) ? data.rows :
-        Array.isArray(data.data) ? data.data :
-          Array.isArray(data.items) ? data.items :
-            [];
-
-  const normalizeCm = (v) => {
-    const n = toNum(v, 0);
-    if (!(n > 0)) return 0;
-
-    // productsBarCode sometimes stores dimensions as meters:
-    // 0.40 => 40 cm | 0.25 => 25 cm | 0.45 => 45 cm
-    return n < 1 ? n * 100 : n;
-  };
-
-  const productDims = {
-    weight_kg: toNum(item.unit_weight_kg, 0),
-    height_cm: normalizeCm(item.unit_height_cm),
-    width_cm: normalizeCm(item.unit_width_cm),
-    length_cm: normalizeCm(item.unit_length_cm),
-  };
-
-  const unitOptions = units.length
-    ? units.map((u, i) => `
-      <option value="${i}">
-        ${escapeHtml(u.unit || 'UN')} | fator ${escapeHtml(String(u.fator || 1))}
-      </option>
-    `).join('')
-    : `<option value="">${escapeHtml(item.unit || 'UN')} | Produto</option>`;
-
+async function editVolumeItem(vi) {
   const result = await showCenterModal({
     variant: 'info',
-    title: 'Adicionar item ao volume',
-
+    title: 'Alterar quantidade',
     message: `
-      <div class="olp-pack-modal">
-
-        <div style="font-weight:800;margin-bottom:10px;">
-          ${escapeHtml(item.sku || '')} — ${escapeHtml(item.description || '')}
-        </div>
-
-        <label>Unidade</label>
-        <select id="pmUnit" class="cm-input">
-          ${unitOptions}
-        </select>
-
-        <label>Quantidade</label>
-        <input
-          id="pmQty"
-          class="cm-input"
-          type="number"
-          min="0.001"
-          step="0.001"
-          value="${escapeHtml(String(remainingQty || 1))}">
-
-        <label>Peso</label>
-        <select id="pmWeightSource" class="cm-input">
-          <option value="PRODUCT">Produto</option>
-          <option value="UNIT" ${units.length ? 'selected' : ''}>Unidade/Caixa</option>
-          <option value="MANUAL">Manual</option>
-        </select>
-
-        <label>Medidas</label>
-        <select id="pmDimensionsSource" class="cm-input">
-          <option value="PRODUCT">Produto</option>
-          <option value="UNIT" ${units.length ? 'selected' : ''}>Unidade/Caixa</option>
-          <option value="MANUAL">Manual</option>
-        </select>
-
-        <div id="pmManualFields" style="display:none;margin-top:10px;">
-          <label>Peso unitário (kg)</label>
-          <input
-            id="pmManualWeight"
-            class="cm-input"
-            type="number"
-            step="0.001"
-            value="${productDims.weight_kg}">
-
-          <label>Altura (cm)</label>
-          <input
-            id="pmManualH"
-            class="cm-input"
-            type="number"
-            step="0.001"
-            value="${productDims.height_cm}">
-
-          <label>Largura (cm)</label>
-          <input
-            id="pmManualW"
-            class="cm-input"
-            type="number"
-            step="0.001"
-            value="${productDims.width_cm}">
-
-          <label>Comprimento (cm)</label>
-          <input
-            id="pmManualL"
-            class="cm-input"
-            type="number"
-            step="0.001"
-            value="${productDims.length_cm}">
-        </div>
-
-      </div>
-    `,
-
+      <div class="fields fields-h-6 fields-w-full fields-font-3">
+        <label for="cmQty">${esc(vi.description)} (${esc(vi.unit)})</label>
+        <input id="cmQty" type="number" min="0.001" step="0.001" value="${esc(toNum(vi.quantity, 0))}" />
+      </div>`,
     buttons: [
+      { label: 'Cancelar', variant: 'cancel', action: () => null },
       {
-        label: 'Cancelar',
-        variant: 'cancel',
-        action: () => null,
-      },
-      {
-        label: 'Adicionar',
+        label: 'Salvar',
         variant: 'success',
-
-        action: ({ card }) => {
-          const idx = toInt(card.querySelector('#pmUnit')?.value);
-
-          const selectedUnit =
-            units.length && idx !== null
-              ? units[idx]
-              : null;
-
-          const qty = toNum(card.querySelector('#pmQty')?.value, 0);
-          if (!(qty > 0)) return null;
-
-          const weightSource = String(
-            card.querySelector('#pmWeightSource')?.value || 'PRODUCT'
-          ).toUpperCase();
-
-          const dimensionsSource = String(
-            card.querySelector('#pmDimensionsSource')?.value || 'PRODUCT'
-          ).toUpperCase();
-
-          const selectedWeightKg = toNum(
-            selectedUnit?.weight_kg ??
-            selectedUnit?.unit_weight_kg ??
-            selectedUnit?.peso_kg ??
-            selectedUnit?.peso ??
-            selectedUnit?.weight ??
-            selectedUnit?.pesoUnitario ??
-            selectedUnit?.unitWeightKg,
-            0
-          );
-
-          let weightKg = productDims.weight_kg;
-
-          if (weightSource === 'UNIT') {
-            weightKg = selectedWeightKg;
-          }
-
-          if (weightSource === 'PRODUCT' && !(weightKg > 0) && selectedWeightKg > 0) {
-            weightKg = selectedWeightKg;
-          }
-
-          const selectedH = normalizeCm(
-            selectedUnit?.height_cm ??
-            selectedUnit?.altura_cm ??
-            selectedUnit?.height
-          );
-
-          const selectedW = normalizeCm(
-            selectedUnit?.width_cm ??
-            selectedUnit?.largura_cm ??
-            selectedUnit?.width
-          );
-
-          const selectedL = normalizeCm(
-            selectedUnit?.length_cm ??
-            selectedUnit?.comprimento_cm ??
-            selectedUnit?.length
-          );
-
-          let h = dimensionsSource === 'UNIT' ? selectedH : productDims.height_cm;
-          let w = dimensionsSource === 'UNIT' ? selectedW : productDims.width_cm;
-          let l = dimensionsSource === 'UNIT' ? selectedL : productDims.length_cm;
-
-          if (dimensionsSource === 'PRODUCT') {
-            if (!(h > 0) && selectedH > 0) h = selectedH;
-            if (!(w > 0) && selectedW > 0) w = selectedW;
-            if (!(l > 0) && selectedL > 0) l = selectedL;
-          }
-
-          if (weightSource === 'MANUAL') {
-            weightKg = toNum(card.querySelector('#pmManualWeight')?.value, 0);
-          }
-
-          if (dimensionsSource === 'MANUAL') {
-            h = normalizeCm(card.querySelector('#pmManualH')?.value);
-            w = normalizeCm(card.querySelector('#pmManualW')?.value);
-            l = normalizeCm(card.querySelector('#pmManualL')?.value);
-          }
-
-          return {
-            quantity: qty,
-
-            product_unit_id: selectedUnit
-              ? toInt(selectedUnit.product_unit_id)
-              : null,
-
-            unit: selectedUnit?.unit || item.unit,
-
-            fator: selectedUnit
-              ? toNum(selectedUnit.fator, 1)
-              : 1,
-
-            weight_source: weightSource,
-            dimensions_source: dimensionsSource,
-
-            weight_kg: weightKg,
-            height_cm: h,
-            width_cm: w,
-            length_cm: l,
-          };
+        action: (ref) => {
+          const root = ref?.card || ref?.el || document;
+          return toNum(root.querySelector('#cmQty')?.value ?? document.getElementById('cmQty')?.value, 0);
         },
       },
     ],
   });
+  if (!(toNum(result, 0) > 0)) return;
+  try {
+    await patch(ROUTES.volumeItem(vi.id), { quantity: toNum(result, 0) });
+    await reload();
+  } catch (err) {
+    notifyError(err);
+  }
+}
 
-  return result;
+async function removeVolumeItem(vi) {
+  const ok = await confirmCenter('Remover item', `Remover <b>${esc(vi.description)}</b> deste volume?`, 'Sim, remover');
+  if (ok !== true) return;
+  try {
+    await del(ROUTES.volumeItem(vi.id));
+    await reload();
+  } catch (err) {
+    notifyError(err);
+  }
+}
+
+async function allocateAll() {
+  const v = activeVolume();
+  if (!v) return;
+  const t = state.data?.totals || {};
+  const ok = await confirmCenter(
+    'Alocar pendentes',
+    `Colocar os <b>${t.pending_items}</b> item(ns) pendente(s) no <b>Volume ${esc(v.volume_number)}</b>?`,
+    'Sim, alocar'
+  );
+  if (ok !== true) return;
+  try {
+    await post(ROUTES.allocate(v.id));
+    await reload();
+  } catch (err) {
+    notifyError(err);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Leitor de código de barras → volume ativo
+────────────────────────────────────────────────────────────── */
+async function onScan(code) {
+  const barcode = String(code || '').trim();
+  if (!barcode) return;
+  const v = activeVolume();
+  if (!v) {
+    notifyError('Crie ou selecione um volume antes de bipar.');
+    return;
+  }
+
+  const items = state.data?.items || [];
+  // procura nas unidades do produto (prioriza itens com saldo)
+  let match = null;
+  for (const it of [...items].sort((a, b) => (b.remaining_qty > 0) - (a.remaining_qty > 0))) {
+    const u = (it.units || []).find((x) => String(x.barcode || '').trim() === barcode);
+    if (u) { match = { it, u }; break; }
+    if (String(it.product_code).trim() === barcode) { match = { it, u: null }; break; }
+  }
+
+  if (!match) {
+    notifyError(`Código <b>${esc(barcode)}</b> não pertence a nenhum item deste ${String(SOURCE_LABEL[state.source]).toLowerCase()}.`, 'Código não encontrado');
+    return;
+  }
+  if (match.it.remaining_qty <= 0) {
+    notifyError(`<b>${esc(match.it.description)}</b> já está todo embalado.`, 'Item completo');
+    return;
+  }
+
+  const body = { item_id: match.it.item_id, quantity: 1 };
+  if (match.u && Number(match.u.barcode_id) !== Number(match.it.unit_barcode_id)) body.unit_barcode_id = match.u.barcode_id;
+
+  try {
+    await post(ROUTES.addItem(v.id), body);
+    await reload();
+  } catch (err) {
+    notifyError(err);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PDFs
+────────────────────────────────────────────────────────────── */
+function openPdf(url) {
+  window.open(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, '_blank', 'noopener');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Eventos
+────────────────────────────────────────────────────────────── */
+function bindEvents() {
+  $('fSource').addEventListener('change', syncSourceLabels);
+  $('btnLoad').addEventListener('click', () => { state.activeVolumeId = null; load(); });
+  $('btnReload').addEventListener('click', reload);
+  $('fId').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); state.activeVolumeId = null; load(); }
+  });
+  $('btnSearch').addEventListener('click', openSearch);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'F2') { e.preventDefault(); openSearch(); }
+  });
+
+  $('btnNewVolume').addEventListener('click', () => openVolumeModal());
+  $('volumeForm').addEventListener('submit', saveVolume);
+  $('itemForm').addEventListener('submit', saveItem);
+  $('iUnit').addEventListener('change', () => {
+    const opt = itemModalCtx.units.find((o) => o.value === $('iUnit').value);
+    const item = itemModalCtx.item;
+    if (opt && item) {
+      // peso por unidade do item, convertido da unidade escolhida quando o item não tem peso
+      if (!(toNum(item.unit_weight_kg, 0) > 0) && opt.weight > 0) {
+        $('iWeight').value = Math.round(((opt.weight * (item.conversion_factor || 1)) / opt.fator) * 10000) / 10000;
+      }
+      const remainingInUnit = (item.remaining_qty * (item.conversion_factor || 1)) / opt.fator;
+      $('iQty').value = Math.floor(remainingInUnit * 1000) / 1000;
+    }
+    updateItemModalTotals();
+  });
+  $('iQty').addEventListener('input', updateItemModalTotals);
+  $('iWeight').addEventListener('input', updateItemModalTotals);
+
+  $('btnPdf').addEventListener('click', () => state.id && openPdf(ROUTES.pdf(state.source, state.id)));
+  $('btnLabels').addEventListener('click', () => state.id && openPdf(ROUTES.labels(state.source, state.id)));
+  $('btnAllocateAll').addEventListener('click', allocateAll);
+  $('fItemsFilter').addEventListener('change', () => { state.itemsFilter = $('fItemsFilter').value; renderItems(); });
+
+  $('fScan').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const code = $('fScan').value;
+    $('fScan').value = '';
+    onScan(code);
+  });
+
+  // Itens (esquerda)
+  $('itemsBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-act="add"]');
+    const tr = e.target.closest('tr[data-item-id]');
+    if (btn && tr) openItemModal(tr.dataset.itemId);
+  });
+  $('itemsBody').addEventListener('dragstart', (e) => {
+    const tr = e.target.closest('tr[data-item-id]');
+    if (!tr) return;
+    e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'item', id: tr.dataset.itemId }));
+    e.dataTransfer.effectAllowed = 'copyMove';
+  });
+
+  // Volumes (direita)
+  const grid = $('volumesGrid');
+  grid.addEventListener('click', (e) => {
+    const card = e.target.closest('[data-volume-id]');
+    if (!card) return;
+    const volume = (state.data?.volumes || []).find((v) => String(v.id) === card.dataset.volumeId);
+    if (!volume) return;
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    const viTr = e.target.closest('tr[data-vi-id]');
+    const vi = viTr ? (state.data?.volumeItems || []).find((x) => String(x.id) === viTr.dataset.viId) : null;
+
+    if (act === 'vol-edit') return openVolumeModal(volume);
+    if (act === 'vol-del') return deleteVolume(volume);
+    if (act === 'vol-label') return openPdf(ROUTES.labels(state.source, state.id, volume.id));
+    if (act === 'vi-edit' && vi) return editVolumeItem(vi);
+    if (act === 'vi-del' && vi) return removeVolumeItem(vi);
+
+    if (Number(state.activeVolumeId) !== Number(volume.id)) {
+      state.activeVolumeId = volume.id;
+      renderItems();
+      renderVolumes();
+    }
+  });
+  grid.addEventListener('dragstart', (e) => {
+    const tr = e.target.closest('tr[data-vi-id]');
+    if (!tr) return;
+    e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'vi', id: tr.dataset.viId }));
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  grid.addEventListener('dragover', (e) => {
+    const card = e.target.closest('[data-volume-id]');
+    if (!card) return;
+    e.preventDefault();
+    card.querySelector('[data-dropzone]')?.classList.add('section-blue');
+  });
+  grid.addEventListener('dragleave', (e) => {
+    const card = e.target.closest('[data-volume-id]');
+    if (card && !card.contains(e.relatedTarget)) card.querySelector('[data-dropzone]')?.classList.remove('section-blue');
+  });
+  grid.addEventListener('drop', async (e) => {
+    const card = e.target.closest('[data-volume-id]');
+    if (!card) return;
+    e.preventDefault();
+    card.querySelector('[data-dropzone]')?.classList.remove('section-blue');
+    let payload = null;
+    try { payload = JSON.parse(e.dataTransfer.getData('text/plain') || '{}'); } catch { return; }
+    const volumeId = toInt(card.dataset.volumeId);
+    if (payload?.kind === 'item') {
+      openItemModal(payload.id, volumeId);
+    } else if (payload?.kind === 'vi') {
+      try {
+        await patch(ROUTES.moveItem(payload.id), { to_volume_id: volumeId });
+        await reload();
+      } catch (err) {
+        notifyError(err);
+      }
+    }
+  });
+
+  // Pesquisa
+  $('sQ').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(doSearch, 300);
+  });
+  $('sSource').addEventListener('change', doSearch);
+  $('sSituation').addEventListener('change', doSearch);
+  $('sQ').addEventListener('keydown', (e) => {
+    const n = state.search.rows.length;
+    if (e.key === 'ArrowDown' && n) { e.preventDefault(); state.search.index = (state.search.index + 1) % n; highlightSearch(); }
+    if (e.key === 'ArrowUp' && n) { e.preventDefault(); state.search.index = (state.search.index - 1 + n) % n; highlightSearch(); }
+    if (e.key === 'Enter') { e.preventDefault(); pickSearch(state.search.index); }
+  });
+  $('searchBody').addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-index]');
+    if (tr) pickSearch(Number(tr.dataset.index));
+  });
 }
 
 /* ──────────────────────────────────────────────────────────────
    Boot
 ────────────────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
-  const mustHave = [
-    ['#olpOrderId', elOrderId],
-    ['#notPackedList', notPackedList],
-    ['#volumesWrap', volumesWrap],
-    ['#orderSearchModal', modal],
-    ['#createVolumeModal', cvModal],
-  ];
+function boot() {
+  Modal.setup();
+  bindEvents();
+  syncSourceLabels();
+  render();
 
-  const missing = mustHave.filter(([, el]) => !el).map(([sel]) => sel);
-  if (missing.length) {
-    console.warn('[OrdersLogisticsPacking] Elementos não encontrados:', missing.join(', '));
-    return;
-  }
+  const p = new URLSearchParams(window.location.search);
+  const source = String(p.get('source') || (p.get('budget_id') ? 'BUDGET' : 'ORDER')).toUpperCase();
+  const id = p.get('id') || p.get('order_id') || p.get('budget_id');
+  if (toInt(id)) load(source === 'BUDGET' ? 'BUDGET' : 'ORDER', id);
+}
 
-  // Search modal events
-  btnOpenOrderSearch?.addEventListener('click', openModal);
-  btnCloseModal?.addEventListener('click', closeModal);
-  modalBackdrop?.addEventListener('click', closeModal);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
 
-  btnSearchGo?.addEventListener('click', doSearchOrders);
-  inputSearch?.addEventListener('input', doSearchOrdersDebounced);
-
-  // ✅ teclado no input: ↑ ↓ Enter Esc
-  inputSearch?.addEventListener('keydown', (e) => {
-    const hasRows = (searchState.rows?.length || 0) > 0;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (!hasRows) return;
-      setActiveSearchRow(searchState.activeIndex + 1);
-      return;
-    }
-
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (!hasRows) return;
-      setActiveSearchRow(searchState.activeIndex - 1);
-      return;
-    }
-
-    if (e.key === 'Enter') {
-      e.preventDefault();
-
-      // se tem linha ativa -> seleciona
-      if (hasRows && searchState.activeIndex >= 0) {
-        const ok = selectActiveSearchRow();
-        if (ok) return;
-      }
-
-      // senão, busca
-      doSearchOrders();
-      return;
-    }
-
-    if (e.key === 'Escape') {
-      closeModal();
-    }
-  });
-
-  // Create volume modal events
-  btnCreateVolume?.addEventListener('click', () => {
-    cvModal.dataset.mode = 'create';
-    cvModal.dataset.volumeId = '';
-    qs('#cvTitle').textContent = 'Criar volume';
-    qs('#formCreateVolume button[type="submit"]').textContent = 'Criar volume';
-    resetCreateVolumeForm();
-    openCreateVolumeModal();
-  });
-
-  btnCloseCreateVolume?.addEventListener('click', () => {
-    closeCreateVolumeModal();
-  });
-
-  btnCancelCreateVolume?.addEventListener('click', () => {
-    closeCreateVolumeModal();
-  });
-
-  cvBackdrop?.addEventListener('click', () => {
-    closeCreateVolumeModal();
-  });
-
-  cvForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    submitCreateVolume();
-  });
-
-  // Global events
-  document.addEventListener('keydown', escHandler);
-
-  // Load / refresh
-  btnLoadOrder?.addEventListener('click', () => loadOrder());
-  btnRefresh?.addEventListener('click', () => {
-    if (state.orderId) loadOrder(state.orderId);
-    else loadOrder();
-  });
-
-  btnPdf?.addEventListener('click', openPackingPdf);
-
-  // Boot (?orderId=)
-  try {
-    const url = new URL(window.location.href);
-    const oid = url.searchParams.get('orderId');
-    const id = toInt(oid);
-    if (id) {
-      elOrderId.value = id;
-      loadOrder(id);
-    }
-  } catch { }
-});
+// usado nos testes/prints
+export { state, notifyOk };
