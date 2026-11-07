@@ -176,6 +176,17 @@
       gap: 12px;
     }
 
+    .stock-grade-row > form,
+    .stock-grade-row > .entity-header {
+      min-width: 0;
+      margin: 0;
+    }
+
+    .stock-grade-row #form-estoque > .entity-header {
+      height: 100%;
+      margin: 0;
+    }
+
     .product-general-right {
       display: flex;
       flex-direction: column;
@@ -993,6 +1004,8 @@
 
       <div class="consart-panel">
 
+        <!-- Estoque do Produto + Grades lado a lado -->
+        <div class="c-grid g-2 gap-16 a-stretch stock-grade-row">
         <form id="form-estoque" data-section="stock" class="form-stack" novalidate>
 
           <header class="entity-header">
@@ -1123,6 +1136,7 @@
           </div>
 
         </header>
+        </div>
 
         <header id="lot-wrap" class="entity-header">
 
