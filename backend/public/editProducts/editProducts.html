@@ -216,10 +216,6 @@
       white-space: nowrap;
     }
 
-    #aba-descricao .product-images-unit-picker select {
-      height: 30px;
-    }
-
     /* Caixa de texto e área das imagens com o mesmo topo e o mesmo fim */
     #aba-descricao .description-product-fields,
     #aba-descricao .description-product-fields > .field-group {
@@ -296,17 +292,13 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: var(--muted);
-      font-size: .8rem;
+      color: var(--fields-color);
+      font-size: var(--fields-font-size);
     }
 
+    /* select usa o padrão .fields do style.css */
     .product-images-unit-picker select {
-      height: 26px;
-      padding: 0 6px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--card);
-      font-size: .8rem;
+      flex: 1;
     }
 
     .unit-image-cell {
@@ -764,7 +756,7 @@
             <label for="productsImagensInput" class="btn btn-primary btn-sm" role="button">
               📤 Selecionar imagens
             </label>
-            <label class="product-images-unit-picker" title="Unidade à qual as novas imagens serão vinculadas">
+            <label class="product-images-unit-picker fields fields-h-6 fields-w-20 fields-value-bold" title="Unidade à qual as novas imagens serão vinculadas">
               <span>Vincular a</span>
               <select id="productsImagensUploadUnit" aria-label="Unidade das novas imagens">
                 <option value="">Geral (produto)</option>
