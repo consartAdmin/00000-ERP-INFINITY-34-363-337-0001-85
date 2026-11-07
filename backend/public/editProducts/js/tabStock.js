@@ -151,10 +151,6 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     mUnitIcmsValueLabel: '#mUnitIcmsValueLabel',
     mUnitIcmsStBaseLabel: '#mUnitIcmsStBaseLabel',
     mUnitIcmsStValueLabel: '#mUnitIcmsStValueLabel',
-    mPreviewIcmsBaseLabel: '#mPreviewIcmsBaseLabel',
-    mPreviewIcmsValueLabel: '#mPreviewIcmsValueLabel',
-    mPreviewIcmsStBaseLabel: '#mPreviewIcmsStBaseLabel',
-    mPreviewIcmsStValueLabel: '#mPreviewIcmsStValueLabel',
 
     mQtyReserved: '#mQtyReserved',
 
@@ -509,28 +505,21 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     ).trim().padStart(2, '0');
 
     // vICMS = ICMS próprio. Campos ST são tratados separadamente.
-    setText(LOT_FIELDS.mUnitIcmsBaseLabel, 'Base ICMS / unidade (vBC)');
-    setText(LOT_FIELDS.mUnitIcmsValueLabel, 'ICMS / unidade (vICMS)');
-    setText(LOT_FIELDS.mPreviewIcmsBaseLabel, 'Base ICMS proporcional (vBC)');
-    setText(LOT_FIELDS.mPreviewIcmsValueLabel, 'ICMS proporcional (vICMS)');
+    // Os rótulos são os cabeçalhos das colunas da tabela da fração fiscal.
+    setText(LOT_FIELDS.mUnitIcmsBaseLabel, 'Base ICMS (vBC)');
+    setText(LOT_FIELDS.mUnitIcmsValueLabel, 'ICMS (vICMS)');
 
     const usesSt = ['10', '30', '60', '70'].includes(cst);
 
     if (cst === '60') {
-      setText(LOT_FIELDS.mUnitIcmsStBaseLabel, 'Base ICMS-ST retido / unidade (vBCSTRet)');
-      setText(LOT_FIELDS.mUnitIcmsStValueLabel, 'ICMS-ST retido / unidade (vICMSSTRet)');
-      setText(LOT_FIELDS.mPreviewIcmsStBaseLabel, 'Base ICMS-ST retido proporcional (vBCSTRet)');
-      setText(LOT_FIELDS.mPreviewIcmsStValueLabel, 'ICMS-ST retido proporcional (vICMSSTRet)');
+      setText(LOT_FIELDS.mUnitIcmsStBaseLabel, 'Base ICMS-ST retido (vBCSTRet)');
+      setText(LOT_FIELDS.mUnitIcmsStValueLabel, 'ICMS-ST retido (vICMSSTRet)');
     } else if (usesSt) {
-      setText(LOT_FIELDS.mUnitIcmsStBaseLabel, 'Base ICMS-ST / unidade (vBCST)');
-      setText(LOT_FIELDS.mUnitIcmsStValueLabel, 'ICMS-ST / unidade (vICMSST)');
-      setText(LOT_FIELDS.mPreviewIcmsStBaseLabel, 'Base ICMS-ST proporcional (vBCST)');
-      setText(LOT_FIELDS.mPreviewIcmsStValueLabel, 'ICMS-ST proporcional (vICMSST)');
+      setText(LOT_FIELDS.mUnitIcmsStBaseLabel, 'Base ICMS-ST (vBCST)');
+      setText(LOT_FIELDS.mUnitIcmsStValueLabel, 'ICMS-ST (vICMSST)');
     } else {
-      setText(LOT_FIELDS.mUnitIcmsStBaseLabel, 'Base ICMS-ST / unidade');
-      setText(LOT_FIELDS.mUnitIcmsStValueLabel, 'ICMS-ST / unidade');
-      setText(LOT_FIELDS.mPreviewIcmsStBaseLabel, 'Base ICMS-ST proporcional');
-      setText(LOT_FIELDS.mPreviewIcmsStValueLabel, 'ICMS-ST proporcional');
+      setText(LOT_FIELDS.mUnitIcmsStBaseLabel, 'Base ICMS-ST');
+      setText(LOT_FIELDS.mUnitIcmsStValueLabel, 'ICMS-ST');
     }
   }
 
@@ -561,68 +550,53 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     margin-bottom: 10px;
   }
 
-  #mFiscalFractionPanel .fiscal-fraction-grid {
-    display: grid;
-
-    /* Same width/behavior as Origem fiscal */
-    grid-template-columns: repeat(5, minmax(130px, 1fr));
-
-    gap: 10px;
+  /* Tabela estilo planilha: linhas = por unidade / prévia; colunas = tributos */
+  #mFiscalFractionPanel .fiscal-fraction-table-wrap {
     width: 100%;
-  }
-
-  #mFiscalFractionPanel .fiscal-fraction-card {
-    min-width: 0;
-    padding: 10px;
-
+    overflow-x: auto;
     border: 1px solid var(--line, #dbe3ef);
     border-radius: var(--radius-sm, 8px);
     background: var(--card, #fff);
   }
 
-  #mFiscalFractionPanel .fiscal-fraction-label {
-    display: block;
-    margin-bottom: 4px;
+  #mFiscalFractionPanel .fiscal-fraction-table {
+    width: 100%;
+    min-width: 760px;
+    margin: 0;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
 
+  #mFiscalFractionPanel .fiscal-fraction-table th,
+  #mFiscalFractionPanel .fiscal-fraction-table td {
+    padding: 8px 12px;
+    border-right: 1px solid var(--line, #dbe3ef);
+    border-bottom: 1px solid var(--line, #dbe3ef);
+    white-space: nowrap;
+  }
+
+  #mFiscalFractionPanel .fiscal-fraction-table tr > :last-child { border-right: 0; }
+  #mFiscalFractionPanel .fiscal-fraction-table tbody tr:last-child > * { border-bottom: 0; }
+
+  #mFiscalFractionPanel .fiscal-fraction-table thead th {
     color: var(--muted, #64748b);
     font-size: .78rem;
-    line-height: 1.15;
-
-    white-space: normal;
+    font-weight: 700;
+    text-align: right;
   }
 
-  #mFiscalFractionPanel .fiscal-fraction-value {
-    display: block;
+  #mFiscalFractionPanel .fiscal-fraction-table thead th:first-child,
+  #mFiscalFractionPanel .fiscal-fraction-table tbody th {
+    text-align: left;
+  }
 
+  #mFiscalFractionPanel .fiscal-fraction-table tbody th {
+    font-weight: 700;
+  }
+
+  #mFiscalFractionPanel .fiscal-fraction-table tbody td {
+    text-align: right;
     font-weight: 800;
-    font-variant-numeric: tabular-nums;
-
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  #mFiscalFractionPanel .fiscal-preview-title {
-    margin: 12px 0 8px;
-    font-weight: 900;
-  }
-
-  @media (max-width: 1250px) {
-    #mFiscalFractionPanel .fiscal-fraction-grid {
-      grid-template-columns: repeat(5, minmax(120px, 1fr));
-    }
-  }
-
-  @media (max-width: 900px) {
-    #mFiscalFractionPanel .fiscal-fraction-grid {
-      grid-template-columns: repeat(2, minmax(130px, 1fr));
-    }
-  }
-
-  @media (max-width: 560px) {
-    #mFiscalFractionPanel .fiscal-fraction-grid {
-      grid-template-columns: 1fr;
-    }
   }
 `;
       document.head.appendChild(style);
@@ -642,141 +616,42 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     Calculada exclusivamente pela quantidade original do item na NF-e de entrada.
   </div>
 
-  <div class="fiscal-fraction-grid fiscal-fraction-grid--all">
-
-    <!-- ═══════════════════════════════════════
-         FRAÇÃO FISCAL POR UNIDADE
-    ════════════════════════════════════════ -->
-
-    <div class="fiscal-fraction-card">
-      <span class="fiscal-fraction-label">
-        Qtd. original da entrada
-      </span>
-      <span
-        id="mInboundQuantity"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
-    <div class="fiscal-fraction-card">
-      <span
-        id="mUnitIcmsBaseLabel"
-        class="fiscal-fraction-label"
-      >
-        Base ICMS / unidade
-      </span>
-      <span
-        id="mUnitIcmsBase"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
-    <div class="fiscal-fraction-card">
-      <span
-        id="mUnitIcmsValueLabel"
-        class="fiscal-fraction-label"
-      >
-        ICMS / unidade
-      </span>
-      <span
-        id="mUnitIcmsValue"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
-    <div class="fiscal-fraction-card">
-      <span
-        id="mUnitIcmsStBaseLabel"
-        class="fiscal-fraction-label"
-      >
-        Base ICMS-ST / unidade
-      </span>
-      <span
-        id="mUnitIcmsStBase"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
-    <div class="fiscal-fraction-card">
-      <span
-        id="mUnitIcmsStValueLabel"
-        class="fiscal-fraction-label"
-      >
-        ICMS-ST retido / unidade
-      </span>
-      <span
-        id="mUnitIcmsStValue"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
-
-    <!-- ═══════════════════════════════════════
-         PRÉVIA PROPORCIONAL
-    ════════════════════════════════════════ -->
-
-    <div class="fiscal-fraction-card">
-      <span class="fiscal-fraction-label">
-        Quantidade
-      </span>
-      <span
-        id="mPreviewQuantity"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
-    <div class="fiscal-fraction-card">
-      <span
-        id="mPreviewIcmsBaseLabel"
-        class="fiscal-fraction-label"
-      >
-        Base ICMS proporcional
-      </span>
-      <span
-        id="mPreviewIcmsBase"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
-    <div class="fiscal-fraction-card">
-      <span
-        id="mPreviewIcmsValueLabel"
-        class="fiscal-fraction-label"
-      >
-        ICMS proporcional
-      </span>
-      <span
-        id="mPreviewIcmsValue"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
-    <div class="fiscal-fraction-card">
-      <span
-        id="mPreviewIcmsStBaseLabel"
-        class="fiscal-fraction-label"
-      >
-        Base ICMS-ST proporcional
-      </span>
-      <span
-        id="mPreviewIcmsStBase"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
-    <div class="fiscal-fraction-card">
-      <span
-        id="mPreviewIcmsStValueLabel"
-        class="fiscal-fraction-label"
-      >
-        ICMS-ST retido proporcional
-      </span>
-      <span
-        id="mPreviewIcmsStValue"
-        class="fiscal-fraction-value"
-      >—</span>
-    </div>
-
+  <div class="fiscal-fraction-table-wrap">
+    <table class="table table-fixed table-zebra fiscal-fraction-table" aria-label="Fração fiscal por unidade da entrada">
+      <colgroup>
+        <col style="width: 20%">
+        <col style="width: 12%">
+        <col><col><col><col>
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">Quantidade</th>
+          <th scope="col" id="mUnitIcmsBaseLabel">Base ICMS</th>
+          <th scope="col" id="mUnitIcmsValueLabel">ICMS</th>
+          <th scope="col" id="mUnitIcmsStBaseLabel">Base ICMS-ST</th>
+          <th scope="col" id="mUnitIcmsStValueLabel">ICMS-ST</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row" title="Valores da NF-e divididos pela quantidade original da entrada">Por unidade</th>
+          <td id="mInboundQuantity">—</td>
+          <td id="mUnitIcmsBase">—</td>
+          <td id="mUnitIcmsValue">—</td>
+          <td id="mUnitIcmsStBase">—</td>
+          <td id="mUnitIcmsStValue">—</td>
+        </tr>
+        <tr>
+          <th scope="row" title="Valores por unidade × quantidade da operação">Prévia da operação</th>
+          <td id="mPreviewQuantity">—</td>
+          <td id="mPreviewIcmsBase">—</td>
+          <td id="mPreviewIcmsValue">—</td>
+          <td id="mPreviewIcmsStBase">—</td>
+          <td id="mPreviewIcmsStValue">—</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 `;
     host.appendChild(panel);
