@@ -84,7 +84,9 @@ async function loadItemsWithAttachments(mobilizedId) {
     }
   }
 
-  return items.map((item) => {
+  // Baixa a imagem enviada pela tela (mobilizedAttachments/GCS) para o PDF.
+  // O gerador usa image_buffer antes dos fallbacks por SKU.
+  return Promise.all(items.map(async (item) => {
     const attachment = primaryByItem.get(
       Number(item.mobilized_item_id)
     );
@@ -94,8 +96,31 @@ async function loadItemsWithAttachments(mobilizedId) {
       primary_attachment: attachment || null,
       image_url: attachment?.public_url || null,
       image_object_path: attachment?.object_path || null,
+      image_buffer: await downloadAttachmentBuffer(attachment),
     };
-  });
+  }));
+}
+
+async function downloadAttachmentBuffer(attachment) {
+  if (!attachment) return null;
+  const bucketName = attachment.bucket_name || process.env.GCS_BUCKET_MOBILIZED || process.env.GCS_BUCKET;
+  if (bucketName && attachment.object_path) {
+    try {
+      const [buffer] = await storage.bucket(bucketName).file(attachment.object_path).download();
+      if (buffer?.length) return buffer;
+    } catch (err) {
+      console.warn('[mobilized][pdf] imagem do GCS não baixada:', attachment.object_path, err?.message || err);
+    }
+  }
+  if (attachment.public_url && /^https?:\/\//i.test(attachment.public_url)) {
+    try {
+      const res = await fetch(attachment.public_url);
+      if (res.ok) return Buffer.from(await res.arrayBuffer());
+    } catch (err) {
+      console.warn('[mobilized][pdf] imagem pública não baixada:', attachment.public_url, err?.message || err);
+    }
+  }
+  return null;
 }
 
 /* ──────────────────────────────────────────────────────────────

@@ -260,6 +260,9 @@ async function resolveMobilizedItemImageBuffer(
   const base = String(apiBase || '').replace(/\/+$/, '');
   const notes = item?.notes;
 
+  // 0) imagem enviada pela tela (mobilizedAttachments → GCS), baixada no controller
+  if (Buffer.isBuffer(item?.image_buffer) && item.image_buffer.length) return item.image_buffer;
+
   // 1) IMG_PATH signed-url
   const keyRaw = extractImgPathFromNotes(notes);
   if (keyRaw && base) {
@@ -679,6 +682,7 @@ export async function generateMobilizedPdf({
 
   async function getImageBufferForItem(item) {
     const key =
+      (item?.image_object_path ? `ATT:${item.image_object_path}` : '') ||
       extractImgPathFromNotes(item?.notes) ||
       extractImgUrlFromNotes(item?.notes) ||
       `SKU:${String(item?.sku || '').trim()}`;
