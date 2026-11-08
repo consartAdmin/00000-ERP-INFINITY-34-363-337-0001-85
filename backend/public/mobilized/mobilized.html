@@ -52,12 +52,12 @@
               locale="pt-BR"></date-range-field>
           </div>
 
-          <button id="btnSearch" type="button" class="btn btn-filter btn-sm">Aplicar Filtros</button>
-          <button id="btnClearFilters" type="button" class="btn btn-clean btn-sm">Limpar</button>
+          <button id="btnSearch" type="button" class="btn btn-filter btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar Filtros</span></button>
+          <button id="btnClearFilters" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
 
           <div class="btn-inline btn-gap-2 btn-position-right">
-            <button id="btnNew" type="button" class="btn btn-new btn-sm">+ Novo Mobilizado</button>
-            <button id="btnRefresh" type="button" class="btn btn-toolbar btn-sm" title="Recarregar">🔄 Recarregar</button>
+            <button id="btnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo Mobilizado</span></button>
+            <button id="btnRefresh" type="button" class="btn btn-load btn-sm" title="Recarregar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Recarregar</span></button>
             <button id="btnPdfAll" type="button" class="btn btn-toolbar btn-sm"
               title="PDF com todos os mobilizados (respeita os filtros)">
               <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
@@ -213,7 +213,7 @@
               <div class="summary-pill summary-pill--primary" id="kpiItemsTotal">Total R$ 0,00</div>
               <div class="summary-pill summary-pill--warning" id="kpiItemsMissing" hidden>0 sem valor unitário</div>
             </div>
-            <button id="btnAddItem" type="button" class="btn btn-new btn-sm" disabled>+ Adicionar item</button>
+            <button id="btnAddItem" type="button" class="btn btn-new btn-sm" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Adicionar item</span></button>
           </div>
 
           <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="mobilized.itemsbody">
@@ -247,8 +247,8 @@
 
         <footer class="modal__footer">
           <button id="btnDelete" type="button" class="btn btn-danger btn-sm btn-position-left" disabled>🗑️ Excluir</button>
-          <button type="button" class="btn btn-clean btn-sm" data-modal-close>Cancelar</button>
-          <button id="btnSave" type="button" class="btn btn-new btn-sm" disabled>💾 Salvar</button>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnSave" type="button" class="btn btn-new btn-sm" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
         </footer>
       </section>
     </div>
@@ -341,8 +341,8 @@
         </div>
 
         <footer class="modal__footer">
-          <button type="button" class="btn btn-clean btn-sm" data-modal-close>Cancelar</button>
-          <button id="btnItemSave" type="button" class="btn btn-new btn-sm">💾 Salvar item</button>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnItemSave" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar item</span></button>
         </footer>
       </section>
     </div>

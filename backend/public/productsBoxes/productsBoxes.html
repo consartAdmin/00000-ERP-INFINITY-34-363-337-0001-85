@@ -45,13 +45,13 @@
         </div>
 
         <div class="pbx__topActions">
-          <button class="btn btn-toolbar btn-sm" id="btnNewBox" type="button">+ Nova Caixa</button>
+          <button class="btn btn-new btn-sm" id="btnNewBox" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova Caixa</span></button>
 
           <button class="btn btn-toolbar btn-sm" id="btnDownloadListPdf" type="button" title="Baixar PDF com filtros atuais">
             PDF Listagem
           </button>
 
-          <button class="btn btn-toolbar btn-sm" id="btnRefresh" type="button">Atualizar</button>
+          <button class="btn btn-load btn-sm" id="btnRefresh" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Atualizar</span></button>
         </div>
       </header>
 
@@ -64,7 +64,7 @@
               <div class="pbx__search">
                 <span class="pbx__icon">🔎</span>
                 <input id="searchQ" type="text" placeholder="Buscar por nome ou código..." autocomplete="off" />
-                <button id="btnSearch" class="btn btn-toolbar btn-sm" type="button">Buscar</button>
+                <button id="btnSearch" class="btn btn-search btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span></button>
               </div>
 
               <div class="pbx__filters">
@@ -145,7 +145,7 @@
                 Baixar PDF
               </button>
 
-              <button class="btn btn-toolbar btn-sm" id="btnSaveBox" type="button" disabled>Salvar</button>
+              <button class="btn btn-new btn-sm" id="btnSaveBox" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
             </div>
           </div>
 
@@ -189,8 +189,8 @@
                 </div>
 
                 <div class="pbx__itemsActions">
-                  <button class="btn btn-toolbar btn-sm" id="btnAddItem" type="button" disabled>+ Adicionar Item</button>
-                  <button class="btn btn-toolbar btn-sm" id="btnReloadItems" type="button" disabled>Recarregar</button>
+                  <button class="btn btn-new btn-sm" id="btnAddItem" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Adicionar Item</span></button>
+                  <button class="btn btn-load btn-sm" id="btnReloadItems" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Recarregar</span></button>
                 </div>
               </div>
 
