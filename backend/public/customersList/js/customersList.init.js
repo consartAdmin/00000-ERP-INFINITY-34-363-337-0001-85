@@ -22,6 +22,7 @@ import { showError } from './customersList.modal.js';
 import {
   renderListMeta,
   renderRows,
+  renderTableMessage,
 } from './customersList.render.js';
 import { state } from './customersList.state.js';
 import { createSortableTable } from '/public/includes/js/sortableTable.js';
@@ -86,6 +87,12 @@ function bindCustomersTableSort() {
 }
 
 export async function loadAndRender() {
+  const counter = document.getElementById('apTableInfo');
+  if (!document.querySelector('#tbody tr[data-edit], #tbody .action-icons')) {
+    renderTableMessage('Carregando clientes…');
+  }
+  if (counter) counter.textContent = 'Carregando…';
+
   try {
     const data = await fetchCustomers();
     state.total = Number(data.total || 0);
@@ -108,6 +115,8 @@ export async function loadAndRender() {
     renderListMeta();
   } catch (error) {
     console.error('[customersList.loadAndRender]', error);
+    renderTableMessage(`Não foi possível carregar os clientes. ${error?.message || ''}`.trim());
+    if (counter) counter.textContent = 'Erro ao carregar';
     showError('Erro', 'Não foi possível carregar clientes.');
   }
 }

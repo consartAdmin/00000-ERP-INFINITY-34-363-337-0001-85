@@ -272,15 +272,13 @@ export async function loadSellerLinksForRows(rows) {
 
   try {
     const json = await fetchJsonTry(bulkUrls);
-    const links = normalizeArrayPayload(json);
-    if (links.length) {
-      for (const link of links) {
-        if (linkIsActive(link)) {
-          saveSellerLink(getCustomerIdFromLink(link), getSellerIdFromLink(link));
-        }
+    // A rota em lote respondeu: vale mesmo sem vínculos (evita 1 chamada por cliente).
+    for (const link of normalizeArrayPayload(json)) {
+      if (linkIsActive(link)) {
+        saveSellerLink(getCustomerIdFromLink(link), getSellerIdFromLink(link));
       }
-      return;
     }
+    return;
   } catch {
     // Faz fallback individual abaixo.
   }

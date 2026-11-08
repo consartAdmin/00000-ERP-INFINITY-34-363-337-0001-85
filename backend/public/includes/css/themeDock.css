@@ -1,0 +1,321 @@
+/* =====================================================================
+   themeDock.css — Visual "dock" (mesmo estilo do menu superior novo)
+   CONSART ERP | importado por último no style.css
+
+   Azul limpo #3B8BFF, traços finos de 1px, cantos arredondados, ícones
+   de linha e sombras suaves. Só troca tokens e acabamento dos
+   componentes do design system (table-layout-integrated, fields, btn,
+   table, table-footer); a estrutura das telas não muda.
+
+   Ativação por tela (piloto):  <html lang="pt-BR" class="ui-dock">
+   Ativação global (etapa final): core.js põe a classe no <html>.
+===================================================================== */
+
+:root.ui-dock {
+  --dock-blue: #3b8bff;
+  --dock-blue-soft: #6aa8ff;
+  --dock-blue-dark: #1f6fe5;
+  --dock-blue-bg: #f2f7ff;
+  --dock-blue-line: #dbe9ff;
+  --dock-line: #e6efff;
+  --dock-line-soft: #eef2f7;
+  --dock-text: #1e293b;
+  --dock-text-soft: #334155;
+  --dock-muted: #64748b;
+  --dock-faint: #94a3b8;
+  --dock-page-bg: #f6f8fc;
+  --dock-shadow: 0 12px 32px -18px rgba(59, 139, 255, 0.35), 0 1px 3px rgba(15, 23, 42, 0.04);
+
+  /* Fundo geral */
+  --bg: var(--dock-page-bg);
+
+  /* Tabela integrada (cartão) */
+  --table-shell-bg: #ffffff;
+  --table-border-color: var(--dock-line);
+  --table-radius-top: 16px;
+  --table-radius-bottom: 16px;
+
+  --table-filter-bg: #ffffff;
+  --table-filter-color: var(--dock-text);
+  --table-filter-border-color: var(--dock-line-soft);
+  --table-filter-padding: 14px 16px;
+
+  --table-head-bg: #fbfcfe;
+  --table-head-color: var(--dock-muted);
+  --table-head-font-size: 11px;
+  --table-head-font-weight: 600;
+  --table-head-height: 38px;
+  --table-head-border-color: var(--dock-line-soft);
+
+  --table-row-even-bg: #ffffff;
+  --table-row-odd-bg: #ffffff;
+  --table-row-hover-bg: var(--dock-blue-bg);
+  --table-cell-font-size: 13px;
+  --table-column-border-color: transparent;
+
+  --table-freeze-body-bg: #ffffff;
+  --table-freeze-body-odd-bg: #ffffff;
+  --table-freeze-hover-bg: var(--dock-blue-bg);
+  --table-freeze-head-bg: #fbfcfe;
+  --table-freeze-divider-color: var(--dock-line-soft);
+
+  --table-footer-bg: #ffffff;
+  --table-footer-color: var(--dock-muted);
+  --table-footer-font-weight: 500;
+  --table-footer-border-color: var(--dock-line-soft);
+
+  --footer-soft-border: var(--dock-line);
+  --footer-soft-text: var(--dock-muted);
+  --footer-soft-hover-bg: var(--dock-blue-bg);
+  --footer-soft-accent: var(--dock-blue);
+  --footer-soft-accent-bg: var(--dock-blue-bg);
+
+  /* Ordenação */
+  --sortable-active-color: var(--dock-blue-dark);
+  --sortable-icon-color: var(--dock-blue-soft);
+  --sortable-focus-color: var(--dock-blue);
+
+  /* Campos */
+  --fields-border-color: #dbe3ef;
+  --fields-border-focus: var(--dock-blue);
+  --fields-focus-ring: rgba(59, 139, 255, 0.15);
+  --fields-placeholder-color: var(--dock-faint);
+  --fields-color: var(--dock-text);
+  --fields-label-gap: 5px;
+
+  /* Botões: contorno fino, texto grafite, azul no hover */
+  --btn-radius: 10px;
+  --btn-font-weight: 500;
+  --btn-content-gap: 7px;
+  --btn-shadow: none;
+  --btn-shadow-hover: 0 6px 16px -10px rgba(59, 139, 255, 0.55);
+  --btn-focus: rgba(59, 139, 255, 0.25);
+  --btn-sm-height: 32px;
+  --btn-sm-padding-x: 12px;
+  --btn-sm-font-size: 12px;
+
+  --btn-neutral-bg: #ffffff;
+  --btn-neutral-bd: #e2e8f0;
+  --btn-neutral-tx: var(--dock-text-soft);
+  --btn-neutral-hover-bg: var(--dock-blue-bg);
+  --btn-neutral-hover-bd: #bcd6ff;
+
+  --btn-info-bg: #ffffff;
+  --btn-info-bd: #e2e8f0;
+  --btn-info-tx: var(--dock-text-soft);
+  --btn-info-hover-bg: var(--dock-blue-bg);
+  --btn-info-hover-bd: #bcd6ff;
+
+  --btn-warning-bg: #ffffff;
+  --btn-warning-bd: #e2e8f0;
+  --btn-warning-tx: var(--dock-text-soft);
+  --btn-warning-hover-bg: #fff8e6;
+  --btn-warning-hover-bd: #f3d48a;
+
+  --btn-danger-bg: #ffffff;
+  --btn-danger-bd: #e2e8f0;
+  --btn-danger-tx: var(--dock-text-soft);
+  --btn-danger-hover-bg: #fff1f1;
+  --btn-danger-hover-bd: #f5b5b5;
+
+  --btn-pdf-bg: #ffffff;
+  --btn-pdf-bd: #e2e8f0;
+  --btn-pdf-tx: var(--dock-text-soft);
+  --btn-pdf-hover-bg: #fff1f1;
+  --btn-pdf-hover-bd: #f5b5b5;
+
+  /* Botão principal (Novo / Salvar / Confirmar): azul cheio */
+  --btn-primary-bg: var(--dock-blue);
+  --btn-primary-bd: var(--dock-blue);
+  --btn-primary-tx: #ffffff;
+  --btn-primary-hover-bg: var(--dock-blue-dark);
+  --btn-primary-hover-bd: var(--dock-blue-dark);
+}
+
+/* ---------- Cartão da tabela integrada ---------- */
+.ui-dock .table-layout-integrated {
+  position: relative;
+  box-shadow: var(--dock-shadow);
+}
+
+/* filete azul no topo, igual ao do menu */
+.ui-dock .table-layout-integrated::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 32px;
+  right: 32px;
+  height: 1px;
+  z-index: 12;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--dock-blue) 30%, var(--dock-blue-soft) 70%, transparent);
+  opacity: 0.85;
+}
+
+.ui-dock .table-layout-integrated > .table-scroll,
+.ui-dock .table-scroll {
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+/* ---------- Campos ---------- */
+.ui-dock .fields > .label,
+.ui-dock .fields > label,
+.ui-dock .fields > .fields-label {
+  display: block;
+  margin: 0 0 var(--fields-label-gap);
+  color: var(--dock-muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.ui-dock .table-layout-integrated__filter .fields input,
+.ui-dock .table-layout-integrated__filter .fields select {
+  height: 32px;
+  padding: 0 10px;
+  border-width: 1px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.ui-dock .table-layout-integrated__filter .fields input:hover,
+.ui-dock .table-layout-integrated__filter .fields select:hover {
+  border-color: #bcd6ff;
+}
+
+.ui-dock .fields input:focus,
+.ui-dock .fields select:focus,
+.ui-dock .fields textarea:focus {
+  border-color: var(--fields-border-focus);
+  box-shadow: 0 0 0 3px var(--fields-focus-ring);
+}
+
+/* ---------- Botões ---------- */
+.ui-dock .btn {
+  border-width: 1px;
+}
+
+.ui-dock .btn:active {
+  transform: none;
+}
+
+/* Ícones SVG de linha nos botões (mesmo traço do menu) */
+.ui-dock .btn svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ui-dock .btn:not(.btn-new):not(.btn-save):not(.btn-confirm) svg {
+  color: var(--dock-blue-soft);
+}
+
+.ui-dock .btn:not(.btn-new):not(.btn-save):not(.btn-confirm):hover {
+  color: var(--dock-blue-dark);
+}
+
+.ui-dock .btn:not(.btn-new):not(.btn-save):not(.btn-confirm):hover svg {
+  color: var(--dock-blue);
+}
+
+/* Botões de exportação: ícone na cor do formato */
+.ui-dock .btn .btn-ico-pdf {
+  color: #e5484d !important;
+}
+
+.ui-dock .btn .btn-ico-excel {
+  color: #1f9d55 !important;
+}
+
+/* Botão só com ícone */
+.ui-dock .btn.btn-icon-only {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+}
+
+/* ---------- Cabeçalho da tabela ---------- */
+.ui-dock .table thead th {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ui-dock .table thead .table-sort-button {
+  text-transform: inherit;
+  letter-spacing: inherit;
+  font-weight: inherit;
+}
+
+.ui-dock .table thead [data-sort-icon] {
+  color: #cbd5e1;
+}
+
+.ui-dock .table thead th[aria-sort="ascending"],
+.ui-dock .table thead th[aria-sort="descending"] {
+  color: var(--dock-blue-dark);
+}
+
+.ui-dock .table thead th[aria-sort="ascending"] [data-sort-icon],
+.ui-dock .table thead th[aria-sort="descending"] [data-sort-icon] {
+  color: var(--dock-blue);
+}
+
+/* ---------- Linhas ---------- */
+.ui-dock .table-zebra tbody tr + tr > td,
+.ui-dock .table-zebra tbody tr + tr > th {
+  border-top: 1px solid var(--dock-line-soft);
+}
+
+.ui-dock .table tbody td {
+  color: var(--dock-text);
+}
+
+.ui-dock .table-zebra-hover tbody tr:hover > td {
+  background-color: var(--dock-blue-bg);
+}
+
+/* Linha de aviso (carregando / vazio / erro) */
+.ui-dock .table tbody td.table-empty-state {
+  height: 160px;
+  color: var(--dock-faint);
+  font-size: 13px;
+  text-align: center;
+  background: #ffffff;
+  cursor: default;
+}
+
+/* ---------- Rodapé ---------- */
+.ui-dock .table-layout-integrated > .table-footer {
+  border: 0;
+  border-top: 1px solid var(--dock-line-soft);
+  border-radius: 0;
+  margin-top: 0;
+}
+
+.ui-dock .table-footer .table-footer__info .summary-pill {
+  border-radius: 10px;
+  color: var(--dock-muted);
+}
+
+.ui-dock .table-footer .table-footer__pagination,
+.ui-dock .table-footer .table-footer__page-size select {
+  border-radius: 10px;
+}
+
+/* Ícones de ação da tabela com o traço fino do menu */
+.ui-dock .action-icon svg {
+  stroke-width: 1.5;
+}
+
+.ui-dock .action-icon:hover {
+  background: var(--dock-blue-bg);
+}
