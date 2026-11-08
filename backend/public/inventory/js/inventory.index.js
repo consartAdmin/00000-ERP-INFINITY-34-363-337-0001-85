@@ -8,7 +8,8 @@
 import { getEls } from './inventory.dom.js';
 import { state } from './inventory.state.js';
 
-import { activateTab } from './inventory.tabs.js';
+import { activateTab, bindTabButtons } from './inventory.tabs.js';
+import { Modal } from '/public/includes/js/modal.js';
 import {
   bindKeyboardShortcuts,
   applySaveHotkeyHint,
@@ -36,7 +37,7 @@ import {
   bindItemsTableActions,
 } from './inventory.items.js';
 
-import { loadLogs } from './inventory.logs.js';
+import { loadLogs, renderLogsTable, clearLogFilters } from './inventory.logs.js';
 import { focusProductField } from './inventory.utils.js';
 
 /* ──────────────────────────────────────────────────────────────
@@ -220,13 +221,12 @@ function bindEvents(els) {
   els.inventoryTableBody?.addEventListener(
     'click',
     async (event) => {
+      // O lápis (data-act="open") abre como o clique na linha; Relatório e Estornar têm handler próprio
       const clickedAction = event.target.closest(
         [
-          'button',
           'a',
-          '.js-reopen-inventory',
-          '.js-delete-inventory',
-          '.js-edit-inventory',
+          '[data-act="report"]',
+          '[data-act="reopen"]',
         ].join(',')
       );
 
@@ -281,7 +281,7 @@ function bindEvents(els) {
     'click',
     async (event) => {
       const button = event.target.closest(
-        '.js-reopen-inventory'
+        '[data-act="reopen"]'
       );
 
       if (!button) return;
@@ -436,6 +436,43 @@ function bindEvents(els) {
       await loadLogs(els);
     }
   );
+  [els.logUserName, els.logProductCode].forEach((input) => {
+    input?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') { event.preventDefault(); renderLogsTable(els); }
+    });
+  });
+  document.getElementById('btnClearLogFilters')?.addEventListener('click', () => clearLogFilters(els));
+
+  /* ────────────────────────────────────────────────────────────
+     Limpar filtros da lista + recarregar depois da importação XLS
+  ──────────────────────────────────────────────────────────── */
+  document.getElementById('btnClearInventoryFilters')?.addEventListener('click', async () => {
+    if (els.searchInventory) els.searchInventory.value = '';
+    if (els.statusFilter) els.statusFilter.value = '';
+    await loadInventories(els);
+  });
+  els.statusFilter?.addEventListener('change', async () => { await loadInventories(els); });
+  window.addEventListener('inventory:xls-imported', async () => { await loadInventories(els); });
+
+  /* ────────────────────────────────────────────────────────────
+     Observações do inventário (modal)
+  ──────────────────────────────────────────────────────────── */
+  const notesText = document.getElementById('inventoryNotesModalText');
+  const saveNotes = () => {
+    if (els.inventoryNotes) els.inventoryNotes.value = notesText?.value || '';
+    Modal.close('inventoryNotesModal');
+  };
+  els.btnOpenInventoryNotes?.addEventListener('click', () => {
+    if (notesText) notesText.value = els.inventoryNotes?.value || '';
+    notesText.disabled = !!els.inventoryNotes?.disabled;
+    Modal.open('inventoryNotesModal', { focusSelector: '#inventoryNotesModalText' });
+  });
+  document.getElementById('btnSaveInventoryNotes')?.addEventListener('click', saveNotes);
+  notesText?.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.key === 'Enter') { event.preventDefault(); saveNotes(); }
+  });
+
+  bindTabButtons(els);
 
   /* ────────────────────────────────────────────────────────────
      Item field and keyboard events
@@ -465,6 +502,7 @@ async function init() {
   const els = getEls();
 
   try {
+    Modal.setup();
     const {
       handleSaveInventory,
     } = bindEvents(els);

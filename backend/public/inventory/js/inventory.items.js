@@ -34,7 +34,10 @@ import {
   focusCountedQty,
   fmtQty3,
   fmtDatePt,
+  escapeHtml,
+  itemStatusPill,
 } from './inventory.utils.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 /* ──────────────────────────────────────────────────────────────
    Helpers gerais
@@ -674,14 +677,6 @@ async function hydrateItemsLocations(itemsArr) {
   await Promise.all(tasks);
 }
 
-function renderStatusBadge(status) {
-  const s = (status || '').toUpperCase();
-  if (s === 'COUNTED') return `<span class="badge badge--counted">Contado</span>`;
-  if (s === 'ADJUSTED') return `<span class="badge badge--adjusted">Ajustado</span>`;
-  if (s === 'PENDING') return `<span class="badge badge--pending">Pendente</span>`;
-  return s || '';
-}
-
 function getItemFactor(item = {}) {
   const factor = Number(
     item.fator ??
@@ -711,58 +706,65 @@ export function renderItemsTable(els) {
   const tbody = els.itemsTbody;
   if (!tbody) return;
 
-  tbody.innerHTML = '';
+  const items = Array.isArray(state.items) ? state.items : [];
+  renderItemsSummary(items);
 
-  if (!state.items || !state.items.length) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="10" style="text-align:center; padding:10px; opacity:.6;">Nenhum item.</td>`;
-    tbody.appendChild(tr);
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="10" class="table-empty-state">${
+      state.currentInventory?.inventory_id
+        ? 'Nenhum item contado ainda. Busque o produto acima e informe a quantidade.'
+        : 'Salve o inventário para começar a lançar os itens.'}</td></tr>`;
     return;
   }
 
-  state.items.forEach((item) => {
+  tbody.innerHTML = items.map((item) => {
     const productNameShown = item.product_name || item.description || '';
-
     const systemQty = Number(item.system_stock_qty ?? 0);
     const countedQty = item.counted_qty != null ? Number(item.counted_qty) : null;
     const totalQty = getItemTotalQty(item);
     const differenceQty = totalQty - systemQty;
+    const id = item.inventory_item_id;
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${item.product_code ?? ''}</td>
-      <td>${productNameShown}</td>
-      <td>${item.unit ?? ''}</td>
-      <td data-feature="PRODUCT_LOCATIONS">${item.location_name ?? ''}</td>
-      <td class="col-number">${fmtQty3(systemQty)}</td>
-      <td class="col-number">${countedQty != null ? fmtQty3(countedQty) : ''}</td>
-      <td class="col-number"><strong>${fmtQty3(totalQty)}</strong></td>
-      <td class="col-number">${fmtQty3(differenceQty)}</td>
-      <td>${renderStatusBadge(item.status)}</td>
-<td class="col-actions">
-  <div class="inventory-actions-icons">
+    return `
+      <tr data-id="${escapeHtml(id)}">
+        <td>${escapeHtml(item.product_code ?? '')}</td>
+        <td class="td-left">${escapeHtml(productNameShown)}</td>
+        <td>${escapeHtml(item.unit ?? '')}</td>
+        <td class="td-left" data-feature="PRODUCT_LOCATIONS">${escapeHtml(item.location_name ?? '')}</td>
+        <td class="col-number">${fmtQty3(systemQty)}</td>
+        <td class="col-number">${countedQty != null ? fmtQty3(countedQty) : ''}</td>
+        <td class="col-number"><strong>${fmtQty3(totalQty)}</strong></td>
+        <td class="col-number">${Math.abs(differenceQty) > 0.0005 ? `<strong>${fmtQty3(differenceQty)}</strong>` : fmtQty3(differenceQty)}</td>
+        <td>${itemStatusPill(item.status)}</td>
+        <td>${actionIconsHtml([
+          { action: 'edit', title: 'Editar item', attrs: { 'data-id': id, 'data-item-act': 'edit' } },
+          { action: 'delete', title: 'Excluir item', attrs: { 'data-id': id, 'data-item-act': 'delete' } },
+        ])}</td>
+      </tr>`;
+  }).join('');
 
-    <span
-      class="inventory-edit-icon js-edit-item"
-      data-id="${item.inventory_item_id}"
-      title="Editar item"
-    >
-      ✏️
-    </span>
+  // Mantém as classes que o restante do módulo usa (editar/excluir e trava de inventário finalizado)
+  tbody.querySelectorAll('[data-item-act="edit"]').forEach((b) => b.classList.add('js-edit-item', 'inventory-edit-icon'));
+  tbody.querySelectorAll('[data-item-act="delete"]').forEach((b) => b.classList.add('js-delete-item', 'inventory-delete-icon'));
+}
 
-    <span
-      class="inventory-delete-icon js-delete-item"
-      data-id="${item.inventory_item_id}"
-      title="Excluir item"
-    >
-      🗑️
-    </span>
+function renderItemsSummary(items) {
+  const info = document.getElementById('itemsInfo');
+  const matchEl = document.getElementById('itemsMatchInfo');
+  const diffEl = document.getElementById('itemsDiffInfo');
+  const n = items.length;
+  if (info) info.textContent = `${n} ${n === 1 ? 'item' : 'itens'}`;
 
-  </div>
-</td>
-    `;
-    tbody.appendChild(tr);
-  });
+  const withDiff = items.filter((it) => Math.abs(getItemTotalQty(it) - Number(it.system_stock_qty ?? 0)) > 0.0005).length;
+  // summary-pill ignora [hidden]: usar style.display
+  if (matchEl) {
+    matchEl.textContent = `${n - withDiff} sem diferença`;
+    matchEl.style.display = n ? '' : 'none';
+  }
+  if (diffEl) {
+    diffEl.textContent = `${withDiff} com diferença`;
+    diffEl.style.display = withDiff ? '' : 'none';
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────

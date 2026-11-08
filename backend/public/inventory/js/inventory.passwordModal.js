@@ -47,13 +47,13 @@ export function askPasswordModal({
     const clearError = () => {
       if (!errorBox) return;
       errorBox.textContent = '';
-      errorBox.hidden = true;
+      errorBox.style.display = 'none'; // summary-pill ignora [hidden]
     };
 
     const showError = (message) => {
       if (!errorBox) return;
       errorBox.textContent = message;
-      errorBox.hidden = false;
+      errorBox.style.display = '';
     };
 
     // Overlay, centralização e z-index vêm do modals.css via .is-open

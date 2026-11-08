@@ -17,6 +17,19 @@
 
 'use strict';
 
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
+function notify(message, variant = 'success') {
+  showCenterModal({
+    variant,
+    title: variant === 'error' ? 'Erro na importação' : (variant === 'warning' ? 'Atenção' : 'Importação XLS'),
+    message: String(message ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>'),
+    timeoutMs: variant === 'success' ? 6000 : undefined,
+  });
+}
+
 const API_BASE =
   (typeof window !== 'undefined' && (window.apiBase || window.location.origin)) || '';
 
@@ -375,7 +388,9 @@ function setLoading(isLoading) {
 
   btn.disabled = !!isLoading;
   btn.dataset.loading = isLoading ? '1' : '0';
-  btn.textContent = isLoading ? 'Importando...' : 'Importar XLS';
+  const label = btn.querySelector('span');
+  if (label) label.textContent = isLoading ? 'Importando...' : 'Importar XLS';
+  else btn.textContent = isLoading ? 'Importando...' : 'Importar XLS';
 }
 
 function resetFileInput(input) {
@@ -406,7 +421,7 @@ function wireImportButton() {
     if (!file) return;
 
     if (!isXlsFile(file)) {
-      alert('Selecione um arquivo .xls ou .xlsx');
+      notify('Selecione um arquivo .xls ou .xlsx.', 'warning');
       return;
     }
 
@@ -422,13 +437,13 @@ function wireImportButton() {
       );
 
       if (data?.pdf_downloaded) {
-        alert('Importação concluída e PDF baixado com sucesso.');
+        notify('Importação concluída e PDF baixado com sucesso.');
       } else {
-        alert(buildResultMessage(data));
+        notify(buildResultMessage(data));
       }
     } catch (err) {
       error('Import XLS error:', err);
-      alert(safeStr(err?.message || 'Erro ao importar XLS.', 2000));
+      notify(safeStr(err?.message || 'Erro ao importar XLS.', 2000), 'error');
     } finally {
       setLoading(false);
     }
