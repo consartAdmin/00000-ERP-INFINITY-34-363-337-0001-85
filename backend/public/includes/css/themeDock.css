@@ -476,3 +476,37 @@ html:not(.ui-classic) {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* ---------- Selo de status dentro da tabela (menor e suave) ----------
+   Vale para qualquer .summary-pill numa célula do corpo da tabela
+   (Inventário, Grupos & Subgrupos, Classificação Fiscal...). */
+:root:not(.ui-classic) .table tbody td .summary-pill {
+  min-height: 20px;
+  padding: 2px 9px;
+  border-color: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+:root:not(.ui-classic) .table tbody td .summary-pill--success {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+:root:not(.ui-classic) .table tbody td .summary-pill--info,
+:root:not(.ui-classic) .table tbody td .summary-pill--primary {
+  background: var(--dock-blue-bg);
+  color: var(--dock-blue-dark);
+}
+
+:root:not(.ui-classic) .table tbody td .summary-pill--warning {
+  background: #fff8e6;
+  color: #a16207;
+}
+
+:root:not(.ui-classic) .table tbody td .summary-pill--danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
