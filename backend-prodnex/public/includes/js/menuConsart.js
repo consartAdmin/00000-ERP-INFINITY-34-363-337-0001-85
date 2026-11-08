@@ -119,7 +119,7 @@ function iconFor(text) {
 
 function svgIcon(name, size = 16) {
   return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" ` +
-    `stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ICON_PATHS.dot}</svg>`;
+    `stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ICON_PATHS.dot}</svg>`;
 }
 
 // mode: 'svg' → ícone de linha (topo, títulos de coluna); 'none' → só o texto.
@@ -321,8 +321,8 @@ function mountMenuSearch(menuElement) {
   input.setAttribute('aria-label', 'Buscar módulos');
   searchWrapper.insertAdjacentHTML('afterbegin',
     '<svg class="menu-search-icon" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">' +
-    '<circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/>' +
-    '<path d="m13 13 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>');
+    '<circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.3"/>' +
+    '<path d="m13 13 4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>');
   const kbd = document.createElement('kbd');
   kbd.classList.add('menu-search-kbd');
   kbd.textContent = 'Ctrl K';
