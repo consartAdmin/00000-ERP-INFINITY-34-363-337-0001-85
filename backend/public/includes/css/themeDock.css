@@ -48,14 +48,14 @@
   --table-head-border-color: var(--dock-line-soft);
 
   --table-row-even-bg: #ffffff;
-  --table-row-odd-bg: #ffffff;
-  --table-row-hover-bg: var(--dock-blue-bg);
+  --table-row-odd-bg: #f5f8fe;
+  --table-row-hover-bg: #e9f2ff;
   --table-cell-font-size: 13px;
   --table-column-border-color: transparent;
 
   --table-freeze-body-bg: #ffffff;
-  --table-freeze-body-odd-bg: #ffffff;
-  --table-freeze-hover-bg: var(--dock-blue-bg);
+  --table-freeze-body-odd-bg: #f5f8fe;
+  --table-freeze-hover-bg: #e9f2ff;
   --table-freeze-head-bg: #fbfcfe;
   --table-freeze-divider-color: var(--dock-line-soft);
 
@@ -280,7 +280,7 @@
 }
 
 .ui-dock .table-zebra-hover tbody tr:hover > td {
-  background-color: var(--dock-blue-bg);
+  background-color: var(--table-row-hover-bg);
 }
 
 /* Linha de aviso (carregando / vazio / erro) */
