@@ -76,13 +76,14 @@ export const salesTaxesDashboard = {
 
         return `
           <article
-            class="dash-card dash-card--analytics dash-card--taxes"
+            class="dash-card dash-card--analytics dash-card--taxes dash-card--block"
             data-dashboard-key="${DASHBOARD_KEY}"
           >
 
             <div class="sales-analytics sales-taxes">
 
-              <section class="sales-analytics__period" aria-label="Filtro por período">
+              <section class="sales-analytics__period stock-lots-dash__top dash-block__top" aria-label="Filtro por período">
+                <span class="stock-lots-dash__caption dash-block__caption">Impostos sobre vendas por tipo, por produto e evolução mensal</span>
                 <label class="sales-analytics__period-field">
                   <span>Período</span>
                   <select data-tax-filter="periodMode">
@@ -121,6 +122,7 @@ export const salesTaxesDashboard = {
                 </div>
 
                 <span class="sales-analytics__period-caption" data-tax-period-caption></span>
+                <a class="stock-lots-dash__link" href="/public/salesTaxCalculation/salesTaxCalculation.html" title="Abrir Cálculo de Impostos">Abrir Cálculo de Impostos →</a>
               </section>
 
 

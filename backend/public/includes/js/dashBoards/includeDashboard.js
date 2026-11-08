@@ -8,36 +8,6 @@
 // DASHBOARD IMPORTS
 // ======================================================================
 
-import { dailyReceivablesDashboard }
-  from './dailyReceivables.js';
-
-import { dailyPayablesDashboard }
-  from './dailyPayables.js';
-
-import { monthlyReceivablesDashboard }
-  from './monthlyReceivables.js?v=20261106-1';
-
-import { monthlyPayablesDashboard }
-  from './monthlyPayables.js?v=20261106-1';
-
-import { totalReceivablesDashboard }
-  from './totalReceivables.js?v=20260914-1';
-
-import { totalPayablesDashboard }
-  from './totalPayables.js?v=20260914-1';
-
-import { customerOverdueDashboard }
-  from './customerOverdue.js?v=20261106-1';
-
-import { overdueExpensesDashboard }
-  from './overdueExpenses.js?v=20261106-1';
-
-import * as receivablesChartModule
-  from './receivablesChart.js?v=20261106-1';
-
-import * as payablesChartModule
-  from './payablesChart.js?v=20261106-1';
-
 import { salesAnalyticsDashboard }
   from './salesAnalytics.js';
 
@@ -49,22 +19,8 @@ import { stockLotsExpiryDashboard }
   from './stockLotsExpiry.js?v=20261106-1';
 import { stockReplenishmentDashboard }
   from './stockReplenishment.js?v=20261106-2';
-import {
-  renderFinancialPeriodPicker,
-  bindFinancialPeriodPicker,
-  onFinancialPeriodChange,
-} from './dashboardPeriod.js?v=20261106-1';
-import { showCenterModal }
-  from '/public/includes/js/centerAlertModal.js';
-
-const receivablesChartDashboard =
-  receivablesChartModule.receivablesChartDashboard ??
-  receivablesChartModule.default;
-
-const payablesChartDashboard =
-  payablesChartModule.payablesChartDashboard ??
-  payablesChartModule.default;
-
+import { financialOverviewDashboard, FINANCIAL_ACCESS_KEYS }
+  from './financialOverview.js';
 
 // ======================================================================
 // ACCESS / LAYOUT IMPORTS
@@ -82,37 +38,12 @@ import {
 const DASHBOARDS = [
 
   // --------------------------------------------------------------------
-  // DAILY
+  // FINANCEIRO (um card só, no mesmo layout dos outros slides).
+  // Os cards antigos (dailyReceivables.js, receivablesChart.js...) ficam
+  // no projeto, mas não entram mais no slide.
   // --------------------------------------------------------------------
 
-  dailyReceivablesDashboard,
-  dailyPayablesDashboard,
-
-
-  // --------------------------------------------------------------------
-  // MONTHLY
-  // --------------------------------------------------------------------
-
-  monthlyReceivablesDashboard,
-  monthlyPayablesDashboard,
-  totalReceivablesDashboard,
-  totalPayablesDashboard,
-
-
-  // --------------------------------------------------------------------
-  // OVERDUE
-  // --------------------------------------------------------------------
-
-  customerOverdueDashboard,
-  overdueExpensesDashboard,
-
-
-  // --------------------------------------------------------------------
-  // FINANCIAL CHARTS
-  // --------------------------------------------------------------------
-
-  receivablesChartDashboard,
-  payablesChartDashboard,
+  financialOverviewDashboard,
 
 
   // --------------------------------------------------------------------
@@ -134,20 +65,11 @@ const DASHBOARDS = [
 
 const DASHBOARD_PAGES = Object.freeze([
   {
-    id: 'financial',
+    id: 'finance', // id novo: o CSS antigo do grid de cards (data-dashboard-page="financial") não se aplica mais
     title: 'Financeiro',
     description: 'Contas a pagar, contas a receber e inadimplência',
     keys: new Set([
-      'daily-receivables',
-      'daily-payables',
-      'monthly-receivables',
-      'monthly-payables',
-      'total-receivables',
-      'total-payables',
-      'customer-overdue',
-      'overdue-expenses',
-      'receivables-chart',
-      'payables-chart',
+      'financial-overview',
     ]),
   },
   {
@@ -185,40 +107,6 @@ const DASHBOARD_PAGES = Object.freeze([
   },
 ]);
 
-// Cards that follow the period picker of the Financeiro page.
-// "Dia" and the open totals stay as a snapshot of today.
-const FINANCIAL_PERIOD_KEYS = new Set([
-  'monthly-receivables',
-  'monthly-payables',
-  'receivables-chart',
-  'payables-chart',
-  'customer-overdue',
-  'overdue-expenses',
-]);
-
-function bindFinancialPeriodReload(root, dashboards, signal) {
-  const periodDashboards = (Array.isArray(dashboards) ? dashboards : [])
-    .filter((dashboard) => FINANCIAL_PERIOD_KEYS.has(dashboard?.key) && typeof dashboard.load === 'function');
-
-  if (!periodDashboards.length) return;
-
-  let running = 0;
-
-  onFinancialPeriodChange(async () => {
-    running += 1;
-    root.dataset.financialPeriodLoading = '1';
-
-    try {
-      await Promise.all(periodDashboards.map((dashboard) => dashboard.load(root).catch((error) => {
-        console.error(`[includeDashboard] Failed to reload "${dashboard.key}" for the period:`, error);
-      })));
-    } finally {
-      running -= 1;
-      if (!running) delete root.dataset.financialPeriodLoading;
-    }
-  }, { signal });
-}
-
 function getDashboardPageByKey(key) {
   return DASHBOARD_PAGES.find((page) => page.keys.has(key))?.id || 'analytics';
 }
@@ -247,7 +135,6 @@ function initDashboardPagination(root, userId, dashboards = []) {
       <strong data-dashboard-page-title></strong>
       <span data-dashboard-page-description></span>
     </div>
-    ${renderFinancialPeriodPicker()}
     <div class="dashboard-page-dots" role="tablist" aria-label="Selecionar página">
       ${DASHBOARD_PAGES.map((page, index) => `
         <button type="button" class="dashboard-page-dot" role="tab"
@@ -258,13 +145,6 @@ function initDashboardPagination(root, userId, dashboards = []) {
     <button class="dashboard-page-arrow" type="button" data-dashboard-next aria-label="Próxima página">›</button>
   `;
   root.insertBefore(navigation, grid);
-
-  const periodPicker = navigation.querySelector('[data-financial-period-picker]');
-  bindFinancialPeriodPicker(navigation, {
-    signal: paginationAbort.signal,
-    onError: (message) => showCenterModal({ variant: 'warning', title: 'Período', message }),
-  });
-  bindFinancialPeriodReload(root, dashboards, paginationAbort.signal);
 
   const storageKey = `consart.dashboard.activePage.${userId}`;
   let activeIndex = Number(localStorage.getItem(storageKey));
@@ -291,8 +171,6 @@ function initDashboardPagination(root, userId, dashboards = []) {
     });
 
     root.dataset.dashboardPage = activePage.id;
-    if (periodPicker) periodPicker.hidden = activePage.id !== 'financial';
-    navigation.classList.toggle('has-period', activePage.id === 'financial');
     localStorage.setItem(storageKey, String(activeIndex));
     window.dispatchEvent(new Event('resize'));
   };
@@ -583,6 +461,13 @@ function renderDashboards(
     'sales-taxes': 'sales-analytics',
     'tax-assessment': 'sales-analytics',
   };
+
+  // Financeiro: o card único aparece se o usuário tiver qualquer um dos
+  // cards antigos; dentro dele, cada parte respeita a própria permissão.
+  financialOverviewDashboard.allowed = allowedDashboards;
+  if (FINANCIAL_ACCESS_KEYS.some((key) => allowedDashboards.has(key))) {
+    allowedDashboards.add('financial-overview');
+  }
 
   const authorizedDashboards =
     DASHBOARDS.filter((dashboard) => {

@@ -52,7 +52,7 @@ export const stockLotsExpiryDashboard = {
 
     render() {
         return `
-          <article class="dash-card dash-card--analytics dash-card--lots" data-dashboard-key="${DASHBOARD_KEY}">
+          <article class="dash-card dash-card--analytics dash-card--lots dash-card--block" data-dashboard-key="${DASHBOARD_KEY}">
             <div class="sales-analytics stock-lots-dash">
 
               <section class="sales-analytics__period stock-lots-dash__top">
