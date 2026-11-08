@@ -82,17 +82,10 @@ const DASHBOARD_PAGES = Object.freeze([
   },
   {
     id: 'taxes',
-    title: 'Impostos',
-    description: 'Impostos sobre vendas por tipo, por produto e evolução mensal',
+    title: 'Impostos e Apuração',
+    description: 'Impostos sobre vendas e apuração débito × crédito (saldo a recolher e IRPJ/CSLL)',
     keys: new Set([
       'sales-taxes',
-    ]),
-  },
-  {
-    id: 'tax-assessment',
-    title: 'Apuração',
-    description: 'Débito × crédito dos impostos, saldo a recolher e IRPJ/CSLL',
-    keys: new Set([
       'tax-assessment',
     ]),
   },
