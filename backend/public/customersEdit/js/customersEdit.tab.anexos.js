@@ -212,11 +212,12 @@ function renderPending() {
 
     if (button) {
         button.disabled = state.uploading || !state.pending.length;
-        button.textContent = state.uploading
+        const label = button.querySelector('span') || button;
+        label.textContent = state.uploading
             ? 'Enviando…'
             : state.pending.length
-                ? `⬆ Enviar Anexos (${state.pending.length})`
-                : '⬆ Enviar Anexos';
+                ? `Enviar Anexos (${state.pending.length})`
+                : 'Enviar Anexos';
     }
 }
 

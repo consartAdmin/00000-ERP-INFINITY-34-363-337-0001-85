@@ -16,11 +16,26 @@ import {
   pick,
   safe,
 } from './customersList.utils.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+
+/** Linha única de aviso na tabela (carregando, vazio ou erro). */
+export function renderTableMessage(message) {
+  const tbody = $('#tbody');
+  if (!tbody) return;
+  const cols = document.querySelectorAll('#customersTable thead th').length || 1;
+  tbody.innerHTML =
+    `<tr><td class="table-empty-state" colspan="${cols}">${escapeHtml(message)}</td></tr>`;
+}
 
 export function renderRows(rows) {
   const tbody = $('#tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
+
+  if (!rows.length) {
+    renderTableMessage('Nenhum cliente encontrado com esses filtros.');
+    return;
+  }
 
   for (const customer of rows) {
     const id = pick(customer.customer_id, customer.id, customer.customerId);
@@ -129,11 +144,9 @@ export function renderRows(rows) {
       <td class="col-status"></td>
       <td>${escapeHtml(fmtBool(pick(customer.is_active, customer.ativo, customer.active)))}</td>
       <td>
-        <div class="menu-botoes">
-          <button type="button" class="btn btn-toolbar btn-sm"
-            data-edit="${escapeHtml(id ?? '')}" title="Editar cliente"
-            aria-label="Editar cliente">✏️</button>
-        </div>
+        ${actionIconsHtml([
+          { action: 'edit', title: 'Editar cliente', attrs: { 'data-edit': id ?? '' } },
+        ])}
       </td>`;
 
     renderStatus(row.querySelector('.col-status'), statusLabel, statusColor);
@@ -152,16 +165,20 @@ function renderStatus(cell, label, color) {
     return;
   }
 
+  // Selo suave: fundo claro e texto na cor do status (cadastro de Status).
+  const hex = /^#[0-9a-f]{6}$/i.test(String(color || '')) ? String(color) : null;
   const badge = document.createElement('span');
   badge.textContent = label;
   Object.assign(badge.style, {
     display: 'inline-block',
     padding: '2px 10px',
     borderRadius: '999px',
-    fontSize: '0.78rem',
+    fontSize: '0.75rem',
+    fontWeight: '500',
     lineHeight: '1.4',
-    backgroundColor: color || '#e5e7eb',
-    color: color ? '#ffffff' : '#111827',
+    border: `1px solid ${hex ? `${hex}40` : '#e2e8f0'}`,
+    backgroundColor: hex ? `${hex}14` : '#f8fafc',
+    color: hex || '#475569',
   });
   cell.appendChild(badge);
 }
@@ -170,7 +187,7 @@ export function renderListMeta() {
   const counter = $('#apTableInfo');
   if (counter) {
     counter.textContent =
-      `${state.total} ${state.total === 1 ? 'cliente' : 'clientes'}`;
+      `${state.total} ${state.total === 1 ? 'cliente encontrado' : 'clientes encontrados'}`;
   }
 
   const pageInfo = $('#pageInfo');

@@ -21,6 +21,14 @@ async function list(req, res) {
       orderBy,
     } = req.query;
 
+    // Lista de Clientes: ?customer_ids=1,2,3 → vínculos só desses clientes (1 consulta)
+    const idsParam = req.query.customer_ids ?? req.query.customerIds;
+    if (idsParam != null && String(idsParam).trim() !== '') {
+      const ids = String(idsParam).split(',').map((v) => v.trim()).filter(Boolean);
+      const rows = await sellerForCustomerApi.listByCustomerIds(ids);
+      return res.json({ ok: true, data: rows });
+    }
+
     const result = await sellerForCustomerApi.listSellerForCustomer({
       seller_id: seller_id ?? undefined,
       customer_id: customer_id ?? undefined,
