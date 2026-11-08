@@ -9,18 +9,18 @@
 // ======================================================================
 
 import { salesAnalyticsDashboard }
-  from './salesAnalytics.js';
+  from './salesAnalytics.js?v=20261108-1';
 
 import { salesTaxesDashboard }
-  from './salesTaxes.js';
+  from './salesTaxes.js?v=20261108-1';
 import { taxAssessmentDashboard }
-  from './taxAssessment.js';
+  from './taxAssessment.js?v=20261108-1';
 import { stockLotsExpiryDashboard }
-  from './stockLotsExpiry.js?v=20261106-1';
+  from './stockLotsExpiry.js?v=20261108-1';
 import { stockReplenishmentDashboard }
-  from './stockReplenishment.js?v=20261106-2';
+  from './stockReplenishment.js?v=20261108-1';
 import { financialOverviewDashboard, FINANCIAL_ACCESS_KEYS }
-  from './financialOverview.js';
+  from './financialOverview.js?v=20261108-1';
 
 // ======================================================================
 // ACCESS / LAYOUT IMPORTS
