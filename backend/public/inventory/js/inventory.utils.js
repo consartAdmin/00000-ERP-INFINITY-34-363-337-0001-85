@@ -58,3 +58,45 @@ export function fmtDatePt(d) {
   const dt = new Date(d);
   return Number.isNaN(dt.getTime()) ? String(d) : dt.toLocaleDateString('pt-BR');
 }
+/* ──────────────────────────────────────────────────────────────
+   Rótulos em português + selos (summary-pill do design system)
+────────────────────────────────────────────────────────────── */
+export function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+const INVENTORY_STATUS = {
+  OPEN: ['Aberto', 'info'],
+  COUNTING: ['Em contagem', 'warning'],
+  FINALIZED: ['Finalizado', 'success'],
+  CANCELLED: ['Cancelado', 'danger'],
+};
+
+const INVENTORY_TYPE = { GENERAL: 'Geral', PARTIAL: 'Parcial', CYCLE: 'Cíclico' };
+
+const ITEM_STATUS = {
+  PENDING: ['Pendente', 'warning'],
+  COUNTED: ['Contado', 'info'],
+  ADJUSTED: ['Ajustado', 'success'],
+};
+
+function pill([label, tone]) {
+  return `<span class="summary-pill summary-pill--${tone}">${escapeHtml(label)}</span>`;
+}
+
+export function inventoryStatusPill(status) {
+  const s = String(status || '').toUpperCase();
+  return INVENTORY_STATUS[s] ? pill(INVENTORY_STATUS[s]) : escapeHtml(s);
+}
+
+export function inventoryTypeLabel(type) {
+  const t = String(type || '').toUpperCase();
+  return INVENTORY_TYPE[t] || t;
+}
+
+export function itemStatusPill(status) {
+  const s = String(status || '').toUpperCase();
+  return ITEM_STATUS[s] ? pill(ITEM_STATUS[s]) : escapeHtml(s);
+}

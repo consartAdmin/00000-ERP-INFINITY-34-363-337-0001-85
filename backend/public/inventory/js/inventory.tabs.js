@@ -1,14 +1,29 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ inventory.tabs.js — Tabs                                              ║
+// ║ inventory.tabs.js — Troca entre Lista / Inventário / Auditoria       ║
 // ║ CONSART ERP | Inventário                                              ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
+const PANEL_BY_ID = { 'tab-list': 'list', 'tab-edit': 'edit', 'tab-logs': 'logs' };
+
 export function activateTab(els, name) {
-  const btnMap = { list: els.tabListBtn, edit: els.tabEditBtn, logs: els.tabLogsBtn };
   const panelMap = { list: els.tabListPanel, edit: els.tabEditPanel, logs: els.tabLogsPanel };
 
-  Object.entries(btnMap).forEach(([key, btn]) => btn?.classList.toggle('is-active', key === name));
-  Object.entries(panelMap).forEach(([key, panel]) => panel?.classList.toggle('is-active', key === name));
+  Object.entries(panelMap).forEach(([key, panel]) => {
+    if (!panel) return;
+    const active = key === name;
+    panel.classList.toggle('is-active', active);
+    panel.hidden = !active;
+  });
+}
+
+/** Botões com data-tab="tab-list|tab-edit|tab-logs" */
+export function bindTabButtons(els) {
+  document.querySelectorAll('[data-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const name = PANEL_BY_ID[button.dataset.tab];
+      if (name) activateTab(els, name);
+    });
+  });
 }

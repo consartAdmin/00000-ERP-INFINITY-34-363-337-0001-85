@@ -13,7 +13,8 @@ import { state } from './inventory.state.js';
 import { askPasswordModal } from './inventory.passwordModal.js';
 import { activateTab } from './inventory.tabs.js';
 import { clearItemProduct, clearUnitSelect, clearLocationField, clearLotSelect } from './inventory.items.js';
-import { fmtDatePt } from './inventory.utils.js';
+import { fmtDatePt, escapeHtml, inventoryStatusPill, inventoryTypeLabel } from './inventory.utils.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { logError } from './inventory.config.js';
 
 function getInventoryNotes(inv) {
@@ -120,48 +121,47 @@ export function renderInventoryTable(els, inventories, onPick) {
   state.inventoryRowsCache = [];
   state.inventoryKeyboardIndex = -1;
 
+  if (!inventories.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="table-empty-state">Nenhum inventário encontrado.</td></tr>';
+    return;
+  }
+
   inventories.forEach((inv) => {
     const tr = document.createElement('tr');
     tr.dataset.id = inv.inventory_id;
+    tr.title = 'Clique para abrir o inventário';
 
     const status = String(inv.status || '').toUpperCase();
     const canReopen = status === 'FINALIZED';
     const notesText = getInventoryNotes(inv);
+    const id = inv.inventory_id;
+
+    const actions = [
+      { action: 'edit', title: canReopen ? 'Abrir (somente leitura)' : 'Abrir e contar', attrs: { 'data-act': 'open', 'data-id': id } },
+      { action: 'document', title: 'Relatório (PDF)', attrs: { 'data-act': 'report', 'data-id': id } },
+    ];
+    if (canReopen) {
+      actions.push({
+        action: 'undo',
+        title: 'Estornar estoque e reabrir',
+        attrs: { 'data-act': 'reopen', 'data-id': id, 'data-code': inv.code || '' },
+      });
+    }
 
     tr.innerHTML = `
-      <td>${inv.code || ''}</td>
-      <td>${notesText || ''}</td>
-      <td>${inv.type || ''}</td>
-      <td>${inv.status || ''}</td>
+      <td class="td-left">${escapeHtml(inv.code)}</td>
+      <td class="td-left">${escapeHtml(notesText)}</td>
+      <td>${escapeHtml(inventoryTypeLabel(inv.type))}</td>
+      <td>${inventoryStatusPill(status)}</td>
       <td>${inv.reference_date ? fmtDatePt(inv.reference_date) : ''}</td>
-      <td class="col-actions">
-
-  <button
-    type="button"
-    class="btn btn-toolbar btn-sm"
-    onclick="downloadInventoryReportPdf(${inv.inventory_id})"
-  >
-    📄 Relatório
-  </button>
-
-  ${canReopen
-        ? `
-    <button
-      type="button"
-      class="btn btn-toolbar btn-sm js-reopen-inventory"
-      data-id="${inv.inventory_id}"
-      data-code="${inv.code || ''}"
-    >
-      Estornar estoque
-    </button>
-  `
-        : `<span style="opacity:.45;">—</span>`
-      }
-
-</td>
+      <td>${actionIconsHtml(actions)}</td>
     `;
 
-    tr.addEventListener('click', () => onPick?.(inv));
+    // Relatório abre o PDF; "Abrir" (lápis) e o clique na linha são tratados no index.js
+    tr.querySelector('[data-act="report"]')?.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      downloadInventoryReportPdf(id);
+    });
 
     tbody.appendChild(tr);
     state.inventoryRowsCache.push({ element: tr, data: inv });
@@ -214,6 +214,13 @@ export function fillInventoryForm(els, inv) {
       : '';
   }
   if (els.inventoryNotes) els.inventoryNotes.value = inv.notes || '';
+
+  const title = document.getElementById('inventoryEditTitle');
+  const statusEl = document.getElementById('inventoryEditStatus');
+  if (title) title.textContent = inv.inventory_id ? `Inventário: ${inv.code || `#${inv.inventory_id}`}` : 'Novo inventário';
+  if (statusEl) statusEl.innerHTML = inv.inventory_id ? inventoryStatusPill(inv.status) : '';
+  const logsBtn = document.getElementById('tabLogsBtn');
+  if (logsBtn) logsBtn.disabled = !inv.inventory_id;
 }
 
 function applyInventoryLock(els, status) {
@@ -362,7 +369,7 @@ export async function reopenInventory(els, inventoryId, inventoryCode, { afterRe
       title: 'CONFIRMAR ESTORNO?',
       message: `
       <div style="display:flex;flex-direction:column;gap:6px">
-      <div><b>Inventário:</b> ${String(inventoryCode || inventoryId)}</div>
+      <div><b>Inventário:</b> ${escapeHtml(String(inventoryCode || inventoryId))}</div>
       <div style="opacity:.9">
       Isso irá desfazer o ajuste aplicado no estoque e reabrir o inventário.
       </div>
