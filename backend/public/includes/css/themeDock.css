@@ -28,6 +28,7 @@
 
   /* Fundo geral */
   --bg: var(--dock-page-bg);
+  --consart-bg: var(--dock-page-bg);
 
   /* Tabela integrada (cartão) */
   --table-shell-bg: #ffffff;
@@ -130,6 +131,10 @@
   --btn-primary-tx: #ffffff;
   --btn-primary-hover-bg: var(--dock-blue-dark);
   --btn-primary-hover-bd: var(--dock-blue-dark);
+}
+
+html.ui-dock {
+  background: var(--dock-page-bg);
 }
 
 /* ---------- Cartão da tabela integrada ---------- */
@@ -318,4 +323,102 @@
 
 .ui-dock .action-icon:hover {
   background: var(--dock-blue-bg);
+}
+
+/* ---------- Abas ---------- */
+:root.ui-dock {
+  --tab-height: 38px;
+  --tab-padding-x: 16px;
+  --tab-radius: 12px 12px 0 0;
+  --tab-font-size: 12.5px;
+  --tab-text: var(--dock-muted);
+  --tab-text-active: var(--dock-blue-dark);
+  --tab-border: var(--dock-line);
+}
+
+.ui-dock .tab {
+  gap: 7px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+}
+
+.ui-dock .tab svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--dock-blue-soft);
+}
+
+.ui-dock .tab:hover {
+  background: var(--dock-blue-bg);
+  color: var(--dock-blue-dark);
+}
+
+.ui-dock .tab.is-active,
+.ui-dock .tab[aria-selected="true"] {
+  border: 1px solid var(--dock-line);
+  border-bottom-color: #ffffff;
+  margin-bottom: -1px;
+  background: #ffffff;
+  box-shadow: inset 0 2px 0 var(--dock-blue);
+}
+
+.ui-dock .tab.is-active svg,
+.ui-dock .tab[aria-selected="true"] svg {
+  color: var(--dock-blue);
+}
+
+/* ---------- Seções em cartão (section-panel) ---------- */
+.ui-dock .section-panel {
+  --section-background: #ffffff;
+  --section-border-color: var(--dock-line);
+  --section-radius: 16px;
+  --section-shadow: var(--dock-shadow);
+  --section-padding-y: 16px;
+  --section-padding-x: 18px;
+}
+
+.ui-dock .section__title {
+  color: var(--dock-text);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* marcador azul antes do título da seção */
+.ui-dock .section__header > .badge-step:empty {
+  display: inline-block;
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--dock-blue), var(--dock-blue-soft));
+}
+
+/* ---------- Campos em formulários ---------- */
+.ui-dock .fields input,
+.ui-dock .fields select,
+.ui-dock .fields textarea {
+  border-width: 1px;
+  border-radius: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.ui-dock .fields input:hover:not(:disabled):not([readonly]),
+.ui-dock .fields select:hover:not(:disabled),
+.ui-dock .fields textarea:hover:not(:disabled):not([readonly]) {
+  border-color: #bcd6ff;
+}
+
+.ui-dock .fields input:disabled,
+.ui-dock .fields input[readonly],
+.ui-dock .fields select:disabled,
+.ui-dock .fields textarea:disabled {
+  background: #f8fafc;
+  border-color: var(--dock-line-soft);
+  color: var(--dock-muted);
 }

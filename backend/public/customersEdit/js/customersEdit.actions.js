@@ -1884,7 +1884,8 @@ async function buscarCNPJ() {
   }
 
   const btn = document.getElementById('btnBuscarCNPJ');
-  if (btn) { btn.disabled = true; btn.textContent = 'Buscando…'; }
+  const btnLabel = btn?.querySelector('span') || btn;
+  if (btn) { btn.disabled = true; btnLabel.textContent = 'Buscando…'; }
 
   try {
     const r = await fetch(ROUTES.consultaCnpj(cnpj), { headers: { 'Accept': 'application/json' } });
@@ -1978,7 +1979,7 @@ async function buscarCNPJ() {
     console.error(e);
     showCenterModal({ variant: 'error', title: 'Consulta CNPJ', message: 'Não foi possível consultar o CNPJ.' });
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Buscar CNPJ'; }
+    if (btn) { btn.disabled = false; btnLabel.textContent = 'Buscar'; }
   }
 }
 
