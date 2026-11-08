@@ -3,32 +3,32 @@
 // ║ CONSART ERP | ESM                                                   ║
 // ║ - Consome /api/products-groups, /api/products-subgroups e           ║
 // ║   /api/products-families (3º nível, filha do subgrupo)              ║
-// ║ - CRUD básico + filtro por grupo selecionado                        ║
+// ║ - 3 listas no padrão table-layout-integrated (só style.css)         ║
+// ║ - Clicar num grupo filtra subgrupos e famílias; num subgrupo,       ║
+// ║   filtra as famílias (clicar de novo desfaz)                        ║
+// ║ - Cadastro/edição em modal (modal.js), ações com actionIcons.js,    ║
+// ║   avisos/confirmações no centerAlertModal.js                        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-/* eslint-disable no-console */
+import { Modal } from '/public/includes/js/modal.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
 
-// ---------------------------------------------------------------------
-// Helper definitivo: utiliza a função global getApiBase() do apiBase.js
-// ---------------------------------------------------------------------
+// ======================================================================
+// API BASE
+// ======================================================================
+
 function getApiBase() {
   try {
-    if (typeof window !== 'undefined' && window.getApiBase) {
-      return window.getApiBase();
-    }
+    if (typeof window !== 'undefined' && window.getApiBase) return window.getApiBase();
   } catch (err) {
-    console.error('[siteMenu] Erro ao obter API base:', err);
+    console.error('[groupsAndSubgroups] Erro ao obter API base:', err);
   }
-
-  // fallback seguro (raro)
-  return 'http://localhost:8080';
+  return window.location.origin;
 }
 
-// Valor final utilizado em todo o arquivo
 const API_BASE = getApiBase();
-
-//----------------------------------------------------------------------
-
 const GROUPS_URL = `${API_BASE}/api/products-groups`;
 const SUBGROUPS_URL = `${API_BASE}/api/products-subgroups`;
 const FAMILIES_URL = `${API_BASE}/api/products-families`;
@@ -37,136 +37,105 @@ const FAMILIES_URL = `${API_BASE}/api/products-families`;
 // HELPERS
 // ======================================================================
 
-// Helper genérico de fetch com JSON (tenta SEMPRE ler JSON)
+const $ = (selector) => document.querySelector(selector);
+
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     ...options,
   });
 
+  let data = null;
+  const text = await res.text().catch(() => '');
+  try { data = text ? JSON.parse(text) : null; } catch (_) { data = null; }
+
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    const err = new Error(
-      `Falha na requisição (${res.status} ${res.statusText}) — ${text}`,
-    );
+    const msg = data?.error || data?.message || `Falha na requisição (${res.status}).`;
+    const err = new Error(msg);
     err.status = res.status;
     throw err;
   }
-
-  let data = null;
-  try {
-    data = await res.json();
-  } catch (e) {
-    console.warn('[groupsAndSubgroups] Resposta não é JSON válido em', url, e);
-  }
-
-  console.log('[groupsAndSubgroups] raw payload from', url, data);
   return data;
 }
 
-// Aceita vários formatos de retorno de controller
+/** Aceita { data: { rows } }, { rows }, { data: [] } ou array direto */
 function normalizeRows(payload) {
   if (!payload) return [];
-
-  // 1) Array direto
   if (Array.isArray(payload)) return payload;
-
-  // 2) Padrão { rows, total, ... }
   if (Array.isArray(payload.rows)) return payload.rows;
-
-  // 3) Padrões comuns { data: [...] }, { items: [...] }
   if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.data?.rows)) return payload.data.rows;
   if (Array.isArray(payload.items)) return payload.items;
-
-  // 4) Procura recursivamente por um array de objetos
-  function findArray(obj, depth = 0) {
-    if (!obj || typeof obj !== 'object' || depth > 3) return null;
-
-    if (Array.isArray(obj)) {
-      // Se for array de objetos com alguma chave típica, já serve
-      if (
-        obj.length &&
-        typeof obj[0] === 'object' &&
-        (Object.prototype.hasOwnProperty.call(obj[0], 'product_group_id') ||
-          Object.prototype.hasOwnProperty.call(obj[0], 'product_subgroup_id') ||
-          Object.prototype.hasOwnProperty.call(obj[0], 'name'))
-      ) {
-        return obj;
-      }
-    }
-
-    for (const key of Object.keys(obj)) {
-      const val = obj[key];
-      const found = findArray(val, depth + 1);
-      if (found) return found;
-    }
-    return null;
-  }
-
-  const found = findArray(payload, 0);
-  if (found) return found;
-
   return [];
 }
 
-// ======================================================================
-// DOM ELEMENTS
-// ======================================================================
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
 
-const els = {};
+const sameId = (a, b) => a != null && b != null && String(a) === String(b);
 
-function cacheDom() {
-  els.btnReloadAll = document.querySelector('#btnReloadAll');
+function notify(message, variant = 'success') {
+  showCenterModal({
+    variant,
+    title: variant === 'error' ? 'Erro' : (variant === 'warning' ? 'Atenção' : 'Grupos & Subgrupos'),
+    message: String(message ?? ''),
+    timeoutMs: variant === 'success' ? 2500 : undefined,
+  });
+}
 
-  // Grupos
-  els.groupsSearch = document.querySelector('#groupsSearch');
-  els.btnSearchGroups = document.querySelector('#btnSearchGroups');
-  els.groupsShowInactive = document.querySelector('#groupsShowInactive');
-  els.groupForm = document.querySelector('#groupForm');
-  els.groupId = document.querySelector('#groupId');
-  els.groupName = document.querySelector('#groupName');
-  els.groupIsActive = document.querySelector('#groupIsActive');
-  els.btnNewGroup = document.querySelector('#btnNewGroup');
-  els.btnSaveGroup = document.querySelector('#btnSaveGroup');
-  els.btnCancelGroupEdit = document.querySelector('#btnCancelGroupEdit');
-  els.groupsTableBody = document.querySelector('#groupsTableBody');
-  els.groupsSummary = document.querySelector('#groupsSummary');
+async function confirmCenter(message, { title = 'Confirmar', confirmLabel = 'Confirmar', variant = 'warning' } = {}) {
+  const button = await showCenterModal({
+    variant,
+    title,
+    message: String(message ?? ''),
+    timeoutMs: null,
+    buttons: [
+      { label: 'Cancelar', variant: 'cancel' },
+      { label: confirmLabel, variant: 'confirm' },
+    ],
+  });
+  return String(button?.variant || '').toLowerCase() === 'confirm';
+}
 
-  // Subgrupos
-  els.subgroupsSearch = document.querySelector('#subgroupsSearch');
-  els.btnSearchSubgroups = document.querySelector('#btnSearchSubgroups');
-  els.subgroupsShowInactive = document.querySelector('#subgroupsShowInactive');
-  els.subgroupForm = document.querySelector('#subgroupForm');
-  els.subgroupId = document.querySelector('#subgroupId');
-  els.subgroupName = document.querySelector('#subgroupName');
-  els.subgroupGroupSelect = document.querySelector('#subgroupGroupSelect');
-  els.subgroupIsActive = document.querySelector('#subgroupIsActive');
-  els.btnNewSubgroup = document.querySelector('#btnNewSubgroup');
-  els.btnSaveSubgroup = document.querySelector('#btnSaveSubgroup');
-  els.btnCancelSubgroupEdit = document.querySelector('#btnCancelSubgroupEdit');
-  els.subgroupsTableBody = document.querySelector('#subgroupsTableBody');
-  els.subgroupsSummary = document.querySelector('#subgroupsSummary');
-  els.selectedGroupLabel = document.querySelector('#selectedGroupLabel');
-  els.btnClearSelectedGroup = document.querySelector('#btnClearSelectedGroup');
+function statusPill(isActive) {
+  return isActive
+    ? '<span class="summary-pill summary-pill--success">Ativo</span>'
+    : '<span class="summary-pill summary-pill--danger">Inativo</span>';
+}
 
-  // Famílias (3º nível)
-  els.familiesSearch = document.querySelector('#familiesSearch');
-  els.btnSearchFamilies = document.querySelector('#btnSearchFamilies');
-  els.familiesShowInactive = document.querySelector('#familiesShowInactive');
-  els.familyForm = document.querySelector('#familyForm');
-  els.familyId = document.querySelector('#familyId');
-  els.familyName = document.querySelector('#familyName');
-  els.familySubgroupSelect = document.querySelector('#familySubgroupSelect');
-  els.familyIsActive = document.querySelector('#familyIsActive');
-  els.btnNewFamily = document.querySelector('#btnNewFamily');
-  els.btnSaveFamily = document.querySelector('#btnSaveFamily');
-  els.btnCancelFamilyEdit = document.querySelector('#btnCancelFamilyEdit');
-  els.familiesTableBody = document.querySelector('#familiesTableBody');
-  els.familiesSummary = document.querySelector('#familiesSummary');
-  els.selectedSubgroupLabel = document.querySelector('#selectedSubgroupLabel');
-  els.btnClearSelectedSubgroup = document.querySelector('#btnClearSelectedSubgroup');
+function messageRow(colspan, text) {
+  return `<tr><td colspan="${colspan}" class="table-empty-state">${escapeHtml(text)}</td></tr>`;
+}
+
+function rowActions(kind, row, idField) {
+  const id = row[idField];
+  return actionIconsHtml([
+    { action: 'edit', title: 'Editar', attrs: { 'data-act': 'edit', 'data-id': id } },
+    row.is_active
+      ? { action: 'pause', title: 'Inativar', attrs: { 'data-act': 'toggle', 'data-id': id } }
+      : { action: 'play', title: 'Reativar', attrs: { 'data-act': 'toggle', 'data-id': id } },
+    { action: 'delete', title: 'Excluir', attrs: { 'data-act': 'delete', 'data-id': id } },
+  ]);
+}
+
+/** Ordena uma cópia da lista pela coluna escolhida no cabeçalho */
+function sortRows(rows, { column, direction }, valueOf = (r, c) => r[c]) {
+  const dir = direction === 'desc' ? -1 : 1;
+  return [...rows].sort((a, b) => {
+    const va = valueOf(a, column);
+    const vb = valueOf(b, column);
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+    if (typeof va === 'boolean' || typeof vb === 'boolean') return (Number(!!va) - Number(!!vb)) * dir;
+    return String(va ?? '').localeCompare(String(vb ?? ''), 'pt-BR', { numeric: true, sensitivity: 'base' }) * dir;
+  });
+}
+
+function statusParam(selectEl) {
+  const v = selectEl?.value || 'true';
+  return v === 'all' ? null : v;
 }
 
 // ======================================================================
@@ -174,952 +143,501 @@ function cacheDom() {
 // ======================================================================
 
 const state = {
+  allGroups: [],       // todos (para nomes e selects)
+  allSubgroups: [],    // todos (para nomes, contagem e selects)
   groups: [],
   subgroups: [],
-  selectedGroupId: null,
-  // Famílias (3º nível)
-  allSubgroups: [],
   families: [],
+  selectedGroupId: null,
   selectedSubgroupId: null,
-  // IDs dos grupos retornados pela busca de grupos (null = sem busca ativa)
-  searchGroupIds: null,
+  searchGroupIds: null, // grupos achados pela busca de grupos (null = sem busca)
+  sort: {
+    groups: { column: 'name', direction: 'asc' },
+    subgroups: { column: 'name', direction: 'asc' },
+    families: { column: 'name', direction: 'asc' },
+  },
 };
 
-/** Restringe os subgrupos aos grupos encontrados na busca (quando não há grupo selecionado) */
-function applySearchGroupFilter(subgroups) {
-  if (state.selectedGroupId || !state.searchGroupIds) return subgroups;
-  const ids = new Set(state.searchGroupIds.map(String));
-  return subgroups.filter((sg) => ids.has(String(sg.group_id)));
+const groupName = (id) => state.allGroups.find((g) => sameId(g.product_group_id, id))?.name || '';
+const subgroupName = (id) => state.allSubgroups.find((s) => sameId(s.product_subgroup_id, id))?.name || '';
+const subgroupsCount = (groupId) => state.allSubgroups.filter((s) => sameId(s.group_id, groupId)).length;
+
+// ======================================================================
+// API
+// ======================================================================
+
+async function apiList(baseUrl, params) {
+  const url = new URL(baseUrl);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== null && v !== undefined && String(v).trim() !== '') url.searchParams.set(k, String(v).trim());
+  });
+  return normalizeRows(await fetchJson(url.toString(), { method: 'GET' }));
 }
+
+const apiSave = (baseUrl, id, body) => fetchJson(id ? `${baseUrl}/${encodeURIComponent(id)}` : baseUrl, {
+  method: id ? 'PUT' : 'POST',
+  body: JSON.stringify(body),
+});
+
+const apiDelete = (baseUrl, id) => fetchJson(`${baseUrl}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+// ======================================================================
+// CARREGAMENTO
+// ======================================================================
+
+async function loadLookups() {
+  const [groups, subgroups] = await Promise.all([
+    apiList(GROUPS_URL, { limit: 2000, offset: 0 }),
+    apiList(SUBGROUPS_URL, { limit: 5000, offset: 0 }),
+  ]);
+  state.allGroups = groups;
+  state.allSubgroups = subgroups;
+}
+
+async function loadGroups() {
+  setInfo('groups', 'Carregando...');
+  const term = $('#groupsSearch').value.trim();
+  state.groups = await apiList(GROUPS_URL, {
+    q: term, is_active: statusParam($('#groupsStatus')), limit: 2000, offset: 0,
+  });
+
+  // Busca de grupos ativa: subgrupos acompanham os grupos achados; um só resultado vira o selecionado
+  const foundIds = state.groups.map((g) => g.product_group_id);
+  state.searchGroupIds = term ? foundIds : null;
+  if (term && foundIds.length === 1) {
+    if (!sameId(state.selectedGroupId, foundIds[0])) state.selectedSubgroupId = null;
+    state.selectedGroupId = foundIds[0];
+  } else if (term && state.selectedGroupId && !foundIds.some((id) => sameId(id, state.selectedGroupId))) {
+    state.selectedGroupId = null;
+    state.selectedSubgroupId = null;
+  }
+  renderGroups();
+}
+
+async function loadSubgroups() {
+  setInfo('subgroups', 'Carregando...');
+  let rows = await apiList(SUBGROUPS_URL, {
+    q: $('#subgroupsSearch').value,
+    group_id: state.selectedGroupId,
+    is_active: statusParam($('#subgroupsStatus')),
+    limit: 5000,
+    offset: 0,
+  });
+  if (!state.selectedGroupId && state.searchGroupIds) {
+    const ids = new Set(state.searchGroupIds.map(String));
+    rows = rows.filter((sg) => ids.has(String(sg.group_id)));
+  }
+  state.subgroups = rows;
+  renderSubgroups();
+}
+
+async function loadFamilies() {
+  setInfo('families', 'Carregando...');
+  state.families = await apiList(FAMILIES_URL, {
+    q: $('#familiesSearch').value,
+    subgroup_id: state.selectedSubgroupId,
+    group_id: state.selectedSubgroupId ? null : state.selectedGroupId,
+    is_active: statusParam($('#familiesStatus')),
+    limit: 5000,
+    offset: 0,
+  });
+  renderFamilies();
+}
+
+async function run(task, errorText) {
+  try {
+    await task();
+  } catch (err) {
+    console.error('[groupsAndSubgroups]', errorText, err);
+    notify(`${errorText} ${err?.message || ''}`.trim(), 'error');
+  }
+}
+
+const reloadAll = () => run(async () => {
+  await loadLookups();
+  await loadGroups();
+  await loadSubgroups();
+  await loadFamilies();
+}, 'Erro ao carregar grupos, subgrupos e famílias.');
+
+const reloadFromSubgroups = () => run(async () => {
+  await loadSubgroups();
+  await loadFamilies();
+}, 'Erro ao carregar subgrupos.');
+
+const reloadFamilies = () => run(loadFamilies, 'Erro ao carregar famílias.');
 
 // ======================================================================
 // RENDER
 // ======================================================================
 
-function renderGroupsTable() {
-  const tbody = els.groupsTableBody;
-  if (!tbody) return;
-
-  tbody.innerHTML = '';
-
-  if (!state.groups.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="4" style="text-align:center; padding:12px; font-size:0.85rem; color:#64748b;">
-          Nenhum grupo encontrado.
-        </td>
-      </tr>
-    `;
-    els.groupsSummary.textContent = '0 grupos encontrados.';
-    return;
-  }
-
-  state.groups.forEach((g) => {
-    const tr = document.createElement('tr');
-    tr.dataset.id = g.product_group_id;
-    if (String(state.selectedGroupId) === String(g.product_group_id)) {
-      tr.classList.add('gs-row--selected');
-    }
-
-    const statusBadge = g.is_active
-      ? '<span class="gs-status-badge gs-status-badge--active">Ativo</span>'
-      : '<span class="gs-status-badge gs-status-badge--inactive">Inativo</span>';
-
-    tr.innerHTML = `
-      <td class="gs-table__col-id">${g.product_group_id}</td>
-      <td>${g.name || ''}</td>
-      <td class="gs-table__col-status">${statusBadge}</td>
-      <td class="gs-table__col-actions">
-      <div class="gs-table-actions">
-      <button
-      type="button"
-      class="btn btn-toolbar btn-sm js-edit-group"
-      title="Editar grupo"
-      >✏️</button>
-
-      <button
-      type="button"
-      class="btn btn-toolbar btn-sm js-toggle-group"
-      title="${g.is_active ? 'Inativar' : 'Reativar'} grupo"
-      >${g.is_active ? '⏸' : '▶️'}</button>
-
-      <button
-      type="button"
-      class="btn btn-toolbar btn-sm js-delete-group"
-      title="Excluir grupo"
-      >🗑</button>
-      </div>
-      </td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-
-  els.groupsSummary.textContent = `${state.groups.length} grupo(s) carregado(s).`;
+function setInfo(key, text) {
+  const el = $(`#${key}Info`);
+  if (el) el.textContent = text;
 }
 
-function renderSubgroupsTable() {
-  const tbody = els.subgroupsTableBody;
-  if (!tbody) return;
-
-  tbody.innerHTML = '';
-
-  if (!state.subgroups.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" style="text-align:center; padding:12px; font-size:0.85rem; color:#64748b;">
-          Nenhum subgrupo encontrado.
-        </td>
-      </tr>
-    `;
-    els.subgroupsSummary.textContent = '0 subgrupos encontrados.';
-    return;
-  }
-
-  state.subgroups.forEach((sg) => {
-    const tr = document.createElement('tr');
-    tr.dataset.id = sg.product_subgroup_id;
-    if (String(state.selectedSubgroupId) === String(sg.product_subgroup_id)) {
-      tr.classList.add('gs-row--selected');
-    }
-
-    const groupName =
-      (sg.group && sg.group.name) ||
-      sg.group_name ||
-      state.groups.find((g) => String(g.product_group_id) === String(sg.group_id))?.name ||
-      (sg.group_id ? `#${sg.group_id}` : '');
-
-    const statusBadge = sg.is_active
-      ? '<span class="gs-status-badge gs-status-badge--active">Ativo</span>'
-      : '<span class="gs-status-badge gs-status-badge--inactive">Inativo</span>';
-
-    tr.innerHTML = `
-      <td class="gs-table__col-id">${sg.product_subgroup_id}</td>
-      <td>${sg.name || ''}</td>
-      <td>${groupName}</td>
-      <td class="gs-table__col-status">${statusBadge}</td>
-      <td class="gs-table__col-actions">
-      <div class="gs-table-actions">
-      <button
-      type="button"
-      class="btn btn-toolbar btn-sm js-edit-subgroup"
-      title="Editar subgrupo"
-      >✏️</button>
-
-      <button
-      type="button"
-      class="btn btn-toolbar btn-sm js-toggle-subgroup"
-      title="${sg.is_active ? 'Inativar' : 'Reativar'} subgrupo"
-      >${sg.is_active ? '⏸' : '▶️'}</button>
-
-      <button
-      type="button"
-      class="btn btn-toolbar btn-sm js-delete-subgroup"
-      title="Excluir subgrupo"
-      >🗑</button>
-      </div>
-      </td>
-      `;
-
-    tbody.appendChild(tr);
-  });
-
-  els.subgroupsSummary.textContent = `${state.subgroups.length} subgrupo(s) carregado(s).`;
+function plural(n, one, many) {
+  return `${n} ${n === 1 ? one : many}`;
 }
 
-function renderSelectedGroupInfo() {
-  if (!els.selectedGroupLabel) return;
+function renderGroups() {
+  const tbody = $('#groupsTableBody');
+  const rows = sortRows(state.groups, state.sort.groups, (r, c) => (
+    c === 'subgroups_count' ? subgroupsCount(r.product_group_id) : r[c]));
 
-  if (!state.selectedGroupId) {
-    els.selectedGroupLabel.textContent = state.searchGroupIds
-      ? `Filtrando subgrupos dos ${state.searchGroupIds.length} grupo(s) encontrados na busca. Clique em um grupo para filtrar só ele.`
-      : 'Nenhum grupo selecionado. Clique em um grupo à esquerda para filtrar.';
-    return;
-  }
+  tbody.innerHTML = rows.length
+    ? rows.map((g) => `
+      <tr data-id="${g.product_group_id}" class="${sameId(state.selectedGroupId, g.product_group_id) ? 'is-selected' : ''}" title="Clique para ver os subgrupos deste grupo">
+        <td>${g.product_group_id}</td>
+        <td class="td-left">${escapeHtml(g.name)}</td>
+        <td>${subgroupsCount(g.product_group_id)}</td>
+        <td>${statusPill(g.is_active)}</td>
+        <td>${rowActions('group', g, 'product_group_id')}</td>
+      </tr>`).join('')
+    : messageRow(5, 'Nenhum grupo encontrado.');
 
-  const group = state.groups.find(
-    (g) => String(g.product_group_id) === String(state.selectedGroupId),
-  );
-
-  if (!group) {
-    els.selectedGroupLabel.textContent =
-      'Grupo selecionado não encontrado (talvez tenha sido removido).';
-    return;
-  }
-
-  els.selectedGroupLabel.textContent = `Filtrando subgrupos do grupo: ${group.name}`;
+  setInfo('groups', plural(rows.length, 'grupo', 'grupos'));
 }
 
-function fillSubgroupGroupSelect() {
-  if (!els.subgroupGroupSelect) return;
+function renderSubgroups() {
+  const tbody = $('#subgroupsTableBody');
+  const rows = sortRows(state.subgroups, state.sort.subgroups, (r, c) => (
+    c === 'group_name' ? groupName(r.group_id) : r[c]));
 
-  const currentValue = els.subgroupGroupSelect.value;
-  els.subgroupGroupSelect.innerHTML = '';
+  tbody.innerHTML = rows.length
+    ? rows.map((sg) => `
+      <tr data-id="${sg.product_subgroup_id}" class="${sameId(state.selectedSubgroupId, sg.product_subgroup_id) ? 'is-selected' : ''}" title="Clique para ver as famílias deste subgrupo">
+        <td>${sg.product_subgroup_id}</td>
+        <td class="td-left">${escapeHtml(sg.name)}</td>
+        <td class="td-left">${escapeHtml(groupName(sg.group_id) || '—')}</td>
+        <td>${statusPill(sg.is_active)}</td>
+        <td>${rowActions('subgroup', sg, 'product_subgroup_id')}</td>
+      </tr>`).join('')
+    : messageRow(5, state.selectedGroupId ? 'Este grupo ainda não tem subgrupos.' : 'Nenhum subgrupo encontrado.');
 
-  const optEmpty = document.createElement('option');
-  optEmpty.value = '';
-  optEmpty.textContent = '— Nenhum grupo (opcional) —';
-  els.subgroupGroupSelect.appendChild(optEmpty);
+  setInfo('subgroups', plural(rows.length, 'subgrupo', 'subgrupos'));
 
-  state.groups.forEach((g) => {
-    const opt = document.createElement('option');
-    opt.value = g.product_group_id;
-    opt.textContent = g.name || '';
-    els.subgroupGroupSelect.appendChild(opt);
-  });
-
+  const bar = $('#subgroupsFilterBar');
   if (state.selectedGroupId) {
-    els.subgroupGroupSelect.value = String(state.selectedGroupId);
-  } else if (currentValue) {
-    els.subgroupGroupSelect.value = currentValue;
-  }
-}
-
-// ======================================================================
-// API (GRUPOS)
-// ======================================================================
-
-async function apiListGroups() {
-  const url = new URL(GROUPS_URL);
-
-  const q = (els.groupsSearch && els.groupsSearch.value) || '';
-  if (q.trim()) url.searchParams.set('q', q.trim());
-
-  url.searchParams.set('limit', '500');
-  url.searchParams.set('offset', '0');
-
-  const payload = await fetchJson(url.toString(), { method: 'GET' });
-  console.log('[groupsAndSubgroups] payload groups:', payload);
-
-  return normalizeRows(payload);
-}
-
-async function apiCreateGroup({ name, is_active }) {
-  const payload = { name, is_active };
-  return fetchJson(GROUPS_URL, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
-async function apiUpdateGroup(id, patch) {
-  const url = `${GROUPS_URL}/${encodeURIComponent(id)}`;
-  return fetchJson(url, {
-    method: 'PUT', // seu routes usa PUT para update
-    body: JSON.stringify(patch),
-  });
-}
-
-async function apiDeleteGroup(id) {
-  const url = `${GROUPS_URL}/${encodeURIComponent(id)}`;
-  await fetchJson(url, { method: 'DELETE' });
-}
-
-// ======================================================================
-// API (SUBGRUPOS)
-// ======================================================================
-
-async function apiListSubgroups() {
-  const url = new URL(SUBGROUPS_URL);
-
-  const q = (els.subgroupsSearch && els.subgroupsSearch.value) || '';
-  if (q.trim()) url.searchParams.set('q', q.trim());
-
-  if (state.selectedGroupId) {
-    url.searchParams.set('group_id', String(state.selectedGroupId));
-  }
-
-  url.searchParams.set('limit', '500');
-  url.searchParams.set('offset', '0');
-
-  const payload = await fetchJson(url.toString(), { method: 'GET' });
-  console.log('[groupsAndSubgroups] payload subgroups:', payload);
-
-  return normalizeRows(payload);
-}
-
-async function apiCreateSubgroup({ name, group_id, is_active }) {
-  const payload = {
-    name,
-    group_id: group_id ? Number(group_id) : null,
-    is_active,
-  };
-  return fetchJson(SUBGROUPS_URL, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
-async function apiUpdateSubgroup(id, patch) {
-  const url = `${SUBGROUPS_URL}/${encodeURIComponent(id)}`;
-  const payload = { ...patch };
-
-  if ('group_id' in payload && payload.group_id !== null && payload.group_id !== '') {
-    payload.group_id = Number(payload.group_id);
-  }
-  if (payload.group_id === '') payload.group_id = null;
-
-  return fetchJson(url, {
-    method: 'PUT', // seu routes usa PUT para update
-    body: JSON.stringify(payload),
-  });
-}
-
-async function apiDeleteSubgroup(id) {
-  const url = `${SUBGROUPS_URL}/${encodeURIComponent(id)}`;
-  await fetchJson(url, { method: 'DELETE' });
-}
-
-// ======================================================================
-// AÇÕES DE PÁGINA
-// ======================================================================
-
-async function loadGroupsAndSubgroups(full = false) {
-  try {
-    els.groupsSummary.textContent = 'Carregando grupos...';
-    els.subgroupsSummary.textContent = 'Carregando subgrupos...';
-
-    const groups = await apiListGroups();
-    state.groups = groups || [];
-
-    // Busca de grupos ativa → subgrupos acompanham os grupos encontrados.
-    // Um único resultado vira o grupo selecionado.
-    const groupTerm = (els.groupsSearch && els.groupsSearch.value.trim()) || '';
-    const foundIds = state.groups.map((g) => g.product_group_id);
-    state.searchGroupIds = groupTerm ? foundIds : null;
-    if (groupTerm && foundIds.length === 1) {
-      state.selectedGroupId = foundIds[0];
-    } else if (state.selectedGroupId && groupTerm &&
-      !foundIds.some((id) => String(id) === String(state.selectedGroupId))) {
-      state.selectedGroupId = null;
-    }
-
-    renderGroupsTable();
-    fillSubgroupGroupSelect();
-
-    const subgroups = await apiListSubgroups();
-    state.subgroups = applySearchGroupFilter(subgroups || []);
-    renderSubgroupsTable();
-    renderSelectedGroupInfo();
-
-    await refreshAllSubgroups();
-    await loadFamiliesOnly();
-
-    if (full) {
-      console.info('[groupsAndSubgroups] Dados recarregados (full).');
-    }
-  } catch (err) {
-    console.error('[groupsAndSubgroups] Erro ao carregar dados', err);
-    alert('Erro ao carregar grupos/subgrupos. Detalhes no console.');
-  }
-}
-
-function resetGroupForm() {
-  els.groupId.value = '';
-  els.groupName.value = '';
-  els.groupIsActive.checked = true;
-  els.btnSaveGroup.textContent = '💾 Salvar';
-}
-
-function resetSubgroupForm() {
-  els.subgroupId.value = '';
-  els.subgroupName.value = '';
-  els.subgroupIsActive.checked = true;
-
-  if (state.selectedGroupId) {
-    els.subgroupGroupSelect.value = String(state.selectedGroupId);
+    $('#subgroupsFilterLabel').textContent = `Grupo: ${groupName(state.selectedGroupId)}`;
+    bar.style.display = '';
+  } else if (state.searchGroupIds) {
+    $('#subgroupsFilterLabel').textContent = `Grupos da busca: ${state.searchGroupIds.length}`;
+    bar.style.display = '';
   } else {
-    els.subgroupGroupSelect.value = '';
-  }
-  els.btnSaveSubgroup.textContent = '💾 Salvar';
-}
-
-// ======================================================================
-// HANDLERS (GRUPOS)
-// ======================================================================
-
-async function handleGroupFormSubmit(event) {
-  event.preventDefault();
-
-  const id = els.groupId.value || null;
-  const name = (els.groupName.value || '').trim();
-  const is_active = !!els.groupIsActive.checked;
-
-  if (!name) {
-    alert('Informe o nome do grupo.');
-    els.groupName.focus();
-    return;
-  }
-
-  try {
-    if (!id) {
-      await apiCreateGroup({ name, is_active });
-    } else {
-      await apiUpdateGroup(id, { name, is_active });
-    }
-    resetGroupForm();
-    await loadGroupsAndSubgroups(false);
-  } catch (err) {
-    console.error('[groupsAndSubgroups] Erro ao salvar grupo', err);
-    alert(
-      err?.message ||
-        'Erro ao salvar grupo. Verifique se o nome já não existe e tente novamente.',
-    );
+    bar.style.display = 'none';
   }
 }
 
-function handleGroupsTableClick(event) {
-  const btn = event.target.closest('button');
-  const row = event.target.closest('tr');
-  if (!row || !row.dataset.id) return;
+function renderFamilies() {
+  const tbody = $('#familiesTableBody');
+  const rows = sortRows(state.families, state.sort.families, (r, c) => (
+    c === 'subgroup_name' ? (r.subgroup_name || subgroupName(r.subgroup_id)) : r[c]));
 
-  const id = row.dataset.id;
-  const group = state.groups.find(
-    (g) => String(g.product_group_id) === String(id),
-  );
+  tbody.innerHTML = rows.length
+    ? rows.map((f) => `
+      <tr data-id="${f.product_family_id}">
+        <td>${f.product_family_id}</td>
+        <td class="td-left">${escapeHtml(f.name)}</td>
+        <td class="td-left">${escapeHtml(f.subgroup_name || subgroupName(f.subgroup_id) || '—')}</td>
+        <td>${statusPill(f.is_active)}</td>
+        <td>${rowActions('family', f, 'product_family_id')}</td>
+      </tr>`).join('')
+    : messageRow(5, state.selectedSubgroupId ? 'Este subgrupo ainda não tem famílias.' : 'Nenhuma família encontrada.');
 
-  if (btn) {
-    if (btn.classList.contains('js-edit-group')) {
-      if (!group) return;
-      els.groupId.value = group.product_group_id;
-      els.groupName.value = group.name || '';
-      els.groupIsActive.checked = !!group.is_active;
-      els.btnSaveGroup.textContent = '💾 Atualizar';
-      return;
-    }
+  setInfo('families', plural(rows.length, 'família', 'famílias'));
 
-    if (btn.classList.contains('js-toggle-group')) {
-      if (!group) return;
-      const newStatus = !group.is_active;
-      const label = newStatus ? 'reativar' : 'inativar';
-
-      const ok = window.confirm(
-        `Tem certeza que deseja ${label} o grupo "${group.name}"?`,
-      );
-      if (!ok) return;
-
-      apiUpdateGroup(group.product_group_id, { is_active: newStatus })
-        .then(() => loadGroupsAndSubgroups(false))
-        .catch((err) => {
-          console.error('[groupsAndSubgroups] Erro ao alterar status grupo', err);
-          alert('Erro ao alterar status do grupo. Veja detalhes no console.');
-        });
-
-      return;
-    }
-
-    if (btn.classList.contains('js-delete-group')) {
-      if (!group) return;
-      const ok = window.confirm(
-        `Excluir DEFINITIVAMENTE o grupo "${group.name}"? (Subgrupos permanecerão com group_id nulo)`,
-      );
-      if (!ok) return;
-
-      apiDeleteGroup(group.product_group_id)
-        .then(() => {
-          if (
-            state.selectedGroupId &&
-            String(state.selectedGroupId) === String(group.product_group_id)
-          ) {
-            state.selectedGroupId = null;
-          }
-          return loadGroupsAndSubgroups(false);
-        })
-        .catch((err) => {
-          console.error('[groupsAndSubgroups] Erro ao excluir grupo', err);
-          alert(
-            'Erro ao excluir grupo. Verifique se não há vínculos obrigatórios no banco.',
-          );
-        });
-
-      return;
-    }
-
-    return;
-  }
-
-  if (!group) return;
-  state.selectedGroupId = group.product_group_id;
-  state.selectedSubgroupId = null;
-  renderGroupsTable();
-  renderSelectedGroupInfo();
-  loadSubgroupsOnly();
-}
-
-// ======================================================================
-// HANDLERS (SUBGRUPOS)
-// ======================================================================
-
-async function handleSubgroupFormSubmit(event) {
-  event.preventDefault();
-
-  const id = els.subgroupId.value || null;
-  const name = (els.subgroupName.value || '').trim();
-  const group_id = els.subgroupGroupSelect.value || null;
-  const is_active = !!els.subgroupIsActive.checked;
-
-  if (!name) {
-    alert('Informe o nome do subgrupo.');
-    els.subgroupName.focus();
-    return;
-  }
-
-  try {
-    if (!id) {
-      await apiCreateSubgroup({ name, group_id, is_active });
-    } else {
-      await apiUpdateSubgroup(id, { name, group_id, is_active });
-    }
-    resetSubgroupForm();
-    await loadSubgroupsOnly();
-  } catch (err) {
-    console.error('[groupsAndSubgroups] Erro ao salvar subgrupo', err);
-    alert(
-      err?.message ||
-        'Erro ao salvar subgrupo. Verifique se o nome já não existe e tente novamente.',
-    );
-  }
-}
-
-function handleSubgroupsTableClick(event) {
-  const btn = event.target.closest('button');
-  const row = event.target.closest('tr');
-  if (!row || !row.dataset.id) return;
-
-  const id = row.dataset.id;
-  const sg = state.subgroups.find(
-    (s) => String(s.product_subgroup_id) === String(id),
-  );
-  if (!sg) return;
-
-  if (btn) {
-    if (btn.classList.contains('js-edit-subgroup')) {
-      els.subgroupId.value = sg.product_subgroup_id;
-      els.subgroupName.value = sg.name || '';
-      els.subgroupIsActive.checked = !!sg.is_active;
-
-      if (sg.group_id) {
-        els.subgroupGroupSelect.value = String(sg.group_id);
-      } else if (state.selectedGroupId) {
-        els.subgroupGroupSelect.value = String(state.selectedGroupId);
-      } else {
-        els.subgroupGroupSelect.value = '';
-      }
-
-      els.btnSaveSubgroup.textContent = '💾 Atualizar';
-      return;
-    }
-
-    if (btn.classList.contains('js-toggle-subgroup')) {
-      const newStatus = !sg.is_active;
-      const label = newStatus ? 'reativar' : 'inativar';
-      const ok = window.confirm(
-        `Tem certeza que deseja ${label} o subgrupo "${sg.name}"?`,
-      );
-      if (!ok) return;
-
-      apiUpdateSubgroup(sg.product_subgroup_id, { is_active: newStatus })
-        .then(() => loadSubgroupsOnly())
-        .catch((err) => {
-          console.error(
-            '[groupsAndSubgroups] Erro ao alterar status subgrupo',
-            err,
-          );
-          alert('Erro ao alterar status do subgrupo. Veja detalhes no console.');
-        });
-
-      return;
-    }
-
-    if (btn.classList.contains('js-delete-subgroup')) {
-      if (sg.product_subgroup_id && String(state.selectedSubgroupId) === String(sg.product_subgroup_id)) {
-        state.selectedSubgroupId = null;
-      }
-      const ok = window.confirm(
-        `Excluir DEFINITIVAMENTE o subgrupo "${sg.name}"?`,
-      );
-      if (!ok) return;
-
-      apiDeleteSubgroup(sg.product_subgroup_id)
-        .then(() => loadSubgroupsOnly())
-        .catch((err) => {
-          console.error('[groupsAndSubgroups] Erro ao excluir subgrupo', err);
-          alert('Erro ao excluir subgrupo. Veja detalhes no console.');
-        });
-
-      return;
-    }
-
-    return;
-  }
-
-  // Clique na linha (fora dos botões): seleciona o subgrupo e filtra as famílias
-  state.selectedSubgroupId = sg.product_subgroup_id;
-  renderSubgroupsTable();
-  resetFamilyForm();
-  loadFamiliesOnly();
-}
-
-async function loadSubgroupsOnly() {
-  try {
-    els.subgroupsSummary.textContent = 'Carregando subgrupos...';
-    const subgroups = await apiListSubgroups();
-    state.subgroups = applySearchGroupFilter(subgroups || []);
-    renderSubgroupsTable();
-    renderSelectedGroupInfo();
-    await refreshAllSubgroups();
-    await loadFamiliesOnly();
-  } catch (err) {
-    console.error('[groupsAndSubgroups] Erro ao recarregar subgrupos', err);
-    alert('Erro ao recarregar subgrupos. Detalhes no console.');
+  const bar = $('#familiesFilterBar');
+  if (state.selectedSubgroupId) {
+    $('#familiesFilterLabel').textContent = `Subgrupo: ${subgroupName(state.selectedSubgroupId)}`;
+    bar.style.display = '';
+  } else if (state.selectedGroupId) {
+    $('#familiesFilterLabel').textContent = `Grupo: ${groupName(state.selectedGroupId)}`;
+    bar.style.display = '';
+  } else {
+    bar.style.display = 'none';
   }
 }
 
 // ======================================================================
-// FAMÍLIAS (3º nível: Grupo → Subgrupo → Família)
+// MODAIS (cadastro / edição)
 // ======================================================================
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+function fillSelect(select, items, { idField, label, emptyText, selected }) {
+  select.innerHTML = `<option value="">${escapeHtml(emptyText)}</option>${
+    items.map((it) => `<option value="${it[idField]}">${escapeHtml(label(it))}</option>`).join('')}`;
+  select.value = selected != null ? String(selected) : '';
 }
 
-function subgroupName(id) {
-  const sg = state.allSubgroups.find((s) => String(s.product_subgroup_id) === String(id))
-    || state.subgroups.find((s) => String(s.product_subgroup_id) === String(id));
-  return sg?.name || (id ? `#${id}` : '');
+function openGroupModal(group = null) {
+  $('#groupModalTitle').textContent = group ? `Editar grupo #${group.product_group_id}` : 'Novo grupo';
+  $('#groupId').value = group?.product_group_id ?? '';
+  $('#groupName').value = group?.name ?? '';
+  $('#groupIsActive').value = String(group ? !!group.is_active : true);
+  Modal.open('groupModal', { focusSelector: '#groupName' });
 }
 
-async function refreshAllSubgroups() {
-  try {
-    const url = new URL(SUBGROUPS_URL);
-    url.searchParams.set('limit', '2000');
-    url.searchParams.set('offset', '0');
-    state.allSubgroups = normalizeRows(await fetchJson(url.toString(), { method: 'GET' }));
-  } catch (err) {
-    console.warn('[groupsAndSubgroups] Falha ao carregar todos os subgrupos', err);
-    state.allSubgroups = [...state.subgroups];
-  }
-  fillFamilySubgroupSelect();
+function openSubgroupModal(sg = null) {
+  $('#subgroupModalTitle').textContent = sg ? `Editar subgrupo #${sg.product_subgroup_id}` : 'Novo subgrupo';
+  $('#subgroupId').value = sg?.product_subgroup_id ?? '';
+  $('#subgroupName').value = sg?.name ?? '';
+  $('#subgroupIsActive').value = String(sg ? !!sg.is_active : true);
+  const groups = state.allGroups.filter((g) => g.is_active || sameId(g.product_group_id, sg?.group_id));
+  fillSelect($('#subgroupGroupSelect'), sortRows(groups, { column: 'name', direction: 'asc' }), {
+    idField: 'product_group_id',
+    label: (g) => g.name,
+    emptyText: '— Nenhum grupo (opcional) —',
+    selected: sg ? sg.group_id : state.selectedGroupId,
+  });
+  Modal.open('subgroupModal', { focusSelector: '#subgroupName' });
 }
 
-function fillFamilySubgroupSelect() {
-  const sel = els.familySubgroupSelect;
-  if (!sel) return;
-
-  const current = sel.value;
-  sel.innerHTML = '<option value="">— Selecione o subgrupo —</option>';
+function openFamilyModal(fam = null) {
+  $('#familyModalTitle').textContent = fam ? `Editar família #${fam.product_family_id}` : 'Nova família';
+  $('#familyId').value = fam?.product_family_id ?? '';
+  $('#familyName').value = fam?.name ?? '';
+  $('#familyIsActive').value = String(fam ? !!fam.is_active : true);
 
   // Com grupo selecionado, mostra só os subgrupos dele (o atual sempre aparece)
-  const list = state.allSubgroups.filter((sg) =>
-    !state.selectedGroupId
-    || String(sg.group_id) === String(state.selectedGroupId)
-    || String(sg.product_subgroup_id) === String(current));
-
-  list.forEach((sg) => {
-    const opt = document.createElement('option');
-    opt.value = sg.product_subgroup_id;
-    const groupName = state.groups.find((g) => String(g.product_group_id) === String(sg.group_id))?.name;
-    opt.textContent = groupName ? `${sg.name} (${groupName})` : (sg.name || '');
-    sel.appendChild(opt);
+  const list = state.allSubgroups.filter((sg) => (
+    (sg.is_active && (!state.selectedGroupId || sameId(sg.group_id, state.selectedGroupId)))
+    || sameId(sg.product_subgroup_id, fam?.subgroup_id)));
+  fillSelect($('#familySubgroupSelect'), sortRows(list, { column: 'name', direction: 'asc' }), {
+    idField: 'product_subgroup_id',
+    label: (sg) => (groupName(sg.group_id) ? `${sg.name} (${groupName(sg.group_id)})` : sg.name),
+    emptyText: '— Selecione o subgrupo —',
+    selected: fam ? fam.subgroup_id : state.selectedSubgroupId,
   });
-
-  if (state.selectedSubgroupId) sel.value = String(state.selectedSubgroupId);
-  else if (current) sel.value = current;
+  Modal.open('familyModal', { focusSelector: '#familyName' });
 }
 
-async function apiListFamilies() {
-  const url = new URL(FAMILIES_URL);
-  const q = (els.familiesSearch && els.familiesSearch.value) || '';
-  if (q.trim()) url.searchParams.set('q', q.trim());
-
-  if (state.selectedSubgroupId) {
-    url.searchParams.set('subgroup_id', String(state.selectedSubgroupId));
-  } else if (state.selectedGroupId) {
-    url.searchParams.set('group_id', String(state.selectedGroupId));
-  }
-  if (!els.familiesShowInactive?.checked) url.searchParams.set('is_active', 'true');
-
-  url.searchParams.set('limit', '1000');
-  url.searchParams.set('offset', '0');
-  return normalizeRows(await fetchJson(url.toString(), { method: 'GET' }));
-}
-
-function apiSaveFamily(id, body) {
-  return fetchJson(id ? `${FAMILIES_URL}/${encodeURIComponent(id)}` : FAMILIES_URL, {
-    method: id ? 'PUT' : 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-function apiDeleteFamily(id) {
-  return fetchJson(`${FAMILIES_URL}/${encodeURIComponent(id)}`, { method: 'DELETE' });
-}
-
-function renderSelectedSubgroupInfo() {
-  if (!els.selectedSubgroupLabel) return;
-  if (state.selectedSubgroupId) {
-    els.selectedSubgroupLabel.textContent = `Filtrando famílias do subgrupo: ${subgroupName(state.selectedSubgroupId)}`;
-  } else if (state.selectedGroupId) {
-    const g = state.groups.find((x) => String(x.product_group_id) === String(state.selectedGroupId));
-    els.selectedSubgroupLabel.textContent = `Famílias de todos os subgrupos do grupo ${g?.name || ''}. Clique em um subgrupo para filtrar só ele.`;
-  } else {
-    els.selectedSubgroupLabel.textContent = 'Nenhum subgrupo selecionado. Clique em um subgrupo para ver as famílias dele.';
-  }
-}
-
-function renderFamiliesTable() {
-  const tbody = els.familiesTableBody;
-  if (!tbody) return;
-
-  if (!state.families.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" style="text-align:center; padding:12px; font-size:0.85rem; color:#64748b;">
-          Nenhuma família encontrada.
-        </td>
-      </tr>`;
-    els.familiesSummary.textContent = '0 famílias encontradas.';
-    return;
-  }
-
-  tbody.innerHTML = state.families.map((f) => {
-    const statusBadge = f.is_active
-      ? '<span class="gs-status-badge gs-status-badge--active">Ativo</span>'
-      : '<span class="gs-status-badge gs-status-badge--inactive">Inativo</span>';
-    return `
-      <tr data-id="${f.product_family_id}">
-        <td class="gs-table__col-id">${f.product_family_id}</td>
-        <td>${escapeHtml(f.name)}</td>
-        <td>${escapeHtml(f.subgroup_name || subgroupName(f.subgroup_id))}</td>
-        <td class="gs-table__col-status">${statusBadge}</td>
-        <td class="gs-table__col-actions">
-          <div class="gs-table-actions">
-            <button type="button" class="btn btn-toolbar btn-sm js-edit-family" title="Editar família">✏️</button>
-            <button type="button" class="btn btn-toolbar btn-sm js-toggle-family"
-              title="${f.is_active ? 'Inativar' : 'Reativar'} família">${f.is_active ? '⏸' : '▶️'}</button>
-            <button type="button" class="btn btn-toolbar btn-sm js-delete-family" title="Excluir família">🗑</button>
-          </div>
-        </td>
-      </tr>`;
-  }).join('');
-
-  els.familiesSummary.textContent = `${state.families.length} família(s) carregada(s).`;
-}
-
-async function loadFamiliesOnly() {
-  try {
-    if (els.familiesSummary) els.familiesSummary.textContent = 'Carregando famílias...';
-    state.families = await apiListFamilies();
-    fillFamilySubgroupSelect();
-    renderFamiliesTable();
-    renderSelectedSubgroupInfo();
-  } catch (err) {
-    console.error('[groupsAndSubgroups] Erro ao carregar famílias', err);
-    if (els.familiesSummary) els.familiesSummary.textContent = 'Erro ao carregar famílias.';
-  }
-}
-
-function resetFamilyForm() {
-  if (!els.familyForm) return;
-  els.familyId.value = '';
-  els.familyName.value = '';
-  els.familyIsActive.checked = true;
-  fillFamilySubgroupSelect();
-  els.familySubgroupSelect.value = state.selectedSubgroupId ? String(state.selectedSubgroupId) : '';
-  els.btnSaveFamily.textContent = '💾 Salvar';
-}
-
-async function handleFamilyFormSubmit(event) {
+async function submitGroup(event) {
   event.preventDefault();
+  const id = $('#groupId').value || null;
+  const name = $('#groupName').value.trim();
+  if (!name) { notify('Informe o nome do grupo.', 'warning'); $('#groupName').focus(); return; }
 
-  const id = els.familyId.value || null;
-  const name = (els.familyName.value || '').trim();
-  const subgroup_id = Number(els.familySubgroupSelect.value) || null;
-  const is_active = !!els.familyIsActive.checked;
-
-  if (!name) {
-    alert('Informe o nome da família.');
-    els.familyName.focus();
-    return;
-  }
-  if (!subgroup_id) {
-    alert('Selecione o subgrupo da família.');
-    els.familySubgroupSelect.focus();
-    return;
-  }
-
-  try {
-    await apiSaveFamily(id, { name, subgroup_id, is_active });
-    resetFamilyForm();
-    await loadFamiliesOnly();
-  } catch (err) {
-    console.error('[groupsAndSubgroups] Erro ao salvar família', err);
-    let msg = 'Erro ao salvar família.';
-    try { msg = JSON.parse(String(err.message).split(' — ')[1] || '{}').error || msg; } catch (_) { /* mantém */ }
-    alert(msg);
-  }
+  await run(async () => {
+    await apiSave(GROUPS_URL, id, { name, is_active: $('#groupIsActive').value === 'true' });
+    Modal.close('groupModal');
+    notify(id ? 'Grupo atualizado.' : 'Grupo cadastrado.');
+    await reloadAll();
+  }, 'Erro ao salvar o grupo.');
 }
 
-function handleFamiliesTableClick(event) {
-  const btn = event.target.closest('button');
-  const row = event.target.closest('tr');
-  if (!btn || !row || !row.dataset.id) return;
+async function submitSubgroup(event) {
+  event.preventDefault();
+  const id = $('#subgroupId').value || null;
+  const name = $('#subgroupName').value.trim();
+  if (!name) { notify('Informe o nome do subgrupo.', 'warning'); $('#subgroupName').focus(); return; }
+  const groupId = Number($('#subgroupGroupSelect').value) || null;
 
-  const fam = state.families.find((f) => String(f.product_family_id) === String(row.dataset.id));
-  if (!fam) return;
+  await run(async () => {
+    await apiSave(SUBGROUPS_URL, id, { name, group_id: groupId, is_active: $('#subgroupIsActive').value === 'true' });
+    Modal.close('subgroupModal');
+    notify(id ? 'Subgrupo atualizado.' : 'Subgrupo cadastrado.');
+    await reloadAll();
+  }, 'Erro ao salvar o subgrupo.');
+}
 
-  if (btn.classList.contains('js-edit-family')) {
-    els.familyId.value = fam.product_family_id;
-    els.familyName.value = fam.name || '';
-    els.familyIsActive.checked = !!fam.is_active;
-    fillFamilySubgroupSelect();
-    els.familySubgroupSelect.value = String(fam.subgroup_id || '');
-    els.btnSaveFamily.textContent = '💾 Atualizar';
-    els.familyName.focus();
+async function submitFamily(event) {
+  event.preventDefault();
+  const id = $('#familyId').value || null;
+  const name = $('#familyName').value.trim();
+  const subgroupId = Number($('#familySubgroupSelect').value) || null;
+  if (!name) { notify('Informe o nome da família.', 'warning'); $('#familyName').focus(); return; }
+  if (!subgroupId) { notify('Selecione o subgrupo da família.', 'warning'); $('#familySubgroupSelect').focus(); return; }
+
+  await run(async () => {
+    await apiSave(FAMILIES_URL, id, { name, subgroup_id: subgroupId, is_active: $('#familyIsActive').value === 'true' });
+    Modal.close('familyModal');
+    notify(id ? 'Família atualizada.' : 'Família cadastrada.');
+    await loadFamilies();
+  }, 'Erro ao salvar a família.');
+}
+
+// ======================================================================
+// AÇÕES DAS LINHAS
+// ======================================================================
+
+const ENTITIES = {
+  groups: {
+    url: GROUPS_URL,
+    idField: 'product_group_id',
+    label: 'o grupo',
+    list: () => state.groups,
+    edit: openGroupModal,
+    deleteNote: 'Os subgrupos dele ficam sem grupo.',
+    after: () => reloadAll(),
+    onRowClick(row) {
+      const id = row.product_group_id;
+      state.selectedGroupId = sameId(state.selectedGroupId, id) ? null : id;
+      state.selectedSubgroupId = null;
+      renderGroups();
+      reloadFromSubgroups();
+    },
+  },
+  subgroups: {
+    url: SUBGROUPS_URL,
+    idField: 'product_subgroup_id',
+    label: 'o subgrupo',
+    list: () => state.subgroups,
+    edit: openSubgroupModal,
+    deleteNote: '',
+    after: () => reloadAll(),
+    onRowClick(row) {
+      const id = row.product_subgroup_id;
+      state.selectedSubgroupId = sameId(state.selectedSubgroupId, id) ? null : id;
+      renderSubgroups();
+      reloadFamilies();
+    },
+  },
+  families: {
+    url: FAMILIES_URL,
+    idField: 'product_family_id',
+    label: 'a família',
+    list: () => state.families,
+    edit: openFamilyModal,
+    deleteNote: 'Os produtos dela ficam sem família.',
+    after: () => reloadFamilies(),
+    onRowClick: null,
+  },
+};
+
+async function handleTableClick(key, event) {
+  const entity = ENTITIES[key];
+  const tr = event.target.closest('tr[data-id]');
+  if (!tr) return;
+  const row = entity.list().find((r) => sameId(r[entity.idField], tr.dataset.id));
+  if (!row) return;
+
+  const btn = event.target.closest('[data-act]');
+  if (!btn) {
+    entity.onRowClick?.(row);
     return;
   }
 
-  if (btn.classList.contains('js-toggle-family')) {
-    const newStatus = !fam.is_active;
-    if (!window.confirm(`Tem certeza que deseja ${newStatus ? 'reativar' : 'inativar'} a família "${fam.name}"?`)) return;
-    apiSaveFamily(fam.product_family_id, { is_active: newStatus })
-      .then(() => loadFamiliesOnly())
-      .catch((err) => {
-        console.error('[groupsAndSubgroups] Erro ao alterar status família', err);
-        alert('Erro ao alterar status da família.');
-      });
+  const act = btn.dataset.act;
+  if (act === 'edit') {
+    entity.edit(row);
     return;
   }
 
-  if (btn.classList.contains('js-delete-family')) {
-    if (!window.confirm(`Excluir DEFINITIVAMENTE a família "${fam.name}"? (Os produtos dela ficam sem família)`)) return;
-    apiDeleteFamily(fam.product_family_id)
-      .then(() => loadFamiliesOnly())
-      .catch((err) => {
-        console.error('[groupsAndSubgroups] Erro ao excluir família', err);
-        alert('Erro ao excluir família.');
-      });
+  if (act === 'toggle') {
+    const activate = !row.is_active;
+    const ok = await confirmCenter(
+      `Deseja ${activate ? 'reativar' : 'inativar'} ${entity.label} "${row.name}"?`,
+      { title: activate ? 'Reativar' : 'Inativar', confirmLabel: activate ? 'Reativar' : 'Inativar' },
+    );
+    if (!ok) return;
+    await run(async () => {
+      await apiSave(entity.url, row[entity.idField], { is_active: activate });
+      notify(activate ? 'Reativado.' : 'Inativado.');
+      await entity.after();
+    }, 'Erro ao alterar o status.');
+    return;
+  }
+
+  if (act === 'delete') {
+    const ok = await confirmCenter(
+      `Excluir definitivamente ${entity.label} "${row.name}"? ${entity.deleteNote}`.trim(),
+      { title: 'Excluir', confirmLabel: 'Excluir', variant: 'error' },
+    );
+    if (!ok) return;
+    await run(async () => {
+      await apiDelete(entity.url, row[entity.idField]);
+      if (key === 'groups' && sameId(state.selectedGroupId, row.product_group_id)) {
+        state.selectedGroupId = null;
+        state.selectedSubgroupId = null;
+      }
+      if (key === 'subgroups' && sameId(state.selectedSubgroupId, row.product_subgroup_id)) {
+        state.selectedSubgroupId = null;
+      }
+      notify('Excluído.');
+      await entity.after();
+    }, 'Erro ao excluir. Verifique se não há vínculos no banco.');
   }
 }
 
 // ======================================================================
-// BIND EVENTS
+// EVENTOS
 // ======================================================================
+
+function bindSearch(inputSel, statusSel, reload) {
+  let timer = null;
+  $(inputSel).addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(reload, 350);
+  });
+  $(inputSel).addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); clearTimeout(timer); reload(); }
+  });
+  $(statusSel).addEventListener('change', reload);
+}
+
+function bindSort(key, renderFn, columns) {
+  createSortableTable({
+    table: `#${key}Table`,
+    defaultColumn: state.sort[key].column,
+    defaultDirection: state.sort[key].direction,
+    allowedColumns: columns,
+    onSort: ({ column, direction }) => {
+      state.sort[key] = { column, direction };
+      renderFn();
+    },
+  });
+}
 
 function bindEvents() {
-  if (els.btnReloadAll) {
-    els.btnReloadAll.addEventListener('click', () => loadGroupsAndSubgroups(true));
-  }
+  Modal.setup();
 
-  // Grupos
-  if (els.groupForm) {
-    els.groupForm.addEventListener('submit', handleGroupFormSubmit);
-  }
-  if (els.btnCancelGroupEdit) {
-    els.btnCancelGroupEdit.addEventListener('click', () => resetGroupForm());
-  }
-  if (els.btnNewGroup) {
-    els.btnNewGroup.addEventListener('click', () => {
-      resetGroupForm();
-      els.groupName.focus();
-    });
-  }
-  if (els.btnSearchGroups) {
-    els.btnSearchGroups.addEventListener('click', () => loadGroupsAndSubgroups(false));
-  }
-  if (els.groupsSearch) {
-    els.groupsSearch.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') {
-        ev.preventDefault();
-        loadGroupsAndSubgroups(false);
-      }
-    });
-  }
-  if (els.groupsShowInactive) {
-    els.groupsShowInactive.addEventListener('change', () =>
-      loadGroupsAndSubgroups(false),
-    );
-  }
-  if (els.groupsTableBody) {
-    els.groupsTableBody.addEventListener('click', handleGroupsTableClick);
-  }
+  $('#groupsBtnNew').addEventListener('click', () => openGroupModal());
+  $('#subgroupsBtnNew').addEventListener('click', () => openSubgroupModal());
+  $('#familiesBtnNew').addEventListener('click', () => openFamilyModal());
 
-  // Subgrupos
-  if (els.subgroupForm) {
-    els.subgroupForm.addEventListener('submit', handleSubgroupFormSubmit);
-  }
-  if (els.btnCancelSubgroupEdit) {
-    els.btnCancelSubgroupEdit.addEventListener('click', () =>
-      resetSubgroupForm(),
-    );
-  }
-  if (els.btnNewSubgroup) {
-    els.btnNewSubgroup.addEventListener('click', () => {
-      resetSubgroupForm();
-      els.subgroupName.focus();
-    });
-  }
-  if (els.btnSearchSubgroups) {
-    els.btnSearchSubgroups.addEventListener('click', () => loadSubgroupsOnly());
-  }
-  if (els.subgroupsSearch) {
-    els.subgroupsSearch.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') {
-        ev.preventDefault();
-        loadSubgroupsOnly();
-      }
-    });
-  }
-  if (els.subgroupsShowInactive) {
-    els.subgroupsShowInactive.addEventListener('change', () => loadSubgroupsOnly());
-  }
-  if (els.subgroupsTableBody) {
-    els.subgroupsTableBody.addEventListener('click', handleSubgroupsTableClick);
-  }
+  $('#groupForm').addEventListener('submit', submitGroup);
+  $('#subgroupForm').addEventListener('submit', submitSubgroup);
+  $('#familyForm').addEventListener('submit', submitFamily);
 
-  // Famílias
-  if (els.familyForm) els.familyForm.addEventListener('submit', handleFamilyFormSubmit);
-  if (els.btnCancelFamilyEdit) els.btnCancelFamilyEdit.addEventListener('click', () => resetFamilyForm());
-  if (els.btnNewFamily) {
-    els.btnNewFamily.addEventListener('click', () => {
-      resetFamilyForm();
-      els.familyName.focus();
-    });
-  }
-  if (els.btnSearchFamilies) els.btnSearchFamilies.addEventListener('click', () => loadFamiliesOnly());
-  if (els.familiesSearch) {
-    els.familiesSearch.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') {
-        ev.preventDefault();
-        loadFamiliesOnly();
-      }
-    });
-  }
-  if (els.familiesShowInactive) els.familiesShowInactive.addEventListener('change', () => loadFamiliesOnly());
-  if (els.familiesTableBody) els.familiesTableBody.addEventListener('click', handleFamiliesTableClick);
-  if (els.btnClearSelectedSubgroup) {
-    els.btnClearSelectedSubgroup.addEventListener('click', () => {
+  ['groups', 'subgroups', 'families'].forEach((key) => {
+    $(`#${key}TableBody`).addEventListener('click', (ev) => handleTableClick(key, ev));
+  });
+
+  bindSearch('#groupsSearch', '#groupsStatus', () => run(async () => {
+    await loadGroups();
+    await loadSubgroups();
+    await loadFamilies();
+  }, 'Erro ao buscar grupos.'));
+  bindSearch('#subgroupsSearch', '#subgroupsStatus', reloadFromSubgroups);
+  bindSearch('#familiesSearch', '#familiesStatus', reloadFamilies);
+
+  $('#subgroupsBtnClearFilter').addEventListener('click', () => {
+    state.selectedGroupId = null;
+    state.selectedSubgroupId = null;
+    $('#groupsSearch').value = '';
+    run(async () => {
+      await loadGroups();
+      await loadSubgroups();
+      await loadFamilies();
+    }, 'Erro ao limpar o filtro.');
+  });
+
+  $('#familiesBtnClearFilter').addEventListener('click', () => {
+    if (state.selectedSubgroupId) {
       state.selectedSubgroupId = null;
-      if (els.familiesSearch) els.familiesSearch.value = '';
-      renderSubgroupsTable();
-      resetFamilyForm();
-      loadFamiliesOnly();
-    });
-  }
-
-  if (els.btnClearSelectedGroup) {
-    els.btnClearSelectedGroup.addEventListener('click', () => {
-      // Limpa também a busca de grupos, que filtra os subgrupos
+      renderSubgroups();
+    } else {
       state.selectedGroupId = null;
-      state.selectedSubgroupId = null;
-      if (els.groupsSearch) els.groupsSearch.value = '';
-      loadGroupsAndSubgroups(false);
-    });
-  }
+      renderGroups();
+      reloadFromSubgroups();
+      return;
+    }
+    reloadFamilies();
+  });
+
+  bindSort('groups', renderGroups, ['product_group_id', 'name', 'subgroups_count', 'is_active']);
+  bindSort('subgroups', renderSubgroups, ['product_subgroup_id', 'name', 'group_name', 'is_active']);
+  bindSort('families', renderFamilies, ['product_family_id', 'name', 'subgroup_name', 'is_active']);
 }
 
 // ======================================================================
@@ -1127,12 +645,6 @@ function bindEvents() {
 // ======================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  try {
-    cacheDom();
-    bindEvents();
-    loadGroupsAndSubgroups(true);
-  } catch (err) {
-    console.error('[groupsAndSubgroups] Erro na inicialização', err);
-    alert('Erro ao inicializar a tela de Grupos & Subgrupos.');
-  }
+  bindEvents();
+  reloadAll();
 });
