@@ -72,13 +72,14 @@ export const taxAssessmentDashboard = {
 
         return `
           <article
-            class="dash-card dash-card--analytics dash-card--taxes"
+            class="dash-card dash-card--analytics dash-card--taxes dash-card--block"
             data-dashboard-key="${DASHBOARD_KEY}"
           >
 
             <div class="sales-analytics sales-taxes tax-assessment">
 
-              <section class="sales-analytics__period" aria-label="Filtro por período">
+              <section class="sales-analytics__period stock-lots-dash__top dash-block__top" aria-label="Filtro por período">
+                <span class="stock-lots-dash__caption dash-block__caption">Débito × crédito dos impostos, saldo a recolher e resultado estimado</span>
                 <label class="sales-analytics__period-field">
                   <span>Período</span>
                   <select data-ta-filter="periodMode">
@@ -117,6 +118,7 @@ export const taxAssessmentDashboard = {
                 </div>
 
                 <span class="sales-analytics__period-caption" data-ta-period-caption></span>
+                <a class="stock-lots-dash__link" href="/public/fiscalApuracao/fiscalApuracao.html" title="Abrir Apuração Fiscal">Abrir Apuração Fiscal →</a>
               </section>
 
 

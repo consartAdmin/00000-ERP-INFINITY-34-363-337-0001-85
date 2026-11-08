@@ -89,7 +89,7 @@ export const salesAnalyticsDashboard = {
 
         return `
           <article
-            class="dash-card dash-card--analytics"
+            class="dash-card dash-card--analytics dash-card--block"
             data-dashboard-key="${DASHBOARD_KEY}"
           >
 
@@ -100,7 +100,8 @@ export const salesAnalyticsDashboard = {
               "
             >
 
-              <section class="sales-analytics__period" aria-label="Filtro por período">
+              <section class="sales-analytics__period stock-lots-dash__top dash-block__top" aria-label="Filtro por período">
+                <span class="stock-lots-dash__caption dash-block__caption">Faturamento das NF-e emitidas · curva ABC de produtos e clientes</span>
                 <label class="sales-analytics__period-field">
                   <span>Período</span>
                   <select data-filter="periodMode">
@@ -126,6 +127,7 @@ export const salesAnalyticsDashboard = {
                 </div>
 
                 <span class="sales-analytics__period-caption" data-period-caption></span>
+                <a class="stock-lots-dash__link" href="/public/salesReport/salesReport.html" title="Abrir Relatório de Vendas">Abrir Relatório de Vendas →</a>
               </section>
 
               <!-- ==================================================== -->
@@ -283,6 +285,7 @@ export const salesAnalyticsDashboard = {
                   >
                     R$ 0,00
                   </strong>
+                  <small class="stock-lots-kpi__hint">NF-e emitidas no período</small>
 
                 </div>
 
@@ -313,6 +316,7 @@ export const salesAnalyticsDashboard = {
                   >
                     0
                   </strong>
+                  <small class="stock-lots-kpi__hint">soma das quantidades nas notas</small>
 
                 </div>
 
@@ -343,6 +347,7 @@ export const salesAnalyticsDashboard = {
                   >
                     0
                   </strong>
+                  <small class="stock-lots-kpi__hint">notas autorizadas no período</small>
 
                 </div>
 
@@ -373,6 +378,7 @@ export const salesAnalyticsDashboard = {
                   >
                     R$ 0,00
                   </strong>
+                  <small class="stock-lots-kpi__hint">faturamento ÷ notas emitidas</small>
 
                 </div>
 
