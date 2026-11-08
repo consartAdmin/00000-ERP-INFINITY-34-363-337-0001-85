@@ -77,9 +77,11 @@
 /*using*/
 @import url("./textArea.css");
 
-/* Visual "dock" (mesmo estilo do menu novo). Só vale com class="ui-dock" no <html>. */
-@import url("./themeDock.css");
 
 /* Dica:
    Se precisar de temas/overrides específicos do cliente/instância,
    crie um novo arquivo e importe aqui após os demais para sobrepor. */
+
+/* Visual "dock" (mesmo estilo do menu novo) em todas as telas.
+   Para uma tela ficar no visual antigo: <html class="ui-classic"> */
+@import url("./themeDock.css");

@@ -7,11 +7,11 @@
    componentes do design system (table-layout-integrated, fields, btn,
    table, table-footer); a estrutura das telas não muda.
 
-   Ativação por tela (piloto):  <html lang="pt-BR" class="ui-dock">
-   Ativação global (etapa final): core.js põe a classe no <html>.
+   Vale para TODAS as telas que importam o style.css.
+   Para uma tela voltar ao visual antigo: <html lang="pt-BR" class="ui-classic">
 ===================================================================== */
 
-:root.ui-dock {
+:root:not(.ui-classic) {
   --dock-blue: #3b8bff;
   --dock-blue-soft: #6aa8ff;
   --dock-blue-dark: #1f6fe5;
@@ -87,12 +87,12 @@
   /* Botões: contorno fino, texto grafite, azul no hover */
   --btn-radius: 10px;
   --btn-font-weight: 500;
-  --btn-content-gap: 7px;
+  --btn-content-gap: 6px;
   --btn-shadow: none;
   --btn-shadow-hover: 0 6px 16px -10px rgba(59, 139, 255, 0.55);
   --btn-focus: rgba(59, 139, 255, 0.25);
   --btn-sm-height: 32px;
-  --btn-sm-padding-x: 12px;
+  --btn-sm-padding-x: 10px;
   --btn-sm-font-size: 12px;
 
   --btn-neutral-bg: #ffffff;
@@ -133,18 +133,18 @@
   --btn-primary-hover-bd: var(--dock-blue-dark);
 }
 
-html.ui-dock {
+html:not(.ui-classic) {
   background: var(--dock-page-bg);
 }
 
 /* ---------- Cartão da tabela integrada ---------- */
-.ui-dock .table-layout-integrated {
+:root:not(.ui-classic) .table-layout-integrated {
   position: relative;
   box-shadow: var(--dock-shadow);
 }
 
 /* filete azul no topo, igual ao do menu */
-.ui-dock .table-layout-integrated::before {
+:root:not(.ui-classic) .table-layout-integrated::before {
   content: '';
   position: absolute;
   top: 0;
@@ -157,17 +157,17 @@ html.ui-dock {
   opacity: 0.85;
 }
 
-.ui-dock .table-layout-integrated > .table-scroll,
-.ui-dock .table-scroll {
+:root:not(.ui-classic) .table-layout-integrated > .table-scroll,
+:root:not(.ui-classic) .table-scroll {
   border: 0;
   border-radius: 0;
   background: #ffffff;
 }
 
 /* ---------- Campos ---------- */
-.ui-dock .fields > .label,
-.ui-dock .fields > label,
-.ui-dock .fields > .fields-label {
+:root:not(.ui-classic) .fields > .label,
+:root:not(.ui-classic) .fields > label,
+:root:not(.ui-classic) .fields > .fields-label {
   display: block;
   margin: 0 0 var(--fields-label-gap);
   color: var(--dock-muted);
@@ -177,8 +177,8 @@ html.ui-dock {
   line-height: 1.2;
 }
 
-.ui-dock .table-layout-integrated__filter .fields input,
-.ui-dock .table-layout-integrated__filter .fields select {
+:root:not(.ui-classic) .table-layout-integrated__filter .fields input,
+:root:not(.ui-classic) .table-layout-integrated__filter .fields select {
   height: 32px;
   padding: 0 10px;
   border-width: 1px;
@@ -187,29 +187,29 @@ html.ui-dock {
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.ui-dock .table-layout-integrated__filter .fields input:hover,
-.ui-dock .table-layout-integrated__filter .fields select:hover {
+:root:not(.ui-classic) .table-layout-integrated__filter .fields input:hover,
+:root:not(.ui-classic) .table-layout-integrated__filter .fields select:hover {
   border-color: #bcd6ff;
 }
 
-.ui-dock .fields input:focus,
-.ui-dock .fields select:focus,
-.ui-dock .fields textarea:focus {
+:root:not(.ui-classic) .fields input:focus,
+:root:not(.ui-classic) .fields select:focus,
+:root:not(.ui-classic) .fields textarea:focus {
   border-color: var(--fields-border-focus);
   box-shadow: 0 0 0 3px var(--fields-focus-ring);
 }
 
 /* ---------- Botões ---------- */
-.ui-dock .btn {
+:root:not(.ui-classic) .btn {
   border-width: 1px;
 }
 
-.ui-dock .btn:active {
+:root:not(.ui-classic) .btn:active {
   transform: none;
 }
 
 /* Ícones SVG de linha nos botões (mesmo traço do menu) */
-.ui-dock .btn svg {
+:root:not(.ui-classic) .btn svg {
   width: 16px;
   height: 16px;
   flex: 0 0 auto;
@@ -220,76 +220,76 @@ html.ui-dock {
   stroke-linejoin: round;
 }
 
-.ui-dock .btn:not(.btn-new):not(.btn-save):not(.btn-confirm) svg {
+:root:not(.ui-classic) .btn:not(.btn-new):not(.btn-save):not(.btn-confirm) svg {
   color: var(--dock-blue-soft);
 }
 
-.ui-dock .btn:not(.btn-new):not(.btn-save):not(.btn-confirm):hover {
+:root:not(.ui-classic) .btn:not(.btn-new):not(.btn-save):not(.btn-confirm):hover {
   color: var(--dock-blue-dark);
 }
 
-.ui-dock .btn:not(.btn-new):not(.btn-save):not(.btn-confirm):hover svg {
+:root:not(.ui-classic) .btn:not(.btn-new):not(.btn-save):not(.btn-confirm):hover svg {
   color: var(--dock-blue);
 }
 
 /* Botões de exportação: ícone na cor do formato */
-.ui-dock .btn .btn-ico-pdf {
+:root:not(.ui-classic) .btn .btn-ico-pdf {
   color: #e5484d !important;
 }
 
-.ui-dock .btn .btn-ico-excel {
+:root:not(.ui-classic) .btn .btn-ico-excel {
   color: #1f9d55 !important;
 }
 
 /* Botão só com ícone */
-.ui-dock .btn.btn-icon-only {
+:root:not(.ui-classic) .btn.btn-icon-only {
   width: 32px;
   min-width: 32px;
   padding: 0;
 }
 
 /* ---------- Cabeçalho da tabela ---------- */
-.ui-dock .table thead th {
+:root:not(.ui-classic) .table thead th {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.ui-dock .table thead .table-sort-button {
+:root:not(.ui-classic) .table thead .table-sort-button {
   text-transform: inherit;
   letter-spacing: inherit;
   font-weight: inherit;
 }
 
-.ui-dock .table thead [data-sort-icon] {
+:root:not(.ui-classic) .table thead [data-sort-icon] {
   color: #cbd5e1;
 }
 
-.ui-dock .table thead th[aria-sort="ascending"],
-.ui-dock .table thead th[aria-sort="descending"] {
+:root:not(.ui-classic) .table thead th[aria-sort="ascending"],
+:root:not(.ui-classic) .table thead th[aria-sort="descending"] {
   color: var(--dock-blue-dark);
 }
 
-.ui-dock .table thead th[aria-sort="ascending"] [data-sort-icon],
-.ui-dock .table thead th[aria-sort="descending"] [data-sort-icon] {
+:root:not(.ui-classic) .table thead th[aria-sort="ascending"] [data-sort-icon],
+:root:not(.ui-classic) .table thead th[aria-sort="descending"] [data-sort-icon] {
   color: var(--dock-blue);
 }
 
 /* ---------- Linhas ---------- */
-.ui-dock .table-zebra tbody tr + tr > td,
-.ui-dock .table-zebra tbody tr + tr > th {
+:root:not(.ui-classic) .table-zebra tbody tr + tr > td,
+:root:not(.ui-classic) .table-zebra tbody tr + tr > th {
   border-top: 1px solid var(--dock-line-soft);
 }
 
-.ui-dock .table tbody td {
+:root:not(.ui-classic) .table tbody td {
   color: var(--dock-text);
 }
 
-.ui-dock .table-zebra-hover tbody tr:hover > td {
+:root:not(.ui-classic) .table-zebra-hover tbody tr:hover > td {
   background-color: var(--table-row-hover-bg);
 }
 
 /* Linha de aviso (carregando / vazio / erro) */
-.ui-dock .table tbody td.table-empty-state {
+:root:not(.ui-classic) .table tbody td.table-empty-state {
   height: 160px;
   color: var(--dock-faint);
   font-size: 13px;
@@ -299,34 +299,34 @@ html.ui-dock {
 }
 
 /* ---------- Rodapé ---------- */
-.ui-dock .table-layout-integrated > .table-footer {
+:root:not(.ui-classic) .table-layout-integrated > .table-footer {
   border: 0;
   border-top: 1px solid var(--dock-line-soft);
   border-radius: 0;
   margin-top: 0;
 }
 
-.ui-dock .table-footer .table-footer__info .summary-pill {
+:root:not(.ui-classic) .table-footer .table-footer__info .summary-pill {
   border-radius: 10px;
   color: var(--dock-muted);
 }
 
-.ui-dock .table-footer .table-footer__pagination,
-.ui-dock .table-footer .table-footer__page-size select {
+:root:not(.ui-classic) .table-footer .table-footer__pagination,
+:root:not(.ui-classic) .table-footer .table-footer__page-size select {
   border-radius: 10px;
 }
 
 /* Ícones de ação da tabela com o traço fino do menu */
-.ui-dock .action-icon svg {
+:root:not(.ui-classic) .action-icon svg {
   stroke-width: 1.5;
 }
 
-.ui-dock .action-icon:hover {
+:root:not(.ui-classic) .action-icon:hover {
   background: var(--dock-blue-bg);
 }
 
 /* ---------- Abas ---------- */
-:root.ui-dock {
+:root:not(.ui-classic) {
   --tab-height: 38px;
   --tab-padding-x: 16px;
   --tab-radius: 12px 12px 0 0;
@@ -336,13 +336,13 @@ html.ui-dock {
   --tab-border: var(--dock-line);
 }
 
-.ui-dock .tab {
+:root:not(.ui-classic) .tab {
   gap: 7px;
   border: 1px solid transparent;
   border-bottom: 0;
 }
 
-.ui-dock .tab svg {
+:root:not(.ui-classic) .tab svg {
   width: 16px;
   height: 16px;
   flex: 0 0 auto;
@@ -354,13 +354,13 @@ html.ui-dock {
   color: var(--dock-blue-soft);
 }
 
-.ui-dock .tab:hover {
+:root:not(.ui-classic) .tab:hover {
   background: var(--dock-blue-bg);
   color: var(--dock-blue-dark);
 }
 
-.ui-dock .tab.is-active,
-.ui-dock .tab[aria-selected="true"] {
+:root:not(.ui-classic) .tab.is-active,
+:root:not(.ui-classic) .tab[aria-selected="true"] {
   border: 1px solid var(--dock-line);
   border-bottom-color: #ffffff;
   margin-bottom: -1px;
@@ -368,13 +368,13 @@ html.ui-dock {
   box-shadow: inset 0 2px 0 var(--dock-blue);
 }
 
-.ui-dock .tab.is-active svg,
-.ui-dock .tab[aria-selected="true"] svg {
+:root:not(.ui-classic) .tab.is-active svg,
+:root:not(.ui-classic) .tab[aria-selected="true"] svg {
   color: var(--dock-blue);
 }
 
 /* ---------- Seções em cartão (section-panel) ---------- */
-.ui-dock .section-panel {
+:root:not(.ui-classic) .section-panel {
   --section-background: #ffffff;
   --section-border-color: var(--dock-line);
   --section-radius: 16px;
@@ -383,7 +383,7 @@ html.ui-dock {
   --section-padding-x: 18px;
 }
 
-.ui-dock .section__title {
+:root:not(.ui-classic) .section__title {
   color: var(--dock-text);
   font-size: 14px;
   font-weight: 600;
@@ -391,7 +391,7 @@ html.ui-dock {
 }
 
 /* marcador azul antes do título da seção */
-.ui-dock .section__header > .badge-step:empty {
+:root:not(.ui-classic) .section__header > .badge-step:empty {
   display: inline-block;
   width: 3px;
   height: 16px;
@@ -400,24 +400,24 @@ html.ui-dock {
 }
 
 /* ---------- Campos em formulários ---------- */
-.ui-dock .fields input,
-.ui-dock .fields select,
-.ui-dock .fields textarea {
+:root:not(.ui-classic) .fields input,
+:root:not(.ui-classic) .fields select,
+:root:not(.ui-classic) .fields textarea {
   border-width: 1px;
   border-radius: 10px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.ui-dock .fields input:hover:not(:disabled):not([readonly]),
-.ui-dock .fields select:hover:not(:disabled),
-.ui-dock .fields textarea:hover:not(:disabled):not([readonly]) {
+:root:not(.ui-classic) .fields input:hover:not(:disabled):not([readonly]),
+:root:not(.ui-classic) .fields select:hover:not(:disabled),
+:root:not(.ui-classic) .fields textarea:hover:not(:disabled):not([readonly]) {
   border-color: #bcd6ff;
 }
 
-.ui-dock .fields input:disabled,
-.ui-dock .fields input[readonly],
-.ui-dock .fields select:disabled,
-.ui-dock .fields textarea:disabled {
+:root:not(.ui-classic) .fields input:disabled,
+:root:not(.ui-classic) .fields input[readonly],
+:root:not(.ui-classic) .fields select:disabled,
+:root:not(.ui-classic) .fields textarea:disabled {
   background: #f8fafc;
   border-color: var(--dock-line-soft);
   color: var(--dock-muted);
