@@ -4874,8 +4874,8 @@
   height: clamp(260px, calc(100vh - 330px), 520px) !important;
   gap: 8px !important;
 }
-/* Estoque tem dois blocos (Validade + Reposição): painéis na metade da altura */
-#includeDashBoard[data-dashboard-page="stock"] .dash-card.dash-card--block[data-dashboard-key] .sales-analytics__abc-row {
+/* Estoque (Validade + Reposição) e Impostos (Impostos + Apuração) têm dois blocos: painéis na metade da altura */
+#includeDashBoard:is([data-dashboard-page="stock"], [data-dashboard-page="taxes"]) .dash-card.dash-card--block[data-dashboard-key] .sales-analytics__abc-row {
   height: clamp(190px, calc((100vh - 500px) / 2), 320px) !important;
 }
 #includeDashBoard .dash-card.dash-card--block[data-dashboard-key] .analytics-chart--abc {
