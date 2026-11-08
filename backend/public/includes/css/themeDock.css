@@ -422,3 +422,57 @@ html:not(.ui-classic) {
   border-color: var(--dock-line-soft);
   color: var(--dock-muted);
 }
+
+/* Botões de texto das tabelas convertidos em ícone (tableActionIcons.js):
+   neutraliza o visual de .btn e do CSS da própria tela */
+:root:not(.ui-classic) td button.action-icon--table {
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 4px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--action-icon-color) !important;
+  filter: none !important;
+  opacity: 1 !important;
+  line-height: 1 !important;
+}
+
+:root:not(.ui-classic) td button.action-icon--table:hover:not(:disabled) {
+  background: var(--dock-blue-bg) !important;
+}
+
+:root:not(.ui-classic) td button.action-icon--table.action-icon--edit:hover { color: var(--action-icon-edit) !important; }
+:root:not(.ui-classic) td button.action-icon--table.action-icon--view:hover,
+:root:not(.ui-classic) td button.action-icon--table.action-icon--copy:hover { color: var(--action-icon-view) !important; }
+:root:not(.ui-classic) td button.action-icon--table.action-icon--pause:hover { color: var(--action-icon-warning) !important; }
+:root:not(.ui-classic) td button.action-icon--table.action-icon--delete:hover { color: var(--action-icon-danger) !important; }
+:root:not(.ui-classic) td button.action-icon--table.action-icon--play { color: var(--action-icon-success) !important; }
+
+:root:not(.ui-classic) td button.action-icon--table:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed;
+}
+
+/* Título dentro da barra de filtros (ex.: "Tipos de Status") */
+:root:not(.ui-classic) .table-layout-integrated__filter h2 {
+  margin: 0;
+  color: var(--dock-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Ícone SVG dentro de botão: tamanho fixo também no visual antigo (ui-classic) */
+.btn > svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

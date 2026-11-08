@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { createActionIcons } from '/public/includes/js/actionIcons.js';
 
 // ---------------------------------------------------------------------
 // API base
@@ -166,31 +167,27 @@ function renderRows(rows = []) {
     const tdActions = document.createElement('td');
     tdActions.classList.add('cs-col-actions');
 
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('cs-actions');
+    const wrapper = createActionIcons([
+      {
+        action: 'edit',
+        title: 'Editar',
+        onClick: (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          openModal('edit', row);
+        },
+      },
+      {
+        action: row.is_active ? 'pause' : 'delete',
+        title: row.is_active ? 'Desativar' : 'Excluir',
+        onClick: (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          handleDeleteSegment(row.segment_id, row.is_active);
+        },
+      },
+    ]);
 
-    const btnEdit = document.createElement('button');
-    btnEdit.type = 'button';
-    btnEdit.className = 'cs-action-btn';
-    btnEdit.textContent = 'Editar';
-    btnEdit.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      openModal('edit', row);
-    });
-
-    const btnDelete = document.createElement('button');
-    btnDelete.type = 'button';
-    btnDelete.className = 'cs-action-btn cs-action-btn-danger';
-    btnDelete.textContent = row.is_active ? 'Desativar' : 'Excluir';
-    btnDelete.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      handleDeleteSegment(row.segment_id, row.is_active);
-    });
-
-    wrapper.appendChild(btnEdit);
-    wrapper.appendChild(btnDelete);
     tdActions.appendChild(wrapper);
     tr.appendChild(tdActions);
 

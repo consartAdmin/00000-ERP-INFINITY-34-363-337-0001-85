@@ -64,8 +64,8 @@
         <div class="fields-inline fields-gap-3">
 
           <!-- Botões e campos lado a lado no .fields-inline (alinha pela base, todos com 30px) -->
-          <button type="button" class="btn btn-toolbar btn-sm" id="btnNewInventory" data-tab="tab-edit">
-              Novo inventário
+          <button type="button" class="btn btn-new btn-sm" id="btnNewInventory" data-tab="tab-edit">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo inventário</span>
             </button>
 
             <button type="button" class="btn btn-toolbar btn-sm" id="btnImportInventory">
@@ -96,8 +96,8 @@
               </select>
             </div>
 
-            <button id="btnSearchInventories" class="btn btn-toolbar btn-sm" type="button">
-              Buscar
+            <button id="btnSearchInventories" class="btn btn-search btn-sm" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span>
             </button>
 
           <button type="button" class="btn btn-toolbar btn-sm btn-position-right" id="tabLogsBtn" data-tab="tab-logs">
@@ -201,8 +201,8 @@
 
             <!-- ✅ AÇÕES ao lado da data -->
             <div class="btn-inline">
-              <button type="button" id="btnSaveInventoryInline" class="btn btn-toolbar btn-sm">
-                Salvar inventário
+              <button type="button" id="btnSaveInventoryInline" class="btn btn-new btn-sm">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar inventário</span>
               </button>
               <button type="button" id="btnFinalizeInventoryInline" class="btn btn-toolbar btn-sm">
                 Finalizar e aplicar estoque
@@ -273,8 +273,8 @@
 
             <div class="fields fields-h-5 fields-w-15 fields-font-3">
               <label class="field-label">&nbsp;</label>
-              <button id="btnSaveItem" type="button" class="btn btn-toolbar btn-sm">
-                Salvar item
+              <button id="btnSaveItem" type="button" class="btn btn-new btn-sm">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar item</span>
               </button>
             </div>
 
@@ -336,7 +336,7 @@
             <input id="logProductCode" type="text" placeholder="Código do produto" />
           </div>
 
-          <button id="btnSearchLogs" class="btn btn-toolbar btn-sm" type="button">Filtrar</button>
+          <button id="btnSearchLogs" class="btn btn-search btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Filtrar</span></button>
 
           <div class="btn-position-right" title="Histórico de operações realizadas no inventário selecionado.">
             <strong>📋 Registros (Auditoria)</strong>
