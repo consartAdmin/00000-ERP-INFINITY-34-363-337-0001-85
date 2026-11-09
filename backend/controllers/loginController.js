@@ -6,6 +6,27 @@
 import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { getTokenHours } from "./sessionTimeOutConfigController.js";
+
+// Assina o token com a validade da tela Configurar Timeout de Sessão
+async function signSessionToken(user) {
+  const payload = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    access_level: user.access_level,
+  };
+  const hours = await getTokenHours();
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: `${hours}h` });
+  const decoded = jwt.decode(token);
+  const nowSec = Math.floor(Date.now() / 1000);
+  return {
+    token,
+    payload,
+    expiresAt: decoded?.exp ? new Date(decoded.exp * 1000).toISOString() : null,
+    expiresInSeconds: decoded?.exp ? decoded.exp - nowSec : null,
+  };
+}
 
 // 🔐 Chave secreta (recomenda-se definir JWT_SECRET no .env)
 //const SECRET_KEY = process.env.JWT_SECRET || "chave_secreta_segura";
@@ -57,29 +78,8 @@ export async function login(req, res) {
       return res.status(401).json({ erro: "Usuário ou senha inválidos." });
     }
 
-    // 🧩 Monta payload JWT
-    const payload = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      access_level: user.access_level,
-    };
-
-    // ⏱ Tempo de expiração configurado (ex: 2h)
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: '2h',
-    });
-
-    // Decodifica só para calcular datas amigáveis (não é verificação)
-    const decoded = jwt.decode(token);
-    let expiresAt = null;
-    let expiresInSeconds = null;
-
-    if (decoded && decoded.exp) {
-      const nowSec = Math.floor(Date.now() / 1000);
-      expiresAt = new Date(decoded.exp * 1000).toISOString();
-      expiresInSeconds = decoded.exp - nowSec;
-    }
+    // ⏱ Validade vem da tela Configurar Timeout de Sessão (padrão 2h)
+    const { token, payload, expiresAt, expiresInSeconds } = await signSessionToken(user);
 
     console.log(
       `[LOGIN] ✅ Acesso autorizado → ${user.name} (${user.access_level}) | expira em: ${expiresAt}`
@@ -105,3 +105,31 @@ export async function login(req, res) {
 }
 
 export default { login };
+
+/**
+ * POST /api/session/refresh — renova o token enquanto o usuário está usando o sistema.
+ * Exige token ainda válido (requireAuth). Relê o usuário para respeitar inativação
+ * e mudança de perfil feitas depois do login.
+ */
+export async function refreshSession(req, res) {
+  try {
+    const userId = req.user?.user_id;
+    if (!userId) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+
+    const { rows } = await pool.query(
+      `SELECT user_id AS id, name, email, access_level, is_active
+         FROM public.users WHERE user_id = $1 LIMIT 1`,
+      [userId]
+    );
+    const user = rows[0];
+    if (!user || !user.is_active) {
+      return res.status(401).json({ ok: false, error: "UNAUTHORIZED", reason: "USER_INACTIVE" });
+    }
+
+    const { token, payload, expiresAt, expiresInSeconds } = await signSessionToken(user);
+    return res.json({ ok: true, token, user: payload, expiresAt, expiresInSeconds });
+  } catch (err) {
+    console.error("[LOGIN] 💥 Erro ao renovar sessão:", err.message);
+    return res.status(500).json({ ok: false, error: "Erro ao renovar a sessão." });
+  }
+}

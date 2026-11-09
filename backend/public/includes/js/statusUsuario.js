@@ -212,28 +212,44 @@
     tickHora();
     setInterval(tickHora, 1000);
 
-    // Contador de sessão
-    if (usuario.exp) {
-      const elContador = document.getElementById('su-contador');
-      const timer = setInterval(() => {
-        const restante = usuario.exp - Date.now();
-        if (restante <= 0) {
-          elContador.textContent = 'Sessão expirada';
-          clearInterval(timer);
-          // Limpa tokens e manda de volta pra tela de login
-          localStorage.removeItem('token');
-          localStorage.removeItem('auth_token');
-          sessionStorage.removeItem('token');
-          sessionStorage.removeItem('auth_token');
-          window.location.href = '/public/login/login.html?expired=1';
-        } else {
-          elContador.textContent = `⏳ ${formatarTempo(restante)}`;
-        }
-      }, 1000);
-    } else {
-      const elContador = document.getElementById('su-contador');
-      if (elContador) elContador.textContent = '';
+    // Contador de sessão: mostra o que terminar primeiro, a inatividade
+    // (tela Configurar Timeout de Sessão) ou a validade do login (token).
+    // O token é relido a cada segundo porque o sessionTimeOutConfig.js o renova.
+    const elContador = document.getElementById('su-contador');
+    function fimDaSessao() {
+      const sto = window.__CONSART_STO__;
+      if (sto && typeof sto.deadline === 'function') return sto.deadline();
+      const exp = getUsuarioAtual().exp;
+      return { at: exp, reason: exp ? 'token' : null };
     }
+    function tickSessao() {
+      if (!elContador) return;
+      const { at, reason } = fimDaSessao();
+      if (!at) {
+        elContador.textContent = '';
+        elContador.removeAttribute('title');
+        return;
+      }
+      const restante = at - Date.now();
+      if (restante <= 0 && reason === 'token') {
+        elContador.textContent = 'Sessão expirada';
+        clearInterval(timerSessao);
+        // Limpa tokens e manda de volta pra tela de login
+        localStorage.removeItem('token');
+        localStorage.removeItem('auth_token');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('auth_token');
+        window.location.href = '/public/login/login.html?expired=1';
+        return;
+      }
+      // Na inatividade quem desloga é o sessionTimeOutConfig.js
+      elContador.textContent = `⏳ ${formatarTempo(restante)}`;
+      elContador.title = reason === 'idle'
+        ? 'Tempo até sair por inatividade (reinicia a cada clique ou tecla)'
+        : 'Tempo até o login vencer (renova sozinho enquanto você usa o sistema)';
+    }
+    const timerSessao = setInterval(tickSessao, 1000);
+    tickSessao();
 
     // Logout manual
     const btnLogout = document.getElementById('su-logout');

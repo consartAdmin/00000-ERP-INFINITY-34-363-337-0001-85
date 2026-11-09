@@ -10,12 +10,71 @@ import pool from '../config/db.js'; // importando pool diretamente
 // Campos permitidos / defaults (espelho do schema)
 const DEFAULTS = {
   id: 1,
-  enabled: true,
+  enabled: false,
   idle_minutes: 10,
   warn_seconds: 0,
   silent: true,
-  redirect_url: '/public/login/login.html'
+  redirect_url: '/public/login/login.html',
+  token_hours: 2
 };
+
+// Validade do login (JWT), em horas: limites aceitos na tela
+export const TOKEN_HOURS_MIN = 1;
+export const TOKEN_HOURS_MAX = 24;
+
+const SELECT_COLS = 'id, enabled, idle_minutes, warn_seconds, silent, redirect_url, token_hours, updated_by, updated_at';
+
+/**
+ * Garante a tabela e a coluna token_hours (rodado no boot do server.js).
+ * Tabelas antigas não tinham token_hours: a validade do login era 2h fixa no código.
+ */
+export async function ensureSessionTimeOutConfigTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "sessionTimeOutConfig" (
+      id           INTEGER PRIMARY KEY,
+      enabled      BOOLEAN NOT NULL DEFAULT false,
+      idle_minutes INTEGER NOT NULL DEFAULT 10,
+      warn_seconds INTEGER NOT NULL DEFAULT 0,
+      silent       BOOLEAN NOT NULL DEFAULT true,
+      redirect_url TEXT NOT NULL DEFAULT '/public/login/login.html',
+      updated_by   TEXT,
+      updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`);
+  await pool.query(`ALTER TABLE "sessionTimeOutConfig" ADD COLUMN IF NOT EXISTS token_hours INTEGER NOT NULL DEFAULT 2`);
+  tokenHoursCache = { value: null, at: 0 };
+}
+
+// Cache curto para o login não consultar a tabela a cada requisição
+let tokenHoursCache = { value: null, at: 0 };
+
+/** Validade do login em horas, lida da tabela (padrão 2). */
+export async function getTokenHours() {
+  if (tokenHoursCache.value != null && Date.now() - tokenHoursCache.at < 60_000) {
+    return tokenHoursCache.value;
+  }
+  let hours = DEFAULTS.token_hours;
+  try {
+    const { rows } = await pool.query('SELECT token_hours FROM "sessionTimeOutConfig" WHERE id = 1');
+    const n = Number(rows?.[0]?.token_hours);
+    if (Number.isFinite(n) && n >= TOKEN_HOURS_MIN && n <= TOKEN_HOURS_MAX) hours = Math.floor(n);
+  } catch (err) {
+    console.warn('[sessionTimeOutConfig] token_hours indisponível, usando 2h:', err?.message || err);
+  }
+  tokenHoursCache = { value: hours, at: Date.now() };
+  return hours;
+}
+
+const toApi = (row) => ({
+  id: row.id,
+  enabled: !!row.enabled,
+  idle_minutes: Number(row.idle_minutes),
+  warn_seconds: Number(row.warn_seconds),
+  silent: !!row.silent,
+  redirect_url: row.redirect_url || DEFAULTS.redirect_url,
+  token_hours: Number(row.token_hours) || DEFAULTS.token_hours,
+  updated_by: row.updated_by || null,
+  updated_at: row.updated_at || null
+});
 
 // Helper de validação simples
 const normalizeBoolean = (v) => {
@@ -33,25 +92,14 @@ const toInt = (v) => {
  */
 export async function getSessionConfig(req, res) {
   try {
-    const sql = `SELECT id, enabled, idle_minutes, warn_seconds, silent, redirect_url, updated_by, updated_at
-                 FROM "sessionTimeOutConfig" WHERE id = $1`;
+    const sql = `SELECT ${SELECT_COLS} FROM "sessionTimeOutConfig" WHERE id = $1`;
     const { rows } = await pool.query(sql, [1]);
 
     if (!rows || rows.length === 0) {
       return res.status(200).json({ ...DEFAULTS });
     }
 
-    const row = rows[0];
-    return res.status(200).json({
-      id: row.id,
-      enabled: !!row.enabled,
-      idle_minutes: Number(row.idle_minutes),
-      warn_seconds: Number(row.warn_seconds),
-      silent: !!row.silent,
-      redirect_url: row.redirect_url || DEFAULTS.redirect_url,
-      updated_by: row.updated_by || null,
-      updated_at: row.updated_at || null
-    });
+    return res.status(200).json(toApi(rows[0]));
   } catch (err) {
     console.error('[sessionTimeOutConfigController.get] erro', err);
     return res.status(500).json({ ok: false, error: 'Erro interno ao buscar configuração.' });
@@ -100,11 +148,19 @@ export async function updateSessionConfig(req, res) {
       next.redirect_url = ru;
     }
 
+    if (Object.prototype.hasOwnProperty.call(body, 'token_hours')) {
+      const th = toInt(body.token_hours);
+      if (!Number.isFinite(th) || th < TOKEN_HOURS_MIN || th > TOKEN_HOURS_MAX) {
+        return res.status(400).json({ ok: false, error: `Validade do login deve ficar entre ${TOKEN_HOURS_MIN} e ${TOKEN_HOURS_MAX} horas.` });
+      }
+      next.token_hours = th;
+    }
+
     let updated_by = null;
     if (Object.prototype.hasOwnProperty.call(body, 'updated_by')) {
       updated_by = body.updated_by ? String(body.updated_by).trim() : null;
-    } else if (req.user && req.user.username) {
-      updated_by = req.user.username;
+    } else if (req.user && (req.user.name || req.user.username)) {
+      updated_by = req.user.name || req.user.username;
     }
 
     if (Object.keys(next).length === 0 && updated_by == null) {
@@ -135,7 +191,7 @@ export async function updateSessionConfig(req, res) {
       VALUES (${insertVals.join(', ')})
       ON CONFLICT (id) DO UPDATE SET
         ${updateAssignments.join(', ')}, updated_at = now()
-      RETURNING id, enabled, idle_minutes, warn_seconds, silent, redirect_url, updated_by, updated_at;
+      RETURNING ${SELECT_COLS};
     `;
 
     const { rows } = await pool.query(sql, params);
@@ -144,19 +200,8 @@ export async function updateSessionConfig(req, res) {
       return res.status(500).json({ ok: false, error: 'Falha ao persistir configuração.' });
     }
 
-    return res.status(200).json({
-      ok: true,
-      data: {
-        id: saved.id,
-        enabled: !!saved.enabled,
-        idle_minutes: Number(saved.idle_minutes),
-        warn_seconds: Number(saved.warn_seconds),
-        silent: !!saved.silent,
-        redirect_url: saved.redirect_url,
-        updated_by: saved.updated_by,
-        updated_at: saved.updated_at
-      }
-    });
+    tokenHoursCache = { value: null, at: 0 };
+    return res.status(200).json({ ok: true, data: toApi(saved) });
   } catch (err) {
     console.error('[sessionTimeOutConfigController.update] erro', err);
     return res.status(500).json({ ok: false, error: 'Erro interno ao atualizar configuração.' });
