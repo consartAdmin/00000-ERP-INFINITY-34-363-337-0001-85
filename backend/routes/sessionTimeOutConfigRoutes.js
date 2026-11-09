@@ -6,6 +6,8 @@
 
 import { Router } from 'express';
 import { getSessionConfig, updateSessionConfig } from '../controllers/sessionTimeOutConfigController.js';
+import { requireAuth } from '../middleware/authMiddleware.js';
+import { requireAdmin } from '../middleware/requireAdmin.js';
 
 const router = Router();
 
@@ -14,8 +16,8 @@ router.get('/api/session-config', async (req, res) => {
   return getSessionConfig(req, res);
 });
 
-// permitir PUT para atualizar a config
-router.put('/api/session-config', async (req, res) => {
+// PUT só para administradores logados (antes qualquer um podia alterar)
+router.put('/api/session-config', requireAuth, requireAdmin, async (req, res) => {
   return updateSessionConfig(req, res);
 });
 

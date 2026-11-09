@@ -17,6 +17,7 @@ import { erpCompanyContext } from './utils/erpCompanyContext.js';
 import { runZeroStockLots20261025 } from './services/oneTime/zeroStockLots20261025.js';
 import { runMenuVendasCompras20261109 } from './services/oneTime/menuVendasCompras20261109.js';
 import { ensureProductsFamiliesTable } from './repositories/productsFamilies/productsFamilies.index.js';
+import { ensureSessionTimeOutConfigTable } from './controllers/sessionTimeOutConfigController.js';
 import { queueErrorEmail, sendErrorEmail } from "./errorEmailReporter.js";
 
 import jwt from "jsonwebtoken";
@@ -1693,6 +1694,8 @@ async function runStartupJobs() {
    const jobs = [
       // Primeiro: cria "productsFamilies" e products.product_family_id (usada no RETURNING de produtos)
       { name: "ensureProductsFamiliesTable", fn: () => ensureProductsFamiliesTable() },
+      // Coluna token_hours (validade do login) na tabela do Timeout de Sessão
+      { name: "ensureSessionTimeOutConfigTable", fn: () => ensureSessionTimeOutConfigTable() },
       { name: "initNfeInboxController", fn: () => initNfeInboxController() },
       { name: "initEcommerceOrdersController", fn: () => ecommerceOrdersController.initEcommerceOrdersController() },
       { name: "initOrdersBillingController", fn: () => initOrdersBillingController() },

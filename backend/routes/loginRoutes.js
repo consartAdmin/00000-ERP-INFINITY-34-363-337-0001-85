@@ -4,7 +4,8 @@
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import { Router } from "express";
-import { login } from "../controllers/loginController.js";
+import { login, refreshSession } from "../controllers/loginController.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = Router();
 
@@ -21,5 +22,8 @@ router.post("/login", async (req, res) => {
     });
   }
 });
+
+// 🔄 POST /api/session/refresh — renova o token enquanto o usuário usa o sistema
+router.post("/session/refresh", requireAuth, refreshSession);
 
 export default router;
