@@ -8,6 +8,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/authMiddleware.js';
 
 import {
+  listAllDashboardAccessGrouped,
   listDashboardAccessByUser,
   getDashboardAccessByUserAndKey,
   saveDashboardAccess,
@@ -19,6 +20,12 @@ import {
 const router = Router();
 
 router.use(requireAuth);
+
+// GET /api/users-dashboard-access  (todos os usuários, agrupado)
+router.get(
+  '/',
+  listAllDashboardAccessGrouped
+);
 
 // GET /api/users-dashboard-access/:userId
 router.get(
