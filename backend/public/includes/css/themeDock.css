@@ -484,6 +484,52 @@ html:not(.ui-classic) {
   letter-spacing: -0.01em;
 }
 
+/* ---------- Botões principais com CSS próprio da página ----------
+   Telas antigas que pintam o botão de azul sólido no próprio CSS
+   (.btn-primary, ids sem classe etc.) usam o mesmo azul petróleo suave
+   do botão principal do design system. */
+:root:not(.ui-classic) .btn-primary,
+:root:not(.ui-classic) .btn.primary,
+:root:not(.ui-classic) .bp-btn-primary,
+:root:not(.ui-classic) .ca-btn--primary,
+:root:not(.ui-classic) .wh-btn--primary,
+:root:not(.ui-classic) .btn-mini-primary,
+:root:not(.ui-classic) .btn-scan,
+:root:not(.ui-classic) .uc-add-btn,
+:root:not(.ui-classic) button#btnNovoFornecedor,
+:root:not(.ui-classic) button#btnNovaDespesa,
+:root:not(.ui-classic) button#btnGerarPdfDre,
+:root:not(.ui-classic) button#btnAtualizar:not([class]),
+:root:not(.ui-classic) button#btnBuscar:not([class]),
+:root:not(.ui-classic) button#dashBuscar:not([class]),
+:root:not(.ui-classic) button#btnSalvarNota:not([class]) {
+  background: var(--btn-primary-bg) !important;
+  background-image: none !important;
+  border: 1px solid var(--btn-primary-bd) !important;
+  color: var(--btn-primary-tx) !important;
+  box-shadow: none !important;
+}
+
+:root:not(.ui-classic) .btn-primary:hover,
+:root:not(.ui-classic) .btn.primary:hover,
+:root:not(.ui-classic) .bp-btn-primary:hover,
+:root:not(.ui-classic) .ca-btn--primary:hover,
+:root:not(.ui-classic) .wh-btn--primary:hover,
+:root:not(.ui-classic) .btn-mini-primary:hover,
+:root:not(.ui-classic) .btn-scan:hover,
+:root:not(.ui-classic) .uc-add-btn:hover,
+:root:not(.ui-classic) button#btnNovoFornecedor:hover,
+:root:not(.ui-classic) button#btnNovaDespesa:hover,
+:root:not(.ui-classic) button#btnGerarPdfDre:hover,
+:root:not(.ui-classic) button#btnAtualizar:not([class]):hover,
+:root:not(.ui-classic) button#btnBuscar:not([class]):hover,
+:root:not(.ui-classic) button#dashBuscar:not([class]):hover,
+:root:not(.ui-classic) button#btnSalvarNota:not([class]):hover {
+  background: var(--btn-primary-hover-bg) !important;
+  border-color: var(--btn-primary-hover-bd) !important;
+  color: var(--btn-primary-tx) !important;
+}
+
 /* Ícone SVG dentro de botão: tamanho fixo também no visual antigo (ui-classic) */
 .btn > svg {
   width: 16px;
