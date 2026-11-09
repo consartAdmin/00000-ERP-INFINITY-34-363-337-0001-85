@@ -145,13 +145,14 @@ button:disabled {
 }
 
 .btn-primary {
-    color: #fff;
-    background: var(--primary);
-    border-color: var(--primary);
+    color: #0e7490;
+    background: #e8f6f8;
+    border-color: #a9dbe2;
 }
 
 .btn-primary:hover {
-    background: var(--primary-hover);
+    background: #d7eff2;
+    border-color: #67c1cf;
 }
 
 .btn-secondary {
