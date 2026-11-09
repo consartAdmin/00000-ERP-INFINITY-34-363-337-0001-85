@@ -125,12 +125,12 @@
   --btn-pdf-hover-bg: #fff1f1;
   --btn-pdf-hover-bd: #f5b5b5;
 
-  /* Botão principal (Novo / Salvar / Confirmar): azul suave, não sólido */
-  --btn-primary-bg: var(--dock-blue-bg);
-  --btn-primary-bd: #bcd6ff;
-  --btn-primary-tx: var(--dock-blue-dark);
-  --btn-primary-hover-bg: #e3efff;
-  --btn-primary-hover-bd: var(--dock-blue-soft);
+  /* Botão principal (Novo / Salvar / Confirmar): azul petróleo suave */
+  --btn-primary-bg: #e8f6f8;
+  --btn-primary-bd: #a9dbe2;
+  --btn-primary-tx: #0e7490;
+  --btn-primary-hover-bg: #d7eff2;
+  --btn-primary-hover-bd: #67c1cf;
 }
 
 html:not(.ui-classic) {
