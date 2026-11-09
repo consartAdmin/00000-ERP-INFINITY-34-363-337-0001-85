@@ -87,13 +87,17 @@
   /* Botões: contorno fino, texto grafite, azul no hover */
   --btn-radius: 10px;
   --btn-font-weight: 500;
-  --btn-content-gap: 6px;
+  --btn-content-gap: 5px;
   --btn-shadow: none;
   --btn-shadow-hover: 0 6px 16px -10px rgba(59, 139, 255, 0.55);
   --btn-focus: rgba(59, 139, 255, 0.25);
-  --btn-sm-height: 32px;
-  --btn-sm-padding-x: 10px;
+  /* Tamanho compacto */
+  --btn-sm-height: 28px;
+  --btn-sm-padding-x: 9px;
   --btn-sm-font-size: 12px;
+  --btn-md-height: 32px;
+  --btn-md-padding-x: 12px;
+  --btn-md-font-size: 13px;
 
   --btn-neutral-bg: #ffffff;
   --btn-neutral-bd: #e2e8f0;
@@ -210,8 +214,8 @@ html:not(.ui-classic) {
 
 /* Ícones SVG de linha nos botões (mesmo traço do menu) */
 :root:not(.ui-classic) .btn svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   flex: 0 0 auto;
   fill: none;
   stroke: currentColor;
@@ -243,8 +247,8 @@ html:not(.ui-classic) {
 
 /* Botão só com ícone */
 :root:not(.ui-classic) .btn.btn-icon-only {
-  width: 32px;
-  min-width: 32px;
+  width: 28px;
+  min-width: 28px;
   padding: 0;
 }
 
