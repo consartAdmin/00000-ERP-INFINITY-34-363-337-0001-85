@@ -125,12 +125,12 @@
   --btn-pdf-hover-bg: #fff1f1;
   --btn-pdf-hover-bd: #f5b5b5;
 
-  /* Botão principal (Novo / Salvar / Confirmar): azul cheio */
-  --btn-primary-bg: var(--dock-blue);
-  --btn-primary-bd: var(--dock-blue);
-  --btn-primary-tx: #ffffff;
-  --btn-primary-hover-bg: var(--dock-blue-dark);
-  --btn-primary-hover-bd: var(--dock-blue-dark);
+  /* Botão principal (Novo / Salvar / Confirmar): azul suave, não sólido */
+  --btn-primary-bg: var(--dock-blue-bg);
+  --btn-primary-bd: #bcd6ff;
+  --btn-primary-tx: var(--dock-blue-dark);
+  --btn-primary-hover-bg: #e3efff;
+  --btn-primary-hover-bd: var(--dock-blue-soft);
 }
 
 html:not(.ui-classic) {
@@ -482,20 +482,6 @@ html:not(.ui-classic) {
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
-}
-
-/* Ação principal no cabeçalho (ex.: Salvar): azul suave, não sólido */
-:root:not(.ui-classic) .header .btn-save {
-  background: var(--dock-blue-bg);
-  border-color: #bcd6ff;
-  color: var(--dock-blue-dark);
-  font-weight: 600;
-}
-
-:root:not(.ui-classic) .header .btn-save:hover {
-  background: #e3efff;
-  border-color: var(--dock-blue-soft);
-  color: var(--dock-blue-dark);
 }
 
 /* Ícone SVG dentro de botão: tamanho fixo também no visual antigo (ui-classic) */
