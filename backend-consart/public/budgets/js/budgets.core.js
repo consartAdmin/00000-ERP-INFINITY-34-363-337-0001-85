@@ -86,6 +86,8 @@ export const ROUTES = Object.freeze({
   customerPriceTable: (id) =>
     `${API_BASE}/api/customer-price-tables/customers/${encodeURIComponent(id)}/price-table`,
 
+  customerPriceTablesList: `${API_BASE}/api/customer-price-tables/price-tables`,
+
   customerCredit: (id) =>
     `${API_BASE}/api/customers-credit/customer/${encodeURIComponent(id)}`,
 

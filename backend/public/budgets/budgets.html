@@ -428,11 +428,17 @@
             <input id="qtd" type="number" min="1" step="1" value="1" class="field-input" />
           </div>
 
-          <div id="budgetPriceTableField" class="fields fields-h-6 fields-w-15 fields-font-3">
+          <div id="budgetPriceTableField" class="fields fields-h-6 fields-w-20 fields-font-3">
             <label for="tabela">Tabela de preço</label>
-            <select id="tabela" class="field-select" disabled>
-              <option value="">Selecione um cliente…</option>
-            </select>
+            <div class="inline-field">
+              <select id="tabela" class="field-select" disabled>
+                <option value="">Selecione um cliente…</option>
+              </select>
+              <button id="btnLinkPriceTable" type="button" class="btn btn-toolbar btn-icon-only btn-h-5"
+                title="Vincular tabela de preço ao cliente" aria-label="Vincular tabela de preço ao cliente">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </div>
           </div>
 
           <div class="fields fields-h-6 fields-w-10 fields-font-3">
@@ -787,6 +793,46 @@
           <footer class="modal__footer modal-footer-color-3">
             <button type="button" class="btn btn-cancel btn-sm" id="btnGlobalDiscountCancel" data-modal-close>Cancelar</button>
             <button type="button" class="btn btn-search btn-sm" id="btnGlobalDiscountSave"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar</span></button>
+          </footer>
+        </section>
+      </div>
+    </div>
+
+    <!-- Modal Vincular tabela de preço ao cliente -->
+    <div id="customerPriceTableModal" class="modal" aria-hidden="true">
+      <div class="modal__backdrop" data-modal-close></div>
+
+      <div class="modal__dialog">
+        <section class="modal__panel modal-width-4" role="dialog" aria-modal="true"
+          aria-labelledby="customerPriceTableModalTitle" tabindex="-1">
+          <header class="modal__header modal-header-color-3">
+            <div>
+              <h2 id="customerPriceTableModalTitle" class="modal__title">Vincular tabela de preço</h2>
+              <p id="customerPriceTableModalSubtitle" class="modal__subtitle">Cliente</p>
+            </div>
+            <button type="button" class="modal__close" data-modal-close title="Fechar" aria-label="Fechar">&times;</button>
+          </header>
+
+          <div class="modal__body modal-section">
+            <div class="modal-form-grid fields-value-bold">
+              <div class="fields fields-h-6 fields-w-full fields-font-3">
+                <label>Vínculo atual</label>
+                <div><span id="customerPriceTableCurrent" class="summary-pill summary-pill--warning">Sem tabela vinculada</span></div>
+              </div>
+
+              <div class="fields fields-h-6 fields-w-full fields-font-3">
+                <label for="customerPriceTableSelect">Tabela de preço *</label>
+                <select id="customerPriceTableSelect" required>
+                  <option value="">Carregando…</option>
+                </select>
+              </div>
+            </div>
+            <p class="modal__subtitle">O vínculo fica salvo no cadastro do cliente e vale para os próximos orçamentos.</p>
+          </div>
+
+          <footer class="modal__footer modal-footer-color-3">
+            <button type="button" class="btn btn-cancel btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+            <button type="button" class="btn btn-save btn-sm" id="btnCustomerPriceTableSave"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
           </footer>
         </section>
       </div>
