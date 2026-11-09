@@ -465,6 +465,25 @@ html:not(.ui-classic) {
   font-weight: 600;
 }
 
+/* ---------- Cabeçalho de tela (.header) ----------
+   Ex.: "Editar orçamento #N" com Salvar / Imprimir / Fechar.
+   Cartão branco com traço fino azul claro, no lugar da borda preta. */
+:root:not(.ui-classic) .header {
+  background: #ffffff;
+  border: 1px solid var(--dock-line);
+  border-radius: 16px;
+  box-shadow: var(--dock-shadow);
+  padding: 14px 16px;
+}
+
+:root:not(.ui-classic) .header h2 {
+  margin: 0;
+  color: var(--dock-text);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
 /* Ícone SVG dentro de botão: tamanho fixo também no visual antigo (ui-classic) */
 .btn > svg {
   width: 16px;
