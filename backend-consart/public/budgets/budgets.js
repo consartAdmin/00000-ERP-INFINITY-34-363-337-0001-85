@@ -53,6 +53,10 @@ import {
 } from './js/budgetsPaymentsModal.js';
 
 import {
+  initCustomerPriceTableLink,
+} from './js/budgets.customerPriceTable.js';
+
+import {
   initBudgetSettings,
 } from './js/budgets.settings.js';
 
@@ -130,6 +134,19 @@ async function bootstrapBudgets() {
   } catch (error) {
     console.warn(
       '[budgets] initBudgetPaymentsModal error:',
+      error?.message || error
+    );
+  }
+
+  /* =======================================================
+     Customer ↔ price table link modal
+  ======================================================= */
+
+  try {
+    initCustomerPriceTableLink();
+  } catch (error) {
+    console.warn(
+      '[budgets] initCustomerPriceTableLink error:',
       error?.message || error
     );
   }
