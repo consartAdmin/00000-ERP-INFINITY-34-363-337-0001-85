@@ -85,6 +85,25 @@ export async function resolveCity({ uf, city } = {}) {
 }
 
 /* =======================================================================
+ * Ordenação da lista (só colunas permitidas; padrão UF + cidade)
+ * ======================================================================= */
+const SORT_COLUMNS = {
+  ibge_location_id: `${ALIAS}.ibge_location_id`,
+  state: `${ALIAS}.state`,
+  city: `${ALIAS}.city`,
+  ibge_code: `${ALIAS}.ibge_code`,
+  status: `${ALIAS}.status`,
+};
+
+function orderBy(sort, dir) {
+  const col = SORT_COLUMNS[String(sort || '')];
+  const tail = `${ALIAS}.state ASC, ${ALIAS}.city ASC, ${ALIAS}.ibge_location_id ASC`;
+  if (!col) return tail;
+  const d = String(dir || '').toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+  return `${col} ${d}, ${tail}`;
+}
+
+/* =======================================================================
  * LIST / SEARCH
  * - Compatível:
  *   - padrão: retorna array
@@ -98,6 +117,8 @@ export async function list(params = {}) {
     limit = 100,
     offset = 0,
     includeTotal = false,
+    sort,
+    dir,
   } = params;
 
   const wh = ['1=1'];
@@ -139,7 +160,7 @@ export async function list(params = {}) {
     SELECT ${ALIAS}.*
     FROM ${TB} ${ALIAS}
     WHERE ${wh.join(' AND ')}
-    ORDER BY ${ALIAS}.state ASC, ${ALIAS}.city ASC, ${ALIAS}.ibge_location_id ASC
+    ORDER BY ${orderBy(sort, dir)}
     LIMIT $${i} OFFSET $${i + 1};
   `;
 

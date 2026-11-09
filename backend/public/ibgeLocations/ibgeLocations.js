@@ -1,623 +1,556 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ ibgeLocations.js — UI padrão “Grupos & Subgrupos” | CONSART ERP       ║
+// ║ ibgeLocations.js — UFs e Cidades IBGE (Frontend) | CONSART ERP | ESM ║
+// ║ - Consome /api/ibge-locations (+ count-by-state, import, ensure)     ║
+// ║ - Estados: as 27 UFs (nome fixo) com nº de cidades da tabela;        ║
+// ║   clicar numa UF filtra as cidades (clicar de novo desfaz)           ║
+// ║ - Cidades: busca, Status, ordenação no servidor (sort/dir) e         ║
+// ║   paginação no rodapé (table-footer)                                 ║
+// ║ - Cadastro/edição em modal (modal.js), ações com actionIcons.js,     ║
+// ║   avisos/confirmações no centerAlertModal.js                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-const API_BASE = window.apiBase || location.origin;
-const API = `${API_BASE}/api/ibge-locations`;
+import { Modal } from '/public/includes/js/modal.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
 
-// endpoint de import
-const IMPORT_ENDPOINT = `${API}/import/state`; // POST { state:"MG" }
+// ======================================================================
+// API BASE
+// ======================================================================
 
-const el = (id) => document.getElementById(id);
+function getApiBase() {
+  try {
+    if (typeof window !== 'undefined' && window.getApiBase) return window.getApiBase();
+  } catch (err) {
+    console.error('[ibgeLocations] Erro ao obter API base:', err);
+  }
+  return window.location.origin;
+}
 
-const S = {
-  selectedUF: '',
-  ufs: [],
-  ufsQ: '',
-  ufsIncludeInativos: false,
+const API = `${getApiBase()}/api/ibge-locations`;
 
-  citiesQ: '',
-  citiesIncludeInativos: false,
-  citiesLimit: 20,
-  citiesOffset: 0,
-  citiesPage: 1,
-  citiesTotal: null,
-  lastCities: [],
-  loading: false,
+// ======================================================================
+// UFs (nomes fixos — a tabela só guarda a sigla)
+// ======================================================================
+
+const UF_NAMES = {
+  AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia',
+  CE: 'Ceará', DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás',
+  MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais',
+  PA: 'Pará', PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí',
+  RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul',
+  RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo',
+  SE: 'Sergipe', TO: 'Tocantins',
 };
 
-function setStatus(msg, type = 'ok') {
-  const box = el('statusArea');
-  if (!box) return;
-  box.classList.remove('is-ok', 'is-err', 'is-warn');
-  if (!msg) { box.textContent = ''; return; }
-  box.textContent = msg;
-  box.classList.add(type === 'err' ? 'is-err' : type === 'warn' ? 'is-warn' : 'is-ok');
+const ufName = (uf) => UF_NAMES[uf] || uf;
+
+// ======================================================================
+// HELPERS
+// ======================================================================
+
+const $ = (selector) => document.querySelector(selector);
+
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+
+  let data = null;
+  const text = await res.text().catch(() => '');
+  try { data = text ? JSON.parse(text) : null; } catch (_) { data = null; }
+
+  if (!res.ok || data?.ok === false) {
+    const msg = data?.error || data?.message || `Falha na requisição (${res.status}).`;
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
 }
 
-async function safeJson(url, opts) {
-  const res = await fetch(url, { credentials: 'include', ...opts });
-  const text = await res.text();
-  let json = null;
-  try { json = text ? JSON.parse(text) : null; }
-  catch { json = { ok: false, error: 'Invalid JSON', raw: text }; }
-  if (!res.ok) return { ok: false, status: res.status, ...json };
-  return json || { ok: true };
+/** Aceita { data: [] }, { data: { rows } }, { rows } ou array direto */
+function normalizeRows(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.data?.rows)) return payload.data.rows;
+  if (Array.isArray(payload.rows)) return payload.rows;
+  return [];
 }
 
-function toUF(v) {
-  const s = String(v || '').trim().toUpperCase();
-  return s ? s.slice(0, 2) : '';
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function chip(status) {
-  return status
-    ? `<span class="chip chip--on">Ativo</span>`
-    : `<span class="chip chip--off">Inativo</span>`;
+const fmtInt = (n) => Number(n || 0).toLocaleString('pt-BR');
+
+function notify(message, variant = 'success') {
+  showCenterModal({
+    variant,
+    title: variant === 'error' ? 'Erro' : (variant === 'warning' ? 'Atenção' : 'UFs e Cidades IBGE'),
+    message: String(message ?? ''),
+    timeoutMs: variant === 'success' ? 2500 : undefined,
+  });
 }
 
-/* ===============================
- * UFs (derivadas da tabela)
- * =============================== */
+async function confirmCenter(message, { title = 'Confirmar', confirmLabel = 'Confirmar', variant = 'warning' } = {}) {
+  const button = await showCenterModal({
+    variant,
+    title,
+    message: String(message ?? ''),
+    timeoutMs: null,
+    buttons: [
+      { label: 'Cancelar', variant: 'cancel' },
+      { label: confirmLabel, variant: 'confirm' },
+    ],
+  });
+  return String(button?.variant || '').toLowerCase() === 'confirm';
+}
+
+function messageRow(colspan, text) {
+  return `<tr><td colspan="${colspan}" class="table-empty-state">${escapeHtml(text)}</td></tr>`;
+}
+
+function sortRows(rows, { column, direction }) {
+  const dir = direction === 'desc' ? -1 : 1;
+  return [...rows].sort((a, b) => {
+    const va = a[column];
+    const vb = b[column];
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+    if (typeof va === 'boolean' || typeof vb === 'boolean') return (Number(!!va) - Number(!!vb)) * dir;
+    return String(va ?? '').localeCompare(String(vb ?? ''), 'pt-BR', { numeric: true, sensitivity: 'base' }) * dir;
+  });
+}
+
+// ======================================================================
+// ESTADO
+// ======================================================================
+
+const state = {
+  ufs: [],               // [{ uf, name, active, total, imported }]
+  selectedUF: '',
+  ufsSort: { column: 'uf', direction: 'asc' },
+
+  cities: [],
+  citiesTotal: 0,
+  citiesPage: 1,
+  citiesLimit: 50,
+  citiesSort: { column: 'city', direction: 'asc' },
+  citiesLoading: false,
+};
+
+// ======================================================================
+// ESTADOS (UF)
+// ======================================================================
+
 async function loadUFs() {
-  const params = new URLSearchParams();
+  try {
+    const [allRes, activeRes] = await Promise.all([
+      fetchJson(`${API}/count-by-state`),
+      fetchJson(`${API}/count-by-state?status=true`),
+    ]);
 
-  // Se incluir inativos, não filtra status (não envia)
-  if (!S.ufsIncludeInativos) params.set('status', 'true');
+    const totals = new Map(normalizeRows(allRes).map((r) => [String(r.state || '').trim(), Number(r.total_cities || 0)]));
+    const actives = new Map(normalizeRows(activeRes).map((r) => [String(r.state || '').trim(), Number(r.total_cities || 0)]));
 
-  params.set('limit', '5000');
-  params.set('offset', '0');
-
-  const j = await safeJson(`${API}?${params.toString()}`);
-  if (!j.ok) { setStatus(j.error || 'Erro ao carregar UFs', 'err'); return; }
-
-  const rows = Array.isArray(j.data)
-    ? j.data
-    : (Array.isArray(j.data?.rows) ? j.data.rows : []);
-
-  const map = new Map();
-  for (const r of rows) {
-    const uf = (r.state || '').trim();
-    if (!uf) continue;
-    const cur = map.get(uf) || { uf, name: uf, activeCount: 0, inactiveCount: 0 };
-    if (r.status === false) cur.inactiveCount++;
-    else cur.activeCount++;
-    map.set(uf, cur);
+    // 27 UFs + qualquer sigla estranha que exista na tabela
+    const codes = new Set([...Object.keys(UF_NAMES), ...totals.keys()]);
+    state.ufs = [...codes].filter(Boolean).map((uf) => ({
+      uf,
+      name: ufName(uf),
+      total: totals.get(uf) || 0,
+      active: actives.get(uf) || 0,
+      imported: (totals.get(uf) || 0) > 0,
+    }));
+  } catch (err) {
+    state.ufs = [];
+    $('#ufsTableBody').innerHTML = messageRow(5, `Erro ao carregar UFs: ${err.message}`);
+    $('#ufsInfo').textContent = 'Erro';
+    return;
   }
-
-  let ufs = Array.from(map.values()).sort((a, b) => a.uf.localeCompare(b.uf));
-
-  if (S.ufsQ) {
-    const q = S.ufsQ.toUpperCase();
-    ufs = ufs.filter(x => x.uf.includes(q) || (x.name || '').toUpperCase().includes(q));
-  }
-
-  S.ufs = ufs;
   renderUFs();
 }
 
+function filteredUFs() {
+  const term = String($('#ufsSearch').value || '').trim().toLowerCase();
+  const situation = $('#ufsSituation').value;
+
+  let rows = state.ufs;
+  if (situation === 'imported') rows = rows.filter((u) => u.imported);
+  if (situation === 'pending') rows = rows.filter((u) => !u.imported);
+  if (term) {
+    rows = rows.filter((u) =>
+      u.uf.toLowerCase().includes(term) ||
+      u.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .includes(term.normalize('NFD').replace(/[̀-ͯ]/g, '')));
+  }
+  return sortRows(rows, state.ufsSort);
+}
+
+function situationPill(u) {
+  return u.imported
+    ? '<span class="summary-pill summary-pill--success">Importada</span>'
+    : '<span class="summary-pill summary-pill--warning">Não importada</span>';
+}
+
 function renderUFs() {
-  const tb = el('tblUfs')?.querySelector('tbody');
-  if (!tb) return;
+  const tbody = $('#ufsTableBody');
+  const rows = filteredUFs();
 
-  tb.innerHTML = '';
-
-  for (const u of S.ufs) {
-    const isSelected = S.selectedUF && S.selectedUF === u.uf;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><b>${u.uf}</b></td>
-      <td>${u.name || u.uf}</td>
-      <td>${chip((u.activeCount || 0) > 0)}</td>
-      <td>
-        <div class="actions">
-          <button class="action-btn" data-act="select" data-uf="${u.uf}" title="Selecionar">🎯</button>
-          <button class="action-btn" data-act="new" data-uf="${u.uf}" title="Nova cidade nessa UF">＋</button>
-        </div>
-      </td>
-    `;
-
-    if (isSelected) tr.style.background = 'rgba(0,0,0,0.03)';
-    tb.appendChild(tr);
+  if (!rows.length) {
+    tbody.innerHTML = messageRow(5, 'Nenhuma UF encontrada.');
+  } else {
+    tbody.innerHTML = rows.map((u) => {
+      const selected = state.selectedUF === u.uf;
+      const actions = actionIconsHtml([
+        { action: 'view', title: selected ? 'Mostrar todas as cidades' : `Ver cidades de ${u.name}`, attrs: { 'data-act': 'select', 'data-uf': u.uf } },
+        { action: 'add', title: `Nova cidade em ${u.uf}`, attrs: { 'data-act': 'new', 'data-uf': u.uf } },
+        { action: 'download', title: u.imported ? `Reimportar cidades de ${u.uf} do IBGE` : `Importar cidades de ${u.uf} do IBGE`, attrs: { 'data-act': 'import', 'data-uf': u.uf } },
+      ]);
+      const inactive = u.total - u.active;
+      const count = `${fmtInt(u.active)}${inactive > 0 ? ` <small title="Inativas">+${fmtInt(inactive)}</small>` : ''}`;
+      return `
+        <tr data-uf="${u.uf}" class="${selected ? 'is-selected' : ''}" style="cursor:pointer">
+          <td><b>${u.uf}</b></td>
+          <td class="td-left">${escapeHtml(u.name)}</td>
+          <td>${count}</td>
+          <td>${situationPill(u)}</td>
+          <td>${actions}</td>
+        </tr>`;
+    }).join('');
   }
 
-  const info = el('ufsInfo');
-  if (info) info.textContent = `${S.ufs.length} UF(s)`;
-
-  tb.onclick = async (ev) => {
-    const btn = ev.target?.closest?.('button[data-act]');
-    if (!btn) return;
-
-    const act = btn.getAttribute('data-act');
-    const uf = btn.getAttribute('data-uf');
-
-    if (act === 'select') {
-      S.selectedUF = uf;
-      S.citiesOffset = 0;
-      S.citiesTotal = null;
-      await loadCities();
-      renderSelectedHint();
-      renderUFs();
-      return;
-    }
-
-    if (act === 'new') {
-      openModal('city', { state: uf });
-    }
-  };
+  const imported = state.ufs.filter((u) => u.imported).length;
+  const cities = state.ufs.reduce((acc, u) => acc + u.active, 0);
+  $('#ufsInfo').textContent = `${imported} de ${state.ufs.length} UFs importadas · ${fmtInt(cities)} cidades ativas`;
 }
 
-function renderSelectedHint() {
-  const hint = el('selectedUfHint');
-  if (!hint) return;
-
-  if (!S.selectedUF) {
-    hint.firstChild.textContent = 'Nenhuma UF selecionada. Clique em uma UF à esquerda para filtrar.';
-    return;
-  }
-  hint.firstChild.textContent = `Filtro ativo: UF ${S.selectedUF}`;
+function selectUF(uf) {
+  state.selectedUF = state.selectedUF === uf ? '' : uf;
+  state.citiesPage = 1;
+  renderUFs();
+  renderFilterBar();
+  loadCities();
 }
 
-/* ===============================
- * Cidades (direita)
- * =============================== */
-function parseCitiesResponse(j) {
-  // Aceita vários formatos sem quebrar
-  let rows = [];
-  let total = null;
-
-  if (!j || !j.ok) return { rows: [], total: null };
-
-  if (Array.isArray(j.data)) {
-    rows = j.data;
-    if (j.pagination && Number.isFinite(Number(j.pagination.total))) total = Number(j.pagination.total);
-    return { rows, total };
-  }
-
-  if (j.data && Array.isArray(j.data.rows)) {
-    rows = j.data.rows;
-    if (Number.isFinite(Number(j.data.total))) total = Number(j.data.total);
-    return { rows, total };
-  }
-
-  if (j.data && Array.isArray(j.data.items)) {
-    rows = j.data.items;
-    if (Number.isFinite(Number(j.data.total))) total = Number(j.data.total);
-    return { rows, total };
-  }
-
-  if (j.data && Array.isArray(j.data.data)) {
-    rows = j.data.data;
-    if (Number.isFinite(Number(j.data.total))) total = Number(j.data.total);
-    return { rows, total };
-  }
-
-  return { rows: [], total: null };
+function renderFilterBar() {
+  const bar = $('#citiesFilterBar');
+  if (!state.selectedUF) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  $('#citiesFilterLabel').textContent = `UF: ${state.selectedUF} · ${ufName(state.selectedUF)}`;
 }
 
-async function loadCities() {
-  if (S.loading) return;
-  S.loading = true;
-
-  // ✅ status mostra offset/limit (ajuda debug)
-  setStatus(`Carregando... (offset=${S.citiesOffset}, limit=${S.citiesLimit})`, 'warn');
+async function importUF(uf) {
+  const info = state.ufs.find((u) => u.uf === uf);
+  const ok = await confirmCenter(
+    info?.imported
+      ? `${ufName(uf)} já tem ${fmtInt(info.total)} cidade(s). Buscar de novo no IBGE e atualizar a lista?`
+      : `Buscar as cidades de ${ufName(uf)} no IBGE e gravar na tabela?`,
+    { title: `Importar ${uf}`, confirmLabel: 'Importar' },
+  );
+  if (!ok) return;
 
   try {
-    const params = new URLSearchParams();
-
-    if (S.selectedUF) params.set('state', S.selectedUF);
-    if (S.citiesQ) params.set('q', S.citiesQ);
-
-    // ✅ se incluir inativos, NÃO enviar status
-    if (!S.citiesIncludeInativos) params.set('status', 'true');
-
-    params.set('limit', String(S.citiesLimit));
-    params.set('offset', String(S.citiesOffset));
-
-    // ✅ pede total (se backend suportar)
-    params.set('includeTotal', 'true');
-
-    const j = await safeJson(`${API}?${params.toString()}`);
-    if (!j.ok) {
-      setStatus(j.error || 'Erro ao carregar cidades', 'err');
-      S.lastCities = [];
-      S.citiesTotal = null;
-      renderCities();
-      renderCitiesPagination();
-      renderCitiesTotalBox();
-      return;
-    }
-
-    const parsed = parseCitiesResponse(j);
-    S.lastCities = parsed.rows;
-    S.citiesTotal = parsed.total;
-
-    // ✅ página sempre derivada do offset
-    S.citiesPage = Math.floor(S.citiesOffset / Math.max(1, S.citiesLimit)) + 1;
-
-    renderCities();
-    renderCitiesPagination();
-    renderCitiesTotalBox();
-
-    setStatus('Pronto ✅', 'ok');
-  } catch (e) {
-    setStatus(String(e?.message || e), 'err');
-  } finally {
-    S.loading = false;
+    const res = await fetchJson(`${API}/import/state`, { method: 'POST', body: JSON.stringify({ state: uf }) });
+    const d = res?.data || {};
+    const detail = Number.isFinite(Number(d.total))
+      ? ` ${fmtInt(d.total)} cidade(s): ${fmtInt(d.inserted)} nova(s), ${fmtInt(d.updated)} atualizada(s).`
+      : '';
+    notify(`Importação de ${ufName(uf)} concluída.${detail}`);
+    state.selectedUF = uf;
+    state.citiesPage = 1;
+    renderFilterBar();
+    await Promise.all([loadUFs(), loadCities()]);
+  } catch (err) {
+    notify(`Não foi possível importar ${uf}: ${err.message}`, 'error');
   }
+}
+
+// ======================================================================
+// CIDADES
+// ======================================================================
+
+async function loadCities() {
+  const tbody = $('#citiesTableBody');
+  const status = $('#citiesStatus').value;
+  const term = String($('#citiesSearch').value || '').trim();
+
+  const params = new URLSearchParams();
+  if (state.selectedUF) params.set('state', state.selectedUF);
+  if (term) params.set('q', term);
+  if (status !== 'all') params.set('status', status);
+  params.set('limit', String(state.citiesLimit));
+  params.set('offset', String((state.citiesPage - 1) * state.citiesLimit));
+  params.set('sort', state.citiesSort.column);
+  params.set('dir', state.citiesSort.direction);
+
+  state.citiesLoading = true;
+  tbody.innerHTML = messageRow(6, 'Carregando...');
+
+  try {
+    const res = await fetchJson(`${API}?${params}`);
+    state.cities = normalizeRows(res);
+    state.citiesTotal = Number(res?.pagination?.total ?? state.cities.length) || 0;
+  } catch (err) {
+    state.cities = [];
+    state.citiesTotal = 0;
+    tbody.innerHTML = messageRow(6, `Erro ao carregar cidades: ${err.message}`);
+    $('#citiesInfo').textContent = 'Erro';
+    renderPagination();
+    return;
+  } finally {
+    state.citiesLoading = false;
+  }
+
+  renderCities();
+}
+
+function cityStatusPill(active) {
+  return active
+    ? '<span class="summary-pill summary-pill--success">Ativa</span>'
+    : '<span class="summary-pill summary-pill--danger">Inativa</span>';
 }
 
 function renderCities() {
-  const tb = el('tblCities')?.querySelector('tbody');
-  if (!tb) return;
+  const tbody = $('#citiesTableBody');
 
-  tb.innerHTML = '';
-
-  const empty = el('emptyState');
-  if (empty) empty.style.display = S.lastCities.length ? 'none' : 'block';
-
-  for (const r of S.lastCities) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${r.ibge_location_id}</td>
-      <td><b>${(r.state || '').trim()}</b></td>
-      <td>${r.city || '—'}</td>
-      <td><b>${r.ibge_code ?? '—'}</b></td>
-      <td>${chip(r.status !== false)}</td>
-      <td>
-        <div class="actions">
-          <button class="action-btn" data-act="edit" data-id="${r.ibge_location_id}" title="Editar">✏️</button>
-          ${
-            (r.status !== false)
-              ? `<button class="action-btn" data-act="off" data-id="${r.ibge_location_id}" title="Inativar">⛔</button>`
-              : `<button class="action-btn" data-act="on" data-id="${r.ibge_location_id}" title="Ativar">✅</button>`
-          }
-        </div>
-      </td>
-    `;
-    tb.appendChild(tr);
-  }
-
-  tb.onclick = async (ev) => {
-    const btn = ev.target?.closest?.('button[data-act]');
-    if (!btn) return;
-
-    const act = btn.getAttribute('data-act');
-    const id = btn.getAttribute('data-id');
-    const row = S.lastCities.find(x => String(x.ibge_location_id) === String(id));
-
-    if (act === 'edit' && row) openModal('city', row);
-
-    if (act === 'off') {
-      if (!confirm('Inativar este registro? (soft delete)')) return;
-      await apiRemove(id);
-      await loadCities();
-      await loadUFs();
-    }
-
-    if (act === 'on' && row) {
-      if (!confirm('Reativar este registro?')) return;
-      await apiUpdate(id, { status: true });
-      await loadCities();
-      await loadUFs();
-    }
-  };
-}
-
-function renderCitiesPagination() {
-  let totalPages = null;
-  if (Number.isFinite(S.citiesTotal) && S.citiesTotal !== null) {
-    totalPages = Math.max(1, Math.ceil(S.citiesTotal / Math.max(1, S.citiesLimit)));
-  }
-
-  const info = el('citiesPageInfo');
-  if (info) {
-    const currentPage = Math.floor(S.citiesOffset / Math.max(1, S.citiesLimit)) + 1;
-    info.textContent = totalPages ? `Página ${currentPage} de ${totalPages}` : `Página ${currentPage}`;
-  }
-
-  // ✅ NÃO desabilita botões aqui (deixa o click sempre disparar)
-  const prev = el('citiesPrev');
-  const next = el('citiesNext');
-  if (prev) prev.disabled = false;
-  if (next) next.disabled = false;
-}
-
-
-function renderCitiesTotalBox() {
-  const box = el('citiesTotalBox');
-  if (!box) return;
-
-  if (!S.selectedUF) {
-    box.textContent = '—';
-    return;
-  }
-
-  const uf = S.selectedUF;
-  const q = S.citiesQ ? ` | Filtro: "${S.citiesQ}"` : '';
-
-  if (Number.isFinite(S.citiesTotal) && S.citiesTotal !== null) {
-    box.textContent = `UF ${uf} — ${S.citiesTotal} cidade(s)${q}`;
+  if (!state.cities.length) {
+    const hint = state.selectedUF && !state.ufs.find((u) => u.uf === state.selectedUF)?.imported
+      ? `Nenhuma cidade de ${ufName(state.selectedUF)}. Use "Importar da UF" para buscar no IBGE.`
+      : 'Nenhuma cidade encontrada.';
+    tbody.innerHTML = messageRow(6, hint);
   } else {
-    box.textContent = `UF ${uf}${q}`;
+    tbody.innerHTML = state.cities.map((r) => {
+      const id = r.ibge_location_id;
+      const active = r.status !== false;
+      const actions = actionIconsHtml([
+        { action: 'edit', title: 'Editar', attrs: { 'data-act': 'edit', 'data-id': id } },
+        active
+          ? { action: 'pause', title: 'Inativar', attrs: { 'data-act': 'toggle', 'data-id': id } }
+          : { action: 'play', title: 'Reativar', attrs: { 'data-act': 'toggle', 'data-id': id } },
+      ]);
+      return `
+        <tr>
+          <td>${escapeHtml(id)}</td>
+          <td><b>${escapeHtml(String(r.state || '').trim())}</b></td>
+          <td class="td-left">${escapeHtml(r.city || '—')}</td>
+          <td>${escapeHtml(r.ibge_code ?? '—')}</td>
+          <td>${cityStatusPill(active)}</td>
+          <td>${actions}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  const from = state.citiesTotal ? (state.citiesPage - 1) * state.citiesLimit + 1 : 0;
+  const to = Math.min(state.citiesTotal, from + state.cities.length - 1);
+  $('#citiesInfo').textContent = state.citiesTotal
+    ? `${fmtInt(from)}–${fmtInt(to)} de ${fmtInt(state.citiesTotal)} cidade(s)`
+    : '0 cidades';
+  renderPagination();
+}
+
+function totalPages() {
+  return Math.max(1, Math.ceil(state.citiesTotal / Math.max(1, state.citiesLimit)));
+}
+
+function renderPagination() {
+  const pages = totalPages();
+  $('#citiesPageInfo').textContent = `Página ${state.citiesPage} de ${pages}`;
+  $('#citiesPrev').disabled = state.citiesPage <= 1;
+  $('#citiesNext').disabled = state.citiesPage >= pages;
+}
+
+// ======================================================================
+// MODAL — CIDADE
+// ======================================================================
+
+function fillUfSelect(selected) {
+  $('#cityState').innerHTML = Object.keys(UF_NAMES).sort()
+    .map((uf) => `<option value="${uf}"${uf === selected ? ' selected' : ''}>${uf} · ${escapeHtml(UF_NAMES[uf])}</option>`)
+    .join('');
+}
+
+function openCityModal(row = null, uf = '') {
+  const isEdit = !!row?.ibge_location_id;
+  $('#cityModalTitle').textContent = isEdit ? `Editar cidade #${row.ibge_location_id}` : 'Nova cidade';
+  $('#cityId').value = isEdit ? row.ibge_location_id : '';
+  fillUfSelect(String(row?.state || uf || state.selectedUF || 'MG').trim());
+  $('#cityName').value = row?.city || '';
+  $('#cityIbgeCode').value = row?.ibge_code ?? '';
+  $('#cityStatus').value = String(row ? row.status !== false : true);
+  Modal.open('cityModal', { focusSelector: '#cityName' });
+}
+
+async function submitCity(ev) {
+  ev.preventDefault();
+
+  const id = $('#cityId').value || null;
+  const payload = {
+    state: $('#cityState').value,
+    city: String($('#cityName').value || '').trim(),
+    ibge_code: Number(String($('#cityIbgeCode').value || '').replace(/\D/g, '')),
+    status: $('#cityStatus').value === 'true',
+  };
+
+  if (!payload.city) return notify('Informe o nome da cidade.', 'warning');
+  if (!Number.isFinite(payload.ibge_code) || String(payload.ibge_code).length !== 7) {
+    return notify('O código IBGE do município tem 7 dígitos.', 'warning');
+  }
+
+  try {
+    await fetchJson(id ? `${API}/${encodeURIComponent(id)}` : API, {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(payload),
+    });
+    Modal.close('cityModal');
+    notify(id ? 'Cidade atualizada.' : 'Cidade cadastrada.');
+    await Promise.all([loadCities(), loadUFs()]);
+  } catch (err) {
+    notify(`Não foi possível salvar: ${err.message}`, 'error');
   }
 }
 
-/* ===============================
- * API CRUD
- * =============================== */
-async function apiEnsure() {
-  const j = await safeJson(`${API}/ensure`, { method: 'POST' });
-  if (!j.ok) throw new Error(j.error || 'Ensure falhou');
+async function toggleCity(row) {
+  const active = row.status !== false;
+  const ok = await confirmCenter(
+    active
+      ? `Inativar ${row.city} (${row.state})? Ela deixa de aparecer nas buscas de cidade.`
+      : `Reativar ${row.city} (${row.state})?`,
+    { title: active ? 'Inativar cidade' : 'Reativar cidade', confirmLabel: active ? 'Inativar' : 'Reativar', variant: active ? 'warning' : 'info' },
+  );
+  if (!ok) return;
+
+  try {
+    if (active) await fetchJson(`${API}/${encodeURIComponent(row.ibge_location_id)}`, { method: 'DELETE' });
+    else await fetchJson(`${API}/${encodeURIComponent(row.ibge_location_id)}`, { method: 'PUT', body: JSON.stringify({ status: true }) });
+    notify(active ? 'Cidade inativada.' : 'Cidade reativada.');
+    await Promise.all([loadCities(), loadUFs()]);
+  } catch (err) {
+    notify(`Não foi possível alterar: ${err.message}`, 'error');
+  }
 }
 
-async function apiImportUF(uf) {
-  const j = await safeJson(IMPORT_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ state: uf }),
-  });
-  if (!j.ok) throw new Error(j.error || 'Import falhou');
-  return j;
+// ======================================================================
+// EVENTOS
+// ======================================================================
+
+function debounce(fn, ms = 350) {
+  let t = null;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
 
-async function apiCreate(payload) {
-  const j = await safeJson(`${API}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!j.ok) throw new Error(j.error || 'Create falhou');
-  return j.data;
-}
-
-async function apiUpdate(id, payload) {
-  const j = await safeJson(`${API}/${encodeURIComponent(id)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!j.ok) throw new Error(j.error || 'Update falhou');
-  return j.data;
-}
-
-async function apiRemove(id) {
-  const j = await safeJson(`${API}/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  if (!j.ok) throw new Error(j.error || 'Delete falhou');
-  return j.data;
-}
-
-/* ===============================
- * Modal
- * =============================== */
-function openModal(mode, row = {}) {
-  el('modalCrud').style.display = 'block';
-  el('mode').value = mode || 'city';
-  el('id').value = row.ibge_location_id || '';
-
-  el('modalKicker').textContent = (mode === 'uf') ? 'UF' : 'Cidade';
-  el('modalTitle').textContent = row.ibge_location_id ? `Editar #${row.ibge_location_id}` : 'Novo Registro';
-
-  el('state').value = toUF(row.state || S.selectedUF || '');
-  el('city').value = row.city || '';
-  el('ibge_code').value = row.ibge_code ?? '';
-  el('status').value = String(row.status !== false);
-
-  el('city').closest('.field').style.display = 'flex';
-  el('ibge_code').closest('.field').style.display = 'flex';
-
-  setTimeout(() => (mode === 'uf' ? el('state') : el('city')).focus(), 50);
-}
-
-function closeModal() {
-  el('modalCrud').style.display = 'none';
-}
-
-function bindModal() {
-  el('modalCrud').addEventListener('click', (ev) => {
-    if (ev.target?.getAttribute?.('data-close')) closeModal();
-  });
-
-  el('formCrud').addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-
-    const id = el('id').value || null;
-    const payload = {
-      state: toUF(el('state').value),
-      city: String(el('city').value || '').trim(),
-      ibge_code: Number(String(el('ibge_code').value || '').trim()),
-      status: String(el('status').value) === 'true',
-    };
-
-    if (!payload.state || payload.state.length !== 2) return setStatus('UF inválida.', 'err');
-    if (!payload.city) return setStatus('Cidade é obrigatória.', 'err');
-    if (!Number.isFinite(payload.ibge_code)) return setStatus('Código IBGE inválido.', 'err');
-
-    try {
-      setStatus('Salvando...', 'warn');
-      if (!id) await apiCreate(payload);
-      else await apiUpdate(id, payload);
-
-      closeModal();
-      await loadCities();
-      await loadUFs();
-      setStatus('Salvo ✅', 'ok');
-    } catch (e) {
-      setStatus(String(e?.message || e), 'err');
-    }
-  });
-}
-
-/* ===============================
- * Bind UI
- * =============================== */
-function bindUI() {
-  el('btnEnsure').onclick = async () => {
-    try {
-      setStatus('Executando ensure...', 'warn');
-      await apiEnsure();
-      await loadUFs();
-      await loadCities();
-      setStatus('Ensure OK ✅', 'ok');
-    } catch (e) {
-      setStatus(String(e?.message || e), 'err');
-    }
-  };
-
-  el('btnRefreshAll').onclick = async () => {
-    await loadUFs();
-    await loadCities();
-  };
+function bindEvents() {
+  Modal.setup();
 
   // UFs
-  el('btnUfsSearch').onclick = async () => {
-    S.ufsQ = String(el('ufsQ').value || '').trim();
-    await loadUFs();
-  };
+  $('#ufsSearch').addEventListener('input', debounce(renderUFs, 200));
+  $('#ufsSituation').addEventListener('change', renderUFs);
 
-  el('ufsQ').addEventListener('keydown', async (ev) => {
-    if (ev.key === 'Enter') {
-      S.ufsQ = String(el('ufsQ').value || '').trim();
-      await loadUFs();
-    }
-  });
-
-  el('ufsIncludeInativos').onchange = async (ev) => {
-    S.ufsIncludeInativos = !!ev.target.checked;
-    await loadUFs();
-  };
-
-  el('btnNovoUf').onclick = () => {
-    openModal('city', { state: 'MG' });
-  };
-
-  // Cidades
-  el('btnCitiesSearch').onclick = async () => {
-    S.citiesQ = String(el('citiesQ').value || '').trim();
-    S.citiesOffset = 0;
-    S.citiesTotal = null;
-    await loadCities();
-  };
-
-  el('citiesQ').addEventListener('keydown', async (ev) => {
-    if (ev.key === 'Enter') {
-      S.citiesQ = String(el('citiesQ').value || '').trim();
-      S.citiesOffset = 0;
-      S.citiesTotal = null;
-      await loadCities();
-    }
-  });
-
-  el('citiesIncludeInativos').onchange = async (ev) => {
-    S.citiesIncludeInativos = !!ev.target.checked;
-    S.citiesOffset = 0;
-    S.citiesTotal = null;
-    await loadCities();
-  };
-
-  el('citiesLimit').onchange = async (ev) => {
-    S.citiesLimit = Number(ev.target.value || 50) || 50;
-    S.citiesOffset = 0;
-    S.citiesTotal = null;
-    await loadCities();
-  };
-
-  el('btnImportUf').onclick = async () => {
-    const uf = toUF(S.selectedUF);
-    if (!uf) return setStatus('Selecione uma UF na lista à esquerda.', 'err');
-
-    try {
-      setStatus(`Importando cidades da UF ${uf}...`, 'warn');
-      await apiImportUF(uf);
-      S.citiesOffset = 0;
-      S.citiesTotal = null;
-      await loadCities();
-      await loadUFs();
-      setStatus(`Importação da UF ${uf} concluída ✅`, 'ok');
-    } catch (e) {
-      setStatus(String(e?.message || e), 'err');
-    }
-  };
-
-  el('btnNovoCity').onclick = () => {
-    if (!S.selectedUF) return setStatus('Selecione uma UF primeiro.', 'err');
-    openModal('city', { state: S.selectedUF });
-  };
-
-  el('btnClearUf').onclick = async () => {
-    S.selectedUF = '';
-    S.citiesOffset = 0;
-    S.citiesTotal = null;
-    renderSelectedHint();
-    renderCitiesTotalBox();
-    await loadCities();
-    renderUFs();
-  };
-
-  // ✅ PAGINAÇÃO (click sempre funciona; regra fica dentro do handler)
-  el('citiesPrev').onclick = async () => {
-    if (S.loading) return;
-
-    if (S.citiesOffset <= 0) {
-      setStatus('Você já está na primeira página.', 'warn');
+  $('#ufsTableBody').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button[data-act]');
+    if (btn) {
+      const uf = btn.dataset.uf;
+      if (btn.dataset.act === 'select') selectUF(uf);
+      if (btn.dataset.act === 'new') openCityModal(null, uf);
+      if (btn.dataset.act === 'import') importUF(uf);
       return;
     }
+    const tr = ev.target.closest('tr[data-uf]');
+    if (tr) selectUF(tr.dataset.uf);
+  });
 
-    S.citiesOffset = Math.max(0, S.citiesOffset - S.citiesLimit);
-    await loadCities();
-  };
+  createSortableTable({
+    table: '#ufsTable',
+    defaultColumn: state.ufsSort.column,
+    defaultDirection: state.ufsSort.direction,
+    allowedColumns: ['uf', 'name', 'active', 'imported'],
+    onSort: ({ column, direction }) => { state.ufsSort = { column, direction }; renderUFs(); },
+  });
 
-  el('citiesNext').onclick = async () => {
-    if (S.loading) return;
-
-    // Se backend fornece total, respeita totalPages
-    if (Number.isFinite(S.citiesTotal) && S.citiesTotal !== null) {
-      const totalPages = Math.max(1, Math.ceil(S.citiesTotal / Math.max(1, S.citiesLimit)));
-      const currentPage = Math.floor(S.citiesOffset / Math.max(1, S.citiesLimit)) + 1;
-
-      if (currentPage >= totalPages) {
-        setStatus('Você já está na última página.', 'warn');
-        return;
-      }
-    } else {
-      // Sem total: só impede avançar se a página veio vazia
-      if (!S.lastCities.length) {
-        setStatus('Sem mais registros para avançar.', 'warn');
-        return;
-      }
+  $('#btnEnsure').addEventListener('click', async () => {
+    try {
+      await fetchJson(`${API}/ensure`, { method: 'POST' });
+      notify('Tabela verificada.');
+      await Promise.all([loadUFs(), loadCities()]);
+    } catch (err) {
+      notify(`Falha ao verificar a tabela: ${err.message}`, 'error');
     }
+  });
 
-    S.citiesOffset += S.citiesLimit;
-    await loadCities();
-  };
+  $('#btnRefreshAll').addEventListener('click', () => Promise.all([loadUFs(), loadCities()]));
+
+  // Cidades
+  const reloadCities = () => { state.citiesPage = 1; loadCities(); };
+  $('#citiesSearch').addEventListener('input', debounce(reloadCities));
+  $('#citiesSearch').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); reloadCities(); } });
+  $('#citiesStatus').addEventListener('change', reloadCities);
+  $('#citiesPerPage').addEventListener('change', (ev) => {
+    state.citiesLimit = Number(ev.target.value) || 50;
+    reloadCities();
+  });
+
+  $('#citiesPrev').addEventListener('click', () => {
+    if (state.citiesLoading || state.citiesPage <= 1) return;
+    state.citiesPage -= 1;
+    loadCities();
+  });
+  $('#citiesNext').addEventListener('click', () => {
+    if (state.citiesLoading || state.citiesPage >= totalPages()) return;
+    state.citiesPage += 1;
+    loadCities();
+  });
+
+  createSortableTable({
+    table: '#citiesTable',
+    defaultColumn: state.citiesSort.column,
+    defaultDirection: state.citiesSort.direction,
+    allowedColumns: ['ibge_location_id', 'state', 'city', 'ibge_code', 'status'],
+    onSort: ({ column, direction }) => { state.citiesSort = { column, direction }; reloadCities(); },
+  });
+
+  $('#citiesTableBody').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button[data-act]');
+    if (!btn) return;
+    const row = state.cities.find((r) => String(r.ibge_location_id) === String(btn.dataset.id));
+    if (!row) return;
+    if (btn.dataset.act === 'edit') openCityModal(row);
+    if (btn.dataset.act === 'toggle') toggleCity(row);
+  });
+
+  $('#btnImportUf').addEventListener('click', () => {
+    if (!state.selectedUF) return notify('Clique numa UF da lista de Estados para escolher qual importar.', 'warning');
+    importUF(state.selectedUF);
+  });
+
+  $('#btnNewCity').addEventListener('click', () => openCityModal());
+
+  $('#btnClearUf').addEventListener('click', () => {
+    state.selectedUF = '';
+    state.citiesPage = 1;
+    renderUFs();
+    renderFilterBar();
+    loadCities();
+  });
+
+  $('#cityForm').addEventListener('submit', submitCity);
+  $('#cityIbgeCode').addEventListener('input', (ev) => { ev.target.value = ev.target.value.replace(/\D/g, '').slice(0, 7); });
 }
 
-/* ===============================
- * INIT (robusto)
- * =============================== */
-function must(id) {
-  const n = el(id);
-  if (!n) console.warn('[IBGE] Elemento não encontrado:', id);
-  return n;
-}
+// ======================================================================
+// INIT
+// ======================================================================
 
 function init() {
-  // força checagem dos botões (pra você ver no console se existe)
-  must('citiesPrev');
-  must('citiesNext');
-  must('tblCities');
-  must('tblUfs');
-
-  bindUI();
-  bindModal();
-  renderSelectedHint();
-  renderCitiesTotalBox();
+  bindEvents();
+  renderFilterBar();
   loadUFs();
   loadCities();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('[IBGE] DOMContentLoaded');
-  init();
-});
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();

@@ -111,6 +111,8 @@ export async function list(req, res) {
       limit,
       offset,
       includeTotal: true,
+      sort: req.query.sort,
+      dir: req.query.dir,
     });
 
     const rows = Array.isArray(result) ? result : (result?.rows ?? []);
