@@ -29,7 +29,7 @@ import { financialOverviewDashboard, FINANCIAL_ACCESS_KEYS }
 import {
   getDashboardAccess,
   applyDashboardAccess,
-} from './dashboardAccess.js';
+} from './dashboardAccess.js?v=20261109-1';
 
 // ======================================================================
 // DASHBOARD REGISTRY
@@ -451,8 +451,6 @@ function renderDashboards(
     'payables-chart': 'daily-payables',
     'total-receivables': 'daily-receivables',
     'total-payables': 'daily-payables',
-    'sales-taxes': 'sales-analytics',
-    'tax-assessment': 'sales-analytics',
   };
 
   // Financeiro: o card único aparece se o usuário tiver qualquer um dos
@@ -656,14 +654,8 @@ async function initIncludeDashboard() {
       allowedDashboards.add('payables-chart');
     }
 
-    // The taxes slide inherits the Vendas (sales-analytics) permission.
-    if (allowedDashboards.has('sales-analytics')) {
-      allowedDashboards.add('sales-taxes');
-      allowedDashboards.add('tax-assessment');
-      // Estoque (validade dos lotes) também, até ter permissão própria marcada.
-      allowedDashboards.add('stock-lots-expiry');
-      allowedDashboards.add('stock-replenishment');
-    }
+    // Impostos/Apuração e Estoque herdam do sales-analytics só enquanto o
+    // usuário não tiver permissão própria gravada (resolveDashboardAccess).
 
 
     console.log(

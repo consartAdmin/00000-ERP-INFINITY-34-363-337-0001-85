@@ -5,6 +5,44 @@
 
 const API_BASE = '/api/users-dashboard-access';
 
+/**
+ * Indicadores que nasceram depois do "Análise de Vendas": enquanto o
+ * usuário não tiver um registro gravado para eles, seguem a permissão do
+ * pai. Depois de salvos na tela Acesso aos Dashboards, vale o que foi
+ * marcado (inclusive desmarcado).
+ */
+export const DASHBOARD_INHERITS = Object.freeze({
+  'sales-taxes': 'sales-analytics',
+  'tax-assessment': 'sales-analytics',
+  'stock-lots-expiry': 'sales-analytics',
+  'stock-replenishment': 'sales-analytics',
+});
+
+/**
+ * rows: [{ dashboardKey, canView }] → Set com as chaves liberadas,
+ * já aplicando a herança de DASHBOARD_INHERITS.
+ */
+export function resolveDashboardAccess(rows = []) {
+  const explicit = new Map();
+
+  for (const item of Array.isArray(rows) ? rows : []) {
+    const key = String(item?.dashboardKey ?? item?.dashboard_key ?? '').trim();
+    if (key) explicit.set(key, (item?.canView ?? item?.can_view) === true);
+  }
+
+  const allowed = new Set(
+    [...explicit].filter(([, canView]) => canView).map(([key]) => key)
+  );
+
+  for (const [child, parent] of Object.entries(DASHBOARD_INHERITS)) {
+    if (!explicit.has(child) && explicit.get(parent) === true) {
+      allowed.add(child);
+    }
+  }
+
+  return allowed;
+}
+
 function getToken() {
   return (
     localStorage.getItem('token') ||
@@ -66,12 +104,7 @@ export async function getDashboardAccess(userId) {
       ? data.dashboards
       : [];
 
-    return new Set(
-      dashboards
-        .filter((item) => item?.canView === true)
-        .map((item) => String(item.dashboardKey || '').trim())
-        .filter(Boolean)
-    );
+    return resolveDashboardAccess(dashboards);
   } catch (error) {
     console.error(
       '[dashboardAccess] Failed to load permissions:',

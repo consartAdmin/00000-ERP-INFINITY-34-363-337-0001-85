@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 export {
+  listAllDashboardAccess,
   listUserDashboardAccess,
   getUserDashboardAccess,
   canUserViewDashboard,

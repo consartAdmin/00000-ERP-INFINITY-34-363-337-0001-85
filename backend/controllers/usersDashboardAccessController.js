@@ -4,6 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════════════╝
 
 import {
+  listAllDashboardAccess,
   listUserDashboardAccess,
   getUserDashboardAccess,
   upsertUserDashboardAccess,
@@ -27,6 +28,12 @@ const ALLOWED_DASHBOARD_KEYS = new Set([
 
   'sales-analytics',
 
+  // Slides novos da Home (antes herdavam de sales-analytics; agora têm
+  // permissão própria — sem registro gravado, continuam herdando).
+  'sales-taxes',
+  'tax-assessment',
+  'stock-lots-expiry',
+  'stock-replenishment',
 ]);
 
 function parsePositiveInteger(value) {
@@ -59,6 +66,32 @@ function parseBoolean(value) {
   }
 
   return null;
+}
+
+// GET /api/users-dashboard-access
+// Todos os registros, agrupados por usuário (lista da tela de acessos).
+export async function listAllDashboardAccessGrouped(req, res) {
+  try {
+    const rows = await listAllDashboardAccess();
+    const users = {};
+
+    for (const row of rows) {
+      const key = String(row.user_id);
+      (users[key] ||= []).push({
+        dashboardKey: row.dashboard_key,
+        canView: row.can_view === true,
+      });
+    }
+
+    return res.json({ ok: true, users });
+  } catch (error) {
+    console.error('[usersDashboardAccess] listAllDashboardAccessGrouped:', error);
+
+    return res.status(500).json({
+      ok: false,
+      message: 'Unable to load dashboard permissions.',
+    });
+  }
 }
 
 export async function listDashboardAccessByUser(req, res) {

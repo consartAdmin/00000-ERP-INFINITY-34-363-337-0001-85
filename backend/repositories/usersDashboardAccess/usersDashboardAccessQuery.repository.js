@@ -7,6 +7,18 @@
 import pool from '../../config/db.js';
 import { TABLE } from './usersDashboardAccess.constants.js';
 
+export async function listAllDashboardAccess() {
+  const { rows } = await pool.query(
+    `
+      SELECT user_id, dashboard_key, can_view
+      FROM ${TABLE}
+      ORDER BY user_id ASC, dashboard_key ASC
+    `
+  );
+
+  return rows;
+}
+
 export async function listUserDashboardAccess(userId) {
   const { rows } = await pool.query(
     `

@@ -223,3 +223,35 @@ export async function deleteAllUserDashboardAccess(userId) {
     }
   );
 }
+
+// ======================================================================
+// LIST ALL USERS' DASHBOARD ACCESS (grouped by user)
+// GET /api/users-dashboard-access → { users: { "<id>": [{dashboardKey, canView}] } }
+// ======================================================================
+
+export async function listAllDashboardAccess() {
+  const data = await request(API_BASE);
+  return data?.users && typeof data.users === 'object' ? data.users : {};
+}
+
+
+// ======================================================================
+// LIST USERS (ativos e inativos), todas as páginas
+// GET /api/users/search?q=&page=&limit=200
+// ======================================================================
+
+export async function listUsers() {
+  const users = [];
+  const limit = 200;
+
+  for (let page = 1; page <= 50; page += 1) {
+    const data = await request(`/api/users/search?q=&page=${page}&limit=${limit}`);
+    const rows = Array.isArray(data) ? data : (data?.rows || []);
+    users.push(...rows);
+
+    const total = Number(data?.total ?? rows.length);
+    if (!rows.length || users.length >= total) break;
+  }
+
+  return users;
+}

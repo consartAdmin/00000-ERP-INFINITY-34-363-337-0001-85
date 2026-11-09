@@ -1,60 +1,95 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║ usersDashboardAccess.config.js — Dashboard registry                 ║
+// ║ usersDashboardAccess.config.js — Indicadores da Home por slide      ║
 // ║ CONSART ERP                                                         ║
+// ║                                                                     ║
+// ║ Cada item da tela pode gravar mais de uma chave (ex.: "Contas a     ║
+// ║ Receber" grava daily-receivables e monthly-receivables, que hoje    ║
+// ║ liberam a mesma parte do slide Financeiro).                         ║
+// ║ As chaves antigas daily-nfce / daily-sales / monthly-nfce /         ║
+// ║ monthly-sales não aparecem mais na Home e saíram da tela.           ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-export const DASHBOARDS = Object.freeze([
+export const SLIDES = Object.freeze([
   {
-    key: 'daily-nfce',
-    label: 'NFC-e do Dia',
+    id: 'finance',
+    title: 'Financeiro',
+    items: [
+      {
+        id: 'receivables',
+        label: 'Contas a Receber',
+        hint: 'Total a receber do período, recebido e gráfico de recebimentos.',
+        keys: ['daily-receivables', 'monthly-receivables'],
+      },
+      {
+        id: 'payables',
+        label: 'Contas a Pagar',
+        hint: 'Total a pagar do período, pago e gráfico de pagamentos.',
+        keys: ['daily-payables', 'monthly-payables'],
+      },
+      {
+        id: 'customer-overdue',
+        label: 'Inadimplência de Clientes',
+        hint: 'Títulos a receber vencidos e não recebidos.',
+        keys: ['customer-overdue'],
+      },
+      {
+        id: 'overdue-expenses',
+        label: 'Despesas em Atraso',
+        hint: 'Títulos a pagar vencidos e não pagos.',
+        keys: ['overdue-expenses'],
+      },
+    ],
   },
   {
-    key: 'daily-sales',
-    label: 'Vendas do Dia',
+    id: 'analytics',
+    title: 'Vendas',
+    items: [
+      {
+        id: 'sales-analytics',
+        label: 'Análise de Vendas',
+        hint: 'Curvas ABC, lucro bruto e indicadores comerciais.',
+        keys: ['sales-analytics'],
+      },
+    ],
   },
   {
-    key: 'monthly-receivables',
-    label: 'Total à Receber Mês',
+    id: 'taxes',
+    title: 'Impostos e Apuração',
+    items: [
+      {
+        id: 'sales-taxes',
+        label: 'Impostos sobre Vendas',
+        hint: 'Impostos destacados nas vendas do período.',
+        keys: ['sales-taxes'],
+      },
+      {
+        id: 'tax-assessment',
+        label: 'Apuração Débito × Crédito',
+        hint: 'Saldo a recolher e estimativa de IRPJ/CSLL.',
+        keys: ['tax-assessment'],
+      },
+    ],
   },
   {
-    key: 'monthly-payables',
-    label: 'Total à Pagar Mês',
-  },
-  {
-    key: 'monthly-nfce',
-    label: 'NFC-e Autorizadas',
-  },
-  {
-    key: 'monthly-sales',
-    label: 'Vendas do Mês',
-  },
-  {
-    key: 'customer-overdue',
-    label: 'Total Inadimplências',
-  },
-  {
-    key: 'overdue-expenses',
-    label: 'Inadimplência Despesas',
-  },
-  {
-    key: 'daily-receivables',
-    label: 'Total à Receber Dia',
-  },
-  {
-    key: 'daily-payables',
-    label: 'Total à Pagar Dia',
-  },
-
-  {
-    key: 'sales-analytics',
-    label: 'Análise de Vendas',
-  },
-  {
-    key: 'stock-lots-expiry',
-    label: 'Validade dos Lotes',
-  },
-  {
-    key: 'stock-replenishment',
-    label: 'Reposição de Estoque (o que comprar)',
+    id: 'stock',
+    title: 'Estoque',
+    items: [
+      {
+        id: 'stock-lots-expiry',
+        label: 'Validade dos Lotes',
+        hint: 'Lotes vencidos e a vencer (FEFO).',
+        keys: ['stock-lots-expiry'],
+      },
+      {
+        id: 'stock-replenishment',
+        label: 'Reposição de Estoque',
+        hint: 'O que comprar: abaixo do mínimo, prazo e pedido mínimo do fabricante.',
+        keys: ['stock-replenishment'],
+      },
+    ],
   },
 ]);
+
+export const ITEMS = Object.freeze(SLIDES.flatMap((slide) => slide.items));
+
+export const TOTAL_ITEMS = ITEMS.length;
