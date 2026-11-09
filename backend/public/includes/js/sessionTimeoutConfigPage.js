@@ -32,7 +32,6 @@ function fillForm(cfg) {
   $('warnSeconds').value = c.warn_seconds;
   $('silent').checked = !!c.silent;
   $('tokenHours').value = c.token_hours;
-  $('redirectUrl').value = c.redirect_url;
   toggleIdleFields();
 
   const upd = $('stoUpdated');
@@ -56,8 +55,7 @@ function readForm() {
     idle_minutes: toInt($('idleMinutes').value),
     warn_seconds: toInt($('warnSeconds').value || 0),
     silent: $('silent').checked,
-    token_hours: toInt($('tokenHours').value),
-    redirect_url: String($('redirectUrl').value || '').trim() || DEFAULTS.redirect_url
+    token_hours: toInt($('tokenHours').value)
   };
 }
 
