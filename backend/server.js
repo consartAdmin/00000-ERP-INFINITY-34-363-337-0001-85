@@ -15,6 +15,7 @@ import dns from "dns"; // (pode ser usado em checks futuros)
 import { AsyncLocalStorage } from "node:async_hooks";
 import { erpCompanyContext } from './utils/erpCompanyContext.js';
 import { runZeroStockLots20261025 } from './services/oneTime/zeroStockLots20261025.js';
+import { runMenuVendasCompras20261109 } from './services/oneTime/menuVendasCompras20261109.js';
 import { ensureProductsFamiliesTable } from './repositories/productsFamilies/productsFamilies.index.js';
 import { queueErrorEmail, sendErrorEmail } from "./errorEmailReporter.js";
 
@@ -1696,6 +1697,8 @@ async function runStartupJobs() {
       { name: "initEcommerceOrdersController", fn: () => ecommerceOrdersController.initEcommerceOrdersController() },
       { name: "initOrdersBillingController", fn: () => initOrdersBillingController() },
       { name: "zeroStockLots20261025", fn: async () => console.log("[boot] zeroStockLots20261025:", JSON.stringify(await runZeroStockLots20261025())) },
+      // Menu: Vendas + Gestão Comercial num só (3 colunas) e Compras / Parceiros no Gestão ERP
+      { name: "menuVendasCompras20261109", fn: async () => console.log("[boot] menuVendasCompras20261109:", JSON.stringify(await runMenuVendasCompras20261109())) },
    ];
 
    for (const job of jobs) {
