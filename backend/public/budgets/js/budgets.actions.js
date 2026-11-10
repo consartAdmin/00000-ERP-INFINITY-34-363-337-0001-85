@@ -1966,8 +1966,15 @@ export async function copyBudget(id) {
     picked = await pickItemsToCopy(budgetId, items, withLot);
     if (!picked) return;
   } else {
-    const confirmed = window.confirm(`Deseja copiar o orçamento #${budgetId}?`);
-    if (!confirmed) return;
+    const confirmed = await showCenterModal({
+      variant: 'info',
+      title: 'Copiar orçamento',
+      message: `Deseja copiar o orçamento <b>#${budgetId}</b>?`,
+      okText: 'Sim, copiar',
+      closeText: 'Cancelar',
+      timeoutMs: null,
+    });
+    if (confirmed !== true) return;
   }
 
   const key = await resolveBudgetActionKey('copiar o orçamento');
