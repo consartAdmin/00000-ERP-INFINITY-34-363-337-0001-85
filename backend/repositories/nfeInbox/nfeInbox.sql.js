@@ -26,7 +26,10 @@ export function buildListFilters({
     where.push(`ni.situacao = $${values.length}`);
   }
 
-  if (manifestacao) {
+  if (String(manifestacao || '').toUpperCase() === 'SEM') {
+    // "Sem manifestação": nunca manifestada (coluna nula ou sem operação)
+    where.push(`(ni.manifestacao IS NULL OR COALESCE(ni.manifestacao->>'operacao', '') = '')`);
+  } else if (manifestacao) {
     // Compara a operação dentro do JSONB, não o JSON serializado:
     // ILIKE sobre manifestacao::text casaria também com nomes de chave
     // e nunca usaria o índice GIN.

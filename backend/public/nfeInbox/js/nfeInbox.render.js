@@ -3,7 +3,7 @@
  * ╚══════════════════════════════════════════════════════════════════╝ */
 'use strict';
 
-import { formatDateOnly, formatMoney, getManifestLabel, shortenKey } from './nfeInbox.utils.js';
+import { fillManifestPill, formatDateOnly, formatMoney, getManifestCode, shortenKey } from './nfeInbox.utils.js';
 
 export function setSelected(dom, state, row = null) {
   state.selectedRowEl = row;
@@ -84,11 +84,14 @@ export function renderTable(dom, state, rows = [], handlers = {}) {
     ));
     row.append(statusCell);
 
-    // Mesma classe do <th>: a coluna inteira é ocultada por CSS.
     const manifestCell = createCell('', 'nfi-col-manifest');
-    const manifest = getManifestLabel(item.manifestacao);
-    if (manifest) manifestCell.append(createPill(manifest, 'nfi-pill-manifest'));
-    else manifestCell.textContent = '-';
+    if (getManifestCode(item.manifestacao)) {
+      const pill = document.createElement('span');
+      fillManifestPill(pill, item.manifestacao);
+      manifestCell.append(pill);
+    } else {
+      manifestCell.textContent = '-';
+    }
     row.append(manifestCell);
 
     row.addEventListener('click', () => handlers.onSelect?.(row, item));
