@@ -1095,15 +1095,18 @@ export async function renderBudgetPayments() {
         return `
       <tr data-payment-index="${index}">
         <td>
+          <div class="fields fields-w-full fields-h-6">
           <select
             class="field-select js-budget-payment-method"
             data-index="${index}"
           >
             ${buildMethodOptions(methodId)}
           </select>
+          </div>
         </td>
 
         <td class="budget-payment-bank-account-cell">
+          <div class="fields fields-w-full fields-h-6">
           <select
             class="field-select js-budget-payment-bank-account"
             data-index="${index}"
@@ -1111,6 +1114,7 @@ export async function renderBudgetPayments() {
           >
             ${buildBankAccountOptions(row.bank_account_id)}
           </select>
+          </div>
         </td>
 
         <td class="ta-center budget-payment-provider-cell">
@@ -1123,6 +1127,7 @@ export async function renderBudgetPayments() {
         </td>
 
         <td style="width:120px;">
+          <div class="fields fields-w-full fields-h-6">
           <input
             type="number"
             min="0"
@@ -1132,6 +1137,7 @@ export async function renderBudgetPayments() {
             data-index="${index}"
             value="${escapeHtmlAttr(round2(row.amount))}"
           />
+          </div>
         </td>
 
         <td style="width:110px;" class="ta-center">
@@ -1278,6 +1284,7 @@ export async function renderBudgetPaymentInstallments(
 
 
                         <td style="width:180px;">
+                            <div class="fields fields-w-full fields-h-6">
                             <input
                                 type="date"
 
@@ -1304,6 +1311,7 @@ export async function renderBudgetPaymentInstallments(
                     )
                 )}"
                             />
+                            </div>
                         </td>
 
 
