@@ -1,77 +1,26 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ backend/routes/betterDateToBuyRoutes.js                            ║
-// ║ Better Date To Buy Routes                                          ║
-// ║ CONSART ERP                                                        ║
+// ║ Melhor Data de Compra | CONSART ERP                                ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import express from 'express';
-import * as controller
-  from '../controllers/betterDateToBuyController.js';
+import * as controller from '../controllers/betterDateToBuyController.js';
 
 const router = express.Router();
 
+// Rotas fixas antes de "/:id"
+router.get('/', controller.list);
+router.get('/today-alerts', controller.todayAlerts);
+router.get('/suggestions', controller.suggestions);
+router.get('/purchase-profile/:customerId', controller.purchaseProfile);
+router.post('/bulk', controller.createBulk);
 
-// ──────────────────────────────────────────────────────────────────────
-// GET ALL
-// ──────────────────────────────────────────────────────────────────────
-router.get(
-  '/',
-  controller.list
-);
-
-
-// ──────────────────────────────────────────────────────────────────────
-// GET TODAY ALERTS
-// ──────────────────────────────────────────────────────────────────────
-router.get(
-  '/today-alerts',
-  controller.todayAlerts
-);
-
-
-// ──────────────────────────────────────────────────────────────────────
-// GET BY ID
-// ──────────────────────────────────────────────────────────────────────
-router.get(
-  '/:id',
-  controller.getById
-);
-
-
-// ──────────────────────────────────────────────────────────────────────
-// CREATE
-// ──────────────────────────────────────────────────────────────────────
-router.post(
-  '/',
-  controller.create
-);
-
-
-// ──────────────────────────────────────────────────────────────────────
-// UPDATE
-// ──────────────────────────────────────────────────────────────────────
-router.put(
-  '/:id',
-  controller.update
-);
-
-
-// ──────────────────────────────────────────────────────────────────────
-// MARK ALERT SENT
-// ──────────────────────────────────────────────────────────────────────
-router.patch(
-  '/:id/mark-sent',
-  controller.markSent
-);
-
-
-// ──────────────────────────────────────────────────────────────────────
-// DELETE
-// ──────────────────────────────────────────────────────────────────────
-router.delete(
-  '/:id',
-  controller.remove
-);
-
+router.get('/:id', controller.getById);
+router.post('/', controller.create);
+router.put('/:id', controller.update);
+router.patch('/:id/mark-sent', controller.markSent);
+router.patch('/:id/unmark-sent', controller.unmarkSent);
+router.patch('/:id/status', controller.setStatus);
+router.delete('/:id', controller.remove);
 
 export default router;

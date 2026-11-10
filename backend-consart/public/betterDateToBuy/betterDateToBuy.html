@@ -1,103 +1,247 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ betterDateToBuy.html — Melhor Data de Compra | CONSART ERP                 ║
+     ║ Path: backend/public/betterDateToBuy/betterDateToBuy.html                  ║
+     ║                                                                            ║
+     ║ Lembrete mensal de recompra: em que dia do mês contatar cada cliente.      ║
+     ║ O histórico de NF-e de saída sugere o dia e mostra a última compra.        ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated + sortableTable + table-footer           ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Modais: modals.css + modal.js                                           ║
+     ║ API: /api/betterDateToBuy                                                  ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MELHOR DATA DE COMPRA | CONSART ERP</title>
 
-  <title>Better Date To Buy</title>
-
-  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png" />
-
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-
-  <link rel="stylesheet" href="./betterDateToBuy.css" />
 </head>
 
-<body>
-  <main class="consart-container consart-container--fixed consart-container--full consart-container--h-800">
-    <div class="consart-layout-col">
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
 
-      <!-- HEADER -->
-      <header class="page-header">
+    <section class="table-layout-integrated table-max-height-700">
 
-        <button id="btnRefresh" class="btn btn-toolbar btn-sm">
-          Refresh
-        </button>
-      </header>
+      <!-- FILTROS + AÇÕES (div, não <header>: topGradientBar injeta o título) -->
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
 
-      <!-- CREATE ALERT -->
-      <section class="card">
-        <h2>Create Monthly Alert</h2>
-
-        <form id="betterDateForm">
-
-          <!-- CUSTOMER -->
-          <div class="field-group">
-            <label>Customer</label>
-
-            <input type="hidden" id="customer_id" required />
-
-            <div class="inline-search">
-              <input type="text" id="customer_name" placeholder="Select customer..." readonly />
-
-              <button type="submit" class="btn btn-toolbar btn-sm" id="btnSearchCustomer">
-                Search
-              </button>
-            </div>
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="fQ">Buscar</label>
+            <input id="fQ" type="search" placeholder="Cliente, telefone ou observação..." autocomplete="off" />
           </div>
 
-          <!-- ALERT DAY -->
-          <div class="field-group">
-            <label>Alert Day (1–31)</label>
-
-            <input type="number" id="alert_day" min="1" max="31" required placeholder="Ex: 15" />
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="fSituation">Situação</label>
+            <select id="fSituation">
+              <option value="">Todos</option>
+              <option value="due">Contatar agora</option>
+              <option value="week">Próximos 7 dias</option>
+              <option value="contacted">Contatados no mês</option>
+              <option value="paused">Pausados</option>
+            </select>
           </div>
 
-          <!-- NOTES -->
-          <div class="field-group">
-            <label>Notes</label>
+          <button id="btnClear" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
 
-            <input type="text" id="notes" placeholder="Optional notes" />
+          <!-- Resumo do mês (clique filtra) -->
+          <div class="summary-inline btn-inline btn-gap-2" id="summaryPills">
+            <button type="button" class="summary-pill summary-pill--warning" data-situation="due"><span id="sumDue">0</span>&nbsp;contatar agora</button>
+            <button type="button" class="summary-pill summary-pill--info" data-situation="week"><span id="sumWeek">0</span>&nbsp;nos próximos 7 dias</button>
+            <button type="button" class="summary-pill summary-pill--success" data-situation="contacted"><span id="sumContacted">0</span>&nbsp;contatados no mês</button>
           </div>
 
-          <!-- SAVE -->
-          <div class="field-group action-field">
-            <button type="submit" class="btn btn-toolbar btn-sm">
-              Save Alert
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnSuggest" type="button" class="btn btn-toolbar btn-sm"
+              title="Clientes que compram com frequência e ainda não têm alerta">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z"/></svg>
+              <span>Sugerir pelo histórico</span>
             </button>
+            <button id="btnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo Alerta</span></button>
           </div>
-
-        </form>
-      </section>
-
-      <!-- ALERTS TABLE -->
-      <section class="card">
-        <h2>Today's Alerts</h2>
-
-        <div class="table-box consart-table-sticky excel-sheet">
-          <table id="tblProducts" class="table table-zebra table-excel">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Alert Day</th>
-                <th>Status</th>
-                <th>Notes</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody id="alertsTableBody"></tbody>
-          </table>
         </div>
-      </section>
+      </div>
 
+      <!-- LISTA -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="betterdatetobuy.tbody">
+        <table id="alertsTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-8 table-sortable th-left" data-sort-column="trade_name" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Cliente <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5">Contato</th>
+              <th class="table-col-w-3 table-sortable" data-sort-column="alert_day" aria-sort="ascending"><button type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="asc">Dia <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="table-col-w-5 table-sortable" data-sort-column="situation_rank" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Situação <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-8 table-sortable" data-sort-column="last_purchase_date" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Última compra <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable th-right" data-sort-column="last_purchase_total" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Valor <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="purchases_12m" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Compras 12m <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="usual_day" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Costuma comprar <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5 table-sortable" data-sort-column="next_expected_date" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Próxima prevista <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="th-left">Observações</th>
+              <th class="table-col-w-5">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="11" class="td-center">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RODAPÉ PADRÃO -->
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="tableInfo">0 alertas</span>
+          </div>
+        </div>
+        <div class="table-footer__pagination">
+          <span id="todayInfo"></span>
+        </div>
+        <div class="table-footer__page-size"></div>
+      </footer>
+    </section>
   </main>
 
-  <script type="module" src="./betterDateToBuy.js"></script>
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — ALERTA                                │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-8 modal-header-color-3 modal-footer-color-3" id="modal" role="dialog"
+    aria-modal="true" aria-labelledby="mTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="mTitle">Novo alerta</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="form" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="alert_id" />
+          <input type="hidden" id="customer_id" />
+
+          <div class="modal-form-grid modal-form-grid--4 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="customer_name">Cliente *</label>
+              <input id="customer_name" type="text" placeholder="Clique em Buscar para escolher o cliente" readonly />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3 fields-align-end">
+              <button id="btnPickCustomer" type="button" class="btn btn-filter btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar cliente</span></button>
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- Histórico de compras (NF-e de saída) -->
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pLast">Última compra</label>
+              <input id="pLast" type="text" readonly tabindex="-1" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pTotal">Valor da última NF-e</label>
+              <input id="pTotal" type="text" readonly tabindex="-1" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pCount">Compras (12 meses)</label>
+              <input id="pCount" type="text" readonly tabindex="-1" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pInterval">Intervalo médio</label>
+              <input id="pInterval" type="text" readonly tabindex="-1" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pUsual">Costuma comprar</label>
+              <input id="pUsual" type="text" readonly tabindex="-1" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pNext">Próxima compra prevista</label>
+              <input id="pNext" type="text" readonly tabindex="-1" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2 fields-align-end">
+              <button id="btnUseSuggested" type="button" class="btn btn-toolbar btn-sm" disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                <span id="btnUseSuggestedText">Usar dia sugerido</span>
+              </button>
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="alert_day">Dia do alerta (1 a 31) *</label>
+              <input id="alert_day" type="number" min="1" max="31" step="1" required placeholder="Ex.: 15" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="status">Status</label>
+              <select id="status">
+                <option value="active" selected>Ativo</option>
+                <option value="inactive">Pausado</option>
+              </select>
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="notes">Observações</label>
+              <input id="notes" type="text" maxlength="500" placeholder="Ex.: falar com o síndico, pedido de limpeza" />
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button id="btnDelete" type="button" class="btn btn-danger btn-sm btn-position-left" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg><span>Excluir</span></button>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnSave" type="submit" form="form" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — SUGESTÕES PELO HISTÓRICO              │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-11 modal-header-color-3 modal-footer-color-3" id="modalSuggest" role="dialog"
+    aria-modal="true" aria-labelledby="sTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="sTitle">Sugestões pelo histórico de compras</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <p class="fields-help" id="suggestHelp">Clientes com 3 ou mais NF-e nos últimos 12 meses, compra nos últimos 120 dias e sem alerta. O dia sugerido é alguns dias antes do dia em que o cliente costuma comprar; ajuste se quiser.</p>
+
+          <div class="table-scroll table-row-h-20">
+            <table class="table table-zebra table-zebra-hover table-sticky-head">
+              <thead>
+                <tr>
+                  <th class="table-col-w-2"><input type="checkbox" id="suggestAll" aria-label="Marcar todos" checked /></th>
+                  <th class="th-left">Cliente</th>
+                  <th class="table-col-w-8">Contato</th>
+                  <th class="table-col-w-5">Compras 12m</th>
+                  <th class="table-col-w-8">Última compra</th>
+                  <th class="table-col-w-5">Intervalo médio</th>
+                  <th class="table-col-w-5">Costuma comprar</th>
+                  <th class="table-col-w-5">Dia do alerta</th>
+                </tr>
+              </thead>
+              <tbody id="suggestTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <footer class="modal__footer">
+          <span class="btn-position-left" id="suggestInfo"></span>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnCreateSuggested" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span id="btnCreateSuggestedText">Criar alertas</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-
+  <script type="module" src="/public/betterDateToBuy/betterDateToBuy.js?v=2"></script>
 </body>
 
 </html>

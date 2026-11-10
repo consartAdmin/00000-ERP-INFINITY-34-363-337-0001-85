@@ -367,10 +367,14 @@ async function updateBetterDateAlert() {
       BETTER_DATE_API
     );
 
-  if (!Array.isArray(data)) return;
+  // A API devolve { ok, count, data: [...] }
+  const rows =
+    Array.isArray(data) ? data : data?.data;
+
+  if (!Array.isArray(rows)) return;
 
   const count =
-    data.length;
+    rows.length;
 
   if (alertBetterDateCount) {
     alertBetterDateCount.textContent =
