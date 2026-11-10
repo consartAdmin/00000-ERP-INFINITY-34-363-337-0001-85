@@ -16,6 +16,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { erpCompanyContext } from './utils/erpCompanyContext.js';
 import { runZeroStockLots20261025 } from './services/oneTime/zeroStockLots20261025.js';
 import { runMenuVendasCompras20261109 } from './services/oneTime/menuVendasCompras20261109.js';
+import { runMenuConfiguracoes20261110 } from './services/oneTime/menuConfiguracoes20261110.js';
 import { ensureProductsFamiliesTable } from './repositories/productsFamilies/productsFamilies.index.js';
 import { ensureSessionTimeOutConfigTable } from './controllers/sessionTimeOutConfigController.js';
 import { queueErrorEmail, sendErrorEmail } from "./errorEmailReporter.js";
@@ -1702,6 +1703,8 @@ async function runStartupJobs() {
       { name: "zeroStockLots20261025", fn: async () => console.log("[boot] zeroStockLots20261025:", JSON.stringify(await runZeroStockLots20261025())) },
       // Menu: Vendas + Gestão Comercial num só (3 colunas) e Compras / Parceiros no Gestão ERP
       { name: "menuVendasCompras20261109", fn: async () => console.log("[boot] menuVendasCompras20261109:", JSON.stringify(await runMenuVendasCompras20261109())) },
+      // Menu: Configurações em 3 colunas (Usuários e Acessos · E-mail · Sistema), nomes em pt-BR
+      { name: "menuConfiguracoes20261110", fn: async () => console.log("[boot] menuConfiguracoes20261110:", JSON.stringify(await runMenuConfiguracoes20261110())) },
    ];
 
    for (const job of jobs) {

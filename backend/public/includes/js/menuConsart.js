@@ -91,6 +91,8 @@ const ICON_PATHS = {
   database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
   file: '<path d="M14 3H6v18h12V7l-4-4Z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/>',
   clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h3"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  shield: '<path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/>',
   dot: '<circle cx="12" cy="12" r="3"/>',
 };
 
@@ -104,7 +106,8 @@ const ICON_RULES = [
   ['ajustes em lote', 'sliders'], ['lote', 'sliders'], ['secundario', 'list'],
   ['fiscal', 'receipt'], ['imposto', 'receipt'], ['estoque', 'archive'],
   ['despesa', 'card'], ['caixa', 'cash'], ['moviment', 'cash'], ['r.h', 'badge'],
-  ['rh', 'badge'], ['colaborador', 'badge'], ['auxiliar', 'database'], ['cadastro', 'database'],
+  ['rh', 'badge'], ['colaborador', 'badge'], ['usuario', 'users'], ['e-mail', 'mail'],
+  ['email', 'mail'], ['sistema', 'sliders'], ['auxiliar', 'database'], ['cadastro', 'database'],
   ['nota', 'file'], ['documento', 'file'],
   ['operac', 'clipboard'], ['equipe', 'users'], ['compras', 'cart'], ['parceiro', 'cart'],
 ];
