@@ -1080,7 +1080,7 @@ export async function renderBudgetPayments() {
     if (!rows.length) {
         tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="muted ta-center">Nenhum pagamento informado.</td>
+        <td colspan="6" class="muted ta-center">Nenhum pagamento informado.</td>
       </tr>
     `;
         return;
@@ -1088,12 +1088,8 @@ export async function renderBudgetPayments() {
 
     tbody.innerHTML = rows.map((row, index) => {
         const methodId = getPaymentMethodIdFieldName(row);
-        const installmentsText = resolveInstallmentsCountText(row);
         const method = findMethodById(methodId);
         const bankAccount = findBankAccount(row.bank_account_id);
-        const isManual =
-            bankAccount?.boleto_mode === 'MANUAL' ||
-            isManualBoletoMethod(method || row);
         const provider = bankAccount?.integration_provider || row.collection_provider || 'NO_INTEGRATION';
 
         return `
@@ -1138,39 +1134,8 @@ export async function renderBudgetPayments() {
           />
         </td>
 
-        <td>
-          <input
-            type="text"
-            class="field-input js-budget-payment-notes"
-            data-index="${index}"
-            value="${escapeHtmlAttr(normalizeText(row.notes, ''))}"
-            placeholder="Observação"
-          />
-        </td>
-
         <td style="width:110px;" class="ta-center">
           <span class="muted">${escapeHtml(method?.type || row.payment_method_type || '—')}</span>
-        </td>
-
-        <td style="width:90px;" class="ta-center">
-          <button
-            type="button"
-            class="btn btn-toolbar btn-sm js-budget-payment-preview"
-            data-index="${index}"
-            title="Ver parcelas desta linha"
-          >
-            ${escapeHtml(installmentsText)}
-          </button>
-        </td>
-
-        <td style="width:170px;" class="ta-center">
-          <input
-            type="date"
-            class="field-input js-budget-payment-manual-due-date"
-            data-index="${index}"
-            value="${escapeHtmlAttr(normalizeDateInputValue(row.manual_due_date))}"
-            ${isManual ? '' : 'disabled'}
-          />
         </td>
 
         <td style="width:90px;" class="ta-center">
