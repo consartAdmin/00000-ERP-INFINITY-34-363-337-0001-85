@@ -35,7 +35,11 @@ const ORDERS_PAGE_URL =
   '/public/orders/orders.html';
 
 const BETTER_DATE_PAGE_URL =
-  '/betterDateToBuy/betterDateToBuy.html';
+  '/betterDateToBuy/betterDateToBuy.html?situacao=due';
+
+// Aviso "clientes para contatar" uma vez por dia (por navegador/usuário)
+const BETTER_DATE_NOTICE_KEY =
+  'consart:betterDateToBuy:notice';
 
 const STOCK_PAGE_URL =
   '/public/productsStock/productsStock.html';
@@ -242,6 +246,17 @@ function bindNavigation() {
           BETTER_DATE_PAGE_URL;
       }
     );
+
+    alertBetterDateCard.addEventListener(
+      'keydown',
+      (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          window.location.href =
+            BETTER_DATE_PAGE_URL;
+        }
+      }
+    );
   }
 
   if (alertStockCard) {
@@ -384,14 +399,80 @@ async function updateBetterDateAlert() {
   if (alertBetterDateStatus) {
     alertBetterDateStatus.textContent =
       count > 0
-        ? `${count} cliente(s) precisam contato`
-        : 'Nenhum alerta hoje';
+        ? `${count} cliente(s) no dia de recompra`
+        : 'Nenhum cliente para contatar hoje';
   }
 
   alertBetterDateCard?.classList.toggle(
     'is-active',
     count > 0
   );
+
+  if (alertBetterDateCard && count > 0) {
+    showBetterDateNotice(rows);
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// AVISO AO ENTRAR (1x por dia): lista quem contatar
+// ─────────────────────────────────────────────────────────────
+let betterDateNoticeOpen = false;
+
+async function showBetterDateNotice(rows) {
+  const today =
+    new Date().toLocaleDateString('sv-SE');
+
+  const userKey =
+    localStorage.getItem('user_id') ||
+    localStorage.getItem('username') ||
+    '';
+
+  const key =
+    `${BETTER_DATE_NOTICE_KEY}:${userKey}`;
+
+  if (betterDateNoticeOpen || localStorage.getItem(key) === today) return;
+
+  betterDateNoticeOpen = true;
+  localStorage.setItem(key, today);
+
+  try {
+    const { showCenterModal } =
+      await import('/public/includes/js/centerAlertModal.js');
+
+    // centerAlertModal usa innerHTML: escapa os nomes
+    const esc = (v) => String(v ?? '')
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
+    const names = rows
+      .slice(0, 8)
+      .map((row) => `• ${esc(row.trade_name || row.legal_name || `Cliente #${row.customer_id}`)}`);
+
+    if (rows.length > 8) {
+      names.push(`• e mais ${rows.length - 8}`);
+    }
+
+    const button = await showCenterModal({
+      variant: 'warning',
+      title: 'Clientes para contatar',
+      message:
+        `Chegou o dia de recompra de ${rows.length} cliente(s):<br><br>${names.join('<br>')}`,
+      timeoutMs: null,
+      buttons: [
+        { label: 'Depois', variant: 'cancel' },
+        { label: 'Abrir lista', variant: 'confirm' }
+      ]
+    });
+
+    if (String(button?.variant || '').toLowerCase() === 'confirm') {
+      window.location.href =
+        BETTER_DATE_PAGE_URL;
+    }
+  } catch (err) {
+    console.warn('[dashBoardAlerts] aviso Melhor Data de Compra', err);
+  } finally {
+    betterDateNoticeOpen = false;
+  }
 }
 
 

@@ -569,6 +569,12 @@ function init() {
   Modal.setup();
   bindEvents();
 
+  // Link da Home abre já filtrado (?situacao=due)
+  const preset = new URLSearchParams(window.location.search).get('situacao');
+  if (preset && [...$('fSituation').options].some((o) => o.value === preset)) {
+    $('fSituation').value = preset;
+  }
+
   createSortableTable({
     table: $('alertsTable'),
     defaultColumn: state.sortColumn,

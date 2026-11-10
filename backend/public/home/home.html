@@ -21,7 +21,18 @@
     <div class="dash-grid"></div>
   </main>
 
-  <section class="dashboard-alerts-row"></section>
+  <section class="dashboard-alerts-row">
+    <!-- Melhor Data de Compra: clientes para contatar (dashBoardAlerts.js) -->
+    <div id="alert-better-date" class="dashboard-alert-card" role="button" tabindex="0"
+      title="Abrir Melhor Data de Compra">
+      <span class="dashboard-alert-icon" aria-hidden="true">📅</span>
+      <div class="dashboard-alert-content">
+        <span class="dashboard-alert-label">Clientes para contatar</span>
+        <span class="dashboard-alert-status">Carregando...</span>
+      </div>
+      <span id="alert-better-date-count" class="dashboard-alert-badge">0</span>
+    </div>
+  </section>
 
   <div id="modal-budgets-orders" class="consart-modal" hidden>
     <div class="consart-modal-backdrop" data-modal-close></div>
