@@ -74,6 +74,9 @@ export async function ensureTables() {
       );
     `);
 
+    // Unidade da quantidade do ingrediente (vazia = unidade base do componente).
+    await client.query(`ALTER TABLE ${TB_BOM_ITEMS} ADD COLUMN IF NOT EXISTS unit VARCHAR(10);`);
+
     // Roteiro: operações da ficha técnica, em sequência, por centro de trabalho.
     await client.query(`
       CREATE TABLE IF NOT EXISTS ${TB_BOM_OPERATIONS} (

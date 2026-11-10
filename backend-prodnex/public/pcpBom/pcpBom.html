@@ -20,9 +20,10 @@
     <div class="header pcp-page-header">
       <div>
         <h2 class="pcp-card-title">Ficha Técnica</h2>
-        <p class="pcp-card-caption">Estrutura do produto (componentes e perdas) e roteiro de operações, com custo estimado por unidade.</p>
+        <p class="pcp-card-caption">Estrutura do produto (componentes e perdas) e roteiro de operações. O Preço de Custo do produto vem dos ingredientes, pela fração ideal.</p>
       </div>
       <div class="pcp-header-actions">
+        <button id="btnRecalc" type="button" class="btn btn-clean btn-sm" title="Recalcula o Preço de Custo de todos os produtos com ficha ativa">⟳ Recalcular custos</button>
         <button id="btnNew" type="button" class="btn btn-toolbar btn-sm">+ Nova ficha</button>
       </div>
     </div>
@@ -53,6 +54,7 @@
               <th class="num" style="width:110px">Qtd. base</th>
               <th class="num" style="width:120px">Componentes</th>
               <th class="num" style="width:110px">Operações</th>
+              <th class="num" style="width:130px">Custo / un.</th>
               <th class="center" style="width:110px">Status</th>
               <th class="center" style="width:130px">Ações</th>
             </tr>
@@ -131,9 +133,13 @@
       <table class="pcp-grid-table">
         <thead>
           <tr>
-            <th style="width:46%">Componente</th>
-            <th class="num" style="width:14%">Quantidade</th>
-            <th class="num" style="width:12%">Perda %</th>
+            <th style="width:28%">Componente</th>
+            <th class="num" style="width:9%">Quantidade</th>
+            <th style="width:8%">Unidade</th>
+            <th class="num" style="width:7%">Perda %</th>
+            <th class="num" style="width:12%">Fração ideal / un.</th>
+            <th class="num" style="width:11%">Custo ingrediente</th>
+            <th class="num" style="width:10%">Custo / un.</th>
             <th>Observação</th>
             <th style="width:40px"></th>
           </tr>
@@ -160,11 +166,12 @@
       </table>
 
       <div id="costBox" class="pcp-cost-box" hidden>
-        <div class="summary-pill"><span>Material / un.: <strong id="costMaterial">—</strong></span></div>
+        <div class="summary-pill summary-pill--success"><span>Ingredientes / un. (vai para o Preço de Custo): <strong id="costMaterial">—</strong></span></div>
         <div class="summary-pill"><span>Operação / un.: <strong id="costOperation">—</strong></span></div>
         <div class="summary-pill summary-pill--success"><span>Custo total / un.: <strong id="costTotal">—</strong></span></div>
       </div>
 
+      <p class="pcp-card-caption">Fração ideal = quantidade (convertida para a unidade do ingrediente) ÷ quantidade base. Custo / un. = fração ideal × (1 + perda %) × custo do ingrediente. Ao salvar, o Preço de Custo deste produto e dos produtos que o usam como ingrediente é atualizado.</p>
       <div id="formMessage" class="pcp-form-message" role="alert" hidden></div>
 
       <div class="pcp-modal__footer">

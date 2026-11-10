@@ -10,6 +10,7 @@ const router = Router();
 
 router.get('/ensure', c.ensure);
 router.get('/products', c.searchProducts);
+router.get('/products/:code/units', c.productUnits);
 
 // Centros de trabalho
 router.get   ('/work-centers',     c.listWorkCenters);
@@ -18,6 +19,7 @@ router.put   ('/work-centers/:id', c.updateWorkCenter);
 router.delete('/work-centers/:id', c.removeWorkCenter);
 
 // Ficha técnica (estrutura + roteiro)
+router.post  ('/boms/recalc-costs', c.recalcCosts);
 router.get   ('/boms',     c.listBoms);
 router.get   ('/boms/:id', c.getBom);
 router.post  ('/boms',     c.createBom);

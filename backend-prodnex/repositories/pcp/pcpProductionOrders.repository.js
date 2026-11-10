@@ -112,7 +112,7 @@ export async function create(body = {}, user = null) {
     );
 
     for (const it of bom?.items || []) {
-      const perUnit = (Number(it.quantity) / Number(bom.base_qty)) * (1 + Number(it.loss_percent) / 100);
+      const perUnit = (Number(it.quantity) * (Number(it.unit_factor) || 1) / Number(bom.base_qty)) * (1 + Number(it.loss_percent) / 100);
       await client.query(
         `INSERT INTO ${TB_ORDER_MATERIALS} (order_id, component_code, qty_per_unit, qty_required)
          VALUES ($1, $2, $3, $4)`,

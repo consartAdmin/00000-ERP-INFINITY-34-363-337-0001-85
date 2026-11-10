@@ -36,6 +36,7 @@ export const ensure = handle(() => Pcp.ensureTables());
 
 // Produtos (busca para os campos do PCP)
 export const searchProducts = handle((req) => Pcp.Bom.searchProducts(req.query));
+export const productUnits = handle((req) => Pcp.Cost.componentUnits(String(req.params.code || '').trim()));
 
 // Centros de trabalho
 export const listWorkCenters = handle((req) => Pcp.WorkCenters.list(req.query));
@@ -49,6 +50,7 @@ export const getBom = handle(async (req) => required(await Pcp.Bom.getById(id(re
 export const createBom = handle((req) => Pcp.Bom.save(null, req.body), 201);
 export const updateBom = handle((req) => Pcp.Bom.save(id(req), req.body));
 export const removeBom = handle((req) => Pcp.Bom.remove(id(req)));
+export const recalcCosts = handle(() => Pcp.Cost.recalcAll());
 
 // Ordens de produção
 export const listOrders = handle((req) => Pcp.Orders.list(req.query));
