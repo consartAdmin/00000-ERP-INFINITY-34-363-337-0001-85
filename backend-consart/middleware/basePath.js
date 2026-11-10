@@ -17,6 +17,10 @@
 //   3. res.redirect('/x') → /logistica-demo/x;
 //   4. HTML, CSS e JS servidos: caminhos absolutos ("/public/...") ganham o prefixo
 //      (src/href/action, url(/...) e import '/...').
+//   5. HTML: injeta no <head> um script que separa o login deste sistema no navegador.
+//      Os 4 sistemas ficam no mesmo domínio e usavam as mesmas chaves (token,
+//      auth_token, ...): o token de um sistema ia para o outro ("invalid signature").
+//      Com o prefixo (ex.: "prodnex:token") cada sistema guarda o seu login.
 
 function normalizeBase(raw) {
   const s = String(raw || "").trim().replace(/\/+$/, "");
@@ -37,11 +41,28 @@ function withBase(base, url) {
   return `${base}${url}`;
 }
 
+// Chaves de login/usuário/menu que passam a ter o prefixo do sistema.
+const SCOPED_STORAGE_KEYS = [
+  "token", "access_token", "auth_token", "authToken", "jwt", "token_expires_at",
+  "auth_user", "user", "usuario", "usuario_nome", "usuario_acesso", "consart:menu-config",
+];
+
+function storageScopeScript(base) {
+  const prefix = `${base.slice(1)}:`;
+  return `<script>(function(){if(window.__storageScope)return;window.__storageScope=${JSON.stringify(prefix)};`
+    + `var P=${JSON.stringify(prefix)},K=${JSON.stringify(SCOPED_STORAGE_KEYS)},S=Storage.prototype,`
+    + `g=S.getItem,s=S.setItem,r=S.removeItem;function m(k){k=String(k);return K.indexOf(k)>=0?P+k:k}`
+    + `S.getItem=function(k){return g.call(this,m(k))};S.setItem=function(k,v){return s.call(this,m(k),v)};`
+    + `S.removeItem=function(k){return r.call(this,m(k))};})();</script>`;
+}
+
 function rewriteBody(base, type, body) {
   // (?!\/) evita "//cdn..."; (?!base) evita prefixar duas vezes
   const notBase = `(?!\\/)(?!${escapeRegex(base.slice(1))}(?:[/?"'\`]|$))`;
 
   if (type === "html") {
+    // Primeiro script da página: tem que rodar antes de qualquer leitura do token.
+    body = body.replace(/<head(\s[^>]*)?>/i, (tag) => `${tag}${storageScopeScript(base)}`);
     body = body.replace(
       new RegExp(`(\\s(?:src|href|action|poster|data-src)\\s*=\\s*["'])\\/${notBase}`, "gi"),
       `$1${base}/`
