@@ -1,70 +1,90 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ backend/controllers/betterDateToBuyController.js                   ║
-// ║ Better Date To Buy Controller                                      ║
-// ║ CONSART ERP                                                        ║
+// ║ Melhor Data de Compra (lembrete mensal de recompra) | CONSART ERP  ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import * as api from '../repositories/betterDateToBuy/betterDateToBuy.index.js';
 
+function fail(res, tag, err) {
+  console.error(`[betterDateToBuy][${tag}]`, err);
+  res.status(500).json({ ok: false, error: err.message });
+}
+
+function parseDay(value) {
+  const day = Number(value);
+  return Number.isInteger(day) && day >= 1 && day <= 31 ? day : null;
+}
+
+function parseId(value) {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 
 // ──────────────────────────────────────────────────────────────────────
-// LIST ALL
+// LISTA (com situação do mês e histórico de compras)
 // ──────────────────────────────────────────────────────────────────────
 export async function list(req, res) {
   try {
     const data = await api.getAllBetterDates();
-
-    res.json({
-      ok: true,
-      data
-    });
-
+    res.json({ ok: true, lead_days: api.SUGGESTION_LEAD_DAYS, data });
   } catch (err) {
-    console.error(
-      '[betterDateToBuy][LIST]',
-      err
-    );
-
-    res.status(500).json({
-      ok: false,
-      error: err.message
-    });
+    fail(res, 'LIST', err);
   }
 }
 
 
 // ──────────────────────────────────────────────────────────────────────
-// GET BY ID
+// UM ALERTA
 // ──────────────────────────────────────────────────────────────────────
 export async function getById(req, res) {
   try {
-    const id = req.params.id;
-
-    const item =
-      await api.getBetterDateById(id);
-
+    const item = await api.getBetterDateById(req.params.id);
     if (!item) {
-      return res.status(404).json({
-        ok: false,
-        error: 'Record not found'
-      });
+      return res.status(404).json({ ok: false, error: 'Alerta não encontrado.' });
     }
+    res.json({ ok: true, data: item });
+  } catch (err) {
+    fail(res, 'GET BY ID', err);
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// HISTÓRICO DE COMPRAS DE UM CLIENTE (dia sugerido no modal)
+// ──────────────────────────────────────────────────────────────────────
+export async function purchaseProfile(req, res) {
+  try {
+    const customerId = parseId(req.params.customerId);
+    if (!customerId) {
+      return res.status(400).json({ ok: false, error: 'Cliente inválido.' });
+    }
+
+    const stats = await api.getPurchaseStats([customerId]);
+    const existing = await api.findByCustomer(customerId);
 
     res.json({
       ok: true,
-      data: item
+      lead_days: api.SUGGESTION_LEAD_DAYS,
+      data: stats.get(customerId) || null,
+      existing_alert_id: existing?.better_date_to_buy_id ?? null
     });
-
   } catch (err) {
-    console.error(
-      '[betterDateToBuy][GET BY ID]',
-      err
-    );
+    fail(res, 'PURCHASE PROFILE', err);
+  }
+}
 
-    res.status(500).json({
-      ok: false,
-      error: err.message
-    });
+
+// ──────────────────────────────────────────────────────────────────────
+// SUGESTÕES PELO HISTÓRICO (clientes frequentes sem alerta)
+// ──────────────────────────────────────────────────────────────────────
+export async function suggestions(req, res) {
+  try {
+    const minPurchases = Math.max(2, Number(req.query.minPurchases) || 3);
+    const data = await api.getSuggestions({ minPurchases });
+    res.json({ ok: true, lead_days: api.SUGGESTION_LEAD_DAYS, data });
+  } catch (err) {
+    fail(res, 'SUGGESTIONS', err);
   }
 }
 
@@ -74,53 +94,59 @@ export async function getById(req, res) {
 // ──────────────────────────────────────────────────────────────────────
 export async function create(req, res) {
   try {
-    const {
-      customer_id,
-      alert_day,
-      notes
-    } = req.body;
+    const customerId = parseId(req.body?.customer_id);
+    const alertDay = parseDay(req.body?.alert_day);
 
-    if (!customer_id) {
-      return res.status(400).json({
-        ok: false,
-        error: 'customer_id is required'
-      });
+    if (!customerId) {
+      return res.status(400).json({ ok: false, error: 'Selecione o cliente.' });
+    }
+    if (!alertDay) {
+      return res.status(400).json({ ok: false, error: 'O dia do alerta deve ser entre 1 e 31.' });
+    }
+    if (await api.findByCustomer(customerId)) {
+      return res.status(409).json({ ok: false, error: 'Este cliente já tem um alerta. Edite o alerta existente.' });
     }
 
-    if (
-      !alert_day ||
-      Number(alert_day) < 1 ||
-      Number(alert_day) > 31
-    ) {
-      return res.status(400).json({
-        ok: false,
-        error:
-          'alert_day must be between 1 and 31'
-      });
+    const created = await api.createBetterDate({
+      customer_id: customerId,
+      alert_day: alertDay,
+      notes: req.body?.notes,
+      status: req.body?.status
+    });
+
+    res.status(201).json({ ok: true, data: created });
+  } catch (err) {
+    fail(res, 'CREATE', err);
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// CREATE EM LOTE (sugestões)
+// ──────────────────────────────────────────────────────────────────────
+export async function createBulk(req, res) {
+  try {
+    const items = (Array.isArray(req.body?.items) ? req.body.items : [])
+      .map((item) => ({
+        customer_id: parseId(item?.customer_id),
+        alert_day: parseDay(item?.alert_day),
+        notes: item?.notes
+      }))
+      .filter((item) => item.customer_id && item.alert_day);
+
+    if (!items.length) {
+      return res.status(400).json({ ok: false, error: 'Selecione ao menos um cliente.' });
     }
 
-    const created =
-      await api.createBetterDate({
-        customer_id,
-        alert_day,
-        notes
-      });
-
+    const result = await api.createBetterDatesBulk(items);
     res.status(201).json({
       ok: true,
-      data: created
+      created: result.created.length,
+      skipped: result.skipped,
+      data: result.created
     });
-
   } catch (err) {
-    console.error(
-      '[betterDateToBuy][CREATE]',
-      err
-    );
-
-    res.status(500).json({
-      ok: false,
-      error: err.message
-    });
+    fail(res, 'CREATE BULK', err);
   }
 }
 
@@ -130,84 +156,78 @@ export async function create(req, res) {
 // ──────────────────────────────────────────────────────────────────────
 export async function update(req, res) {
   try {
-    const id = req.params.id;
+    const id = parseId(req.params.id);
+    const customerId = parseId(req.body?.customer_id);
+    const alertDay = parseDay(req.body?.alert_day);
 
-    const {
-      customer_id,
-      alert_day,
-      notes,
-      status
-    } = req.body;
-
-    const updated =
-      await api.updateBetterDate(
-        id,
-        {
-          customer_id,
-          alert_day,
-          notes,
-          status
-        }
-      );
-
-    if (!updated) {
-      return res.status(404).json({
-        ok: false,
-        error: 'Record not found'
-      });
+    if (!id) return res.status(400).json({ ok: false, error: 'Alerta inválido.' });
+    if (!customerId) return res.status(400).json({ ok: false, error: 'Selecione o cliente.' });
+    if (!alertDay) {
+      return res.status(400).json({ ok: false, error: 'O dia do alerta deve ser entre 1 e 31.' });
+    }
+    if (await api.findByCustomer(customerId, id)) {
+      return res.status(409).json({ ok: false, error: 'Este cliente já tem outro alerta.' });
     }
 
-    res.json({
-      ok: true,
-      data: updated
+    const updated = await api.updateBetterDate(id, {
+      customer_id: customerId,
+      alert_day: alertDay,
+      notes: req.body?.notes,
+      status: req.body?.status
     });
 
+    if (!updated) {
+      return res.status(404).json({ ok: false, error: 'Alerta não encontrado.' });
+    }
+
+    res.json({ ok: true, data: updated });
   } catch (err) {
-    console.error(
-      '[betterDateToBuy][UPDATE]',
-      err
-    );
-
-    res.status(500).json({
-      ok: false,
-      error: err.message
-    });
+    fail(res, 'UPDATE', err);
   }
 }
 
 
 // ──────────────────────────────────────────────────────────────────────
-// MARK ALERT AS SENT
+// MARCAR COMO CONTATADO / DESFAZER
 // ──────────────────────────────────────────────────────────────────────
 export async function markSent(req, res) {
   try {
-    const updated =
-      await api.markAlertSent(
-        req.params.id
-      );
-
+    const updated = await api.markAlertSent(req.params.id);
     if (!updated) {
-      return res.status(404).json({
-        ok: false,
-        error: 'Record not found'
-      });
+      return res.status(404).json({ ok: false, error: 'Alerta não encontrado.' });
     }
-
-    res.json({
-      ok: true,
-      data: updated
-    });
-
+    res.json({ ok: true, data: updated });
   } catch (err) {
-    console.error(
-      '[betterDateToBuy][MARK SENT]',
-      err
-    );
+    fail(res, 'MARK SENT', err);
+  }
+}
 
-    res.status(500).json({
-      ok: false,
-      error: err.message
-    });
+export async function unmarkSent(req, res) {
+  try {
+    const updated = await api.unmarkAlertSent(req.params.id);
+    if (!updated) {
+      return res.status(404).json({ ok: false, error: 'Alerta não encontrado.' });
+    }
+    res.json({ ok: true, data: updated });
+  } catch (err) {
+    fail(res, 'UNMARK SENT', err);
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// PAUSAR / ATIVAR
+// ──────────────────────────────────────────────────────────────────────
+export async function setStatus(req, res) {
+  try {
+    const status = req.body?.status === 'inactive' ? 'inactive' : 'active';
+    const updated = await api.setBetterDateStatus(req.params.id, status);
+    if (!updated) {
+      return res.status(404).json({ ok: false, error: 'Alerta não encontrado.' });
+    }
+    res.json({ ok: true, data: updated });
+  } catch (err) {
+    fail(res, 'STATUS', err);
   }
 }
 
@@ -217,55 +237,22 @@ export async function markSent(req, res) {
 // ──────────────────────────────────────────────────────────────────────
 export async function remove(req, res) {
   try {
-    await api.deleteBetterDate(
-      req.params.id
-    );
-
-    res.json({
-      ok: true,
-      success: true
-    });
-
+    await api.deleteBetterDate(req.params.id);
+    res.json({ ok: true, success: true });
   } catch (err) {
-    console.error(
-      '[betterDateToBuy][DELETE]',
-      err
-    );
-
-    res.status(500).json({
-      ok: false,
-      error: err.message
-    });
+    fail(res, 'DELETE', err);
   }
 }
 
 
 // ──────────────────────────────────────────────────────────────────────
-// TODAY ALERTS
+// PENDENTES DE CONTATO (painel da Home)
 // ──────────────────────────────────────────────────────────────────────
-export async function todayAlerts(
-  req,
-  res
-) {
+export async function todayAlerts(req, res) {
   try {
-    const data =
-      await api.getTodayAlerts();
-
-    res.json({
-      ok: true,
-      count: data.length,
-      data
-    });
-
+    const data = await api.getTodayAlerts();
+    res.json({ ok: true, count: data.length, data });
   } catch (err) {
-    console.error(
-      '[betterDateToBuy][TODAY ALERTS]',
-      err
-    );
-
-    res.status(500).json({
-      ok: false,
-      error: err.message
-    });
+    fail(res, 'TODAY ALERTS', err);
   }
 }
