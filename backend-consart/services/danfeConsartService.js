@@ -2010,24 +2010,38 @@ export async function generateDanfeFromXml({
     const listaPag = Array.isArray(effectivePayments) ? effectivePayments.filter(Boolean) : [];
     const listaInst = Array.isArray(effectiveInstallments) ? effectiveInstallments.filter(Boolean) : [];
 
+    // Formas de pagamento reais do XML (<pag>/<detPag>), sem o "90 - Sem pagamento".
+    const formasXml = (Array.isArray(formasPagamento) ? formasPagamento : [])
+      .filter((fp) => fp && fp.tPag !== '90' && Number(fp.valor || 0) > 0);
+
+    // orderPayments do orçamento/pedido nem sempre trazem "tipo": usa o XML nesse caso.
+    const listaPagComTipo = listaPag.some((fp) => fp?.tipo) ? listaPag : formasXml;
+
+    // Sem <cobr> (venda à vista), o vencimento é a própria data de emissão.
+    const dataEmissaoFmt = formatDateBR(ide?.dhEmi || ide?.dEmi || null);
+
     const listaDupResolvida = listaDup.map((dup, idx) => {
       const valorDup = Number(dup?.valor ?? dup?.vDup ?? 0);
       const vencDup = dup?.vencimento || dup?.dVenc || null;
 
-      let pagamentoMatch = listaPag.find((fp) => {
+      let pagamentoMatch = listaPagComTipo.find((fp) => {
         const vencFp = fp?.vencimento || null;
         return vencFp && vencDup && String(vencFp).split('T')[0] === String(vencDup).split('T')[0];
       });
 
       if (!pagamentoMatch) {
-        pagamentoMatch = listaPag.find((fp) => {
+        pagamentoMatch = listaPagComTipo.find((fp) => {
           const valorFp = Number(fp?.valor ?? 0);
           return Math.abs(valorFp - valorDup) < 0.01;
         });
       }
 
-      if (!pagamentoMatch && listaPag[idx]) {
-        pagamentoMatch = listaPag[idx];
+      if (!pagamentoMatch && listaPagComTipo[idx]) {
+        pagamentoMatch = listaPagComTipo[idx];
+      }
+
+      if (!pagamentoMatch && listaPagComTipo.length === 1) {
+        pagamentoMatch = listaPagComTipo[0];
       }
 
       return {
@@ -2040,12 +2054,20 @@ export async function generateDanfeFromXml({
 
     const cardsFromStructuredData = listaDupResolvida.length
       ? listaDupResolvida.map((dup, idx) => ({
-        tipo: dup.tipo || `PARCELA ${String(idx + 1).padStart(3, '0')}`,
+        tipo: dup.tipo || null,
         numero: String(idx + 1).padStart(3, '0'),
         vencimento: dup.vencimentoFmt || formatDateBR(dup.vencimento || dup.dVenc || null),
-        valorFmt: dup.valorFmt || money(dup.valor ?? dup.vDup ?? 0),
+        valorFmt: `R$ ${dup.valorFmt || money(dup.valor ?? dup.vDup ?? 0)}`,
       }))
-      : [];
+      // Venda à vista (sem duplicatas): um card por forma de pagamento do XML.
+      : formasXml.map((fp, idx) => ({
+        tipo: fp.tipo || null,
+        numero: String(idx + 1).padStart(3, '0'),
+        vencimento: formatDateBR(fp.vencimento || null) !== '—'
+          ? formatDateBR(fp.vencimento)
+          : dataEmissaoFmt,
+        valorFmt: `R$ ${money(fp.valor)}`,
+      }));
 
     const parsedFromPaymentText = parsePaymentCardsFromText(paymentText);
     const parsedFromInfAdText = parsePaymentCardsFromText(infAdPaymentText);
@@ -2056,9 +2078,20 @@ export async function generateDanfeFromXml({
         ? parsedFromInfAdText
         : [];
 
-    const cardsToRender = cardsFromStructuredData.length
-      ? cardsFromStructuredData
-      : cardsFromText;
+    const cardsToRender = (
+      cardsFromStructuredData.length
+        ? cardsFromStructuredData
+        : cardsFromText
+    ).map((card) => ({
+      ...card,
+      // texto sem "VENC.:" e nota sem <cobr> → à vista, vence na emissão
+      vencimento:
+        card.vencimento && card.vencimento !== '—'
+          ? card.vencimento
+          : (!listaDup.length ? dataEmissaoFmt : card.vencimento),
+      // o parser de texto usa "PARCELA nnn" como tipo quando não acha a forma
+      tipo: /^PARCELA\s/i.test(String(card.tipo || '')) ? null : card.tipo,
+    }));
 
     doc
       .font('Helvetica-Bold')
@@ -2100,11 +2133,20 @@ export async function generateDanfeFromXml({
         doc
           .font('Helvetica-Bold')
           .fontSize(5.2)
-          .text(`PARCELA ${installmentNumber}`, xCard + 3, yCard + 2, {
-            width: cardWidth - 6,
-            align: 'left',
-            lineBreak: false,
-          });
+          .text(
+            card.tipo
+              ? `PARCELA ${installmentNumber} - ${card.tipo}`
+              : `PARCELA ${installmentNumber}`,
+            xCard + 3,
+            yCard + 2,
+            {
+              width: cardWidth - 6,
+              height: 7,
+              align: 'left',
+              lineBreak: false,
+              ellipsis: true,
+            },
+          );
 
         doc
           .font('Helvetica')
