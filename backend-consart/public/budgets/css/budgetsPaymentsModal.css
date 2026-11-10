@@ -157,12 +157,6 @@
   vertical-align: middle;
 }
 
-#tblBudgetPayments .field-input,
-#tblBudgetPayments .field-select {
-  min-height: 34px;
-  height: 34px;
-}
-
 #tblBudgetPayments .btn.btn-toolbar.btn-sm {
   min-width: 40px;
   justify-content: center;

@@ -1080,7 +1080,7 @@ export async function renderBudgetPayments() {
     if (!rows.length) {
         tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="muted ta-center">Nenhum pagamento informado.</td>
+        <td colspan="6" class="muted ta-center">Nenhum pagamento informado.</td>
       </tr>
     `;
         return;
@@ -1088,26 +1088,25 @@ export async function renderBudgetPayments() {
 
     tbody.innerHTML = rows.map((row, index) => {
         const methodId = getPaymentMethodIdFieldName(row);
-        const installmentsText = resolveInstallmentsCountText(row);
         const method = findMethodById(methodId);
         const bankAccount = findBankAccount(row.bank_account_id);
-        const isManual =
-            bankAccount?.boleto_mode === 'MANUAL' ||
-            isManualBoletoMethod(method || row);
         const provider = bankAccount?.integration_provider || row.collection_provider || 'NO_INTEGRATION';
 
         return `
       <tr data-payment-index="${index}">
         <td>
+          <div class="fields fields-w-full fields-h-6">
           <select
             class="field-select js-budget-payment-method"
             data-index="${index}"
           >
             ${buildMethodOptions(methodId)}
           </select>
+          </div>
         </td>
 
         <td class="budget-payment-bank-account-cell">
+          <div class="fields fields-w-full fields-h-6">
           <select
             class="field-select js-budget-payment-bank-account"
             data-index="${index}"
@@ -1115,6 +1114,7 @@ export async function renderBudgetPayments() {
           >
             ${buildBankAccountOptions(row.bank_account_id)}
           </select>
+          </div>
         </td>
 
         <td class="ta-center budget-payment-provider-cell">
@@ -1127,6 +1127,7 @@ export async function renderBudgetPayments() {
         </td>
 
         <td style="width:120px;">
+          <div class="fields fields-w-full fields-h-6">
           <input
             type="number"
             min="0"
@@ -1136,41 +1137,11 @@ export async function renderBudgetPayments() {
             data-index="${index}"
             value="${escapeHtmlAttr(round2(row.amount))}"
           />
-        </td>
-
-        <td>
-          <input
-            type="text"
-            class="field-input js-budget-payment-notes"
-            data-index="${index}"
-            value="${escapeHtmlAttr(normalizeText(row.notes, ''))}"
-            placeholder="Observação"
-          />
+          </div>
         </td>
 
         <td style="width:110px;" class="ta-center">
           <span class="muted">${escapeHtml(method?.type || row.payment_method_type || '—')}</span>
-        </td>
-
-        <td style="width:90px;" class="ta-center">
-          <button
-            type="button"
-            class="btn btn-toolbar btn-sm js-budget-payment-preview"
-            data-index="${index}"
-            title="Ver parcelas desta linha"
-          >
-            ${escapeHtml(installmentsText)}
-          </button>
-        </td>
-
-        <td style="width:170px;" class="ta-center">
-          <input
-            type="date"
-            class="field-input js-budget-payment-manual-due-date"
-            data-index="${index}"
-            value="${escapeHtmlAttr(normalizeDateInputValue(row.manual_due_date))}"
-            ${isManual ? '' : 'disabled'}
-          />
         </td>
 
         <td style="width:90px;" class="ta-center">
@@ -1313,6 +1284,7 @@ export async function renderBudgetPaymentInstallments(
 
 
                         <td style="width:180px;">
+                            <div class="fields fields-w-full fields-h-6">
                             <input
                                 type="date"
 
@@ -1339,6 +1311,7 @@ export async function renderBudgetPaymentInstallments(
                     )
                 )}"
                             />
+                            </div>
                         </td>
 
 
