@@ -36,7 +36,7 @@
           <div class="plx-actions">
             <button class="btn btn-pastel-primary" id="btnPickOrder" type="button">Escolher Pedido</button>
             <button class="btn btn-pastel-primary" id="btnImportOrderItems" type="button" disabled>Importar Itens</button>
-            <button class="btn btn-pastel-primary" id="btnClearOrder" type="button" disabled>Limpar</button>
+            <button class="btn btn-clean" id="btnClearOrder" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
           </div>
           <small class="plx-hint" id="importMeta">—</small>
         </div>
@@ -60,8 +60,8 @@
         <div class="plx-field">
           <label>&nbsp;</label>
           <div class="plx-actions">
-            <button class="btn btn-pastel-primary" id="btnRefresh">Atualizar</button>
-            <button class="btn btn-pastel-primary" id="btnClear">Limpar</button>
+            <button class="btn btn-load" id="btnRefresh"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Atualizar</span></button>
+            <button class="btn btn-clean" id="btnClear"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
           </div>
           <small class="plx-hint" id="metaInfo">—</small>
         </div>
@@ -195,8 +195,8 @@
           <div class="plx-form__footer">
             <div class="plx-leftMeta" id="formMeta">—</div>
             <div class="plx-form__actions">
-              <button type="button" class="btn btn-pastel-primary" data-close="1">Cancelar</button>
-              <button type="submit" class="btn btn-pastel-primary" id="btnSave">Salvar</button>
+              <button type="button" class="btn btn-toolbar" data-close="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+              <button type="submit" class="btn btn-new" id="btnSave"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
             </div>
           </div>
 
@@ -275,7 +275,7 @@
         <div class="plx-form__footer">
           <div class="plx-leftMeta">Selecione os itens que deseja importar</div>
           <div class="plx-form__actions">
-            <button type="button" class="btn btn-pastel-primary" data-close-order-items="1">Cancelar</button>
+            <button type="button" class="btn btn-toolbar" data-close-order-items="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
             <button type="button" class="btn btn-pastel-primary" id="btnConfirmOrderItems" disabled>Confirmar</button>
           </div>
         </div>

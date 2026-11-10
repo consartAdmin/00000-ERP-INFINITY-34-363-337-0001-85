@@ -1103,3 +1103,138 @@
   pointer-events: auto;
   transition: opacity 160ms ease;
 }
+/* ================================================================
+   PERÍODO DA PÁGINA FINANCEIRO (cabeçalho do carrossel)
+   dashboardPeriod.js
+   ================================================================ */
+
+#includeDashBoard .dashboard-pages-nav.has-period {
+  grid-template-columns: 42px minmax(180px, 1fr) auto minmax(60px, 1fr) auto 42px;
+}
+
+#includeDashBoard .dashboard-pages-nav.has-period .dashboard-page-dots {
+  justify-self: end;
+}
+
+#includeDashBoard .dashboard-period {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid #dbe7f8;
+  border-radius: 12px;
+  background: #f7faff;
+}
+
+#includeDashBoard .dashboard-period[hidden] {
+  display: none;
+}
+
+#includeDashBoard .dashboard-period__preset,
+#includeDashBoard .dashboard-period__date {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #cfe0fb;
+  border-radius: 9px;
+  background: #fff;
+  color: #173b72;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#includeDashBoard .dashboard-period__preset {
+  min-width: 140px;
+  cursor: pointer;
+}
+
+#includeDashBoard .dashboard-period__date {
+  width: 132px;
+}
+
+#includeDashBoard .dashboard-period__preset:focus,
+#includeDashBoard .dashboard-period__date:focus {
+  outline: 2px solid rgba(37, 99, 235, .25);
+  border-color: #2563eb;
+}
+
+#includeDashBoard .dashboard-period__sep {
+  color: #718096;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+#includeDashBoard .dashboard-period__apply {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#includeDashBoard .dashboard-period__apply:disabled {
+  background: #c8d4e6;
+  cursor: default;
+}
+
+/* Cards recarregando o novo período */
+#includeDashBoard[data-financial-period-loading] .dash-card:is(
+  [data-dashboard-key="monthly-receivables"],
+  [data-dashboard-key="monthly-payables"],
+  [data-dashboard-key="receivables-chart"],
+  [data-dashboard-key="payables-chart"],
+  [data-dashboard-key="customer-overdue"],
+  [data-dashboard-key="overdue-expenses"]
+) {
+  opacity: .55;
+  transition: opacity .15s ease;
+}
+
+@media (max-width: 1100px) {
+  #includeDashBoard .dashboard-pages-nav.has-period {
+    grid-template-columns: 42px minmax(0, 1fr) auto auto 42px;
+  }
+
+  #includeDashBoard .dashboard-pages-nav.has-period .dashboard-period {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  #includeDashBoard .dashboard-pages-nav.has-period {
+    grid-template-columns: 38px 1fr auto 38px;
+  }
+
+  #includeDashBoard .dashboard-period__date {
+    width: 124px;
+  }
+}
+
+#includeDashBoard .dashboard-period .br-dt-wrap {
+  width: 128px;
+}
+
+#includeDashBoard .dashboard-period .br-dt-text {
+  height: 32px;
+  padding-left: 8px;
+  border: 1px solid #cfe0fb;
+  border-radius: 9px;
+  background: #fff;
+  color: #173b72;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#includeDashBoard .dashboard-period .br-dt-text:focus {
+  outline: 2px solid rgba(37, 99, 235, .25);
+  border-color: #2563eb;
+}

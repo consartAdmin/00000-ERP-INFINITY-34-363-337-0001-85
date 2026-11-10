@@ -40,12 +40,8 @@
         <button id="btnEnsure" class="btn btn-ghost" title="Cria/garante tabela no banco (idempotente)">
           Ensure DB
         </button>
-        <button id="btnRefresh" class="btn btn-ghost" title="Atualizar lista">
-          Atualizar
-        </button>
-        <button id="btnNew" class="btn btn-primary" title="Criar novo lote">
-          + Novo lote
-        </button>
+        <button id="btnRefresh" class="btn btn-load" title="Atualizar lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Atualizar</span></button>
+        <button id="btnNew" class="btn btn-new" title="Criar novo lote"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo lote</span></button>
       </div>
     </header>
 
@@ -59,9 +55,7 @@
             <button id="btnFefo" class="btn btn-soft" title="Carrega lotes disponíveis ordenados por FEFO (validade)">
               FEFO
             </button>
-            <button id="btnClear" class="btn btn-ghost" title="Limpar filtros">
-              Limpar
-            </button>
+            <button id="btnClear" class="btn btn-clean" title="Limpar filtros"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
           </div>
         </div>
 
@@ -143,7 +137,7 @@
         </div>
 
         <div class="filters-footer">
-          <button id="btnSearch" class="btn btn-primary">Buscar</button>
+          <button id="btnSearch" class="btn btn-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span></button>
           <button id="btnPrev" class="btn btn-ghost">◀ Anterior</button>
           <button id="btnNext" class="btn btn-ghost">Próxima ▶</button>
           <div class="muted" id="pagingInfo">—</div>
@@ -270,8 +264,8 @@
           <button id="btnDelete" class="btn btn-danger hidden" type="button">Excluir</button>
         </div>
         <div class="right">
-          <button id="btnCancel" class="btn btn-ghost" type="button">Cancelar</button>
-          <button id="btnSave" class="btn btn-primary" type="submit" form="formLot">Salvar</button>
+          <button id="btnCancel" class="btn btn-toolbar" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnSave" class="btn btn-new" type="submit" form="formLot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
         </div>
       </div>
     </div>

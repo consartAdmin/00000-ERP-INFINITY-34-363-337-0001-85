@@ -42,9 +42,7 @@
         <button id="btnReloadInventories" class="btn small" type="button">↻</button>
       </div>
 
-      <button id="btnCreateInventory" class="btn secondary" type="button">
-        + Criar inventário de hoje
-      </button>
+      <button id="btnCreateInventory" class="btn btn-new" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Criar inventário de hoje</span></button>
     </section>
 
     <section class="card">
@@ -54,7 +52,7 @@
 
       <div class="manual-search">
         <input id="searchInput" type="text" placeholder="Digite barcode ou SKU do produto" autocomplete="off" />
-        <button id="btnSearch" class="btn" type="button">Buscar</button>
+        <button id="btnSearch" class="btn btn-search" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span></button>
       </div>
     </section>
 
@@ -101,9 +99,7 @@
             <option value="">Carregue um produto primeiro</option>
           </select>
 
-          <button id="btnUpdateLocation" class="btn secondary compact" type="button">
-            📍 Atualizar localização
-          </button>
+          <button id="btnUpdateLocation" class="btn btn-load compact" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Atualizar localização</span></button>
         </div>
       </div>
 
@@ -118,9 +114,7 @@
           <option value="">Sem lote</option>
         </select>
 
-        <button id="btnCreateLot" class="btn secondary compact hidden" type="button">
-          + Criar lote para este produto
-        </button>
+        <button id="btnCreateLot" class="btn btn-new compact hidden" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Criar lote para este produto</span></button>
       </div>
 
       <div class="info">
@@ -133,9 +127,7 @@
         <textarea id="notes" placeholder="Opcional"></textarea>
       </div>
 
-      <button id="btnSaveCount" class="btn primary" type="button">
-        ✅ Salvar contagem
-      </button>
+      <button id="btnSaveCount" class="btn btn-new" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar contagem</span></button>
     </section>
   </main>
 

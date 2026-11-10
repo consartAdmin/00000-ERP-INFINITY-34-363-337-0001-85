@@ -4,6 +4,7 @@ import {
   escapeHtml,
   safeColor
 } from './customerStatusTypes.utils.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 /* =====================================================================
    FOOTER — TOTAL DE REGISTROS
@@ -72,10 +73,8 @@ export function renderTypes(rows = []) {
       </td>
 
       <td>
-        <span
-          class="color-chip"
-          style="background: ${escapeHtml(color)};"
-        >
+        <span style="display:inline-flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;">
+          <span aria-hidden="true" style="width:12px;height:12px;border-radius:50%;background:${escapeHtml(color)};box-shadow:0 0 0 1px rgba(15,23,42,.12);"></span>
           ${escapeHtml(color)}
         </span>
       </td>
@@ -85,34 +84,27 @@ export function renderTypes(rows = []) {
       </td>
 
       <td>
-        <div class="table-actions">
-
-          <button
-            type="button"
-            class="btn-action-edit"
-            data-edit-id="${escapeHtml(type.id)}"
-            data-edit-name="${escapeHtml(type.name_pt)}"
-            data-edit-code="${escapeHtml(type.internal_code)}"
-            data-edit-color="${escapeHtml(color)}"
-            data-edit-order="${escapeHtml(type.sort_order ?? 0)}"
-            title="Editar"
-            aria-label="Editar ${escapeHtml(type.name_pt)}"
-          >
-            ✏️
-          </button>
-
-          <button
-            type="button"
-            class="btn-action-delete"
-            data-delete-id="${escapeHtml(type.id)}"
-            data-delete-name="${escapeHtml(type.name_pt)}"
-            title="Excluir"
-            aria-label="Excluir ${escapeHtml(type.name_pt)}"
-          >
-            🗑️
-          </button>
-
-        </div>
+        ${actionIconsHtml([
+          {
+            action: 'edit',
+            title: 'Editar',
+            attrs: {
+              'data-edit-id': type.id ?? '',
+              'data-edit-name': type.name_pt ?? '',
+              'data-edit-code': type.internal_code ?? '',
+              'data-edit-color': color,
+              'data-edit-order': type.sort_order ?? 0,
+            },
+          },
+          {
+            action: 'delete',
+            title: 'Excluir',
+            attrs: {
+              'data-delete-id': type.id ?? '',
+              'data-delete-name': type.name_pt ?? '',
+            },
+          },
+        ])}
       </td>
     `;
 

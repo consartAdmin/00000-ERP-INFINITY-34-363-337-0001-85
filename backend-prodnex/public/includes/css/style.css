@@ -24,6 +24,7 @@
 /*using*/
 @import url("./button.css");
 @import url("./actionIcons.css");
+@import url("./selectSoft.css");
 /*using*/
 @import url("./grids.css");
 /*using*/
@@ -48,6 +49,7 @@
 /*using*/
 
 @import url("./sortableTable.css");
+@import url("./compactSelect.css");
 
 @import url("./tableSettings.css");
 
@@ -75,6 +77,11 @@
 /*using*/
 @import url("./textArea.css");
 
+
 /* Dica:
    Se precisar de temas/overrides específicos do cliente/instância,
    crie um novo arquivo e importe aqui após os demais para sobrepor. */
+
+/* Visual "dock" (mesmo estilo do menu novo) em todas as telas.
+   Para uma tela ficar no visual antigo: <html class="ui-classic"> */
+@import url("./themeDock.css");

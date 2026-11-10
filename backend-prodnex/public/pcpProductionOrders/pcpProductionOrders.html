@@ -1,6 +1,13 @@
-<!-- ╔════════════════════════════════════════════════════════════╗
-     ║ pcpProductionOrders.html — PCP / Produção — PRODNEX ERP
-     ╚════════════════════════════════════════════════════════════╝ -->
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ pcpProductionOrders.html — Ordens de Produção (PCP) | PRODNEX ERP          ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated + filtros + paginação no rodapé          ║
+     ║  - Status em summary-pill · Ações: actionIcons.js                          ║
+     ║  - Nova OP e detalhe da OP: modals.css + modal.js                          ║
+     ║  - Avisos/confirmações: centerAlertModal.js                                ║
+     ║ API: /api/pcp/orders (+ /status, /reports)                                 ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -11,30 +18,26 @@
 
   <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/pcp/pcp.css" />
 </head>
 
-<body class="page consart-theme p-page pw-page--full ph-page--xr">
+<body class="consart-theme p-page pw-page--full ph-page--xr">
   <main class="consart-container consart-container--full consart-container--ultraslim">
 
-    <div class="header pcp-page-header">
-      <div>
-        <h2 class="pcp-card-title">Ordens de Produção</h2>
-        <p class="pcp-card-caption">Planeje, libere e acompanhe as OPs. Ao concluir, o estoque do produto e dos componentes é atualizado.</p>
-      </div>
-      <div class="pcp-header-actions">
-        <button id="btnNew" type="button" class="btn btn-toolbar btn-sm">+ Nova OP</button>
-      </div>
-    </div>
+    <section class="table-layout-integrated" aria-label="Ordens de produção">
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--between summary-gap-8">
+          <h4 class="table-layout-integrated__filter-title">Ordens de Produção</h4>
+          <small>Planeje, libere e acompanhe as OPs. Ao concluir, o estoque do produto e dos componentes é atualizado.</small>
+        </div>
 
-    <section class="table-layout-integrated">
-      <div class="table-layout-integrated__filter pcp-filter-bar">
-        <div class="fields-inline fields-gap3 pcp-filter-row">
-          <div class="fields fields-inline fields-w-20 fields-h-6 pcp-search-field">
-            <input id="search" type="text" class="pcp-search-input" placeholder="Buscar por OP, produto ou pedido..." autocomplete="off" />
-            <span class="pcp-search-icon" aria-hidden="true">🔍</span>
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-16 fields-font-3">
+            <label for="search">Buscar</label>
+            <input id="search" type="search" placeholder="OP, produto ou pedido..." autocomplete="off" />
           </div>
-          <div class="fields fields-inline fields-w-10 fields-h-6">
+
+          <div class="fields fields-h-6 fields-w-7 fields-font-3">
+            <label for="statusFilter">Status</label>
             <select id="statusFilter">
               <option value="OPEN">Abertas</option>
               <option value="">Todas</option>
@@ -45,31 +48,36 @@
               <option value="CANCELADA">Canceladas</option>
             </select>
           </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova OP</span></button>
+          </div>
         </div>
       </div>
 
       <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="pcp.orders">
-        <table class="table table-zebra table-zebra-hover table-sticky-head pcp-table">
+        <table class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
-              <th style="width:110px">OP</th>
-              <th style="width:130px">Produto</th>
-              <th>Descrição</th>
-              <th class="num" style="width:100px">Planejado</th>
-              <th class="num" style="width:100px">Produzido</th>
-              <th style="width:130px">Progresso</th>
-              <th class="center" style="width:110px">Entrega</th>
-              <th class="center" style="width:120px">Status</th>
-              <th class="center" style="width:90px">Ações</th>
+              <th class="table-col-w-3">OP</th>
+              <th class="table-col-w-2">Produto</th>
+              <th class="th-left">Descrição</th>
+              <th class="table-col-w-2 th-right">Planejado</th>
+              <th class="table-col-w-2 th-right">Produzido</th>
+              <th class="table-col-w-2">Progresso</th>
+              <th class="table-col-w-2">Entrega</th>
+              <th class="table-col-w-2">Status</th>
+              <th class="table-col-w-1">Ações</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
       </div>
+
       <footer class="table-footer">
         <div class="table-footer__info">
-          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
-            <span id="opTableInfo">0 registros</span>
+          <div class="summary-pill summary-pill--success summary-left-space-3">
+            <span id="opTableInfo">Carregando...</span>
           </div>
         </div>
         <div class="table-footer__pagination">
@@ -92,180 +100,222 @@
 
   <datalist id="productOptions"></datalist>
 
-  <!-- Nova OP -->
-  <dialog id="newModal" class="pcp-modal">
-    <div class="pcp-modal__header">
-      <div>
-        <h3>Nova ordem de produção</h3>
-        <p>Os materiais são copiados da ficha técnica ativa do produto.</p>
-      </div>
-      <button type="button" class="pcp-modal__close" data-close="newModal" aria-label="Fechar">×</button>
+  <!-- MODAL — NOVA OP -->
+  <div class="modal modal-width-6 modal-header-color-3 modal-footer-color-3" id="newModal" role="dialog"
+    aria-modal="true" aria-labelledby="newModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="newModalTitle">Nova ordem de produção</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="newForm" class="modal__body modal-section" autocomplete="off">
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="newProduct">Produto *</label>
+              <input id="newProduct" type="text" list="productOptions" placeholder="Digite o código ou a descrição" required />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="newQty">Quantidade *</label>
+              <input id="newQty" type="number" step="any" min="0" required />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="newDue">Entrega</label>
+              <input id="newDue" type="date" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="newRef">Pedido de venda</label>
+              <input id="newRef" type="text" maxlength="50" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="newNotes">Observações</label>
+              <input id="newNotes" type="text" />
+            </div>
+          </div>
+
+          <small>Os materiais são copiados da ficha técnica ativa do produto.</small>
+        </form>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="submit" form="newForm" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Criar OP</span></button>
+        </footer>
+      </section>
     </div>
-    <form id="newForm" class="pcp-modal__body">
-      <div class="pcp-form-grid">
-        <div class="pcp-form-field pcp-span-4">
-          <label for="newProduct" class="pcp-label">Produto *</label>
-          <input id="newProduct" type="text" list="productOptions" class="pcp-input" placeholder="Digite o código ou a descrição" required autocomplete="off" />
-        </div>
-        <div class="pcp-form-field">
-          <label for="newQty" class="pcp-label">Quantidade *</label>
-          <input id="newQty" type="number" step="any" min="0" class="pcp-input" required />
-        </div>
-        <div class="pcp-form-field">
-          <label for="newDue" class="pcp-label">Entrega</label>
-          <input id="newDue" type="date" class="pcp-input" />
-        </div>
-        <div class="pcp-form-field pcp-span-2">
-          <label for="newRef" class="pcp-label">Pedido de venda</label>
-          <input id="newRef" type="text" maxlength="50" class="pcp-input" autocomplete="off" />
-        </div>
-        <div class="pcp-form-field pcp-span-4">
-          <label for="newNotes" class="pcp-label">Observações</label>
-          <input id="newNotes" type="text" class="pcp-input" autocomplete="off" />
-        </div>
-      </div>
-      <div id="newMessage" class="pcp-form-message" role="alert" hidden></div>
-      <div class="pcp-modal__footer">
-        <button type="button" class="btn btn-clean btn-sm" data-close="newModal">Cancelar</button>
-        <button type="submit" class="btn btn-toolbar btn-sm">Criar OP</button>
-      </div>
-    </form>
-  </dialog>
+  </div>
 
-  <!-- Detalhe da OP -->
-  <dialog id="orderModal" class="pcp-modal pcp-modal--wide">
-    <div class="pcp-modal__header">
-      <div>
-        <h3 id="orderTitle">OP</h3>
-        <p id="orderCaption"></p>
-      </div>
-      <button type="button" class="pcp-modal__close" data-close="orderModal" aria-label="Fechar">×</button>
+  <!-- MODAL — DETALHE DA OP -->
+  <div class="modal modal-width-12 modal-header-color-3 modal-footer-color-3" id="orderModal" role="dialog"
+    aria-modal="true" aria-labelledby="orderTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="orderTitle">OP</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+
+            <!-- RESUMO -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <small id="orderCaption"></small>
+              <div class="summary summary-gap-8">
+                <span id="kpiStatus"></span>
+                <div class="summary-pill summary-pill--info"><span>Planejado: <strong id="kpiPlanned">—</strong></span></div>
+                <div class="summary-pill summary-pill--success"><span>Produzido: <strong id="kpiProduced">—</strong></span></div>
+                <div class="summary-pill summary-pill--danger"><span>Refugo: <strong id="kpiScrap">—</strong></span></div>
+              </div>
+            </div>
+
+            <!-- DADOS DA OP -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Dados da OP</h4>
+            </div>
+
+            <form id="editForm" class="modal-field--span-full" autocomplete="off">
+              <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+                <div class="fields fields-h-6 fields-w-full fields-font-3">
+                  <label for="editQty">Quantidade planejada</label>
+                  <input id="editQty" type="number" step="any" min="0" />
+                </div>
+                <div class="fields fields-h-6 fields-w-full fields-font-3">
+                  <label for="editDue">Entrega</label>
+                  <input id="editDue" type="date" />
+                </div>
+                <div class="fields fields-h-6 fields-w-full fields-font-3">
+                  <label for="editRef">Pedido de venda</label>
+                  <input id="editRef" type="text" maxlength="50" />
+                </div>
+                <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+                  <label for="editNotes">Observações</label>
+                  <input id="editNotes" type="text" />
+                </div>
+              </div>
+            </form>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- MATERIAIS -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Materiais</h4>
+            </div>
+            <div class="table-scroll modal-field--span-full">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th class="th-left">Componente</th>
+                    <th class="th-right">Por unidade</th>
+                    <th class="th-right">Necessário</th>
+                    <th class="th-right">Consumido</th>
+                    <th class="th-right">Estoque atual</th>
+                  </tr>
+                </thead>
+                <tbody id="materialsBody"></tbody>
+              </table>
+            </div>
+
+            <!-- ROTEIRO -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Roteiro</h4>
+            </div>
+            <div class="table-scroll modal-field--span-full">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th style="width:70px">Seq.</th>
+                    <th class="th-left">Operação</th>
+                    <th class="th-left">Centro de trabalho</th>
+                    <th class="th-right">Setup (min)</th>
+                    <th class="th-right">Min. por unidade</th>
+                    <th class="th-right">Tempo previsto (h)</th>
+                  </tr>
+                </thead>
+                <tbody id="opsBody"></tbody>
+              </table>
+            </div>
+
+            <!-- APONTAR PRODUÇÃO -->
+            <form id="reportForm" class="modal-field--span-full" autocomplete="off">
+              <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+                <div class="summary summary--between summary-gap-8 modal-field--span-full">
+                  <h4>Apontar produção</h4>
+                  <small>Só os apontamentos da última operação do roteiro (ou sem operação) somam na quantidade produzida. O refugo sempre soma.</small>
+                </div>
+
+                <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+                  <label for="repOp">Operação</label>
+                  <select id="repOp"></select>
+                </div>
+                <div class="fields fields-h-6 fields-w-full fields-font-3">
+                  <label for="repGood">Qtd. boa</label>
+                  <input id="repGood" type="number" step="any" min="0" value="0" />
+                </div>
+                <div class="fields fields-h-6 fields-w-full fields-font-3">
+                  <label for="repScrap">Refugo</label>
+                  <input id="repScrap" type="number" step="any" min="0" value="0" />
+                </div>
+                <div class="fields fields-h-6 fields-w-full fields-font-3">
+                  <label for="repMinutes">Tempo (min)</label>
+                  <input id="repMinutes" type="number" step="any" min="0" value="0" />
+                </div>
+                <div class="fields fields-h-6 fields-w-full fields-font-3">
+                  <label for="repOperator">Operador</label>
+                  <input id="repOperator" type="text" maxlength="100" />
+                </div>
+                <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-5">
+                  <label for="repNotes">Observação</label>
+                  <input id="repNotes" type="text" />
+                </div>
+                <div class="btn-inline btn-position-right" style="align-self:end">
+                  <button type="submit" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Apontar</span></button>
+                </div>
+              </div>
+            </form>
+
+            <!-- APONTAMENTOS -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Apontamentos</h4>
+            </div>
+            <div class="table-scroll modal-field--span-full">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Operação</th>
+                    <th>Centro</th>
+                    <th class="th-right">Boa</th>
+                    <th class="th-right">Refugo</th>
+                    <th class="th-right">Min.</th>
+                    <th class="th-left">Operador</th>
+                    <th class="th-left">Observação</th>
+                  </tr>
+                </thead>
+                <tbody id="reportsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <footer class="modal__footer">
+          <button id="btnDelete" type="button" class="btn btn-delete btn-sm btn-position-left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg><span>Excluir OP</span></button>
+          <span id="statusButtons" class="btn-inline btn-gap-2"></span>
+          <button id="btnSaveEdit" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar dados</span></button>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Fechar</span></button>
+        </footer>
+      </section>
     </div>
-    <div class="pcp-modal__body">
-      <div class="pcp-kpis">
-        <div class="pcp-kpi"><span>Status</span><strong id="kpiStatus">—</strong></div>
-        <div class="pcp-kpi"><span>Planejado</span><strong id="kpiPlanned">—</strong></div>
-        <div class="pcp-kpi"><span>Produzido</span><strong id="kpiProduced">—</strong></div>
-        <div class="pcp-kpi"><span>Refugo</span><strong id="kpiScrap">—</strong></div>
-      </div>
-
-      <div id="orderMessage" class="pcp-form-message" role="alert" hidden></div>
-
-      <form id="editForm">
-        <div class="pcp-section-title"><span>Dados da OP</span></div>
-        <div class="pcp-form-grid">
-          <div class="pcp-form-field">
-            <label for="editQty" class="pcp-label">Quantidade planejada</label>
-            <input id="editQty" type="number" step="any" min="0" class="pcp-input" />
-          </div>
-          <div class="pcp-form-field">
-            <label for="editDue" class="pcp-label">Entrega</label>
-            <input id="editDue" type="date" class="pcp-input" />
-          </div>
-          <div class="pcp-form-field">
-            <label for="editRef" class="pcp-label">Pedido de venda</label>
-            <input id="editRef" type="text" maxlength="50" class="pcp-input" autocomplete="off" />
-          </div>
-          <div class="pcp-form-field">
-            <label for="editNotes" class="pcp-label">Observações</label>
-            <input id="editNotes" type="text" class="pcp-input" autocomplete="off" />
-          </div>
-        </div>
-      </form>
-
-      <div class="pcp-section-title"><span>Materiais</span></div>
-      <table class="pcp-grid-table">
-        <thead>
-          <tr>
-            <th>Componente</th>
-            <th class="num">Por unidade</th>
-            <th class="num">Necessário</th>
-            <th class="num">Consumido</th>
-            <th class="num">Estoque atual</th>
-          </tr>
-        </thead>
-        <tbody id="materialsBody"></tbody>
-      </table>
-
-      <div class="pcp-section-title"><span>Roteiro</span></div>
-      <table class="pcp-grid-table">
-        <thead>
-          <tr>
-            <th style="width:70px">Seq.</th>
-            <th>Operação</th>
-            <th>Centro de trabalho</th>
-            <th class="num">Setup (min)</th>
-            <th class="num">Min. por unidade</th>
-            <th class="num">Tempo previsto (h)</th>
-          </tr>
-        </thead>
-        <tbody id="opsBody"></tbody>
-      </table>
-
-      <form id="reportForm">
-        <div class="pcp-section-title"><span>Apontar produção</span></div>
-        <div class="pcp-form-grid">
-          <div class="pcp-form-field pcp-span-2">
-            <label for="repOp" class="pcp-label">Operação</label>
-            <select id="repOp" class="pcp-input"></select>
-          </div>
-          <div class="pcp-form-field">
-            <label for="repGood" class="pcp-label">Qtd. boa</label>
-            <input id="repGood" type="number" step="any" min="0" value="0" class="pcp-input" />
-          </div>
-          <div class="pcp-form-field">
-            <label for="repScrap" class="pcp-label">Refugo</label>
-            <input id="repScrap" type="number" step="any" min="0" value="0" class="pcp-input" />
-          </div>
-          <div class="pcp-form-field">
-            <label for="repMinutes" class="pcp-label">Tempo (min)</label>
-            <input id="repMinutes" type="number" step="any" min="0" value="0" class="pcp-input" />
-          </div>
-          <div class="pcp-form-field">
-            <label for="repOperator" class="pcp-label">Operador</label>
-            <input id="repOperator" type="text" maxlength="100" class="pcp-input" autocomplete="off" />
-          </div>
-          <div class="pcp-form-field">
-            <label for="repNotes" class="pcp-label">Observação</label>
-            <input id="repNotes" type="text" class="pcp-input" autocomplete="off" />
-          </div>
-          <div class="pcp-form-field" style="display:flex;align-items:flex-end">
-            <button type="submit" class="btn btn-toolbar btn-sm">Apontar</button>
-          </div>
-        </div>
-        <p class="pcp-muted">Só os apontamentos da última operação do roteiro (ou sem operação) somam na quantidade produzida da OP. O refugo sempre soma.</p>
-      </form>
-
-      <div class="pcp-section-title"><span>Apontamentos</span></div>
-      <table class="pcp-grid-table">
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Operação</th>
-            <th>Centro</th>
-            <th class="num">Boa</th>
-            <th class="num">Refugo</th>
-            <th class="num">Min.</th>
-            <th>Operador</th>
-            <th>Observação</th>
-          </tr>
-        </thead>
-        <tbody id="reportsBody"></tbody>
-      </table>
-
-      <div class="pcp-modal__footer">
-        <div class="pcp-footer-left">
-          <button id="btnDelete" type="button" class="btn btn-clean btn-sm">Excluir OP</button>
-          <button id="btnSaveEdit" type="button" class="btn btn-clean btn-sm">Salvar dados</button>
-        </div>
-        <span id="statusButtons" class="pcp-action-group"></span>
-        <button type="button" class="btn btn-clean btn-sm" data-close="orderModal">Fechar</button>
-      </div>
-    </div>
-  </dialog>
+  </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/pcpProductionOrders/js/pcpProductionOrders.js"></script>
+  <script type="module" src="/public/pcpProductionOrders/js/pcpProductionOrders.js?v=dock-01"></script>
 </body>
 
 </html>

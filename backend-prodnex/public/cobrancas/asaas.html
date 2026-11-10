@@ -221,7 +221,7 @@
             Cliente (ID no Asaas)
             <div style="display:flex; gap:8px;">
               <input type="text" id="clienteId" placeholder="ID do Cliente no Asaas" />
-              <button class="btn btn-primary" type="button" id="btnAbrirModalClientes">🔎 Buscar</button>
+              <button class="btn btn-search" type="button" id="btnAbrirModalClientes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span></button>
             </div>
           </label>
 
@@ -310,8 +310,8 @@
           </label>
 
           <div class="menu-botoes" style="grid-column: 1 / -1; justify-content:flex-end; margin-top:var(--gap-sm);">
-            <button class="btn btn-secondary" onclick="carregarCobrancas()">🔍 Aplicar Filtro</button>
-            <button class="btn btn-flat" onclick="limparFiltros()">🧹 Limpar</button>
+            <button class="btn btn-search" onclick="carregarCobrancas()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar Filtro</span></button>
+            <button class="btn btn-clean" onclick="limparFiltros()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
           </div>
         </div>
       </section>
@@ -373,7 +373,7 @@
 
       <div class="input-row">
         <input type="text" id="buscaClienteSQL" placeholder="Digite nome, CNPJ/CPF ou e-mail (mín. 3 letras)..." autocomplete="off" />
-        <button class="btn btn-primary" id="btnBuscarClienteSQL">Buscar</button>
+        <button class="btn btn-search" id="btnBuscarClienteSQL"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span></button>
       </div>
 
       <div class="modal-table-wrap">
@@ -393,7 +393,7 @@
       </div>
 
       <div class="actions">
-        <button class="btn btn-flat" id="btnCancelarModalClientes">Fechar</button>
+        <button class="btn btn-toolbar" id="btnCancelarModalClientes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Fechar</span></button>
       </div>
     </div>
   </div>

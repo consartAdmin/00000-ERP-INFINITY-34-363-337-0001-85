@@ -24,7 +24,7 @@
   <div class="c-container c-container--2xl">
      <div class="ibge-top__right">
         <button id="btnEnsure" class="btn btn-flat" type="button">🛠️ Ensure Tabela</button>
-        <button id="btnRefreshAll" class="btn btn-flat" type="button">🔄 Atualizar tudo</button>
+        <button id="btnRefreshAll" class="btn btn-load" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Atualizar tudo</span></button>
       </div>
     </section>
 
@@ -49,7 +49,7 @@
               <span>Incluir inativos</span>
             </label>
 
-            <button id="btnNovoUf" class="btn btn-primary" type="button">＋ Nova UF</button>
+            <button id="btnNovoUf" class="btn btn-new" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova UF</span></button>
           </div>
         </div>
 
@@ -107,14 +107,14 @@
             </select>
 
             <button id="btnImportUf" class="btn btn-secondary" type="button">⬇️ Importar cidades da UF</button>
-            <button id="btnNovoCity" class="btn btn-primary" type="button">＋ Nova Cidade</button>
+            <button id="btnNovoCity" class="btn btn-new" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova Cidade</span></button>
           </div>
         </div>
 
         <div class="section-card ibge-inner ibge-inner--cities">
           <div class="ibge-selected muted" id="selectedUfHint">
             Nenhuma UF selecionada. Clique em uma UF à esquerda para filtrar.
-            <button id="btnClearUf" class="btn btn-flat btn-sm" type="button">Limpar seleção</button>
+            <button id="btnClearUf" class="btn btn-clean btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar seleção</span></button>
           </div>
 
           <div id="citiesTotalBox" class="ibge-totalBox muted">—</div>
@@ -199,8 +199,8 @@
       </div>
 
       <div class="ibge-form__actions">
-        <button class="btn btn-primary" type="submit">💾 Salvar</button>
-        <button class="btn btn-flat" type="button" data-close="1">Cancelar</button>
+        <button class="btn btn-new" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        <button class="btn btn-toolbar" type="button" data-close="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
       </div>
     </form>
   </div>

@@ -1,6 +1,8 @@
-<!-- ╔════════════════════════════════════════════════════════════╗
-     ║ pcpMrp.html — PCP / Produção — PRODNEX ERP
-     ╚════════════════════════════════════════════════════════════╝ -->
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ pcpMrp.html — Necessidade de Materiais (PCP) | PRODNEX ERP                 ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║ API: /api/pcp/mrp                                                          ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -11,52 +13,52 @@
 
   <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/pcp/pcp.css" />
 </head>
 
-<body class="page consart-theme p-page pw-page--full ph-page--xr">
+<body class="consart-theme p-page pw-page--full ph-page--xr">
   <main class="consart-container consart-container--full consart-container--ultraslim">
 
-    <div class="header pcp-page-header">
-      <div>
-        <h2 class="pcp-card-title">Necessidade de Materiais (MRP)</h2>
-        <p class="pcp-card-caption">Soma o que as OPs abertas ainda vão consumir e compara com o estoque atual e o estoque mínimo.</p>
-      </div>
-      <div class="pcp-header-actions">
-        <button id="btnExport" type="button" class="btn btn-clean btn-sm">Exportar CSV</button>
-        <button id="btnRefresh" type="button" class="btn btn-toolbar btn-sm">Atualizar</button>
-      </div>
-    </div>
+    <section class="table-layout-integrated" aria-label="Necessidade de materiais">
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--between summary-gap-8">
+          <h4 class="table-layout-integrated__filter-title">Necessidade de Materiais (MRP)</h4>
+          <small>Soma o que as OPs abertas ainda vão consumir e compara com o estoque atual e o estoque mínimo</small>
+        </div>
 
-    <section class="table-layout-integrated">
-      <div class="table-layout-integrated__filter pcp-filter-bar">
-        <div class="fields-inline fields-gap3 pcp-filter-row">
-          <div class="fields fields-inline fields-w-20 fields-h-6 pcp-search-field">
-            <input id="search" type="text" class="pcp-search-input" placeholder="Buscar componente..." autocomplete="off" />
-            <span class="pcp-search-icon" aria-hidden="true">🔍</span>
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-16 fields-font-3">
+            <label for="search">Buscar</label>
+            <input id="search" type="search" placeholder="Código ou descrição do componente..." autocomplete="off" />
           </div>
-          <div class="fields fields-inline fields-w-10 fields-h-6">
-            <label class="pcp-checkbox-inline">
-              <input id="onlyShortage" type="checkbox" checked />
-              <span>Somente o que falta comprar</span>
-            </label>
+
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <label for="onlyShortage">Mostrar</label>
+            <select id="onlyShortage">
+              <option value="1" selected>Só o que falta comprar</option>
+              <option value="0">Todos os componentes</option>
+            </select>
+          </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnExport" type="button" class="btn btn-toolbar btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>Exportar CSV</span></button>
+            <button id="btnRefresh" type="button" class="btn btn-load btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Atualizar</span></button>
           </div>
         </div>
       </div>
 
       <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="pcp.mrp">
-        <table class="table table-zebra table-zebra-hover table-sticky-head pcp-table">
+        <table class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
-              <th style="width:130px">Componente</th>
-              <th>Descrição</th>
-              <th class="num" style="width:120px">Necessário</th>
-              <th class="num" style="width:110px">Estoque</th>
-              <th class="num" style="width:110px">Est. mínimo</th>
-              <th class="num" style="width:120px">Comprar</th>
-              <th class="num" style="width:130px">Valor estimado</th>
-              <th class="num" style="width:70px">OPs</th>
-              <th class="center" style="width:120px">1ª entrega</th>
+              <th class="table-col-w-2">Componente</th>
+              <th class="th-left">Descrição</th>
+              <th class="table-col-w-2 th-right">Necessário</th>
+              <th class="table-col-w-2 th-right">Estoque</th>
+              <th class="table-col-w-2 th-right">Est. mínimo</th>
+              <th class="table-col-w-2 th-right">Comprar</th>
+              <th class="table-col-w-2 th-right">Valor estimado</th>
+              <th class="table-col-w-1">OPs</th>
+              <th class="table-col-w-2">1ª entrega</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -64,10 +66,10 @@
       </div>
       <footer class="table-footer">
         <div class="table-footer__info">
-          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
-            <span id="mrpTableInfo">0 registros</span>
+          <div class="summary-pill summary-pill--success summary-left-space-3">
+            <span id="mrpTableInfo">Carregando...</span>
           </div>
-          <div class="summary-pill summary-left-space-3">
+          <div class="summary-pill summary-pill--info summary-left-space-3">
             <span>Total a comprar: <strong id="mrpTotal">R$ 0,00</strong></span>
           </div>
         </div>
@@ -90,7 +92,7 @@
   </main>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/pcpMrp/js/pcpMrp.js"></script>
+  <script type="module" src="/public/pcpMrp/js/pcpMrp.js?v=dock-01"></script>
 </body>
 
 </html>

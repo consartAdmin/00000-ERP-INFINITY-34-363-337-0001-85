@@ -1,6 +1,13 @@
-<!-- ╔════════════════════════════════════════════════════════════╗
-     ║ pcpBom.html — PCP / Produção — PRODNEX ERP
-     ╚════════════════════════════════════════════════════════════╝ -->
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ pcpBom.html — Ficha Técnica (PCP) | PRODNEX ERP                            ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated + filtros + paginação no rodapé          ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Cadastro/edição: modals.css + modal.js (componentes e roteiro em        ║
+     ║    tabelas .table dentro do modal)                                         ║
+     ║ API: /api/pcp/boms (+ /recalc-costs, /products, /work-centers)             ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -11,61 +18,63 @@
 
   <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
   <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="/public/pcp/pcp.css" />
 </head>
 
-<body class="page consart-theme p-page pw-page--full ph-page--xr">
+<body class="consart-theme p-page pw-page--full ph-page--xr">
   <main class="consart-container consart-container--full consart-container--ultraslim">
 
-    <div class="header pcp-page-header">
-      <div>
-        <h2 class="pcp-card-title">Ficha Técnica</h2>
-        <p class="pcp-card-caption">Estrutura do produto (componentes e perdas) e roteiro de operações. O Preço de Custo do produto vem dos ingredientes, pela fração ideal.</p>
-      </div>
-      <div class="pcp-header-actions">
-        <button id="btnRecalc" type="button" class="btn btn-clean btn-sm" title="Recalcula o Preço de Custo de todos os produtos com ficha ativa">⟳ Recalcular custos</button>
-        <button id="btnNew" type="button" class="btn btn-toolbar btn-sm">+ Nova ficha</button>
-      </div>
-    </div>
+    <section class="table-layout-integrated" aria-label="Fichas técnicas">
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--between summary-gap-8">
+          <h4 class="table-layout-integrated__filter-title">Ficha Técnica</h4>
+          <small>Estrutura do produto (componentes e perdas) e roteiro de operações. O Preço de Custo vem dos ingredientes, pela fração ideal.</small>
+        </div>
 
-    <section class="table-layout-integrated">
-      <div class="table-layout-integrated__filter pcp-filter-bar">
-        <div class="fields-inline fields-gap3 pcp-filter-row">
-          <div class="fields fields-inline fields-w-20 fields-h-6 pcp-search-field">
-            <input id="search" type="text" class="pcp-search-input" placeholder="Buscar por código ou descrição do produto..." autocomplete="off" />
-            <span class="pcp-search-icon" aria-hidden="true">🔍</span>
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-16 fields-font-3">
+            <label for="search">Buscar</label>
+            <input id="search" type="search" placeholder="Código ou descrição do produto..." autocomplete="off" />
           </div>
-          <div class="fields fields-inline fields-w-10 fields-h-6">
-            <label class="pcp-checkbox-inline">
-              <input id="includeInactive" type="checkbox" />
-              <span>Incluir inativas</span>
-            </label>
+
+          <div class="fields fields-h-6 fields-w-6 fields-font-3">
+            <label for="statusFilter">Status</label>
+            <select id="statusFilter">
+              <option value="active" selected>Ativas</option>
+              <option value="inactive">Inativas</option>
+              <option value="all">Todas</option>
+            </select>
+          </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnRecalc" type="button" class="btn btn-toolbar btn-sm" title="Recalcula o Preço de Custo de todos os produtos com ficha ativa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Recalcular custos</span></button>
+            <button id="btnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova ficha</span></button>
           </div>
         </div>
       </div>
 
       <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="pcp.bom">
-        <table class="table table-zebra table-zebra-hover table-sticky-head pcp-table">
+        <table class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
-              <th style="width:140px">Produto</th>
-              <th>Descrição</th>
-              <th class="center" style="width:80px">Versão</th>
-              <th class="num" style="width:110px">Qtd. base</th>
-              <th class="num" style="width:120px">Componentes</th>
-              <th class="num" style="width:110px">Operações</th>
-              <th class="num" style="width:130px">Custo / un.</th>
-              <th class="center" style="width:110px">Status</th>
-              <th class="center" style="width:130px">Ações</th>
+              <th class="table-col-w-2">Produto</th>
+              <th class="th-left">Descrição</th>
+              <th class="table-col-w-1">Versão</th>
+              <th class="table-col-w-2 th-right">Qtd. base</th>
+              <th class="table-col-w-2 th-right">Componentes</th>
+              <th class="table-col-w-2 th-right">Operações</th>
+              <th class="table-col-w-2 th-right">Custo / un.</th>
+              <th class="table-col-w-2">Status</th>
+              <th class="table-col-w-2">Ações</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
       </div>
+
       <footer class="table-footer">
         <div class="table-footer__info">
-          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
-            <span id="bomTableInfo">0 registros</span>
+          <div class="summary-pill summary-pill--success summary-left-space-3">
+            <span id="bomTableInfo">Carregando...</span>
           </div>
         </div>
         <div class="table-footer__pagination">
@@ -88,101 +97,119 @@
 
   <datalist id="productOptions"></datalist>
 
-  <dialog id="modal" class="pcp-modal pcp-modal--wide">
-    <div class="pcp-modal__header">
-      <div>
-        <h3 id="modalTitle">Nova ficha técnica</h3>
-        <p>As quantidades dos componentes e os tempos valem para a quantidade base informada.</p>
-      </div>
-      <button id="btnClose" type="button" class="pcp-modal__close" aria-label="Fechar">×</button>
+  <!-- MODAL — NOVA / EDITAR FICHA TÉCNICA -->
+  <div class="modal modal-width-12 modal-header-color-3 modal-footer-color-3" id="modal" role="dialog"
+    aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="modalTitle">Nova ficha técnica</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="form" class="modal__body modal-section" autocomplete="off">
+          <input id="bomId" type="hidden" />
+
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="product">Produto acabado *</label>
+              <input id="product" type="text" list="productOptions" placeholder="Digite o código ou a descrição" required />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="version">Versão</label>
+              <input id="version" type="text" maxlength="20" value="1" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="baseQty">Quantidade base *</label>
+              <input id="baseQty" type="number" step="any" min="0" value="1" required />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="isActive">Status</label>
+              <select id="isActive">
+                <option value="true" selected>Ativa</option>
+                <option value="false">Inativa</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="notes">Observações</label>
+              <input id="notes" type="text" />
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- COMPONENTES -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Componentes</h4>
+              <button id="btnAddItem" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Componente</span></button>
+            </div>
+
+            <div class="table-scroll modal-field--span-full">
+              <table class="table table-fixed table-zebra">
+                <thead>
+                  <tr>
+                    <th class="th-left" style="width:28%">Componente</th>
+                    <th class="th-right" style="width:9%">Quantidade</th>
+                    <th style="width:8%">Unidade</th>
+                    <th class="th-right" style="width:7%">Perda %</th>
+                    <th class="th-right" style="width:12%">Fração ideal / un.</th>
+                    <th class="th-right" style="width:11%">Custo ingrediente</th>
+                    <th class="th-right" style="width:10%">Custo / un.</th>
+                    <th class="th-left">Observação</th>
+                    <th style="width:48px"></th>
+                  </tr>
+                </thead>
+                <tbody id="itemsBody"></tbody>
+              </table>
+            </div>
+
+            <!-- ROTEIRO -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Roteiro de operações</h4>
+              <button id="btnAddOp" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Operação</span></button>
+            </div>
+
+            <div class="table-scroll modal-field--span-full">
+              <table class="table table-fixed table-zebra">
+                <thead>
+                  <tr>
+                    <th style="width:80px">Seq.</th>
+                    <th class="th-left" style="width:26%">Centro de trabalho</th>
+                    <th class="th-left">Descrição</th>
+                    <th class="th-right" style="width:12%">Setup (min)</th>
+                    <th class="th-right" style="width:14%">Min. por unidade</th>
+                    <th style="width:48px"></th>
+                  </tr>
+                </thead>
+                <tbody id="opsBody"></tbody>
+              </table>
+            </div>
+
+            <!-- CUSTOS -->
+            <div id="costBox" class="summary summary-gap-8 modal-field--span-full" hidden>
+              <div class="summary-pill summary-pill--success"><span>Ingredientes / un. (vai para o Preço de Custo): <strong id="costMaterial">—</strong></span></div>
+              <div class="summary-pill summary-pill--info"><span>Operação / un.: <strong id="costOperation">—</strong></span></div>
+              <div class="summary-pill summary-pill--success"><span>Custo total / un.: <strong id="costTotal">—</strong></span></div>
+            </div>
+
+            <small class="modal-field--span-full">Fração ideal = quantidade (convertida para a unidade do ingrediente) ÷ quantidade base. Custo / un. = fração ideal × (1 + perda %) × custo do ingrediente. Ao salvar, o Preço de Custo deste produto e dos produtos que o usam como ingrediente é atualizado.</small>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Fechar</span></button>
+          <button type="submit" form="form" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar ficha</span></button>
+        </footer>
+      </section>
     </div>
-
-    <form id="form" class="pcp-modal__body">
-      <input id="bomId" type="hidden" />
-      <div class="pcp-form-grid">
-        <div class="pcp-form-field pcp-span-2">
-          <label for="product" class="pcp-label">Produto acabado *</label>
-          <input id="product" type="text" list="productOptions" class="pcp-input" placeholder="Digite o código ou a descrição" required autocomplete="off" />
-        </div>
-        <div class="pcp-form-field">
-          <label for="version" class="pcp-label">Versão</label>
-          <input id="version" type="text" maxlength="20" value="1" class="pcp-input" />
-        </div>
-        <div class="pcp-form-field">
-          <label for="baseQty" class="pcp-label">Quantidade base *</label>
-          <input id="baseQty" type="number" step="any" min="0" value="1" class="pcp-input" required />
-        </div>
-        <div class="pcp-form-field pcp-span-2">
-          <label for="notes" class="pcp-label">Observações</label>
-          <input id="notes" type="text" class="pcp-input" autocomplete="off" />
-        </div>
-        <div class="pcp-form-field">
-          <span class="pcp-label">Status</span>
-          <label class="pcp-switch">
-            <input id="isActive" type="checkbox" checked />
-            <span class="pcp-switch-slider"></span>
-            <span class="pcp-switch-label">Ativa</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="pcp-section-title">
-        <span>Componentes</span>
-        <button id="btnAddItem" type="button" class="btn btn-clean btn-sm">+ Componente</button>
-      </div>
-      <table class="pcp-grid-table">
-        <thead>
-          <tr>
-            <th style="width:28%">Componente</th>
-            <th class="num" style="width:9%">Quantidade</th>
-            <th style="width:8%">Unidade</th>
-            <th class="num" style="width:7%">Perda %</th>
-            <th class="num" style="width:12%">Fração ideal / un.</th>
-            <th class="num" style="width:11%">Custo ingrediente</th>
-            <th class="num" style="width:10%">Custo / un.</th>
-            <th>Observação</th>
-            <th style="width:40px"></th>
-          </tr>
-        </thead>
-        <tbody id="itemsBody"></tbody>
-      </table>
-
-      <div class="pcp-section-title">
-        <span>Roteiro de operações</span>
-        <button id="btnAddOp" type="button" class="btn btn-clean btn-sm">+ Operação</button>
-      </div>
-      <table class="pcp-grid-table">
-        <thead>
-          <tr>
-            <th style="width:70px">Seq.</th>
-            <th style="width:24%">Centro de trabalho</th>
-            <th>Descrição</th>
-            <th class="num" style="width:12%">Setup (min)</th>
-            <th class="num" style="width:14%">Min. por unidade</th>
-            <th style="width:40px"></th>
-          </tr>
-        </thead>
-        <tbody id="opsBody"></tbody>
-      </table>
-
-      <div id="costBox" class="pcp-cost-box" hidden>
-        <div class="summary-pill summary-pill--success"><span>Ingredientes / un. (vai para o Preço de Custo): <strong id="costMaterial">—</strong></span></div>
-        <div class="summary-pill"><span>Operação / un.: <strong id="costOperation">—</strong></span></div>
-        <div class="summary-pill summary-pill--success"><span>Custo total / un.: <strong id="costTotal">—</strong></span></div>
-      </div>
-
-      <p class="pcp-card-caption">Fração ideal = quantidade (convertida para a unidade do ingrediente) ÷ quantidade base. Custo / un. = fração ideal × (1 + perda %) × custo do ingrediente. Ao salvar, o Preço de Custo deste produto e dos produtos que o usam como ingrediente é atualizado.</p>
-      <div id="formMessage" class="pcp-form-message" role="alert" hidden></div>
-
-      <div class="pcp-modal__footer">
-        <button id="btnCancel" type="button" class="btn btn-clean btn-sm">Fechar</button>
-        <button type="submit" class="btn btn-toolbar btn-sm">Salvar ficha</button>
-      </div>
-    </form>
-  </dialog>
+  </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/pcpBom/js/pcpBom.js"></script>
+  <script type="module" src="/public/pcpBom/js/pcpBom.js?v=dock-01"></script>
 </body>
 
 </html>

@@ -105,12 +105,14 @@ h2 {
 }
 
 #btnNovoFornecedor {
-  background-color: #007bff;
-  color: white;
+  background-color: #e8f6f8;
+  color: #0e7490;
+  border: 1px solid #a9dbe2;
 }
 
 #btnNovoFornecedor:hover {
-  background-color: #0069d9;
+  background-color: #d7eff2;
+  border-color: #67c1cf;
 }
 
 /* 🔍 Campo de filtro */

@@ -54,8 +54,8 @@
         <input type="text" id="observacoes" placeholder="Observações" />
 
         <div class="form-actions">
-          <button type="submit" id="btnSalvar" class="btn btn-success">➕ Adicionar</button>
-          <button type="button" id="btnCancelar" class="btn btn-danger" style="display:none;">Cancelar</button>
+          <button type="submit" id="btnSalvar" class="btn btn-new"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Adicionar</span></button>
+          <button type="button" id="btnCancelar" class="btn btn-toolbar" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
         </div>
       </form>
 
@@ -68,7 +68,7 @@
             <option value="entrega">Entrega</option>
             <option value="coleta">Coleta</option>
           </select>
-          <button type="button" class="btn" onclick="filtrar()">🔍 Filtrar</button>
+          <button type="button" class="btn btn-search" onclick="filtrar()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Filtrar</span></button>
           <button type="button" class="btn" onclick="emitirRota()">🗺️ Emitir Rota do Dia</button>
           <button type="button" class="btn" onclick="gerarPDF()">📄 Gerar PDF da Rota</button>
         </div>
@@ -126,7 +126,7 @@
         <input type="number" id="editOrdem" placeholder="Ordem da Rota" min="1" />
         <input type="text" id="editObservacoes" placeholder="Observações" />
         <div class="form-actions">
-          <button type="submit" class="btn btn-success">💾 Salvar Alterações</button>
+          <button type="submit" class="btn btn-new"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar Alterações</span></button>
         </div>
       </form>
     </div>

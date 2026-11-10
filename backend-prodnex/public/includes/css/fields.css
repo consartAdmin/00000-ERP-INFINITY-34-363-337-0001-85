@@ -739,3 +739,18 @@
     transition: none;
   }
 }
+
+/* ====================================================================
+   VALOR DO CAMPO EM NEGRITO (rótulo continua normal)
+   Uso: <div class="modal-form-grid fields-value-bold"> ou num .fields
+==================================================================== */
+.fields-value-bold input,
+.fields-value-bold select,
+.fields-value-bold textarea {
+  font-weight: 700;
+}
+
+.fields-value-bold input::placeholder,
+.fields-value-bold textarea::placeholder {
+  font-weight: 400;
+}
