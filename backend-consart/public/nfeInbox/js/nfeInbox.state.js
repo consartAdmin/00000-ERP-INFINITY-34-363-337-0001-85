@@ -17,7 +17,7 @@ export const SORTABLE_COLUMNS = Object.freeze([
   'destinatario_razao',
   'valor_total',
   'entrada_criada',
-  // 'manifestacao' fora da lista: a coluna está oculta na tela
+  'manifestacao',
 ]);
 
 export const state = {
@@ -69,6 +69,17 @@ export function getDom() {
     $btnDownloadPdf: byId('btnNfiDownloadPdf'),
     $btnManifest: byId('btnNfiManifest'),
     $manifestSelect: byId('nfi-manifest-select'),
+    $manifestModal: byId('nfi-manifest-modal'),
+    $mfNumero: byId('nfi-mf-numero'),
+    $mfValor: byId('nfi-mf-valor'),
+    $mfEmitente: byId('nfi-mf-emitente'),
+    $mfChave: byId('nfi-mf-chave'),
+    $mfAtual: byId('nfi-mf-atual'),
+    $mfHelp: byId('nfi-mf-help'),
+    $mfReasonWrap: byId('nfi-mf-reason-wrap'),
+    $mfReason: byId('nfi-mf-reason'),
+    $mfReasonCount: byId('nfi-mf-reason-count'),
+    $mfConfirm: byId('nfi-mf-confirm'),
     $btnDownloadXmlLote: byId('btnNfiDownloadXmlLote'),
     $modal,
     $modalClose: byId('nfi-modal-close'),

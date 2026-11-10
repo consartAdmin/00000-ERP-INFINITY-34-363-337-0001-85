@@ -7,6 +7,7 @@ import { createActions } from './nfeInbox.actions.js';
 import { SEARCH_DEBOUNCE_MS, SYNC_STATUS_POLL_MS } from './nfeInbox.config.js';
 import { clearFilters } from './nfeInbox.form.js';
 import { createModalManager, notify } from './nfeInbox.modal.js';
+import { createManifestModal } from './nfeInbox.manifest.js';
 import { setSelected, updatePagination } from './nfeInbox.render.js';
 import { createSortableTable } from '/public/includes/js/sortableTable.js';
 import { getDom, SORTABLE_COLUMNS, state } from './nfeInbox.state.js';
@@ -16,6 +17,11 @@ function init() {
   const dom = getDom();
   const modals = createModalManager(dom);
   const actions = createActions(dom, state, modals);
+
+  // Modal de manifestação: ao concluir, recarrega a página atual da lista
+  // para mostrar o novo selo na coluna Manifestação.
+  const manifestModal = createManifestModal(dom, { onDone: () => actions.loadInbox() });
+  modals.openManifest = manifestModal.open;
   const reloadFirstPage = () => {
     state.currentPage = 1;
     return actions.loadInbox();

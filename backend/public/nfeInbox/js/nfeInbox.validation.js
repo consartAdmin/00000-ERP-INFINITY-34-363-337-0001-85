@@ -22,12 +22,19 @@ export function validateSelectedRow(dom, state) {
   return { error: null, row };
 }
 
-export function validateManifest(dom, state) {
-  const selected = validateSelectedRow(dom, state);
-  if (selected.error) return selected;
-  const operation = (dom.$manifestSelect?.value || '').trim();
-  if (!operation) return { error: 'Selecione uma operação de manifestação.', row: null };
-  return { ...selected, operation };
+export const MANIFEST_REASON_MIN = 15;
+export const MANIFEST_REASON_MAX = 255;
+
+/** Valida operação + justificativa (obrigatória em "Operação não realizada"). */
+export function validateManifest(operation, reason = '') {
+  if (!operation) return 'Selecione o tipo de manifestação.';
+  if (operation === 'NAO_REALIZADA') {
+    const size = String(reason).trim().length;
+    if (size < MANIFEST_REASON_MIN || size > MANIFEST_REASON_MAX) {
+      return `Informe a justificativa com ${MANIFEST_REASON_MIN} a ${MANIFEST_REASON_MAX} caracteres (hoje: ${size}).`;
+    }
+  }
+  return null;
 }
 
 export function validateXmlFiles(fileList) {

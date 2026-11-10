@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="/public/nfeInbox/css/nfeInbox.modals.css" />
 
   <!-- 🎨 CSS específico do módulo -->
-  <link rel="stylesheet" href="./css/nfeInbox.css?v=4" />
+  <link rel="stylesheet" href="./css/nfeInbox.css?v=5" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -65,15 +65,16 @@
             </select>
           </div>
 
-          <!-- Oculto: mantido no DOM para os filtros continuarem funcionando -->
-          <div class="fields fields-h-6 fields-w-10 fields-font-3 nfi-hidden-field" hidden>
+          <!-- Valores = operacao gravada em nfeInbox.manifestacao (manifestNfe / sync DF-e) -->
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
             <label for="manifestacao">Manifestação</label>
             <select id="manifestacao" name="manifestacao">
               <option value="">Todas</option>
-              <option value="CIENTE">Ciente</option>
-              <option value="CONFIRMADA">Confirmada</option>
-              <option value="DESCONHECIDA">Desconhecida</option>
-              <option value="NAO_REALIZADA">Não Realizada</option>
+              <option value="SEM">Sem manifestação</option>
+              <option value="CIENCIA">Ciência da operação</option>
+              <option value="CONFIRMACAO">Confirmada</option>
+              <option value="DESCONHECIMENTO">Desconhecida</option>
+              <option value="NAO_REALIZADA">Não realizada</option>
             </select>
           </div>
 
@@ -102,20 +103,10 @@
              LINHA 3 — CONTROLES + BOTÕES
              ======================= -->
 
-            <!-- Oculto: mantido no DOM para o fluxo de manifestação continuar funcionando -->
-            <div class="fields fields-h-6 fields-w-20 fields-font-3 nfi-hidden-field" hidden>
-              <select id="nfi-manifest-select" title="Operação de manifestação">
-                <option value="">Manifestação...</option>
-                <option value="CIENCIA">CIÊNCIA</option>
-                <option value="CONFIRMACAO">CONFIRMAÇÃO</option>
-                <option value="DESCONHECIMENTO">DESCONHECIMENTO</option>
-                <option value="NAO_REALIZADA">NÃO REALIZADA</option>
-              </select>
-            </div>
-
-            <!-- Oculto junto com o select de manifestação; a lógica permanece intacta -->
-            <button type="button" id="btnNfiManifest" class="btn btn-toolbar btn-sm nfi-hidden-field"
-              title="Enviar manifestação SEFAZ para a NF selecionada" hidden disabled>🖊️ Manifestar</button>
+            <!-- Abre o modal de manifestação do destinatário (#nfi-manifest-modal) -->
+            <button type="button" id="btnNfiManifest" class="btn btn-toolbar btn-sm"
+              title="Manifestar a NF selecionada na SEFAZ (ciência, confirmação, desconhecimento ou não realizada)"
+              disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Manifestar</span></button>
 
             <button type="button" id="btnNfiDownloadXml" class="btn btn-toolbar btn-sm"
               title="Baixar XML oficial (se disponível) da NF selecionada" disabled>📄 Baixar XML</button>
@@ -187,10 +178,11 @@
                   Situação <span data-sort-icon aria-hidden="true">↕</span>
                 </button>
               </th>
-              <!-- Sem table-sortable: 'manifestacao' não está em SORTABLE_COLUMNS
-                   (coluna oculta), e marcá-la como ordenável dispararia o
-                   onError do sortableTable caso a coluna volte a aparecer. -->
-              <th class="nfi-col-manifest">Manifestação</th>
+              <th class="table-sortable nfi-col-manifest" data-sort-column="manifestacao" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Manifestação <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody id="tableBodyList"></tbody>
@@ -327,6 +319,76 @@
     </div>
   </div>
 
+  <!-- ╭──────────────────────────────────────────────────────────────╮
+       │ MODAL — Manifestação do destinatário (modals.css / modal.js) │
+       │ Ciência, Confirmação, Desconhecimento ou Não realizada.      │
+       ╰──────────────────────────────────────────────────────────────╯ -->
+  <div id="nfi-manifest-modal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-4" role="dialog" aria-modal="true" aria-labelledby="nfiManifestTitle">
+
+        <div class="modal__header modal-header-color-3">
+          <h2 id="nfiManifestTitle" class="modal__title">Manifestar NF-e</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="modal-section">
+            <div class="modal-form-grid modal-form-grid--2">
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="nfi-mf-numero">Nº NF-e</label>
+                <input id="nfi-mf-numero" type="text" readonly />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="nfi-mf-valor">Valor Total</label>
+                <input id="nfi-mf-valor" type="text" readonly />
+              </div>
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="nfi-mf-emitente">Emitente</label>
+              <input id="nfi-mf-emitente" type="text" readonly />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="nfi-mf-chave">Chave NF-e</label>
+              <input id="nfi-mf-chave" type="text" readonly />
+            </div>
+            <p>Manifestação atual: <span id="nfi-mf-atual" class="summary-pill">Sem manifestação</span></p>
+          </div>
+
+          <div class="modal-divider"></div>
+
+          <div class="modal-section">
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="nfi-manifest-select"><b>Tipo de manifestação</b></label>
+              <select id="nfi-manifest-select">
+                <option value="CIENCIA">Ciência da operação</option>
+                <option value="CONFIRMACAO">Confirmação da operação</option>
+                <option value="DESCONHECIMENTO">Desconhecimento da operação</option>
+                <option value="NAO_REALIZADA">Operação não realizada</option>
+              </select>
+            </div>
+            <p id="nfi-mf-help"></p>
+
+            <div id="nfi-mf-reason-wrap" class="fields fields-w-full fields-font-3" hidden>
+              <label for="nfi-mf-reason"><b>Justificativa</b> (15 a 255 caracteres)</label>
+              <textarea id="nfi-mf-reason" rows="3" maxlength="255"
+                placeholder="Ex.: Mercadoria devolvida na entrega, pedido cancelado pelo cliente."></textarea>
+              <small id="nfi-mf-reason-count">0 / 255</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="button" id="nfi-mf-confirm" class="btn btn-save btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg><span>Enviar à SEFAZ</span></button>
+        </div>
+
+      </section>
+    </div>
+  </div>
+
   <!-- Scripts do módulo
        ATENÇÃO: o ?v= abaixo invalida o cache APENAS de nfeInbox.init.js.
        Os módulos importados por ele (actions, render, state, ...) são
@@ -337,7 +399,7 @@
        ou publicar com nomes de arquivo versionados. -->
   <script type="module" src="/public/includes/js/core.js"></script>
   <script type="module" src="/public/includes/js/date-range-field.js"></script>
-  <script type="module" src="./js/nfeInbox.init.js?v=12"></script>
+  <script type="module" src="./js/nfeInbox.init.js?v=13"></script>
   <script type="module" src="/public/modalsSearch/inboundModals.js"></script>
 </body>
 

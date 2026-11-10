@@ -155,16 +155,6 @@
 }
 
 /* ==========================================================
-   COLUNA MANIFESTAÇÃO — OCULTA
-   Aplicada ao <th> no HTML e ao <td> em nfeInbox.render.js.
-   Os dados continuam vindo da API; só a exibição é removida.
-   ========================================================== */
-
-#nfi-table .nfi-col-manifest {
-    display: none !important;
-}
-
-/* ==========================================================
    COLUNA Nº NF-e
    ========================================================== */
 

@@ -13,7 +13,7 @@ async function requestJson(url, options, fallbackMessage) {
   const response = await fetch(url, options);
   const json = await readJsonSafe(response);
   if (!response.ok || json.success === false) {
-    throw new Error(json.message || `${fallbackMessage} (HTTP ${response.status}).`);
+    throw new Error(json.message || json.error || `${fallbackMessage} (HTTP ${response.status}).`);
   }
   return json;
 }
@@ -46,11 +46,13 @@ export async function getPdfById(id) {
   return { response, blob: await response.blob() };
 }
 
-export function postManifest(id, operation) {
+export function postManifest(id, operation, justificativa) {
+  const body = { operacao: operation };
+  if (justificativa) body.justificativa = justificativa;
   return requestJson(ROUTES.manifestById(id), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ operacao: operation }),
+    body: JSON.stringify(body),
   }, 'Erro ao enviar a manifestação');
 }
 

@@ -30,21 +30,72 @@ export function shortenKey(key = '') {
   return value.length <= 20 ? value : `${value.slice(0, 8)}...${value.slice(-6)}`;
 }
 
-export function getManifestLabel(manifestacao) {
+/**
+ * Manifestações do destinatário. A chave é a operação gravada em
+ * nfeInbox.manifestacao.operacao (POST /api/nfe-inbox/:id/manifest e sync DF-e).
+ */
+export const MANIFEST_OPTIONS = Object.freeze({
+  CIENCIA: {
+    label: 'Ciência',
+    pill: 'summary-pill--info',
+    help: 'Registra que a empresa tomou conhecimento da nota e libera o XML completo. '
+      + 'Não confirma nem recusa a operação; depois ainda é preciso Confirmar, Desconhecer ou informar Não realizada.',
+  },
+  CONFIRMACAO: {
+    label: 'Confirmada',
+    pill: 'summary-pill--success',
+    help: 'Confirma que a operação aconteceu e a mercadoria foi recebida. É a manifestação conclusiva mais comum.',
+  },
+  DESCONHECIMENTO: {
+    label: 'Desconhecida',
+    pill: 'summary-pill--danger',
+    help: 'A empresa não reconhece esta nota (não fez o pedido). Use quando a NF-e foi emitida indevidamente contra o seu CNPJ.',
+  },
+  NAO_REALIZADA: {
+    label: 'Não realizada',
+    pill: 'summary-pill--warning',
+    help: 'A operação foi combinada, mas não aconteceu (ex.: mercadoria devolvida na entrega). Exige justificativa.',
+  },
+});
+
+/** Normaliza a manifestação gravada (string ou JSONB) para uma chave de MANIFEST_OPTIONS. */
+export function getManifestCode(manifestacao) {
   if (!manifestacao) return null;
-  if (typeof manifestacao === 'string') return manifestacao;
-  if (typeof manifestacao !== 'object') return null;
+  const raw = typeof manifestacao === 'string'
+    ? manifestacao
+    : typeof manifestacao === 'object'
+      ? (manifestacao.operacao || manifestacao.tipo || manifestacao.evento || manifestacao.codigo)
+      : null;
+  if (!raw) return typeof manifestacao === 'object' ? 'MANIFESTADA' : null;
 
-  const operation = manifestacao.operacao || manifestacao.tipo ||
-    manifestacao.evento || manifestacao.codigo;
-  if (!operation) return 'MANIFESTADA';
-
-  const upper = String(operation).toUpperCase();
-  if (upper.includes('CIEN')) return 'CIENTE';
-  if (upper.includes('CONF')) return 'CONFIRMADA';
-  if (upper.includes('DESC')) return 'DESCONHECIDA';
+  const upper = String(raw).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  if (upper.includes('CIEN')) return 'CIENCIA';
+  if (upper.includes('CONF')) return 'CONFIRMACAO';
+  if (upper.includes('DESC')) return 'DESCONHECIMENTO';
   if (upper.includes('NAO')) return 'NAO_REALIZADA';
   return upper;
+}
+
+/** Rótulo pt-BR da manifestação (ou null quando nunca foi manifestada). */
+export function getManifestLabel(manifestacao) {
+  const code = getManifestCode(manifestacao);
+  if (!code) return null;
+  if (code === 'MANIFESTADA') return 'Manifestada';
+  return MANIFEST_OPTIONS[code]?.label || code;
+}
+
+/** Selo (summary-pill) da manifestação para a tabela e o modal. */
+export function fillManifestPill(element, manifestacao) {
+  if (!element) return;
+  const code = getManifestCode(manifestacao);
+  element.className = 'summary-pill';
+  if (!code) {
+    element.textContent = 'Sem manifestação';
+    return;
+  }
+  element.textContent = getManifestLabel(manifestacao);
+  const variant = MANIFEST_OPTIONS[code]?.pill;
+  if (variant) element.classList.add(variant);
 }
 
 export function getFilenameFromDisposition(disposition = '') {

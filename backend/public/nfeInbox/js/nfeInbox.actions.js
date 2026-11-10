@@ -9,7 +9,7 @@ import { buildFilterParams, extractRows, extractTotal, getPeriodo } from './nfeI
 import { notify } from './nfeInbox.modal.js';
 import { renderSyncInfo, renderTable, selectRow, setLoading, setSelected, setSyncRunning, updatePagination } from './nfeInbox.render.js';
 import { cssEscape, downloadBlob, getFilenameFromDisposition } from './nfeInbox.utils.js';
-import { getSelectedRow, validateFilters, validateManifest, validateSelectedRow, validateXmlFiles } from './nfeInbox.validation.js';
+import { getSelectedRow, validateFilters, validateSelectedRow, validateXmlFiles } from './nfeInbox.validation.js';
 
 export function createActions(dom, state, modals) {
   async function openDetail(id) {
@@ -151,30 +151,12 @@ export function createActions(dom, state, modals) {
     }
   }
 
-  async function manifestSelected() {
-    const { error, row, operation } = validateManifest(dom, state);
+  /** Abre o modal de manifestação para a NF selecionada (nfeInbox.manifest.js). */
+  function manifestSelected() {
+    const { error, row } = validateSelectedRow(dom, state);
     if (error) return notify(error, 'info');
-    if (!window.confirm(`Confirmar manifestação: ${operation}?`)) return;
-
-    try {
-      if (dom.$btnManifest) {
-        dom.$btnManifest.disabled = true;
-        dom.$btnManifest.textContent = '⏳ Manifestando...';
-      }
-      await api.postManifest(row.dataset.id, operation);
-      notify('Manifestação enviada com sucesso.', 'success');
-      // Recarrega a listagem para refletir a nova manifestação. NÃO dispara
-      // download: baixar o XML é uma ação explícita do usuário.
-      await loadInbox();
-    } catch (manifestError) {
-      console.error('[nfeInbox] manifestSelected:', manifestError);
-      notify(manifestError.message || 'Erro ao manifestar.', 'error');
-    } finally {
-      if (dom.$btnManifest) {
-        dom.$btnManifest.disabled = !state.selectedId;
-        dom.$btnManifest.textContent = '🖊️ Manifestar';
-      }
-    }
+    const item = state.currentRows.find((r) => String(r.id) === String(row.dataset.id)) || {};
+    modals.openManifest?.(row.dataset.id, item);
   }
 
   /**
