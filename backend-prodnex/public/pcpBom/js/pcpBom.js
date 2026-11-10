@@ -2,8 +2,10 @@
 // ║ pcpBom.js — Ficha técnica: estrutura + roteiro (PCP)       ║
 // ╚════════════════════════════════════════════════════════════╝
 
+import { Modal } from '/public/includes/js/modal.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import {
-  pcpApi, escapeHtml, fmtNum, fmtMoney, activeBadge, showMessage, notify,
+  pcpApi, escapeHtml, fmtNum, fmtMoney, activeBadge, messageRow, showMessage, notify, confirmCenter,
   paginate, bindPagination, renderPagination,
   attachProductSearch, productCodeOf, productLabel,
 } from '/public/pcp/js/pcp.common.js';
@@ -16,32 +18,30 @@ const state = { rows: [], workCenters: [], page: 1, pageSize: 50 };
 
 function filtered() {
   const q = $('search').value.trim().toLowerCase();
-  const all = $('includeInactive').checked;
+  const st = $('statusFilter').value;
   return state.rows.filter((r) =>
-    (all || r.is_active) &&
+    (st === 'all' || (st === 'active' ? r.is_active : !r.is_active)) &&
     (!q || `${r.product_code} ${r.product_description || ''}`.toLowerCase().includes(q)));
 }
 
 function render() {
   const pg = paginate(filtered(), state);
   $('tableBody').innerHTML = pg.slice.length ? pg.slice.map((r) => `
-    <tr class="is-clickable" data-edit="${r.bom_id}">
+    <tr data-edit="${r.bom_id}">
       <td><strong>${escapeHtml(r.product_code)}</strong></td>
-      <td>${escapeHtml(r.product_description || '—')}</td>
-      <td class="center">${escapeHtml(r.version)}</td>
-      <td class="num">${fmtNum(r.base_qty, 4)}</td>
-      <td class="num">${r.items_count}</td>
-      <td class="num">${r.operations_count}</td>
-      <td class="num"><strong>${fmtMoney(r.product_cost)}</strong></td>
-      <td class="center">${activeBadge(r.is_active)}</td>
-      <td class="center">
-        <div class="pcp-action-group">
-          <button type="button" class="btn btn-toolbar btn-sm pcp-action-button" data-edit="${r.bom_id}" title="Editar">✎</button>
-          <button type="button" class="btn btn-clean btn-sm pcp-action-button" data-delete="${r.bom_id}">Excluir</button>
-        </div>
-      </td>
+      <td class="td-left">${escapeHtml(r.product_description || '—')}</td>
+      <td>${escapeHtml(r.version)}</td>
+      <td class="td-right">${fmtNum(r.base_qty, 4)}</td>
+      <td class="td-right">${r.items_count}</td>
+      <td class="td-right">${r.operations_count}</td>
+      <td class="td-right"><strong>${fmtMoney(r.product_cost)}</strong></td>
+      <td>${activeBadge(r.is_active, { on: 'Ativa', off: 'Inativa' })}</td>
+      <td>${actionIconsHtml([
+        { action: 'edit', title: `Editar ficha de ${r.product_code}`, attrs: { 'data-edit': r.bom_id } },
+        { action: 'delete', title: `Excluir ficha de ${r.product_code}`, attrs: { 'data-delete': r.bom_id } },
+      ])}</td>
     </tr>`).join('')
-    : '<tr><td colspan="9" class="pcp-table-empty">Nenhuma ficha técnica cadastrada.</td></tr>';
+    : messageRow(9, 'Nenhuma ficha técnica encontrada.');
   renderPagination(PAGER, pg, state, 'fichas');
 }
 
@@ -50,11 +50,13 @@ async function load() {
     state.rows = await pcpApi('/boms') || [];
     render();
   } catch (e) {
-    $('tableBody').innerHTML = `<tr><td colspan="9" class="pcp-table-error">${escapeHtml(e.message)}</td></tr>`;
+    $('tableBody').innerHTML = messageRow(9, `Erro ao carregar: ${e.message}`);
   }
 }
 
 // ── Grades do modal ───────────────────────────────────────────
+
+const REMOVE_ICON = actionIconsHtml([{ action: 'delete', title: 'Remover linha', attrs: { 'data-remove': '' } }]);
 
 // Unidades e custo de cada componente (cache por código), para o select e o cálculo na tela.
 const componentInfo = new Map();
@@ -114,16 +116,16 @@ function fmtMoney4(v) {
 function itemRow(it = {}) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td><input type="text" list="productOptions" data-f="component" placeholder="Código ou descrição"
-      value="${escapeHtml(productLabel(it.component_code, it.component_description))}" autocomplete="off" /></td>
-    <td><input type="number" step="any" min="0" data-f="quantity" value="${escapeHtml(it.quantity == null ? '' : Number(it.quantity))}" /></td>
-    <td><select data-f="unit"></select></td>
-    <td><input type="number" step="any" min="0" data-f="loss" value="${escapeHtml(Number(it.loss_percent ?? 0))}" /></td>
-    <td class="num" data-c="fraction">—</td>
-    <td class="num" data-c="cost">—</td>
-    <td class="num"><strong data-c="unit-cost">—</strong></td>
-    <td><input type="text" data-f="notes" value="${escapeHtml(it.notes || '')}" autocomplete="off" /></td>
-    <td><button type="button" class="btn btn-clean btn-sm" data-remove title="Remover">×</button></td>`;
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><input type="text" list="productOptions" data-f="component" placeholder="Código ou descrição"
+      value="${escapeHtml(productLabel(it.component_code, it.component_description))}" autocomplete="off" /></div></td>
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><input type="number" step="any" min="0" data-f="quantity" value="${escapeHtml(it.quantity == null ? '' : Number(it.quantity))}" /></div></td>
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><select data-f="unit"></select></div></td>
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><input type="number" step="any" min="0" data-f="loss" value="${escapeHtml(Number(it.loss_percent ?? 0))}" /></div></td>
+    <td class="td-right" data-c="fraction">—</td>
+    <td class="td-right" data-c="cost">—</td>
+    <td class="td-right"><strong data-c="unit-cost">—</strong></td>
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><input type="text" data-f="notes" value="${escapeHtml(it.notes || '')}" autocomplete="off" /></div></td>
+    <td>${REMOVE_ICON}</td>`;
   const input = tr.querySelector('[data-f="component"]');
   attachProductSearch(input, $('productOptions'));
   if (it.component_code) {
@@ -150,21 +152,21 @@ function opRow(op = {}) {
     .join('');
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td><input type="number" step="1" min="1" data-f="seq" value="${escapeHtml(seq)}" /></td>
-    <td><select data-f="wc">${options}</select></td>
-    <td><input type="text" data-f="description" maxlength="150" value="${escapeHtml(op.description || '')}" autocomplete="off" /></td>
-    <td><input type="number" step="any" min="0" data-f="setup" value="${escapeHtml(Number(op.setup_minutes ?? 0))}" /></td>
-    <td><input type="number" step="any" min="0" data-f="run" value="${escapeHtml(Number(op.run_minutes_per_unit ?? 0))}" /></td>
-    <td><button type="button" class="btn btn-clean btn-sm" data-remove title="Remover">×</button></td>`;
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><input type="number" step="1" min="1" data-f="seq" value="${escapeHtml(seq)}" /></div></td>
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><select data-f="wc">${options}</select></div></td>
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><input type="text" data-f="description" maxlength="150" value="${escapeHtml(op.description || '')}" autocomplete="off" /></div></td>
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><input type="number" step="any" min="0" data-f="setup" value="${escapeHtml(Number(op.setup_minutes ?? 0))}" /></div></td>
+    <td><div class="fields fields-h-5 fields-w-full fields-font-3"><input type="number" step="any" min="0" data-f="run" value="${escapeHtml(Number(op.run_minutes_per_unit ?? 0))}" /></div></td>
+    <td>${REMOVE_ICON}</td>`;
   $('opsBody').appendChild(tr);
 }
 
 function emptyHint() {
-  for (const [id, text, cols] of [['itemsBody', 'Nenhum componente.', 5], ['opsBody', 'Nenhuma operação.', 6]]) {
+  for (const [id, text, cols] of [['itemsBody', 'Nenhum componente.', 9], ['opsBody', 'Nenhuma operação.', 6]]) {
     const body = $(id);
     const hasRows = body.querySelector('tr:not(.pcp-hint)');
     body.querySelector('.pcp-hint')?.remove();
-    if (!hasRows) body.insertAdjacentHTML('beforeend', `<tr class="pcp-hint"><td colspan="${cols}" class="pcp-grid-empty">${text}</td></tr>`);
+    if (!hasRows) body.insertAdjacentHTML('beforeend', `<tr class="pcp-hint"><td colspan="${cols}" class="table-empty-state">${text}</td></tr>`);
   }
 }
 
@@ -176,7 +178,6 @@ function showCost(cost) {
 
 function fill(bom = null) {
   $('form').reset();
-  showMessage($('formMessage'), '');
   $('modalTitle').textContent = bom ? `Ficha técnica — ${bom.product_code}` : 'Nova ficha técnica';
   $('bomId').value = bom?.bom_id || '';
   $('product').value = bom ? productLabel(bom.product_code, bom.product_description) : '';
@@ -184,7 +185,7 @@ function fill(bom = null) {
   $('version').value = bom?.version || '1';
   $('baseQty').value = Number(bom?.base_qty ?? 1);
   $('notes').value = bom?.notes || '';
-  $('isActive').checked = bom ? bom.is_active : true;
+  $('isActive').value = String(bom ? bom.is_active : true);
   $('itemsBody').innerHTML = '';
   $('opsBody').innerHTML = '';
   (bom?.items || []).forEach(itemRow);
@@ -198,8 +199,7 @@ async function openModal(id = null) {
   try {
     state.workCenters = await pcpApi('/work-centers') || [];
     fill(id ? await pcpApi(`/boms/${id}`) : null);
-    $('modal').showModal();
-    if (!id) $('product').focus();
+    Modal.open('modal', { focusSelector: id ? '#baseQty' : '#product' });
   } catch (e) {
     notify('error', 'Erro ao abrir a ficha', e.message);
   }
@@ -213,7 +213,7 @@ function collect() {
     version: $('version').value,
     base_qty: $('baseQty').value,
     notes: $('notes').value,
-    is_active: $('isActive').checked,
+    is_active: $('isActive').value === 'true',
     items: rows('itemsBody')
       .filter((tr) => v(tr, 'component').trim() || v(tr, 'quantity'))
       .map((tr) => ({
@@ -242,18 +242,18 @@ async function save(e) {
     const bom = await pcpApi(id ? `/boms/${id}` : '/boms', { method: id ? 'PUT' : 'POST', body: collect() });
     fill(bom);
     const changed = bom?.cost_update?.updated?.length || 0;
-    showMessage($('formMessage'), changed
+    showMessage(null, changed
       ? `Ficha técnica salva. Preço de Custo atualizado em ${changed} produto(s).`
       : 'Ficha técnica salva.', 'success');
     load();
   } catch (err) {
-    showMessage($('formMessage'), err.message);
+    showMessage(null, err.message);
   }
 }
 
 async function remove(id) {
   const row = state.rows.find((r) => r.bom_id === id);
-  if (!confirm(`Excluir a ficha técnica de ${row?.product_code}?`)) return;
+  if (!await confirmCenter(`Excluir a ficha técnica de ${row?.product_code}?`, { title: 'Excluir', confirmLabel: 'Excluir', variant: 'error' })) return;
   try {
     const res = await pcpApi(`/boms/${id}`, { method: 'DELETE' });
     if (res?.deactivated) notify('info', 'Ficha inativada', 'Ela já foi usada em ordens de produção, então foi apenas inativada.');
@@ -268,7 +268,7 @@ async function remove(id) {
 attachProductSearch($('product'), $('productOptions'));
 $('btnNew').addEventListener('click', () => openModal());
 $('btnRecalc').addEventListener('click', async () => {
-  if (!confirm('Recalcular o Preço de Custo de todos os produtos com ficha técnica ativa, pelos ingredientes?')) return;
+  if (!await confirmCenter('Recalcular o Preço de Custo de todos os produtos com ficha técnica ativa, pelos ingredientes?', { title: 'Recalcular custos', confirmLabel: 'Recalcular' })) return;
   try {
     const res = await pcpApi('/boms/recalc-costs', { method: 'POST' });
     notify('success', 'Custos recalculados', `${res?.updated?.length || 0} produto(s) com Preço de Custo alterado.`);
@@ -283,8 +283,6 @@ $('form').addEventListener('input', (e) => {
 $('form').addEventListener('change', (e) => {
   if (e.target.matches('[data-f="unit"]')) refreshCost();
 });
-$('btnClose').addEventListener('click', () => $('modal').close());
-$('btnCancel').addEventListener('click', () => $('modal').close());
 $('btnAddItem').addEventListener('click', () => { itemRow(); emptyHint(); });
 $('btnAddOp').addEventListener('click', () => { opRow(); emptyHint(); });
 $('form').addEventListener('submit', save);
@@ -296,12 +294,13 @@ $('form').addEventListener('click', (e) => {
   refreshCost();
 });
 $('search').addEventListener('input', () => { state.page = 1; render(); });
-$('includeInactive').addEventListener('change', () => { state.page = 1; render(); });
+$('statusFilter').addEventListener('change', () => { state.page = 1; render(); });
 $('tableBody').addEventListener('click', (e) => {
   const del = e.target.closest('[data-delete]');
   if (del) return remove(Number(del.dataset.delete));
   const edit = e.target.closest('[data-edit]');
   if (edit) openModal(Number(edit.dataset.edit));
 });
+Modal.setup();
 bindPagination(state, PAGER, render);
 load();

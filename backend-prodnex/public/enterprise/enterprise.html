@@ -50,7 +50,7 @@
 
           <div class="enterprise-field button-field">
             <label aria-hidden="true">&nbsp;</label>
-            <button id="btnSearch" class="btn btn-toolbar btn-sm" type="button">Filtrar</button>
+            <button id="btnSearch" class="btn btn-search btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Filtrar</span></button>
           </div>
         </div>
       </div>
@@ -324,12 +324,10 @@
 
                     <button
                       id="btnRemoveEnterpriseLogo"
-                      class="btn btn-cancel btn-sm enterprise-logo-remove"
+                      class="btn btn-clean btn-sm enterprise-logo-remove"
                       type="button"
                       hidden
-                    >
-                      Limpar
-                    </button>
+                    ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
 
                     <span id="enterpriseLogoStatus" class="enterprise-logo-status">Nenhum arquivo selecionado.</span>
                   </div>
@@ -370,8 +368,8 @@
           </div>
 
           <footer class="modal__footer">
-            <button id="btnCancelModal" class="btn btn-cancel btn-sm" type="button" data-modal-close>Cancelar</button>
-            <button id="btnSaveEnterprise" class="btn btn-save btn-sm" type="submit">Salvar alterações</button>
+            <button id="btnCancelModal" class="btn btn-toolbar btn-sm" type="button" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+            <button id="btnSaveEnterprise" class="btn btn-save btn-sm" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar alterações</span></button>
           </footer>
         </form>
       </div>

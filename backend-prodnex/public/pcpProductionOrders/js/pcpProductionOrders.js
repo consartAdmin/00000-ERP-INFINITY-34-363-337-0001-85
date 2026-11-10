@@ -2,8 +2,10 @@
 // ║ pcpProductionOrders.js — Ordens de Produção (PCP)          ║
 // ╚════════════════════════════════════════════════════════════╝
 
+import { Modal } from '/public/includes/js/modal.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import {
-  pcpApi, escapeHtml, fmtNum, fmtDate, fmtDateTime, toInputDate, statusBadge, showMessage, notify,
+  pcpApi, escapeHtml, fmtNum, fmtDate, fmtDateTime, toInputDate, statusBadge, messageRow, showMessage, notify, confirmCenter,
   paginate, bindPagination, renderPagination,
   attachProductSearch, productCodeOf, STATUS_LABEL,
 } from '/public/pcp/js/pcp.common.js';
@@ -22,12 +24,28 @@ const ACTION_LABEL = {
   CANCELADA: 'Cancelar OP',
 };
 
+// Cor e ícone de linha de cada botão de transição (padrão dos botões dock).
+const STATUS_ICON = {
+  go: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+  play: '<polygon points="6 4 20 12 6 20 6 4"/>',
+  done: '<path d="M20 6 9 17l-5-5"/>',
+  back: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  cancel: '<path d="M18 6 6 18M6 6l12 12"/>',
+};
+const STATUS_BUTTON = {
+  LIBERADA: ['btn-toolbar', STATUS_ICON.go],
+  EM_PRODUCAO: ['btn-toolbar', STATUS_ICON.play],
+  CONCLUIDA: ['btn-new', STATUS_ICON.done],
+  PLANEJADA: ['btn-clean', STATUS_ICON.back],
+  CANCELADA: ['btn-delete', STATUS_ICON.cancel],
+};
+
 // ── Lista ─────────────────────────────────────────────────────
 
 function progress(r) {
   const pct = Math.min(100, (Number(r.quantity_produced) / Number(r.quantity_planned)) * 100 || 0);
-  return `<div class="pcp-progress"><div class="pcp-progress__bar" style="width:${pct}%"></div>
-    <span class="pcp-progress__label">${fmtNum(pct, 0)}%</span></div>`;
+  const tone = pct >= 100 ? 'success' : (pct > 0 ? 'warning' : 'info');
+  return `<span class="summary-pill summary-pill--${tone}">${fmtNum(pct, 0)}%</span>`;
 }
 
 function filtered() {
@@ -41,18 +59,18 @@ function filtered() {
 function render() {
   const pg = paginate(filtered(), state);
   $('tableBody').innerHTML = pg.slice.length ? pg.slice.map((r) => `
-    <tr class="is-clickable" data-open="${r.order_id}">
+    <tr data-open="${r.order_id}">
       <td><strong>${escapeHtml(r.order_number)}</strong></td>
       <td>${escapeHtml(r.product_code)}</td>
-      <td>${escapeHtml(r.product_description || '—')}</td>
-      <td class="num">${fmtNum(r.quantity_planned)}</td>
-      <td class="num">${fmtNum(r.quantity_produced)}</td>
+      <td class="td-left">${escapeHtml(r.product_description || '—')}</td>
+      <td class="td-right">${fmtNum(r.quantity_planned)}</td>
+      <td class="td-right">${fmtNum(r.quantity_produced)}</td>
       <td>${progress(r)}</td>
-      <td class="center">${fmtDate(r.due_date)}</td>
-      <td class="center">${statusBadge(r.status)}</td>
-      <td class="center"><button type="button" class="btn btn-toolbar btn-sm pcp-action-button" data-open="${r.order_id}" title="Abrir">Abrir</button></td>
+      <td>${fmtDate(r.due_date)}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>${actionIconsHtml([{ action: 'view', title: `Abrir ${r.order_number}`, attrs: { 'data-open': r.order_id } }])}</td>
     </tr>`).join('')
-    : '<tr><td colspan="9" class="pcp-table-empty">Nenhuma ordem de produção encontrada.</td></tr>';
+    : messageRow(9, 'Nenhuma ordem de produção encontrada.');
   renderPagination(PAGER, pg, state, 'OPs');
 }
 
@@ -61,7 +79,7 @@ async function load() {
     state.rows = await pcpApi('/orders') || [];
     render();
   } catch (e) {
-    $('tableBody').innerHTML = `<tr><td colspan="9" class="pcp-table-error">${escapeHtml(e.message)}</td></tr>`;
+    $('tableBody').innerHTML = messageRow(9, `Erro ao carregar: ${e.message}`);
   }
 }
 
@@ -69,9 +87,7 @@ async function load() {
 
 function openNew() {
   $('newForm').reset();
-  showMessage($('newMessage'), '');
-  $('newModal').showModal();
-  $('newProduct').focus();
+  Modal.open('newModal', { focusSelector: '#newProduct' });
 }
 
 async function createOrder(e) {
@@ -87,12 +103,12 @@ async function createOrder(e) {
         notes: $('newNotes').value,
       },
     });
-    $('newModal').close();
+    Modal.close('newModal');
     load();
     showOrder(order);
-    $('orderModal').showModal();
+    Modal.open('orderModal');
   } catch (err) {
-    showMessage($('newMessage'), err.message);
+    showMessage(null, err.message);
   }
 }
 
@@ -122,33 +138,34 @@ function showOrder(o, message = null, kind = 'success') {
   $('editRef').value = o.sales_order_ref || '';
   $('editNotes').value = o.notes || '';
   $('editForm').querySelectorAll('input').forEach((i) => { i.disabled = !planned; });
-  $('btnSaveEdit').hidden = !planned;
-  $('btnDelete').hidden = !planned;
+  // .btn tem display próprio: o atributo hidden sozinho não esconde
+  $('btnSaveEdit').style.display = planned ? '' : 'none';
+  $('btnDelete').style.display = planned ? '' : 'none';
 
   $('materialsBody').innerHTML = o.materials.length ? o.materials.map((m) => {
     const short = OPEN.includes(o.status) && Number(m.stock_qty) < Number(m.qty_required) - Number(m.qty_consumed);
     return `<tr>
-      <td><strong>${escapeHtml(m.component_code)}</strong> ${escapeHtml(m.component_description || '')}</td>
-      <td class="num">${fmtNum(m.qty_per_unit, 6)}</td>
-      <td class="num">${fmtNum(m.qty_required, 4)}</td>
-      <td class="num">${fmtNum(m.qty_consumed, 4)}</td>
-      <td class="num">${short ? `<span class="pcp-badge pcp-badge--shortage">${fmtNum(m.stock_qty, 4)}</span>` : fmtNum(m.stock_qty, 4)}</td>
+      <td class="td-left"><strong>${escapeHtml(m.component_code)}</strong> ${escapeHtml(m.component_description || '')}</td>
+      <td class="td-right">${fmtNum(m.qty_per_unit, 6)}</td>
+      <td class="td-right">${fmtNum(m.qty_required, 4)}</td>
+      <td class="td-right">${fmtNum(m.qty_consumed, 4)}</td>
+      <td class="td-right">${short ? `<span class="summary-pill summary-pill--danger">${fmtNum(m.stock_qty, 4)}</span>` : fmtNum(m.stock_qty, 4)}</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="5" class="pcp-grid-empty">OP sem materiais.</td></tr>';
+  }).join('') : messageRow(5, 'OP sem materiais.');
 
   $('opsBody').innerHTML = o.operations.length ? o.operations.map((op) => {
     const hours = (Number(op.setup_minutes) + Number(op.run_minutes_per_unit) * Number(o.quantity_planned)) / 60;
     return `<tr>
       <td>${op.seq}</td>
-      <td>${escapeHtml(op.description)}</td>
-      <td>${escapeHtml(op.work_center_code ? `${op.work_center_code} — ${op.work_center_name}` : '—')}</td>
-      <td class="num">${fmtNum(op.setup_minutes, 2)}</td>
-      <td class="num">${fmtNum(op.run_minutes_per_unit, 4)}</td>
-      <td class="num">${fmtNum(hours, 2)}</td>
+      <td class="td-left">${escapeHtml(op.description)}</td>
+      <td class="td-left">${escapeHtml(op.work_center_code ? `${op.work_center_code} — ${op.work_center_name}` : '—')}</td>
+      <td class="td-right">${fmtNum(op.setup_minutes, 2)}</td>
+      <td class="td-right">${fmtNum(op.run_minutes_per_unit, 4)}</td>
+      <td class="td-right">${fmtNum(hours, 2)}</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="6" class="pcp-grid-empty">Sem roteiro de operações.</td></tr>';
+  }).join('') : messageRow(6, 'Sem roteiro de operações.');
 
-  $('reportForm').hidden = !canReport;
+  $('reportForm').style.display = canReport ? '' : 'none';
   $('reportForm').reset();
   $('repOp').innerHTML = ['<option value="">Sem operação (OP inteira)</option>']
     .concat(o.operations.map((op) => `<option value="${op.seq}" data-wc="${op.work_center_id ?? ''}">${op.seq} — ${escapeHtml(op.description)}</option>`))
@@ -159,25 +176,26 @@ function showOrder(o, message = null, kind = 'success') {
       <td>${fmtDateTime(r.reported_at)}</td>
       <td>${r.operation_seq ?? '—'}</td>
       <td>${escapeHtml(r.work_center_code || '—')}</td>
-      <td class="num">${fmtNum(r.qty_good)}</td>
-      <td class="num">${fmtNum(r.qty_scrap)}</td>
-      <td class="num">${fmtNum(r.minutes, 2)}</td>
-      <td>${escapeHtml(r.operator_name || '—')}</td>
-      <td>${escapeHtml(r.notes || '')}</td>
-    </tr>`).join('') : '<tr><td colspan="8" class="pcp-grid-empty">Nenhum apontamento.</td></tr>';
+      <td class="td-right">${fmtNum(r.qty_good)}</td>
+      <td class="td-right">${fmtNum(r.qty_scrap)}</td>
+      <td class="td-right">${fmtNum(r.minutes, 2)}</td>
+      <td class="td-left">${escapeHtml(r.operator_name || '—')}</td>
+      <td class="td-left">${escapeHtml(r.notes || '')}</td>
+    </tr>`).join('') : messageRow(8, 'Nenhum apontamento.');
 
-  $('statusButtons').innerHTML = (o.next_statuses || []).map((s) => `
-    <button type="button" class="btn ${s === 'CANCELADA' || s === 'PLANEJADA' ? 'btn-clean' : 'btn-toolbar'} btn-sm" data-status="${s}">
-      ${escapeHtml(ACTION_LABEL[s] || STATUS_LABEL[s] || s)}
-    </button>`).join('');
+  $('statusButtons').innerHTML = (o.next_statuses || []).map((s) => {
+    const [cls, icon] = STATUS_BUTTON[s] || ['btn-toolbar', STATUS_ICON.go];
+    return `<button type="button" class="btn ${cls} btn-sm" data-status="${s}">` +
+      `<svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg><span>${escapeHtml(ACTION_LABEL[s] || STATUS_LABEL[s] || s)}</span></button>`;
+  }).join('');
 
-  showMessage($('orderMessage'), message, kind);
+  if (message) showMessage(null, message, kind);
 }
 
 async function openOrder(id) {
   try {
     showOrder(await pcpApi(`/orders/${id}`));
-    $('orderModal').showModal();
+    Modal.open('orderModal');
   } catch (e) {
     notify('error', 'Erro ao abrir a OP', e.message);
   }
@@ -190,16 +208,17 @@ async function run(fn, okMessage) {
     showOrder(o, warnings.length ? [okMessage, ...warnings] : okMessage, warnings.length ? 'warning' : 'success');
     load();
   } catch (err) {
-    showMessage($('orderMessage'), err.message);
+    showMessage(null, err.message);
   }
 }
 
-function changeStatus(status) {
+async function changeStatus(status) {
   const o = state.order;
-  if (status === 'CANCELADA' && !confirm(`Cancelar a ${o.order_number}?`)) return;
-  if (status === 'CONCLUIDA' && !confirm(
+  if (status === 'CANCELADA' && !await confirmCenter(`Cancelar a ${o.order_number}?`,
+    { title: 'Cancelar OP', confirmLabel: 'Cancelar OP', variant: 'error' })) return;
+  if (status === 'CONCLUIDA' && !await confirmCenter(
     `Concluir a ${o.order_number} com ${fmtNum(o.quantity_produced)} produzidos?\n` +
-    'O estoque do produto e dos componentes será atualizado.')) return;
+    'O estoque do produto e dos componentes será atualizado.', { title: 'Concluir OP', confirmLabel: 'Concluir' })) return;
   run(() => pcpApi(`/orders/${o.order_id}/status`, { method: 'PATCH', body: { status } }),
     `Status alterado para ${STATUS_LABEL[status] || status}.`);
 }
@@ -237,13 +256,13 @@ function addReport(e) {
 
 async function removeOrder() {
   const o = state.order;
-  if (!confirm(`Excluir a ${o.order_number}?`)) return;
+  if (!await confirmCenter(`Excluir a ${o.order_number}?`, { title: 'Excluir OP', confirmLabel: 'Excluir', variant: 'error' })) return;
   try {
     await pcpApi(`/orders/${o.order_id}`, { method: 'DELETE' });
-    $('orderModal').close();
+    Modal.close('orderModal');
     load();
   } catch (err) {
-    showMessage($('orderMessage'), err.message);
+    showMessage(null, err.message);
   }
 }
 
@@ -259,13 +278,12 @@ $('statusButtons').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-status]');
   if (btn) changeStatus(btn.dataset.status);
 });
-document.querySelectorAll('[data-close]').forEach((b) =>
-  b.addEventListener('click', () => $(b.dataset.close).close()));
 $('search').addEventListener('input', () => { state.page = 1; render(); });
 $('statusFilter').addEventListener('change', () => { state.page = 1; render(); });
 $('tableBody').addEventListener('click', (e) => {
   const row = e.target.closest('[data-open]');
   if (row) openOrder(Number(row.dataset.open));
 });
+Modal.setup();
 bindPagination(state, PAGER, render);
 load();

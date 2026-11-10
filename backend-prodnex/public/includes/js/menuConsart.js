@@ -90,12 +90,15 @@ const ICON_PATHS = {
   badge: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16a3 3 0 0 1 6 0"/><path d="M14 10h4M14 14h3"/>',
   database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
   file: '<path d="M14 3H6v18h12V7l-4-4Z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/>',
+  clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h3"/>',
+  factory: '<path d="M3 21V10l6 4V10l6 4V5h6v16H3Z"/><path d="M7 17h2M12 17h2M17 17h1"/>',
   dot: '<circle cx="12" cy="12" r="3"/>',
 };
 
 // Ordem importa: o primeiro termo encontrado no nome (sem acento) vence.
 const ICON_RULES = [
-  ['inicio', 'home'], ['suporte', 'chat'], ['e-commerce', 'cart'], ['ecommerce', 'cart'],
+  ['inicio', 'home'], ['home', 'home'], ['pcp', 'factory'], ['producao', 'factory'], ['ficha tecnica', 'factory'],
+  ['suporte', 'chat'], ['e-commerce', 'cart'], ['ecommerce', 'cart'],
   ['gestao erp', 'layers'], ['comercial', 'briefcase'], ['vendas', 'trend'],
   ['logistica', 'truck'], ['transportadora', 'truck'], ['financeiro', 'wallet'],
   ['relatorio', 'chart'], ['contabilidade', 'calculator'], ['configurac', 'settings'],
@@ -105,6 +108,7 @@ const ICON_RULES = [
   ['despesa', 'card'], ['caixa', 'cash'], ['moviment', 'cash'], ['r.h', 'badge'],
   ['rh', 'badge'], ['colaborador', 'badge'], ['auxiliar', 'database'], ['cadastro', 'database'],
   ['nota', 'file'], ['documento', 'file'],
+  ['operac', 'clipboard'], ['equipe', 'users'], ['compras', 'cart'], ['parceiro', 'cart'],
 ];
 
 function normalizeText(text) {

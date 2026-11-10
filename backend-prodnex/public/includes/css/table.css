@@ -725,6 +725,22 @@ To define the widght size from the columns
     text-align: var(--table-text-right);
 }
 
+/* Dentro de .table os utilitários precisam vencer o alinhamento padrão
+   (.table thead th / .table tbody td têm especificidade maior). */
+.table thead th.th-left,
+.table tbody td.td-left {
+    text-align: var(--table-text-left);
+}
+
+.table thead th.th-right,
+.table tbody td.td-right {
+    text-align: var(--table-text-right);
+}
+
+.table thead th.th-left .table-sort-button {
+    justify-content: flex-start;
+}
+
 /* =========================================================
    Column width utilities
 ========================================================= */

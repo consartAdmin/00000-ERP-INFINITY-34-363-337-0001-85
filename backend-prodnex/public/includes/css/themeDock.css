@@ -1,0 +1,577 @@
+/* =====================================================================
+   themeDock.css — Visual "dock" (mesmo estilo do menu superior novo)
+   PRODNEX ERP | importado por último no style.css
+
+   Azul limpo #3B8BFF, traços finos de 1px, cantos arredondados, ícones
+   de linha e sombras suaves. Só troca tokens e acabamento dos
+   componentes do design system (table-layout-integrated, fields, btn,
+   table, table-footer); a estrutura das telas não muda.
+
+   Vale para TODAS as telas que importam o style.css.
+   Para uma tela voltar ao visual antigo: <html lang="pt-BR" class="ui-classic">
+===================================================================== */
+
+:root:not(.ui-classic) {
+  --dock-blue: #3b8bff;
+  --dock-blue-soft: #6aa8ff;
+  --dock-blue-dark: #1f6fe5;
+  --dock-blue-bg: #f2f7ff;
+  --dock-blue-line: #dbe9ff;
+  --dock-line: #e6efff;
+  --dock-line-soft: #eef2f7;
+  --dock-text: #1e293b;
+  --dock-text-soft: #334155;
+  --dock-muted: #64748b;
+  --dock-faint: #94a3b8;
+  --dock-page-bg: #f6f8fc;
+  --dock-shadow: 0 12px 32px -18px rgba(59, 139, 255, 0.35), 0 1px 3px rgba(15, 23, 42, 0.04);
+
+  /* Fundo geral */
+  --bg: var(--dock-page-bg);
+  --consart-bg: var(--dock-page-bg);
+
+  /* Tabela integrada (cartão) */
+  --table-shell-bg: #ffffff;
+  --table-border-color: var(--dock-line);
+  --table-radius-top: 16px;
+  --table-radius-bottom: 16px;
+
+  --table-filter-bg: #ffffff;
+  --table-filter-color: var(--dock-text);
+  --table-filter-border-color: var(--dock-line-soft);
+  --table-filter-padding: 14px 16px;
+
+  --table-head-bg: #fbfcfe;
+  --table-head-color: var(--dock-muted);
+  --table-head-font-size: 11px;
+  --table-head-font-weight: 600;
+  --table-head-height: 38px;
+  --table-head-border-color: var(--dock-line-soft);
+
+  --table-row-even-bg: #ffffff;
+  --table-row-odd-bg: #f5f8fe;
+  --table-row-hover-bg: #e9f2ff;
+  --table-cell-font-size: 13px;
+  --table-column-border-color: transparent;
+
+  --table-freeze-body-bg: #ffffff;
+  --table-freeze-body-odd-bg: #f5f8fe;
+  --table-freeze-hover-bg: #e9f2ff;
+  --table-freeze-head-bg: #fbfcfe;
+  --table-freeze-divider-color: var(--dock-line-soft);
+
+  --table-footer-bg: #ffffff;
+  --table-footer-color: var(--dock-muted);
+  --table-footer-font-weight: 500;
+  --table-footer-border-color: var(--dock-line-soft);
+
+  --footer-soft-border: var(--dock-line);
+  --footer-soft-text: var(--dock-muted);
+  --footer-soft-hover-bg: var(--dock-blue-bg);
+  --footer-soft-accent: var(--dock-blue);
+  --footer-soft-accent-bg: var(--dock-blue-bg);
+
+  /* Ordenação */
+  --sortable-active-color: var(--dock-blue-dark);
+  --sortable-icon-color: var(--dock-blue-soft);
+  --sortable-focus-color: var(--dock-blue);
+
+  /* Campos */
+  --fields-border-color: #dbe3ef;
+  --fields-border-focus: var(--dock-blue);
+  --fields-focus-ring: rgba(59, 139, 255, 0.15);
+  --fields-placeholder-color: var(--dock-faint);
+  --fields-color: var(--dock-text);
+  --fields-label-gap: 5px;
+
+  /* Botões: contorno fino, texto grafite, azul no hover */
+  --btn-radius: 10px;
+  --btn-font-weight: 500;
+  --btn-content-gap: 6px;
+  --btn-shadow: none;
+  --btn-shadow-hover: 0 6px 16px -10px rgba(59, 139, 255, 0.55);
+  --btn-focus: rgba(59, 139, 255, 0.25);
+  --btn-sm-height: 32px;
+  --btn-sm-padding-x: 10px;
+  --btn-sm-font-size: 12px;
+
+  --btn-neutral-bg: #ffffff;
+  --btn-neutral-bd: #e2e8f0;
+  --btn-neutral-tx: var(--dock-text-soft);
+  --btn-neutral-hover-bg: var(--dock-blue-bg);
+  --btn-neutral-hover-bd: #bcd6ff;
+
+  --btn-info-bg: #ffffff;
+  --btn-info-bd: #e2e8f0;
+  --btn-info-tx: var(--dock-text-soft);
+  --btn-info-hover-bg: var(--dock-blue-bg);
+  --btn-info-hover-bd: #bcd6ff;
+
+  --btn-warning-bg: #ffffff;
+  --btn-warning-bd: #e2e8f0;
+  --btn-warning-tx: var(--dock-text-soft);
+  --btn-warning-hover-bg: #fff8e6;
+  --btn-warning-hover-bd: #f3d48a;
+
+  --btn-danger-bg: #ffffff;
+  --btn-danger-bd: #e2e8f0;
+  --btn-danger-tx: var(--dock-text-soft);
+  --btn-danger-hover-bg: #fff1f1;
+  --btn-danger-hover-bd: #f5b5b5;
+
+  --btn-pdf-bg: #ffffff;
+  --btn-pdf-bd: #e2e8f0;
+  --btn-pdf-tx: var(--dock-text-soft);
+  --btn-pdf-hover-bg: #fff1f1;
+  --btn-pdf-hover-bd: #f5b5b5;
+
+  /* Botão principal (Novo / Salvar / Confirmar): azul petróleo suave */
+  --btn-primary-bg: #e8f6f8;
+  --btn-primary-bd: #a9dbe2;
+  --btn-primary-tx: #0e7490;
+  --btn-primary-hover-bg: #d7eff2;
+  --btn-primary-hover-bd: #67c1cf;
+}
+
+html:not(.ui-classic) {
+  background: var(--dock-page-bg);
+}
+
+/* ---------- Cartão da tabela integrada ---------- */
+:root:not(.ui-classic) .table-layout-integrated {
+  position: relative;
+  box-shadow: var(--dock-shadow);
+}
+
+/* filete azul no topo, igual ao do menu */
+:root:not(.ui-classic) .table-layout-integrated::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 32px;
+  right: 32px;
+  height: 1px;
+  z-index: 12;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--dock-blue) 30%, var(--dock-blue-soft) 70%, transparent);
+  opacity: 0.85;
+}
+
+:root:not(.ui-classic) .table-layout-integrated > .table-scroll,
+:root:not(.ui-classic) .table-scroll {
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+/* ---------- Campos ---------- */
+:root:not(.ui-classic) .fields > .label,
+:root:not(.ui-classic) .fields > label,
+:root:not(.ui-classic) .fields > .fields-label {
+  display: block;
+  margin: 0 0 var(--fields-label-gap);
+  color: var(--dock-muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+:root:not(.ui-classic) .table-layout-integrated__filter .fields input,
+:root:not(.ui-classic) .table-layout-integrated__filter .fields select {
+  height: 32px;
+  padding: 0 10px;
+  border-width: 1px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+:root:not(.ui-classic) .table-layout-integrated__filter .fields input:hover,
+:root:not(.ui-classic) .table-layout-integrated__filter .fields select:hover {
+  border-color: #bcd6ff;
+}
+
+:root:not(.ui-classic) .fields input:focus,
+:root:not(.ui-classic) .fields select:focus,
+:root:not(.ui-classic) .fields textarea:focus {
+  border-color: var(--fields-border-focus);
+  box-shadow: 0 0 0 3px var(--fields-focus-ring);
+}
+
+/* ---------- Botões ---------- */
+:root:not(.ui-classic) .btn {
+  border-width: 1px;
+}
+
+:root:not(.ui-classic) .btn:active {
+  transform: none;
+}
+
+/* Ícones SVG de linha nos botões (mesmo traço do menu) */
+:root:not(.ui-classic) .btn svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:root:not(.ui-classic) .btn:not(.btn-new):not(.btn-save):not(.btn-confirm) svg {
+  color: var(--dock-blue-soft);
+}
+
+:root:not(.ui-classic) .btn:not(.btn-new):not(.btn-save):not(.btn-confirm):hover {
+  color: var(--dock-blue-dark);
+}
+
+:root:not(.ui-classic) .btn:not(.btn-new):not(.btn-save):not(.btn-confirm):hover svg {
+  color: var(--dock-blue);
+}
+
+/* Botões de exportação: ícone na cor do formato */
+:root:not(.ui-classic) .btn .btn-ico-pdf {
+  color: #e5484d !important;
+}
+
+:root:not(.ui-classic) .btn .btn-ico-excel {
+  color: #1f9d55 !important;
+}
+
+/* Botão só com ícone */
+:root:not(.ui-classic) .btn.btn-icon-only {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+}
+
+/* ---------- Cabeçalho da tabela ---------- */
+:root:not(.ui-classic) .table thead th {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+:root:not(.ui-classic) .table thead .table-sort-button {
+  text-transform: inherit;
+  letter-spacing: inherit;
+  font-weight: inherit;
+}
+
+:root:not(.ui-classic) .table thead [data-sort-icon] {
+  color: #cbd5e1;
+}
+
+:root:not(.ui-classic) .table thead th[aria-sort="ascending"],
+:root:not(.ui-classic) .table thead th[aria-sort="descending"] {
+  color: var(--dock-blue-dark);
+}
+
+:root:not(.ui-classic) .table thead th[aria-sort="ascending"] [data-sort-icon],
+:root:not(.ui-classic) .table thead th[aria-sort="descending"] [data-sort-icon] {
+  color: var(--dock-blue);
+}
+
+/* ---------- Linhas ---------- */
+:root:not(.ui-classic) .table-zebra tbody tr + tr > td,
+:root:not(.ui-classic) .table-zebra tbody tr + tr > th {
+  border-top: 1px solid var(--dock-line-soft);
+}
+
+:root:not(.ui-classic) .table tbody td {
+  color: var(--dock-text);
+}
+
+:root:not(.ui-classic) .table-zebra-hover tbody tr:hover > td {
+  background-color: var(--table-row-hover-bg);
+}
+
+/* Linha de aviso (carregando / vazio / erro) */
+:root:not(.ui-classic) .table tbody td.table-empty-state {
+  height: 160px;
+  color: var(--dock-faint);
+  font-size: 13px;
+  text-align: center;
+  background: #ffffff;
+  cursor: default;
+}
+
+/* ---------- Rodapé ---------- */
+:root:not(.ui-classic) .table-layout-integrated > .table-footer {
+  border: 0;
+  border-top: 1px solid var(--dock-line-soft);
+  border-radius: 0;
+  margin-top: 0;
+}
+
+:root:not(.ui-classic) .table-footer .table-footer__info .summary-pill {
+  border-radius: 10px;
+  color: var(--dock-muted);
+}
+
+:root:not(.ui-classic) .table-footer .table-footer__pagination,
+:root:not(.ui-classic) .table-footer .table-footer__page-size select {
+  border-radius: 10px;
+}
+
+/* Ícones de ação da tabela com o traço fino do menu */
+:root:not(.ui-classic) .action-icon svg {
+  stroke-width: 1.5;
+}
+
+:root:not(.ui-classic) .action-icon:hover {
+  background: var(--dock-blue-bg);
+}
+
+/* ---------- Abas ---------- */
+:root:not(.ui-classic) {
+  --tab-height: 38px;
+  --tab-padding-x: 16px;
+  --tab-radius: 12px 12px 0 0;
+  --tab-font-size: 12.5px;
+  --tab-text: var(--dock-muted);
+  --tab-text-active: var(--dock-blue-dark);
+  --tab-border: var(--dock-line);
+}
+
+:root:not(.ui-classic) .tab {
+  gap: 7px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+}
+
+:root:not(.ui-classic) .tab svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--dock-blue-soft);
+}
+
+:root:not(.ui-classic) .tab:hover {
+  background: var(--dock-blue-bg);
+  color: var(--dock-blue-dark);
+}
+
+:root:not(.ui-classic) .tab.is-active,
+:root:not(.ui-classic) .tab[aria-selected="true"] {
+  border: 1px solid var(--dock-line);
+  border-bottom-color: #ffffff;
+  margin-bottom: -1px;
+  background: #ffffff;
+  box-shadow: inset 0 2px 0 var(--dock-blue);
+}
+
+:root:not(.ui-classic) .tab.is-active svg,
+:root:not(.ui-classic) .tab[aria-selected="true"] svg {
+  color: var(--dock-blue);
+}
+
+/* ---------- Seções em cartão (section-panel) ---------- */
+:root:not(.ui-classic) .section-panel {
+  --section-background: #ffffff;
+  --section-border-color: var(--dock-line);
+  --section-radius: 16px;
+  --section-shadow: var(--dock-shadow);
+  --section-padding-y: 16px;
+  --section-padding-x: 18px;
+}
+
+:root:not(.ui-classic) .section__title {
+  color: var(--dock-text);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* marcador azul antes do título da seção */
+:root:not(.ui-classic) .section__header > .badge-step:empty {
+  display: inline-block;
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--dock-blue), var(--dock-blue-soft));
+}
+
+/* ---------- Campos em formulários ---------- */
+:root:not(.ui-classic) .fields input,
+:root:not(.ui-classic) .fields select,
+:root:not(.ui-classic) .fields textarea {
+  border-width: 1px;
+  border-radius: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+:root:not(.ui-classic) .fields input:hover:not(:disabled):not([readonly]),
+:root:not(.ui-classic) .fields select:hover:not(:disabled),
+:root:not(.ui-classic) .fields textarea:hover:not(:disabled):not([readonly]) {
+  border-color: #bcd6ff;
+}
+
+:root:not(.ui-classic) .fields input:disabled,
+:root:not(.ui-classic) .fields input[readonly],
+:root:not(.ui-classic) .fields select:disabled,
+:root:not(.ui-classic) .fields textarea:disabled {
+  background: #f8fafc;
+  border-color: var(--dock-line-soft);
+  color: var(--dock-muted);
+}
+
+/* Botões de texto das tabelas convertidos em ícone (tableActionIcons.js):
+   neutraliza o visual de .btn e do CSS da própria tela */
+:root:not(.ui-classic) td button.action-icon--table {
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 4px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--action-icon-color) !important;
+  filter: none !important;
+  opacity: 1 !important;
+  line-height: 1 !important;
+}
+
+:root:not(.ui-classic) td button.action-icon--table:hover:not(:disabled) {
+  background: var(--dock-blue-bg) !important;
+}
+
+:root:not(.ui-classic) td button.action-icon--table.action-icon--edit:hover { color: var(--action-icon-edit) !important; }
+:root:not(.ui-classic) td button.action-icon--table.action-icon--view:hover,
+:root:not(.ui-classic) td button.action-icon--table.action-icon--copy:hover { color: var(--action-icon-view) !important; }
+:root:not(.ui-classic) td button.action-icon--table.action-icon--pause:hover { color: var(--action-icon-warning) !important; }
+:root:not(.ui-classic) td button.action-icon--table.action-icon--delete:hover { color: var(--action-icon-danger) !important; }
+:root:not(.ui-classic) td button.action-icon--table.action-icon--play { color: var(--action-icon-success) !important; }
+
+:root:not(.ui-classic) td button.action-icon--table:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed;
+}
+
+/* Título dentro da barra de filtros (ex.: "Tipos de Status") */
+:root:not(.ui-classic) .table-layout-integrated__filter h2 {
+  margin: 0;
+  color: var(--dock-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ---------- Cabeçalho de tela (.header) ----------
+   Ex.: "Editar orçamento #N" com Salvar / Imprimir / Fechar.
+   Cartão branco com traço fino azul claro, no lugar da borda preta. */
+:root:not(.ui-classic) .header {
+  background: #ffffff;
+  border: 1px solid var(--dock-line);
+  border-radius: 16px;
+  box-shadow: var(--dock-shadow);
+  padding: 14px 16px;
+}
+
+:root:not(.ui-classic) .header h2 {
+  margin: 0;
+  color: var(--dock-text);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Botões principais com CSS próprio da página ----------
+   Telas antigas que pintam o botão de azul sólido no próprio CSS
+   (.btn-primary, ids sem classe etc.) usam o mesmo azul petróleo suave
+   do botão principal do design system. */
+:root:not(.ui-classic) .btn-primary,
+:root:not(.ui-classic) .btn.primary,
+:root:not(.ui-classic) .bp-btn-primary,
+:root:not(.ui-classic) .ca-btn--primary,
+:root:not(.ui-classic) .wh-btn--primary,
+:root:not(.ui-classic) .btn-mini-primary,
+:root:not(.ui-classic) .btn-scan,
+:root:not(.ui-classic) .uc-add-btn,
+:root:not(.ui-classic) button#btnNovoFornecedor,
+:root:not(.ui-classic) button#btnNovaDespesa,
+:root:not(.ui-classic) button#btnGerarPdfDre,
+:root:not(.ui-classic) button#btnAtualizar:not([class]),
+:root:not(.ui-classic) button#btnBuscar:not([class]),
+:root:not(.ui-classic) button#dashBuscar:not([class]),
+:root:not(.ui-classic) button#btnSalvarNota:not([class]) {
+  background: var(--btn-primary-bg) !important;
+  background-image: none !important;
+  border: 1px solid var(--btn-primary-bd) !important;
+  color: var(--btn-primary-tx) !important;
+  box-shadow: none !important;
+}
+
+:root:not(.ui-classic) .btn-primary:hover,
+:root:not(.ui-classic) .btn.primary:hover,
+:root:not(.ui-classic) .bp-btn-primary:hover,
+:root:not(.ui-classic) .ca-btn--primary:hover,
+:root:not(.ui-classic) .wh-btn--primary:hover,
+:root:not(.ui-classic) .btn-mini-primary:hover,
+:root:not(.ui-classic) .btn-scan:hover,
+:root:not(.ui-classic) .uc-add-btn:hover,
+:root:not(.ui-classic) button#btnNovoFornecedor:hover,
+:root:not(.ui-classic) button#btnNovaDespesa:hover,
+:root:not(.ui-classic) button#btnGerarPdfDre:hover,
+:root:not(.ui-classic) button#btnAtualizar:not([class]):hover,
+:root:not(.ui-classic) button#btnBuscar:not([class]):hover,
+:root:not(.ui-classic) button#dashBuscar:not([class]):hover,
+:root:not(.ui-classic) button#btnSalvarNota:not([class]):hover {
+  background: var(--btn-primary-hover-bg) !important;
+  border-color: var(--btn-primary-hover-bd) !important;
+  color: var(--btn-primary-tx) !important;
+}
+
+/* Ícone SVG dentro de botão: tamanho fixo também no visual antigo (ui-classic) */
+.btn > svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Selo de status dentro da tabela (menor e suave) ----------
+   Vale para qualquer .summary-pill numa célula do corpo da tabela
+   (Inventário, Grupos & Subgrupos, Classificação Fiscal...). */
+:root:not(.ui-classic) .table tbody td .summary-pill {
+  min-height: 20px;
+  padding: 2px 9px;
+  border-color: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+:root:not(.ui-classic) .table tbody td .summary-pill--success {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+:root:not(.ui-classic) .table tbody td .summary-pill--info,
+:root:not(.ui-classic) .table tbody td .summary-pill--primary {
+  background: var(--dock-blue-bg);
+  color: var(--dock-blue-dark);
+}
+
+:root:not(.ui-classic) .table tbody td .summary-pill--warning {
+  background: #fff8e6;
+  color: #a16207;
+}
+
+:root:not(.ui-classic) .table tbody td .summary-pill--danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}

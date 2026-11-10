@@ -33,7 +33,7 @@
       </div>
 
       <div class="pa-actions">
-        <button class="btn btn-primary" id="btnNovo">+ Novo</button>
+        <button class="btn btn-new" id="btnNovo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo</span></button>
         <button class="btn btn-ghost" id="btnImportar">Importar (Bulk)</button>
         <button class="btn btn-ghost" id="btnRefresh" title="Atualizar">↻</button>
       </div>
@@ -98,8 +98,8 @@
         <div class="field field-actions">
           <label>&nbsp;</label>
           <div class="btn-row">
-            <button class="btn btn-secondary" id="btnAplicar">Aplicar</button>
-            <button class="btn btn-ghost" id="btnLimpar">Limpar</button>
+            <button class="btn btn-search" id="btnAplicar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar</span></button>
+            <button class="btn btn-clean" id="btnLimpar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
           </div>
         </div>
       </div>
@@ -146,7 +146,7 @@
         <div class="empty-card">
           <h3>Nenhum registro encontrado</h3>
           <p>Tente ajustar os filtros ou cadastre uma nova ação.</p>
-          <button class="btn btn-primary" id="btnNovo2">+ Novo</button>
+          <button class="btn btn-new" id="btnNovo2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo</span></button>
         </div>
       </div>
     </section>
@@ -222,8 +222,8 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-ghost" id="btnCancelar">Cancelar</button>
-          <button type="submit" class="btn btn-primary" id="btnSalvar">Salvar</button>
+          <button type="button" class="btn btn-toolbar" id="btnCancelar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="submit" class="btn btn-new" id="btnSalvar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
         </div>
       </form>
     </div>
@@ -253,7 +253,7 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-ghost" id="btnBulkCancelar">Cancelar</button>
+          <button type="button" class="btn btn-toolbar" id="btnBulkCancelar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
           <button type="button" class="btn btn-secondary" id="btnBulkValidar">Validar</button>
           <button type="button" class="btn btn-primary" id="btnBulkEnviar">Importar</button>
         </div>

@@ -3,7 +3,7 @@
 // ╚════════════════════════════════════════════════════════════╝
 
 import {
-  pcpApi, escapeHtml, fmtNum, fmtMoney, fmtDate,
+  pcpApi, escapeHtml, fmtNum, fmtMoney, fmtDate, messageRow,
   paginate, bindPagination, renderPagination,
 } from '/public/pcp/js/pcp.common.js';
 
@@ -13,7 +13,7 @@ const state = { rows: [], page: 1, pageSize: 50 };
 
 function filtered() {
   const q = $('search').value.trim().toLowerCase();
-  const only = $('onlyShortage').checked;
+  const only = $('onlyShortage').value === '1';
   return state.rows.filter((r) =>
     (!only || Number(r.qty_to_buy) > 0) &&
     (!q || `${r.component_code} ${r.description || ''}`.toLowerCase().includes(q)));
@@ -26,19 +26,19 @@ function render() {
     const buy = Number(r.qty_to_buy);
     return `<tr>
       <td><strong>${escapeHtml(r.component_code)}</strong></td>
-      <td>${escapeHtml(r.description || '—')}</td>
-      <td class="num">${fmtNum(r.qty_needed, 4)}</td>
-      <td class="num">${fmtNum(r.stock_qty, 4)}</td>
-      <td class="num">${fmtNum(r.stock_min, 4)}</td>
-      <td class="num">${buy > 0 ? `<span class="pcp-badge pcp-badge--shortage">${fmtNum(buy, 4)}</span>` : '0'}</td>
-      <td class="num">${fmtMoney(buy * Number(r.cost_price))}</td>
-      <td class="num">${r.orders_count}</td>
-      <td class="center">${fmtDate(r.first_due_date)}</td>
+      <td class="td-left">${escapeHtml(r.description || '—')}</td>
+      <td class="td-right">${fmtNum(r.qty_needed, 4)}</td>
+      <td class="td-right">${fmtNum(r.stock_qty, 4)}</td>
+      <td class="td-right">${fmtNum(r.stock_min, 4)}</td>
+      <td class="td-right">${buy > 0 ? `<span class="summary-pill summary-pill--danger">${fmtNum(buy, 4)}</span>` : '0'}</td>
+      <td class="td-right">${fmtMoney(buy * Number(r.cost_price))}</td>
+      <td>${r.orders_count}</td>
+      <td>${fmtDate(r.first_due_date)}</td>
     </tr>`;
   }).join('')
-    : `<tr><td colspan="9" class="pcp-table-empty">${$('onlyShortage').checked
+    : messageRow(9, $('onlyShortage').value === '1'
       ? 'Nada a comprar: o estoque cobre as OPs abertas.'
-      : 'Nenhuma OP aberta com materiais.'}</td></tr>`;
+      : 'Nenhuma OP aberta com materiais.');
   renderPagination(PAGER, pg, state, 'componentes');
   const total = rows.reduce((s, r) => s + Number(r.qty_to_buy) * Number(r.cost_price), 0);
   $('mrpTotal').textContent = fmtMoney(total);
@@ -49,7 +49,7 @@ async function load() {
     state.rows = await pcpApi('/mrp') || [];
     render();
   } catch (e) {
-    $('tableBody').innerHTML = `<tr><td colspan="9" class="pcp-table-error">${escapeHtml(e.message)}</td></tr>`;
+    $('tableBody').innerHTML = messageRow(9, `Erro ao carregar: ${e.message}`);
   }
 }
 

@@ -3,6 +3,7 @@
 // ╚════════════════════════════════════════════════════════════╝
 
 import { apiFetch } from '/public/includes/js/apiFetch.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 export const API = '/api/pcp';
 
@@ -61,31 +62,60 @@ export function toInputDate(value) {
   return value ? String(value).slice(0, 10) : '';
 }
 
+// Selo de status no padrão do design system (summary-pill).
+const STATUS_PILL = {
+  PLANEJADA: 'info',
+  LIBERADA: 'primary',
+  EM_PRODUCAO: 'warning',
+  CONCLUIDA: 'success',
+  CANCELADA: 'danger',
+};
+
 export function statusBadge(status) {
-  return `<span class="pcp-badge pcp-badge--${escapeHtml(status)}">${escapeHtml(STATUS_LABEL[status] || status)}</span>`;
+  const tone = STATUS_PILL[status] || 'info';
+  return `<span class="summary-pill summary-pill--${tone}">${escapeHtml(STATUS_LABEL[status] || status)}</span>`;
 }
 
-export function activeBadge(active) {
-  return `<span class="pcp-badge ${active ? 'pcp-badge--active' : 'pcp-badge--inactive'}">${active ? 'Ativo' : 'Inativo'}</span>`;
+export function activeBadge(active, { on = 'Ativo', off = 'Inativo' } = {}) {
+  return active
+    ? `<span class="summary-pill summary-pill--success">${escapeHtml(on)}</span>`
+    : `<span class="summary-pill summary-pill--danger">${escapeHtml(off)}</span>`;
 }
 
-/** Mensagem dentro do modal (erro / sucesso / aviso). */
-export function showMessage(el, text, kind = 'error') {
-  if (!el) return;
-  if (!text) {
-    el.hidden = true;
-    el.textContent = '';
-    return;
-  }
-  el.className = `pcp-form-message is-${kind}`;
-  el.innerHTML = Array.isArray(text) ? text.map(escapeHtml).join('<br>') : escapeHtml(text);
-  el.hidden = false;
+/** Linha de vazio / erro / carregando da tabela. */
+export function messageRow(colspan, text) {
+  return `<tr><td colspan="${colspan}" class="table-empty-state">${escapeHtml(text)}</td></tr>`;
+}
+
+/** Aviso central do ERP (centerAlertModal.js): erro, sucesso, aviso ou info. */
+export function showMessage(_el, text, kind = 'error') {
+  if (!text) return;
+  const variant = kind === 'success' ? 'success' : (kind === 'warning' ? 'warning' : (kind === 'info' ? 'info' : 'error'));
+  const lines = Array.isArray(text) ? text : [text];
+  const title = variant === 'error' ? 'Atenção' : (variant === 'warning' ? 'Atenção' : lines[0]);
+  const message = variant === 'success' || variant === 'info' ? lines.slice(1).join('\n') : lines.join('\n');
+  showCenterModal({ variant, title, message, timeoutMs: variant === 'success' ? 2500 : undefined });
 }
 
 /** Aviso global do ERP (window.Alert do core.js), com fallback. */
 export function notify(kind, title, message = '') {
-  if (window.Alert?.[kind]) window.Alert[kind](title, message);
-  else if (kind === 'error') alert(`${title}\n${message}`);
+  const variant = kind === 'warn' ? 'warning' : kind;
+  showCenterModal({ variant, title, message: String(message ?? ''), timeoutMs: variant === 'success' ? 2500 : undefined });
+}
+
+/** Confirmação no centerAlertModal (substitui o confirm() do navegador). */
+export async function confirmCenter(message, { title = 'Confirmar', confirmLabel = 'Confirmar', variant = 'warning' } = {}) {
+  const button = await showCenterModal({
+    variant,
+    title,
+    message: String(message ?? ''),
+    timeoutMs: null,
+    buttons: [
+      { label: 'Cancelar', variant: 'cancel' },
+      { label: confirmLabel, variant: 'confirm' },
+    ],
+  });
+  return String(button?.variant || '').toLowerCase() === 'confirm';
 }
 
 export function debounce(fn, ms = 250) {

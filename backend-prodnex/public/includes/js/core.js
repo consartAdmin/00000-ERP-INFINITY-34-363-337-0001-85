@@ -31,6 +31,9 @@ import '/public/includes/js/sortableTable.js';
 // === ENGRENAGEM ⚙️ DAS TABELAS (linhas, largura/altura, colunas) ===
 import '/public/includes/js/tableSettings.js';
 
+// === BOTÕES DE TEXTO DAS TABELAS (Editar/Excluir...) → ÍCONES DE LINHA ===
+import '/public/includes/js/tableActionIcons.js';
+
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 // (opcional, mas recomendado) helper padronizado:

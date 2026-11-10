@@ -33,10 +33,8 @@
           </div>
 
           <div class="btn-inline btn-position-right">
-            <button id="btnRefresh" class="btn btn-secondary btn-sm" type="button">Atualizar lista</button>
-            <button id="btnNovaInutilizacao" class="btn btn-secondary btn-sm" type="button">
-              Nova inutilização
-            </button>
+            <button id="btnRefresh" class="btn btn-load btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Atualizar lista</span></button>
+            <button id="btnNovaInutilizacao" class="btn btn-new btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova inutilização</span></button>
           </div>
         </div>
     </header>
@@ -134,13 +132,9 @@
       </div>
 
       <footer class="modal__footer">
-        <button id="btnLimparForm" class="btn btn-secondary btn-sm" type="button">
-          Limpar formulário
-        </button>
+        <button id="btnLimparForm" class="btn btn-clean btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar formulário</span></button>
 
-        <button class="btn btn-secondary btn-sm" type="button" data-modal-inutilizacao-close>
-          Cancelar
-        </button>
+        <button class="btn btn-toolbar btn-sm" type="button" data-modal-inutilizacao-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
 
         <button id="btnSubmit" class="btn btn-new btn-sm" type="submit">
           Enviar inutilização
@@ -210,8 +204,8 @@
             </div>
 
             <div class="btn-inline">
-              <button class="btn btn-new btn-sm" type="submit">Aplicar filtros</button>
-              <button id="btnLimparFiltros" class="btn btn-new btn-sm" type="button">Limpar filtros</button>
+              <button class="btn btn-search btn-sm" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar filtros</span></button>
+              <button id="btnLimparFiltros" class="btn btn-clean btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar filtros</span></button>
             </div>
           </div>
         </div>

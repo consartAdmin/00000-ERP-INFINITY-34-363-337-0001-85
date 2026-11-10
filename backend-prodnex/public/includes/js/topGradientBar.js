@@ -86,11 +86,31 @@ function autoResolveBarFromMenuConfig(menuConfig) {
   return { title, subtitle, tag };
 }
 
-export function initTopGradientBar({ title = '', subtitle = '', tag = '' } = {}) {
-  if (document.querySelector('.c-page-bar')) return;
+// <header> de modal/diálogo/card NUNCA serve de âncora para a barra:
+// antes ela era injetada dentro do 1º <header> da página (ex.: header do
+// modal do Contas a Pagar), ficava escondida e o título "sumia".
+function findPageHeader() {
+  for (const sel of HEADER_SELECTORS) {
+    for (const el of document.querySelectorAll(sel)) {
+      if (el.closest('.modal, dialog, [role="dialog"], [aria-modal="true"], [class*="modal"]')) continue;
+      return el;
+    }
+  }
+  return null;
+}
+
+export function initTopGradientBar({ title = '', subtitle = '', tag = '' } = {}, { source = 'manual' } = {}) {
+  const existing = document.querySelector('.c-page-bar');
+  if (existing) {
+    // Barra provisória (sem menu) é trocada pela versão resolvida via menu
+    // (título + breadcrumb) quando o menu fica pronto.
+    if (existing.dataset.source === 'fallback' && source === 'menu') existing.remove();
+    else return;
+  }
 
   const bar = document.createElement('div');
   bar.className = 'c-page-bar c-page-bar--full-bleed';
+  bar.dataset.source = source;
 
   bar.innerHTML = `
     <div class="c-page-bar__inner">
@@ -114,7 +134,7 @@ export function initTopGradientBar({ title = '', subtitle = '', tag = '' } = {})
   }
 
   // fallback: depois do header
-  const header = $(HEADER_SELECTORS);
+  const header = findPageHeader();
   if (header && header.parentNode) {
     header.insertAdjacentElement('afterend', bar);
     return;
@@ -132,7 +152,7 @@ function resolveAndInit() {
       title: body.dataset.pageBarTitle || '',
       subtitle: body.dataset.pageBarSubtitle || '',
       tag: body.dataset.pageBarTag || ''
-    });
+    }, { source: 'manual' });
     return;
   }
 
@@ -141,7 +161,7 @@ function resolveAndInit() {
   if (Array.isArray(menuConfig) && menuConfig.length) {
     const resolved = autoResolveBarFromMenuConfig(menuConfig);
     if (resolved?.title) {
-      initTopGradientBar(resolved);
+      initTopGradientBar(resolved, { source: 'menu' });
       return;
     }
   }
@@ -149,44 +169,39 @@ function resolveAndInit() {
   // 3) fallback por <title>
   const docTitle = (document.title || '').trim();
   const clean = docTitle.replace(/\s*\|\s*CONSART.*$/i, '').trim();
-  if (clean) initTopGradientBar({ title: clean });
+  if (clean) initTopGradientBar({ title: clean }, { source: 'fallback' });
 }
 
-function waitForMenuOrHeaderThenInit() {
-  // se já tem menu/header, manda ver
-  if ($(MENU_SELECTORS) || $(HEADER_SELECTORS)) {
+function waitForMenuThenInit() {
+  // Espera SEMPRE o menu (é ele que dá título + breadcrumb e a posição certa).
+  // Antes, qualquer <header> já presente no HTML (ex.: header de modal)
+  // disparava a barra cedo demais e ela ia parar dentro do modal.
+  if ($(MENU_SELECTORS) && (window.CONSART_MENU_CONFIG || window.MENU_CONFIG)) {
     resolveAndInit();
     return;
   }
 
-  // espera aparecer menu/header
-  const obs = new MutationObserver(() => {
-    if ($(MENU_SELECTORS) || $(HEADER_SELECTORS)) {
-      obs.disconnect();
-      resolveAndInit();
-    }
-  });
-
-  obs.observe(document.documentElement, { childList: true, subtree: true });
-
-  // safety: mesmo que não apareça nada, tenta depois de um tempo
-  setTimeout(() => {
+  const onReady = () => {
     try { obs.disconnect(); } catch {}
     resolveAndInit();
-  }, 1500);
+  };
 
-  // se o menu disparar evento, pega também
-  window.addEventListener(
-    'consart:menu-ready',
-    () => {
-      resolveAndInit();
-    },
-    { once: true }
-  );
+  const obs = new MutationObserver(() => {
+    if ($(MENU_SELECTORS) && (window.CONSART_MENU_CONFIG || window.MENU_CONFIG)) onReady();
+  });
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+
+  window.addEventListener('consart:menu-ready', onReady, { once: true });
+
+  // safety: páginas sem menu (ou menu lento) — barra provisória pelo <title>,
+  // trocada pela do menu se ele aparecer depois (consart:menu-ready).
+  setTimeout(() => {
+    if (!document.querySelector('.c-page-bar')) resolveAndInit();
+  }, 2500);
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', waitForMenuOrHeaderThenInit);
+  document.addEventListener('DOMContentLoaded', waitForMenuThenInit);
 } else {
-  waitForMenuOrHeaderThenInit();
+  waitForMenuThenInit();
 }
