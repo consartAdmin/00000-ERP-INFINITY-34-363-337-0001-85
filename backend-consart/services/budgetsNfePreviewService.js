@@ -552,6 +552,71 @@ function buildTotalsXml(
   `;
 }
 
+/*
+ * Grupo <pag> do preview a partir dos pagamentos reais do orçamento
+ * (mesmo payload que vai para a SEFAZ: meio = tPag, ex.: 17 = PIX).
+ * Sem pagamentos, mantém 90 - Sem pagamento.
+ */
+function buildPagXml(pagamentos = []) {
+    const list = (Array.isArray(pagamentos) ? pagamentos : [])
+        .filter((p) => p && p.meio != null);
+
+    if (!list.length) {
+        return `<pag>
+          <detPag>
+            <tPag>90</tPag>
+            <vPag>${decimal(0, 2)}</vPag>
+          </detPag>
+        </pag>`;
+    }
+
+    const detPags = list.map((p) => {
+        const tPag = String(p.meio).padStart(2, '0');
+        const indPag = p.aVista === false ? '1' : '0';
+        const xPag = tPag === '99' && p.descricaoMeio
+            ? `<xPag>${escapeXml(p.descricaoMeio)}</xPag>`
+            : '';
+
+        return `<detPag>
+            <indPag>${indPag}</indPag>
+            <tPag>${escapeXml(tPag)}</tPag>
+            ${xPag}
+            <vPag>${decimal(p.valor, 2)}</vPag>
+          </detPag>`;
+    });
+
+    return `<pag>
+          ${detPags.join('\n          ')}
+        </pag>`;
+}
+
+/*
+ * Grupo <cobr> (fatura/duplicatas) do preview, quando a venda é a prazo.
+ */
+function buildCobrXml(cobranca = null) {
+    const parcelas = Array.isArray(cobranca?.parcelas)
+        ? cobranca.parcelas
+        : [];
+
+    if (!parcelas.length) return '';
+
+    const dups = parcelas.map((p, idx) => `<dup>
+            <nDup>${escapeXml(String(p.numero || idx + 1).padStart(3, '0'))}</nDup>
+            ${p.dataVencimento ? `<dVenc>${escapeXml(String(p.dataVencimento).slice(0, 10))}</dVenc>` : ''}
+            <vDup>${decimal(p.valor, 2)}</vDup>
+          </dup>`);
+
+    return `<cobr>
+          <fat>
+            <nFat>${escapeXml(cobranca.numero || '')}</nFat>
+            <vOrig>${decimal(cobranca.valorTotal ?? cobranca.valorLiquido, 2)}</vOrig>
+            <vDesc>${decimal(0, 2)}</vDesc>
+            <vLiq>${decimal(cobranca.valorLiquido ?? cobranca.valorTotal, 2)}</vLiq>
+          </fat>
+          ${dups.join('\n          ')}
+        </cobr>`;
+}
+
 function buildDraftNfeXml(
     nfe,
     budget
@@ -637,16 +702,13 @@ function buildDraftNfeXml(
         )}</modFrete>
         </transp>
 
-        <pag>
-          <detPag>
-            <tPag>90</tPag>
+        ${buildCobrXml(
+            nfe.cobranca
+        )}
 
-            <vPag>${decimal(
-            0,
-            2
-        )}</vPag>
-          </detPag>
-        </pag>
+        ${buildPagXml(
+            nfe.pagamentos
+        )}
 
         <infAdic>
           <infCpl>${escapeXml(
