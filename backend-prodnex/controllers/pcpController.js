@@ -49,6 +49,7 @@ export const getBom = handle(async (req) => required(await Pcp.Bom.getById(id(re
 export const createBom = handle((req) => Pcp.Bom.save(null, req.body), 201);
 export const updateBom = handle((req) => Pcp.Bom.save(id(req), req.body));
 export const removeBom = handle((req) => Pcp.Bom.remove(id(req)));
+export const recalcCosts = handle(() => Pcp.Cost.recalcAll());
 
 // Ordens de produção
 export const listOrders = handle((req) => Pcp.Orders.list(req.query));

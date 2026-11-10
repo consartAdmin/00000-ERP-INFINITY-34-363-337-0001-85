@@ -8,6 +8,7 @@ import {
   TB_BOM, TB_BOM_ITEMS, TB_BOM_OPERATIONS, TB_WORK_CENTERS, TB_PRODUCTS,
 } from './pcp.constants.js';
 import { notEmpty, toText, toNum, toInt, badRequest, notFound } from './pcp.sanitizers.js';
+import { idealFraction, itemUnitCost, assertNoCycle, recalcFrom } from './pcpCost.repository.js';
 
 export async function list({ q = '', onlyActive = 'false' } = {}) {
   const params = [];
@@ -61,10 +62,13 @@ export async function getById(bomId) {
     [bomId]
   );
 
-  // Custo por unidade do produto: material (com perda) + operação (tempo × custo/hora).
+  // Custo por unidade do produto: material (fração ideal × perda × custo) + operação (tempo × custo/hora).
   const base = Number(bom.base_qty) || 1;
-  const materialCost = items.reduce((sum, i) =>
-    sum + (Number(i.quantity) / base) * (1 + Number(i.loss_percent) / 100) * Number(i.component_cost), 0);
+  for (const i of items) {
+    i.ideal_fraction = round(idealFraction(i.quantity, base), 6);
+    i.unit_cost = round(itemUnitCost(i, base, i.component_cost));
+  }
+  const materialCost = items.reduce((sum, i) => sum + itemUnitCost(i, base, i.component_cost), 0);
   const operationCost = operations.reduce((sum, o) =>
     sum + ((Number(o.setup_minutes) / base) + Number(o.run_minutes_per_unit)) / 60 * Number(o.hourly_cost), 0);
 
@@ -188,8 +192,12 @@ export async function save(bomId, body = {}) {
       );
     }
 
+    // Custo do produto pelos ingredientes: grava products.cost_price e atualiza quem usa este produto.
+    await assertNoCycle(head.product_code, client);
+    const costUpdate = await recalcFrom([head.product_code], client);
+
     await client.query('COMMIT');
-    return getById(id);
+    return { ...(await getById(id)), cost_update: costUpdate };
   } catch (e) {
     await client.query('ROLLBACK');
     if (e.code === '23505') throw badRequest('Já existe uma ficha ativa para este produto (ou esta versão já existe).');
