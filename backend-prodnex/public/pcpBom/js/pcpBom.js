@@ -32,6 +32,7 @@ function render() {
       <td class="num">${fmtNum(r.base_qty, 4)}</td>
       <td class="num">${r.items_count}</td>
       <td class="num">${r.operations_count}</td>
+      <td class="num"><strong>${fmtMoney(r.product_cost)}</strong></td>
       <td class="center">${activeBadge(r.is_active)}</td>
       <td class="center">
         <div class="pcp-action-group">
@@ -40,7 +41,7 @@ function render() {
         </div>
       </td>
     </tr>`).join('')
-    : '<tr><td colspan="8" class="pcp-table-empty">Nenhuma ficha técnica cadastrada.</td></tr>';
+    : '<tr><td colspan="9" class="pcp-table-empty">Nenhuma ficha técnica cadastrada.</td></tr>';
   renderPagination(PAGER, pg, state, 'fichas');
 }
 
@@ -49,11 +50,66 @@ async function load() {
     state.rows = await pcpApi('/boms') || [];
     render();
   } catch (e) {
-    $('tableBody').innerHTML = `<tr><td colspan="8" class="pcp-table-error">${escapeHtml(e.message)}</td></tr>`;
+    $('tableBody').innerHTML = `<tr><td colspan="9" class="pcp-table-error">${escapeHtml(e.message)}</td></tr>`;
   }
 }
 
 // ── Grades do modal ───────────────────────────────────────────
+
+// Unidades e custo de cada componente (cache por código), para o select e o cálculo na tela.
+const componentInfo = new Map();
+
+async function loadComponentInfo(code) {
+  if (!code) return null;
+  if (!componentInfo.has(code)) {
+    componentInfo.set(code, pcpApi(`/products/${encodeURIComponent(code)}/units`).catch(() => null));
+  }
+  return componentInfo.get(code);
+}
+
+function fillUnitSelect(tr, info, selected) {
+  const select = tr.querySelector('[data-f="unit"]');
+  const base = info?.base_unit || '';
+  const options = info?.units?.length ? info.units : [{ unit: base, factor: 1 }];
+  const current = selected || base;
+  if (current && !options.some((o) => o.unit === current)) options.push({ unit: current, factor: null });
+  select.innerHTML = options
+    .map((o) => `<option value="${escapeHtml(o.unit)}" ${o.unit === current ? 'selected' : ''}>${escapeHtml(o.unit || '—')}</option>`)
+    .join('');
+  tr._info = info;
+}
+
+function itemLineCost(tr) {
+  const info = tr._info;
+  const base = Number($('baseQty').value) || 1;
+  const qty = Number(tr.querySelector('[data-f="quantity"]').value) || 0;
+  const loss = Number(tr.querySelector('[data-f="loss"]').value) || 0;
+  const unit = tr.querySelector('[data-f="unit"]').value;
+  const factor = info?.units?.find((o) => o.unit === unit)?.factor ?? (unit === (info?.base_unit || '') ? 1 : null);
+  if (!info || factor == null) return null;
+  const fraction = (qty / base) * factor;
+  return { fraction, cost: fraction * (1 + loss / 100) * Number(info.cost_price || 0), info };
+}
+
+function refreshLine(tr) {
+  const line = itemLineCost(tr);
+  const base = tr._info?.base_unit || '';
+  tr.querySelector('[data-c="fraction"]').textContent = line ? `${fmtNum(line.fraction, 6)} ${base}` : '—';
+  tr.querySelector('[data-c="cost"]').textContent = line ? `${fmtMoney(line.info.cost_price)}${base ? ` / ${base}` : ''}` : '—';
+  tr.querySelector('[data-c="unit-cost"]').textContent = line ? fmtMoney4(line.cost) : '—';
+}
+
+function refreshCost() {
+  const rows = [...$('itemsBody').querySelectorAll('tr:not(.pcp-hint)')];
+  rows.forEach(refreshLine);
+  const material = rows.reduce((sum, tr) => sum + (itemLineCost(tr)?.cost || 0), 0);
+  $('costBox').hidden = false;
+  $('costMaterial').textContent = `${fmtMoney4(material)} → ${fmtMoney(material)}`;
+}
+
+function fmtMoney4(v) {
+  return `R$ ${fmtNum(v, 4, 4)}`;
+}
 
 function itemRow(it = {}) {
   const tr = document.createElement('tr');
@@ -61,10 +117,27 @@ function itemRow(it = {}) {
     <td><input type="text" list="productOptions" data-f="component" placeholder="Código ou descrição"
       value="${escapeHtml(productLabel(it.component_code, it.component_description))}" autocomplete="off" /></td>
     <td><input type="number" step="any" min="0" data-f="quantity" value="${escapeHtml(it.quantity == null ? '' : Number(it.quantity))}" /></td>
+    <td><select data-f="unit"></select></td>
     <td><input type="number" step="any" min="0" data-f="loss" value="${escapeHtml(Number(it.loss_percent ?? 0))}" /></td>
+    <td class="num" data-c="fraction">—</td>
+    <td class="num" data-c="cost">—</td>
+    <td class="num"><strong data-c="unit-cost">—</strong></td>
     <td><input type="text" data-f="notes" value="${escapeHtml(it.notes || '')}" autocomplete="off" /></td>
     <td><button type="button" class="btn btn-clean btn-sm" data-remove title="Remover">×</button></td>`;
-  attachProductSearch(tr.querySelector('[data-f="component"]'), $('productOptions'));
+  const input = tr.querySelector('[data-f="component"]');
+  attachProductSearch(input, $('productOptions'));
+  if (it.component_code) {
+    const info = { base_unit: it.base_unit || '', units: it.unit_options || [], cost_price: Number(it.component_cost || 0) };
+    componentInfo.set(it.component_code, Promise.resolve(info));
+    fillUnitSelect(tr, info, it.unit);
+  } else {
+    fillUnitSelect(tr, null, '');
+  }
+  input.addEventListener('change', async () => {
+    const info = await loadComponentInfo(productCodeOf(input.value));
+    fillUnitSelect(tr, info, '');
+    refreshCost();
+  });
   $('itemsBody').appendChild(tr);
 }
 
@@ -96,11 +169,9 @@ function emptyHint() {
 }
 
 function showCost(cost) {
-  $('costBox').hidden = !cost;
-  if (!cost) return;
-  $('costMaterial').textContent = fmtMoney(cost.material);
-  $('costOperation').textContent = fmtMoney(cost.operation);
-  $('costTotal').textContent = fmtMoney(cost.total);
+  refreshCost();
+  $('costOperation').textContent = cost ? fmtMoney4(cost.operation) : '—';
+  $('costTotal').textContent = cost ? fmtMoney4(cost.total) : '—';
 }
 
 function fill(bom = null) {
@@ -148,6 +219,7 @@ function collect() {
       .map((tr) => ({
         component_code: productCodeOf(v(tr, 'component')),
         quantity: v(tr, 'quantity'),
+        unit: v(tr, 'unit'),
         loss_percent: v(tr, 'loss'),
         notes: v(tr, 'notes'),
       })),
@@ -169,7 +241,10 @@ async function save(e) {
   try {
     const bom = await pcpApi(id ? `/boms/${id}` : '/boms', { method: id ? 'PUT' : 'POST', body: collect() });
     fill(bom);
-    showMessage($('formMessage'), 'Ficha técnica salva.', 'success');
+    const changed = bom?.cost_update?.updated?.length || 0;
+    showMessage($('formMessage'), changed
+      ? `Ficha técnica salva. Preço de Custo atualizado em ${changed} produto(s).`
+      : 'Ficha técnica salva.', 'success');
     load();
   } catch (err) {
     showMessage($('formMessage'), err.message);
@@ -192,6 +267,22 @@ async function remove(id) {
 
 attachProductSearch($('product'), $('productOptions'));
 $('btnNew').addEventListener('click', () => openModal());
+$('btnRecalc').addEventListener('click', async () => {
+  if (!confirm('Recalcular o Preço de Custo de todos os produtos com ficha técnica ativa, pelos ingredientes?')) return;
+  try {
+    const res = await pcpApi('/boms/recalc-costs', { method: 'POST' });
+    notify('success', 'Custos recalculados', `${res?.updated?.length || 0} produto(s) com Preço de Custo alterado.`);
+    load();
+  } catch (err) {
+    notify('error', 'Não foi possível recalcular', err.message);
+  }
+});
+$('form').addEventListener('input', (e) => {
+  if (e.target.matches('[data-f="quantity"], [data-f="loss"], [data-f="unit"], #baseQty')) refreshCost();
+});
+$('form').addEventListener('change', (e) => {
+  if (e.target.matches('[data-f="unit"]')) refreshCost();
+});
 $('btnClose').addEventListener('click', () => $('modal').close());
 $('btnCancel').addEventListener('click', () => $('modal').close());
 $('btnAddItem').addEventListener('click', () => { itemRow(); emptyHint(); });
@@ -202,6 +293,7 @@ $('form').addEventListener('click', (e) => {
   if (!btn) return;
   btn.closest('tr').remove();
   emptyHint();
+  refreshCost();
 });
 $('search').addEventListener('input', () => { state.page = 1; render(); });
 $('includeInactive').addEventListener('change', () => { state.page = 1; render(); });

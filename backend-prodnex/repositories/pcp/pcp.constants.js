@@ -11,6 +11,7 @@ export const TB_ORDER_MATERIALS = 'public."pcpProductionOrderMaterials"';
 export const TB_REPORTS = 'public."pcpProductionReports"';
 
 export const TB_PRODUCTS = 'public."products"';
+export const TB_BAR_CODES = 'public."productsBarCode"';
 export const TB_STOCK = 'public."productsStock"';
 export const TB_MODULES = 'public."moduleSystem"';
 

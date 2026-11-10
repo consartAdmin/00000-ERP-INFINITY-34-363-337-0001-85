@@ -8,7 +8,9 @@ import {
   TB_BOM, TB_BOM_ITEMS, TB_BOM_OPERATIONS, TB_WORK_CENTERS, TB_PRODUCTS,
 } from './pcp.constants.js';
 import { notEmpty, toText, toNum, toInt, badRequest, notFound } from './pcp.sanitizers.js';
-import { idealFraction, itemUnitCost, assertNoCycle, recalcFrom } from './pcpCost.repository.js';
+import {
+  idealFraction, itemUnitCost, assertNoCycle, recalcFrom, loadUnits, unitFactor, unitOptions, normUnit,
+} from './pcpCost.repository.js';
 
 export async function list({ q = '', onlyActive = 'false' } = {}) {
   const params = [];
@@ -19,7 +21,7 @@ export async function list({ q = '', onlyActive = 'false' } = {}) {
     where.push(`(b.product_code ILIKE $${params.length} OR p.description ILIKE $${params.length})`);
   }
   const { rows } = await pool.query(
-    `SELECT b.*, p.description AS product_description,
+    `SELECT b.*, p.description AS product_description, COALESCE(p.cost_price, 0) AS product_cost,
             (SELECT COUNT(*) FROM ${TB_BOM_ITEMS} i WHERE i.bom_id = b.bom_id)::int AS items_count,
             (SELECT COUNT(*) FROM ${TB_BOM_OPERATIONS} o WHERE o.bom_id = b.bom_id)::int AS operations_count
        FROM ${TB_BOM} b
@@ -64,8 +66,13 @@ export async function getById(bomId) {
 
   // Custo por unidade do produto: material (fração ideal × perda × custo) + operação (tempo × custo/hora).
   const base = Number(bom.base_qty) || 1;
+  const units = await loadUnits([...new Set(items.map((i) => i.component_code))]);
   for (const i of items) {
-    i.ideal_fraction = round(idealFraction(i.quantity, base), 6);
+    const u = units.get(i.component_code);
+    i.base_unit = u.base;
+    i.unit_options = unitOptions(u);
+    i.unit_factor = unitFactor(i.unit, u) ?? 1;
+    i.ideal_fraction = round(idealFraction(i.quantity, base) * i.unit_factor, 6);
     i.unit_cost = round(itemUnitCost(i, base, i.component_cost));
   }
   const materialCost = items.reduce((sum, i) => sum + itemUnitCost(i, base, i.component_cost), 0);
@@ -114,6 +121,7 @@ function cleanItems(items = [], productCode) {
       component_code,
       quantity,
       loss_percent: Math.max(0, toNum(it.loss_percent, 0)),
+      unit: normUnit(it.unit).slice(0, 10) || null,
       notes: toText(it.notes),
       sort_order: i,
     };
@@ -157,6 +165,14 @@ export async function save(bomId, body = {}) {
         throw badRequest(`Componente ${it.component_code} não encontrado.`);
       }
     }
+    const units = await loadUnits([...new Set(items.map((it) => it.component_code))], client);
+    for (const it of items) {
+      const u = units.get(it.component_code);
+      if (it.unit === u.base) it.unit = null;
+      if (it.unit && unitFactor(it.unit, u) == null) {
+        throw badRequest(`Não há conversão de ${it.unit} para ${u.base || 'a unidade base'} do componente ${it.component_code}. Cadastre a unidade no produto ou use a unidade base.`);
+      }
+    }
 
     let id = bomId;
     if (id) {
@@ -179,9 +195,9 @@ export async function save(bomId, body = {}) {
 
     for (const it of items) {
       await client.query(
-        `INSERT INTO ${TB_BOM_ITEMS} (bom_id, component_code, quantity, loss_percent, notes, sort_order)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [id, it.component_code, it.quantity, it.loss_percent, it.notes, it.sort_order]
+        `INSERT INTO ${TB_BOM_ITEMS} (bom_id, component_code, quantity, loss_percent, unit, notes, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, it.component_code, it.quantity, it.loss_percent, it.unit, it.notes, it.sort_order]
       );
     }
     for (const op of operations) {
@@ -231,6 +247,9 @@ export async function getActiveByProduct(productCode, client = pool) {
     `SELECT * FROM ${TB_BOM_ITEMS} WHERE bom_id = $1 ORDER BY sort_order, bom_item_id`,
     [bom.bom_id]
   );
+  // Quantidade convertida para a unidade base do componente (a do estoque).
+  const units = await loadUnits([...new Set(items.map((i) => i.component_code))], client);
+  for (const i of items) i.unit_factor = unitFactor(i.unit, units.get(i.component_code)) ?? 1;
   return { ...bom, items };
 }
 

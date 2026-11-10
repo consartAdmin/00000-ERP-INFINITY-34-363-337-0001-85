@@ -6,7 +6,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB_BOM, TB_BOM_ITEMS, TB_PRODUCTS } from './pcp.constants.js';
+import { TB_BOM, TB_BOM_ITEMS, TB_PRODUCTS, TB_BAR_CODES } from './pcp.constants.js';
 import { badRequest } from './pcp.sanitizers.js';
 
 /** Se a perda % da linha entra no custo (false = só a fração ideal). */
@@ -27,9 +27,81 @@ export function idealFraction(quantity, baseQty) {
 }
 
 /** Custo do ingrediente em 1 unidade do produto. */
-export function itemUnitCost({ quantity, loss_percent }, baseQty, componentCost) {
+export function itemUnitCost({ quantity, loss_percent, unit_factor = 1 }, baseQty, componentCost) {
   const loss = COST_INCLUDES_LOSS ? (Number(loss_percent) || 0) / 100 : 0;
-  return idealFraction(quantity, baseQty) * (1 + loss) * (Number(componentCost) || 0);
+  return idealFraction(quantity, baseQty) * (Number(unit_factor) || 1) * (1 + loss) * (Number(componentCost) || 0);
+}
+
+// ── Unidades do ingrediente ───────────────────────────────────
+// A quantidade da linha pode estar em outra unidade (ex.: receita em G,
+// ingrediente com custo por KG). Converte para a unidade base do ingrediente
+// (a de fator 1 no productsBarCode), que é a unidade do cost_price.
+
+const METRIC = {
+  KG: ['MASSA', 1], G: ['MASSA', 0.001], MG: ['MASSA', 0.000001], T: ['MASSA', 1000],
+  L: ['VOLUME', 1], ML: ['VOLUME', 0.001],
+};
+const ALIASES = { KGS: 'KG', KILO: 'KG', QUILO: 'KG', GR: 'G', GRS: 'G', GRAMA: 'G', LT: 'L', LTS: 'L', LITRO: 'L', TON: 'T' };
+
+export function normUnit(u) {
+  const k = String(u ?? '').trim().toUpperCase();
+  return ALIASES[k] || k;
+}
+
+/** Unidades de cada ingrediente: { base, packs: Map(unidade → fator) }. */
+export async function loadUnits(codes, client = pool) {
+  const out = new Map(codes.map((c) => [c, { base: '', packs: new Map() }]));
+  if (!codes.length) return out;
+  const { rows } = await client.query(
+    `SELECT product_code, unit, COALESCE(fator, 1)::float AS fator, COALESCE(standard, FALSE) AS standard
+       FROM ${TB_BAR_CODES}
+      WHERE product_code = ANY($1::varchar[]) AND COALESCE(is_active, TRUE)
+        AND COALESCE(TRIM(unit), '') <> ''
+      ORDER BY (COALESCE(fator, 1) = 1) DESC, COALESCE(standard, FALSE) DESC, barcode_id`,
+    [codes]
+  );
+  for (const r of rows) {
+    const u = out.get(r.product_code);
+    const unit = normUnit(r.unit);
+    if (!u.base && Number(r.fator) === 1) u.base = unit;
+    if (Number(r.fator) > 0 && !u.packs.has(unit)) u.packs.set(unit, Number(r.fator));
+  }
+  for (const u of out.values()) if (!u.base && u.packs.size) u.base = [...u.packs.keys()][0];
+  return out;
+}
+
+/** Fator para converter 1 unidade da linha na unidade base do ingrediente (null = não converte). */
+export function unitFactor(unit, units) {
+  const u = normUnit(unit);
+  const base = units?.base || '';
+  if (!u || u === base) return 1;
+  const a = METRIC[u];
+  const b = METRIC[base];
+  if (a && b && a[0] === b[0]) return a[1] / b[1];
+  if (units?.packs?.has(u)) return units.packs.get(u) / (units.packs.get(base) || 1);
+  return null;
+}
+
+/** Unidades que a linha do ingrediente pode usar (para o select da tela). */
+export function unitOptions(units) {
+  const base = units?.base || '';
+  const list = [];
+  const add = (unit) => {
+    const factor = unitFactor(unit, units);
+    if (unit && factor != null && !list.some((o) => o.unit === unit)) list.push({ unit, factor });
+  };
+  add(base);
+  const fam = METRIC[base]?.[0];
+  if (fam) Object.keys(METRIC).filter((k) => METRIC[k][0] === fam).forEach(add);
+  for (const unit of units?.packs?.keys() || []) add(unit);
+  return list;
+}
+
+export async function componentUnits(code) {
+  const units = (await loadUnits([code])).get(code);
+  const { rows: [p] } = await pool.query(
+    `SELECT COALESCE(cost_price, 0)::float AS cost_price FROM ${TB_PRODUCTS} WHERE product_code = $1`, [code]);
+  return { base_unit: units.base, units: unitOptions(units), cost_price: p?.cost_price ?? 0 };
 }
 
 // ── Grafo das fichas ativas ───────────────────────────────────
@@ -37,7 +109,7 @@ export function itemUnitCost({ quantity, loss_percent }, baseQty, componentCost)
 /** Fichas ativas: produto → { base_qty, items } e o inverso (ingrediente → produtos). */
 async function loadGraph(client) {
   const { rows } = await client.query(
-    `SELECT b.product_code, b.base_qty, i.component_code, i.quantity, i.loss_percent
+    `SELECT b.product_code, b.base_qty, i.component_code, i.quantity, i.loss_percent, i.unit
        FROM ${TB_BOM} b
        LEFT JOIN ${TB_BOM_ITEMS} i ON i.bom_id = b.bom_id
       WHERE b.is_active = TRUE`
@@ -118,6 +190,13 @@ async function recalc(codes, client) {
   const order = dependencyOrder(targets, graph);
   const needed = new Set(order);
   for (const code of order) for (const it of graph.boms.get(code).items) needed.add(it.component_code);
+
+  const units = await loadUnits([...needed], client);
+  for (const code of order) {
+    for (const it of graph.boms.get(code).items) {
+      it.unit_factor = unitFactor(it.unit, units.get(it.component_code)) ?? 1;
+    }
+  }
 
   const { rows } = await client.query(
     `SELECT product_code, COALESCE(cost_price, 0) AS cost_price

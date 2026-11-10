@@ -36,6 +36,7 @@ export const ensure = handle(() => Pcp.ensureTables());
 
 // Produtos (busca para os campos do PCP)
 export const searchProducts = handle((req) => Pcp.Bom.searchProducts(req.query));
+export const productUnits = handle((req) => Pcp.Cost.componentUnits(String(req.params.code || '').trim()));
 
 // Centros de trabalho
 export const listWorkCenters = handle((req) => Pcp.WorkCenters.list(req.query));

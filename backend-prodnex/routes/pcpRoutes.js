@@ -10,6 +10,7 @@ const router = Router();
 
 router.get('/ensure', c.ensure);
 router.get('/products', c.searchProducts);
+router.get('/products/:code/units', c.productUnits);
 
 // Centros de trabalho
 router.get   ('/work-centers',     c.listWorkCenters);
