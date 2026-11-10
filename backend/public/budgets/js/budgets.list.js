@@ -10,6 +10,7 @@ import { $, fmtMoney, ROUTES, safeUpper, state } from './budgets.core.js';
 import { authHeaders, fetchSafe, handleAuthFail, toast } from './budgets.infra.js';
 import { openEditor, closeEditor, activateTab } from './budgets.editor.js';
 import { openPdf, transformToOrder, copyBudget } from './budgets.actions.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 import {
   applyNfeIssuanceModeUI,
@@ -65,11 +66,15 @@ async function deleteBudgetFromList(budgetId, statusRaw = '') {
     );
   }
 
-  const confirmed = window.confirm(
-    `Deseja realmente excluir o orçamento #${id}?\n\nEsta operação não poderá ser desfeita.`
-  );
+  const confirmed = await showCenterModal({
+    variant: 'warning',
+    title: 'Excluir orçamento',
+    message: `Deseja realmente excluir o orçamento <b>#${id}</b>?<br><br>Esta operação não poderá ser desfeita.`,
+    okText: 'Sim, excluir',
+    closeText: 'Cancelar',
+  });
 
-  if (!confirmed) return false;
+  if (confirmed !== true) return false;
 
   const out = await fetchSafe(ROUTES.budgetById(id), {
     method: 'DELETE',
