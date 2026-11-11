@@ -691,6 +691,12 @@ function getItemFactor(item = {}) {
 
 const fmtMoney = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+// Validade é DATE: usa só AAAA-MM-DD (new Date() em UTC-3 mostraria o dia anterior)
+function fmtDateOnly(value) {
+  const m = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : fmtDatePt(value);
+}
+
 function getItemCost(item = {}) {
   const cost = Number(item.cost_price);
   return item.cost_price != null && Number.isFinite(cost) ? cost : null;
@@ -717,7 +723,7 @@ export function renderItemsTable(els) {
   renderItemsSummary(items);
 
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="12" class="table-empty-state">${
+    tbody.innerHTML = `<tr><td colspan="13" class="table-empty-state">${
       state.currentInventory?.inventory_id
         ? 'Nenhum item contado ainda. Busque o produto acima e informe a quantidade.'
         : 'Salve o inventário para começar a lançar os itens.'}</td></tr>`;
@@ -731,6 +737,10 @@ export function renderItemsTable(els) {
     const totalQty = getItemTotalQty(item);
     const differenceQty = totalQty - systemQty;
     const cost = getItemCost(item);
+    const lotExp = fmtDateOnly(item.lot_expires_at);
+    const lotText = item.lot_code
+      ? [item.lot_code, lotExp ? `Val. ${lotExp}` : ''].filter(Boolean).join(' • ')
+      : '';
     const id = item.inventory_item_id;
 
     return `
@@ -738,6 +748,7 @@ export function renderItemsTable(els) {
         <td>${escapeHtml(item.product_code ?? '')}</td>
         <td class="td-left">${escapeHtml(productNameShown)}</td>
         <td>${escapeHtml(item.unit ?? '')}</td>
+        <td class="td-left">${lotText ? escapeHtml(lotText) : '—'}</td>
         <td class="td-left" data-feature="PRODUCT_LOCATIONS">${escapeHtml(item.location_name ?? '')}</td>
         <td class="col-number">${fmtQty3(systemQty)}</td>
         <td class="col-number">${countedQty != null ? fmtQty3(countedQty) : ''}</td>
