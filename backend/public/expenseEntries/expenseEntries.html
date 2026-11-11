@@ -33,44 +33,16 @@
   <main class="consart-container consart-container--full consart-container--ultraslim">
 
 
-    <header class="header">
-      <div>
-        <h2>Entradas de Despesas</h2>
-        <p>Entrada de despesas, vínculo ao módulo Movimentações Caixa.</p>
-      </div>
+    <!-- Sem <header> de card: o topGradientBar injeta o título e o breadcrumb -->
+    <input id="xmlFile" type="file" accept=".xml,text/xml,application/xml" hidden />
 
-      <div class="btn-inline btn-position-right">
-        <button class="btn btn-new btn-sm" id="btnImportXml" type="button" title="Importar XML NF-e">
-          <span class="ee-btn-ico">⤓</span>
-          Importar XML
-        </button>
-
-        <button class="btn btn-new btn-sm" id="btnImportFromDfe" type="button"
-          title="Importar o XML diretamente da caixa de entrada DF-e">
-          🛰️ Importar do DF-e
-        </button>
-
-        <button class="btn btn-new btn-sm" id="btnNew" type="button">
-          <span class="ee-btn-ico">＋</span>
-          Nova Entrada
-        </button>
-      </div>
-
-      <div class="fields fields-h-6 fields-w-20 fields-font-3">
-        <input id="xmlFile" type="file" accept=".xml,text/xml,application/xml" style="display:none" />
-      </div>
-    </header>
-
-    <!-- =========================================================
-         TABLE LAYOUT
-    ========================================================== -->
-    <section class="table-layout-integrated">
+    <section class="table-layout-integrated table-max-height-700">
 
       <!-- FILTER -->
       <div class="table-layout-integrated__filter">
         <span id="loadingHint" class="ee-muted" role="status" aria-live="polite"></span>
 
-        <div class="fields-inline fields-gap-3">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
 
           <div class="fields fields-h-6 fields-w-20 fields-font-3">
             <label for="fQ">Busca</label>
@@ -102,18 +74,19 @@
           <input type="hidden" id="fDateTo" />
           <input type="hidden" id="fOrderBy" value="issueDate desc" />
 
-          <div class="fields fields-h-6 fields-font-3">
-            <label>&nbsp;</label>
-            <div class="btn-inline btn-gap-3">
-              <button class="btn btn-search btn-sm" id="btnApply" type="button" title="Buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span></button>
-              <button class="btn btn-clean btn-sm" id="btnClear" type="button" title="Limpar filtros"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
-            </div>
+          <button class="btn btn-filter btn-sm" id="btnApply" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar Filtros</span></button>
+          <button class="btn btn-clean btn-sm" id="btnClear" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button class="btn btn-load btn-sm" id="btnImportXml" type="button" title="Importar XML NF-e"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>Importar XML</span></button>
+            <button class="btn btn-load btn-sm" id="btnImportFromDfe" type="button" title="Importar o XML direto da caixa de entrada DF-e"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H4z"/><path d="m4 16 4 4h8l4-4"/><path d="M12 7v6"/><path d="m9 10 3 3 3-3"/></svg><span>Importar do DF-e</span></button>
+            <button class="btn btn-new btn-sm" id="btnNew" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova Entrada</span></button>
           </div>
         </div>
       </div>
 
       <!-- TABLE SCROLL -->
-      <div class="table-scroll table-height-500 table-row-h-28" data-table-settings="expenseentries.tbody">
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="expenseentries.tbody">
         <table id="expenseEntriesTable" class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
