@@ -717,7 +717,7 @@ export function renderItemsTable(els) {
   renderItemsSummary(items);
 
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="11" class="table-empty-state">${
+    tbody.innerHTML = `<tr><td colspan="12" class="table-empty-state">${
       state.currentInventory?.inventory_id
         ? 'Nenhum item contado ainda. Busque o produto acima e informe a quantidade.'
         : 'Salve o inventário para começar a lançar os itens.'}</td></tr>`;
@@ -744,6 +744,7 @@ export function renderItemsTable(els) {
         <td class="col-number"><strong>${fmtQty3(totalQty)}</strong></td>
         <td class="col-number">${Math.abs(differenceQty) > 0.0005 ? `<strong>${fmtQty3(differenceQty)}</strong>` : fmtQty3(differenceQty)}</td>
         <td class="col-number">${cost != null ? fmtMoney(cost) : '—'}</td>
+        <td class="col-number">${cost != null ? `<strong>${fmtMoney(totalQty * cost)}</strong>` : '—'}</td>
         <td>${itemStatusPill(item.status)}</td>
         <td>${actionIconsHtml([
           { action: 'edit', title: 'Editar item', attrs: { 'data-id': id, 'data-item-act': 'edit' } },
