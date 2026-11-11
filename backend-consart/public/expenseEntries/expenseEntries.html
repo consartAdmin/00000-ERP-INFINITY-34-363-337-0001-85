@@ -73,53 +73,40 @@
         <div class="fields-inline fields-gap-3">
 
           <div class="fields fields-h-6 fields-w-20 fields-font-3">
-            <label>Busca (Fornecedor / Nº / Série / Chave / Obs.)</label>
-            <input id="fQ" type="text" placeholder="Digite para pesquisar..." />
+            <label for="fQ">Busca</label>
+            <input id="fQ" type="text" placeholder="Fornecedor, número, série, chave ou observação..." />
           </div>
 
-          <div class="fields fields-h-6 fields-w-20 fields-font-3">
-            <label>Status</label>
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <label for="fStatus">Situação</label>
             <select id="fStatus">
-              <option value="">Todos</option>
-              <option value="OPEN">OPEN</option>
-              <option value="POSTED">POSTED</option>
-              <option value="CANCELED">CANCELED</option>
+              <option value="">Todas</option>
+              <option value="OPEN">Aberta</option>
+              <option value="POSTED">Lançada</option>
+              <option value="CANCELED">Cancelada</option>
             </select>
           </div>
 
-          <div class="fields fields-h-6 fields-w-20 fields-font-3">
-            <label>Fornecedor (CNPJ/CPF)</label>
-            <input id="fSupplierDoc" type="text" placeholder="Ex: 12345678000199" />
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="fSupplierDoc">CNPJ / CPF</label>
+            <input id="fSupplierDoc" type="text" placeholder="Somente números" />
           </div>
 
-          <div class="fields fields-h-6 fields-w-20 fields-font-3">
-            <label>Período (Emissão)</label>
-            <div class="ee-row">
-              <input id="fDateFrom" type="date" />
-              <span class="ee-dash">—</span>
-              <input id="fDateTo" type="date" />
-            </div>
+          <!-- Período (emissão): date-range-field (carregado pelo core.js) -->
+          <div class="fields fields-h-6 fields-w-16 fields-font-3">
+            <date-range-field id="fDateRange" class="drf-width-3 drf-height-3" label="Período (emissão)"
+              locale="pt-BR"></date-range-field>
           </div>
 
-          <div class="fields fields-h-6 fields-w-20 fields-font-3">
-            <label>Ordenação</label>
-            <select id="fOrderBy">
-              <option value='issueDate desc'>Emissão (desc)</option>
-              <option value='issueDate asc'>Emissão (asc)</option>
-              <option value='expenseEntryId desc'>ID (desc)</option>
-              <option value='expenseEntryId asc'>ID (asc)</option>
-              <option value='supplierName asc'>Fornecedor (A→Z)</option>
-              <option value='supplierName desc'>Fornecedor (Z→A)</option>
-              <option value='totalExpenseValue desc'>Total (desc)</option>
-              <option value='totalExpenseValue asc'>Total (asc)</option>
-            </select>
-          </div>
+          <input type="hidden" id="fDateFrom" />
+          <input type="hidden" id="fDateTo" />
+          <input type="hidden" id="fOrderBy" value="issueDate desc" />
 
-          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+          <div class="fields fields-h-6 fields-font-3">
             <label>&nbsp;</label>
             <div class="btn-inline btn-gap-3">
-              <button class="btn btn-new btn-sm" id="btnApply" type="button">Aplicar</button>
-              <button class="btn btn-new btn-sm" id="btnClear" type="button">Limpar</button>
+              <button class="btn btn-search btn-sm" id="btnApply" type="button" title="Buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span></button>
+              <button class="btn btn-clean btn-sm" id="btnClear" type="button" title="Limpar filtros"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
             </div>
           </div>
         </div>
@@ -127,18 +114,50 @@
 
       <!-- TABLE SCROLL -->
       <div class="table-scroll table-height-500 table-row-h-28" data-table-settings="expenseentries.tbody">
-        <table class="table table-zebra table-zebra-hover table-sticky-head">
+        <table id="expenseEntriesTable" class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
-              <th style="width:72px">ID</th>
-              <th style="width:110px">Emissão</th>
-              <th style="width:100px">Tipo</th>
-              <th style="width:120px">Nº/Série</th>
-              <th>Fornecedor</th>
-              <th style="width:140px">CNPJ/CPF</th>
-              <th style="width:150px" class="ee-right">Total</th>
-              <th style="width:110px">Status</th>
-              <th style="width:220px">Ações</th>
+              <th class="table-sortable" data-sort-column="expenseEntryId" aria-sort="none" style="width:70px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por ID">
+                  ID <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="issueDate" aria-sort="none" style="width:110px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Emissão">
+                  Emissão <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="documentType" aria-sort="none" style="width:80px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Tipo">
+                  Tipo <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="documentNumber" aria-sort="none" style="width:110px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Nº / Série">
+                  Nº / Série <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="supplierName" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Fornecedor">
+                  Fornecedor <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="supplierDocument" aria-sort="none" style="width:170px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por CNPJ / CPF">
+                  CNPJ / CPF <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="ee-right table-sortable" data-sort-column="totalExpenseValue" aria-sort="none" style="width:130px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Total">
+                  Total <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="status" aria-sort="none" style="width:120px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Situação">
+                  Situação <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th style="width:150px">Ações</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
