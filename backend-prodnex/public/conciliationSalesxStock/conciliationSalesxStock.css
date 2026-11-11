@@ -141,6 +141,12 @@
   color: #1d4ed8;
 }
 
+.movement-badge--ajuste {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+
 .movement-badge--total {
   border-color: #cbd5e1;
   background: #f8fafc;

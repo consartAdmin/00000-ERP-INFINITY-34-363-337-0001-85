@@ -69,6 +69,10 @@ function normalizeMovementType(value) {
     return 'SAIDA';
   }
 
+  if (['AJUSTE', 'ADJUSTMENT', 'INVENTARIO', 'INVENTORY'].includes(normalized)) {
+    return 'AJUSTE';
+  }
+
   return 'TODOS';
 }
 
@@ -91,16 +95,21 @@ function filterRowsByMovement(rows = [], isTotal = false) {
   );
 }
 
+const MOVEMENT_LABELS = Object.freeze({
+  ENTRADA: 'Entrada',
+  SAIDA: 'Saída',
+  AJUSTE: 'Ajuste',
+});
+
 function getMovementLabel(value) {
-  return normalizeMovementType(value) === 'ENTRADA'
-    ? 'Entrada'
-    : 'Saída';
+  return MOVEMENT_LABELS[normalizeMovementType(value)] || 'Saída';
 }
 
 function getMovementClass(value) {
-  return normalizeMovementType(value) === 'ENTRADA'
-    ? 'entrada'
-    : 'saida';
+  const type = normalizeMovementType(value);
+  if (type === 'ENTRADA') return 'entrada';
+  if (type === 'AJUSTE') return 'ajuste';
+  return 'saida';
 }
 
 function setSortableHeaderLabel(headerId, label) {
@@ -160,7 +169,13 @@ function createQuantityCell(row, isTotal) {
     return `${number.format(toNumber(row.quantity_sold))} / ${number.format(toNumber(row.quantity_inbound))}`;
   }
 
-  return number.format(toNumber(row.movement_quantity));
+  const quantity = toNumber(row.movement_quantity);
+
+  if (normalizeMovementType(row.movement_type) === 'AJUSTE' && quantity > 0) {
+    return `+${number.format(quantity)}`;
+  }
+
+  return number.format(quantity);
 }
 
 function createStockValueHtml(value, className) {
@@ -215,6 +230,30 @@ function createStockFlowCell(row, isTotal) {
       </span>
 
       ${createStockValueHtml(row.stock_after, 'stock-flow__after')}
+    </span>
+    ${createStockGapHtml(row)}
+  `;
+}
+
+function createStockGapHtml(row) {
+  if (!hasNumericValue(row.stock_gap)) return '';
+
+  const gap = toNumber(row.stock_gap);
+
+  if (Math.abs(gap) < 0.0001) return '';
+
+  const signed = `${gap > 0 ? '+' : ''}${number.format(gap)}`;
+  const title =
+    `O estoque mudou ${signed} desde a operação anterior sem nenhum movimento registrado ` +
+    '(ex.: alteração de lote, inventário antigo ou ajuste manual).';
+
+  return `
+    <span
+      class="stock-flow__gap"
+      title="${escapeHtml(title)}"
+      style="margin-left:6px;color:#b45309;font-weight:700;cursor:help;"
+    >
+      ⚠ ${escapeHtml(signed)}
     </span>
   `;
 }

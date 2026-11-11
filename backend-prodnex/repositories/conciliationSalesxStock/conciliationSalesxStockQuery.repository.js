@@ -38,6 +38,9 @@ export async function listSalesStockReconciliation(filters = {}) {
     if (['OUTBOUND', 'SAIDA', 'SAÍDA'].includes(type)) {
       where.push("mr.movement_type = 'SAIDA'");
     }
+    if (['AJUSTE', 'ADJUSTMENT'].includes(type)) {
+      where.push("mr.movement_type = 'AJUSTE'");
+    }
   }
 
   const limit = Math.min(Math.max(Number(filters.limit) || 20, 1), 200);
@@ -68,6 +71,7 @@ export async function listSalesStockReconciliation(filters = {}) {
         r.available_stock AS current_available_stock,
         NULL::numeric AS stock_before,
         NULL::numeric AS stock_after,
+        NULL::numeric AS stock_gap,
         r.historical_final_stock,
         r.stock_need,
         r.reference_difference AS divergence,
@@ -96,6 +100,7 @@ export async function listSalesStockReconciliation(filters = {}) {
         r.qty_reserved,
         mr.stock_before,
         mr.stock_after,
+        mr.stock_gap,
         r.available_stock AS current_available_stock,
         r.historical_final_stock,
         r.stock_need,
@@ -112,8 +117,8 @@ export async function listSalesStockReconciliation(filters = {}) {
       ORDER BY
         ${sort.expression} ${sort.direction} NULLS LAST,
         mr.sku,
-        mr.movement_created_at,
-        mr.movement_sort_id,
+        mr.movement_created_at ${sort.direction},
+        mr.movement_sort_id ${sort.direction},
         mr.invoice_id
     `;
 

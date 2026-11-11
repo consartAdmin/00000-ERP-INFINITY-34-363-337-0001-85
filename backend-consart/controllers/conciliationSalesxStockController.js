@@ -76,6 +76,13 @@ function parseMovementType(value) {
         return 'OUTBOUND';
     }
 
+    if (
+        movementType === 'AJUSTE' ||
+        movementType === 'ADJUSTMENT'
+    ) {
+        return 'AJUSTE';
+    }
+
     return 'all';
 }
 
