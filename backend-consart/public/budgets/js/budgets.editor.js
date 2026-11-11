@@ -828,8 +828,12 @@ export function bindEditorUI() {
     });
 
     if (!out?.ok) return;
-    console.log('[budgets][rentability] snapshot', out.data);
-    toast.success('Rentabilidade', '✅ Cálculo atualizado.');
+    const t = out.data?.totals || {};
+    const brl = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    toast.success(
+      'Rentabilidade',
+      `Ajustes aplicados. Lucro R$ ${brl(t.profit)} (margem ${brl(t.margin)}%).`
+    );
   });
 
   const btnCliBuscar = $('#btnCliBuscar');
