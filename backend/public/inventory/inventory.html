@@ -223,6 +223,8 @@
                 <th class="table-col-w-4 col-number">Contado</th>
                 <th class="table-col-w-4 col-number">Total</th>
                 <th class="table-col-w-4 col-number">Diferença</th>
+                <th class="table-col-w-5 col-number" title="Custo do cadastro do produto (unidade padrão)">Custo unit.</th>
+                <th class="table-col-w-5 col-number" title="Total × Custo unitário">Custo total</th>
                 <th class="table-col-w-4">Status</th>
                 <th class="table-col-w-3">Ações</th>
               </tr>
@@ -239,6 +241,8 @@
             <div class="summary summary--center summary-gap-8">
               <div class="summary-pill summary-pill--primary" id="itemsMatchInfo" style="display:none">0 sem diferença</div>
               <div class="summary-pill summary-pill--warning" id="itemsDiffInfo" style="display:none">0 com diferença</div>
+              <div class="summary-pill summary-pill--success" id="itemsCostTotalInfo" style="display:none" title="Soma de Total × Custo de cada item">Custo total: R$ 0,00</div>
+              <div class="summary-pill summary-pill--danger" id="itemsNoCostInfo" style="display:none" title="Itens cujo produto está sem custo no cadastro">0 sem custo</div>
             </div>
           </div>
         </footer>
@@ -548,7 +552,7 @@
   </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/inventory/js/inventory.index.js?v=dock-02"></script>
+  <script type="module" src="/public/inventory/js/inventory.index.js?v=dock-04"></script>
   <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta [data-feature="PRODUCT_LOCATIONS"] -->
   <script type="module">import { initProductLocationsFeature } from "/public/includes/js/productLocationsFeature.js"; initProductLocationsFeature();</script>
   <!-- Importador XLS + download do modelo CSV -->

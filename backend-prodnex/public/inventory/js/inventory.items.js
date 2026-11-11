@@ -1203,12 +1203,22 @@ export function bindItemsTableActions(els) {
 
     if (deleteIcon) {
       const itemId = Number(deleteIcon.dataset.id);
+      const item = state.items.find((i) => Number(i.inventory_item_id) === itemId);
+      const label = item
+        ? [item.product_code, item.product_name || item.description].filter(Boolean).join(' - ')
+        : '';
 
-      const ok = confirm(
-        'Deseja realmente excluir este item do inventário?'
-      );
+      const ok = await showCenterModal({
+        variant: 'warning',
+        title: 'Excluir item',
+        message: label
+          ? `Deseja realmente excluir o item ${label} do inventário?`
+          : 'Deseja realmente excluir este item do inventário?',
+        okText: 'Sim, excluir',
+        closeText: 'Cancelar',
+      });
 
-      if (!ok) return;
+      if (ok !== true) return;
 
       await deleteItem(els, itemId);
     }

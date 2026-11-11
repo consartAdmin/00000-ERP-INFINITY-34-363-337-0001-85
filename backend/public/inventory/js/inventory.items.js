@@ -689,6 +689,13 @@ function getItemFactor(item = {}) {
   return Number.isFinite(factor) && factor > 0 ? factor : 1;
 }
 
+const fmtMoney = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+function getItemCost(item = {}) {
+  const cost = Number(item.cost_price);
+  return item.cost_price != null && Number.isFinite(cost) ? cost : null;
+}
+
 function getItemTotalQty(item = {}) {
   const backendTotal = Number(item.total_qty);
 
@@ -710,7 +717,7 @@ export function renderItemsTable(els) {
   renderItemsSummary(items);
 
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="10" class="table-empty-state">${
+    tbody.innerHTML = `<tr><td colspan="12" class="table-empty-state">${
       state.currentInventory?.inventory_id
         ? 'Nenhum item contado ainda. Busque o produto acima e informe a quantidade.'
         : 'Salve o inventário para começar a lançar os itens.'}</td></tr>`;
@@ -723,6 +730,7 @@ export function renderItemsTable(els) {
     const countedQty = item.counted_qty != null ? Number(item.counted_qty) : null;
     const totalQty = getItemTotalQty(item);
     const differenceQty = totalQty - systemQty;
+    const cost = getItemCost(item);
     const id = item.inventory_item_id;
 
     return `
@@ -735,6 +743,8 @@ export function renderItemsTable(els) {
         <td class="col-number">${countedQty != null ? fmtQty3(countedQty) : ''}</td>
         <td class="col-number"><strong>${fmtQty3(totalQty)}</strong></td>
         <td class="col-number">${Math.abs(differenceQty) > 0.0005 ? `<strong>${fmtQty3(differenceQty)}</strong>` : fmtQty3(differenceQty)}</td>
+        <td class="col-number">${cost != null ? fmtMoney(cost) : '—'}</td>
+        <td class="col-number">${cost != null ? `<strong>${fmtMoney(totalQty * cost)}</strong>` : '—'}</td>
         <td>${itemStatusPill(item.status)}</td>
         <td>${actionIconsHtml([
           { action: 'edit', title: 'Editar item', attrs: { 'data-id': id, 'data-item-act': 'edit' } },
@@ -764,6 +774,20 @@ function renderItemsSummary(items) {
   if (diffEl) {
     diffEl.textContent = `${withDiff} com diferença`;
     diffEl.style.display = withDiff ? '' : 'none';
+  }
+
+  // Custo total = Σ (quantidade total na unidade padrão × custo do produto)
+  const costEl = document.getElementById('itemsCostTotalInfo');
+  const noCostEl = document.getElementById('itemsNoCostInfo');
+  const totalCost = items.reduce((sum, it) => sum + getItemTotalQty(it) * (getItemCost(it) ?? 0), 0);
+  const withoutCost = items.filter((it) => !getItemCost(it)).length;
+  if (costEl) {
+    costEl.textContent = `Custo total: ${fmtMoney(totalCost)}`;
+    costEl.style.display = n ? '' : 'none';
+  }
+  if (noCostEl) {
+    noCostEl.textContent = `${withoutCost} sem custo`;
+    noCostEl.style.display = withoutCost ? '' : 'none';
   }
 }
 
@@ -1205,12 +1229,22 @@ export function bindItemsTableActions(els) {
 
     if (deleteIcon) {
       const itemId = Number(deleteIcon.dataset.id);
+      const item = state.items.find((i) => Number(i.inventory_item_id) === itemId);
+      const label = item
+        ? [item.product_code, item.product_name || item.description].filter(Boolean).join(' - ')
+        : '';
 
-      const ok = confirm(
-        'Deseja realmente excluir este item do inventário?'
-      );
+      const ok = await showCenterModal({
+        variant: 'warning',
+        title: 'Excluir item',
+        message: label
+          ? `Deseja realmente excluir o item ${label} do inventário?`
+          : 'Deseja realmente excluir este item do inventário?',
+        okText: 'Sim, excluir',
+        closeText: 'Cancelar',
+      });
 
-      if (!ok) return;
+      if (ok !== true) return;
 
       await deleteItem(els, itemId);
     }

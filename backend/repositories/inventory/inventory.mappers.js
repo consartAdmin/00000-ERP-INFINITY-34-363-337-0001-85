@@ -50,6 +50,9 @@ export const rowToItem = (r) => ({
     ? Number(r.total_qty)
     : null,
 
+  // custo do produto (unidade padrão); null quando a consulta não traz
+  cost_price: r.cost_price != null ? Number(r.cost_price) : null,
+
 });
 
 export const rowToLog = (r) => ({

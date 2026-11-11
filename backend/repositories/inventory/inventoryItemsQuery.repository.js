@@ -33,6 +33,7 @@ export async function listItems(inventory_id) {
       COALESCE(pu.fator,1)
      ) AS total_qty,
       pu.standard,
+      prod.cost_price,
       ${hasLot ? `lot.lot_code, lot.expires_at AS lot_expires_at,` : ''}
       CONCAT_WS(' / ', pl.corredor, pl.prateleira, pl.bandeja, pl.box) AS location_name
       FROM ${TB_ITEMS} it
@@ -41,6 +42,14 @@ export async function listItems(inventory_id) {
       ON pu.product_unit_id = it.product_unit_id
       AND pu.product_code = it.product_code
       AND COALESCE(pu.is_active, TRUE) IS TRUE
+
+     -- Custo do cadastro do produto (por unidade padrão): coluna Custo e total do inventário
+     LEFT JOIN LATERAL (
+       SELECT p.cost_price
+         FROM public.products p
+        WHERE p.product_code = it.product_code
+        LIMIT 1
+     ) prod ON TRUE
 
       ${joinPL}
     ${joinLot}
