@@ -2,8 +2,8 @@
 // ║ rentabilityBudgetsModal.js — Modal de Rentabilidade (CONSART ERP)    ║
 // ║ Layout: modals.css + table.css + fields.css + summary.css (style.css)║
 // ║ - Custo: products.cost_price (por SKU) × fator da U.M (productUnits)  ║
-// ║ - Impostos: alíquotas do cadastro fiscal do produto (productsFiscal  ║
-// ║   + fiscalProfile) via /api/products/tax-map                         ║
+// ║ - Impostos: vínculo fiscal V2 do produto (productsFiscalV2 →         ║
+// ║   classificação → perfil fiscal) via /api/products/tax-map           ║
 // ║   ICMS × (1 − redução BC) + PIS + COFINS + IPI + FCP sobre a receita ║
 // ║ - Lucro = Receita − Custo − Impostos | Margem = Lucro / Receita      ║
 // ║ - Custo unit. e % de impostos editáveis; "Aplicar" guarda os ajustes ║
