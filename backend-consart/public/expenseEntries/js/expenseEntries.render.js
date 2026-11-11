@@ -10,10 +10,13 @@ import {
   canCancel,
   canDelete,
   canPost,
+  dateBR,
+  documentTypeLabel,
   escapeHtml,
+  formatTaxId,
   moneyBR,
-  toISODate,
 } from './expenseEntries.utils.js';
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
 export function renderList(pageSizeFallback = 20) {
   const tbody = $('#tbody');
@@ -33,9 +36,9 @@ export function renderList(pageSizeFallback = 20) {
   if (kpiTotal) kpiTotal.textContent = String(total);
   if (kpiPageSum) kpiPageSum.textContent = moneyBR(pageSum);
   if (tableInfo) {
-    tableInfo.textContent = `${total} registro${total === 1 ? '' : 's'} • : ${moneyBR(pageSum)}`;
+    tableInfo.textContent = `${total} registro${total === 1 ? '' : 's'} • ${moneyBR(pageSum)}`;
   }
-  $('#pageInfo').textContent = `Página ${page} de ${Math.max(1, Math.ceil(total / pageSize))} • ${total} registros`;
+  $('#pageInfo').textContent = `Página ${page} de ${Math.max(1, Math.ceil(total / pageSize))}`;
 
   if (!rows.length) {
     tbody.innerHTML = `
@@ -52,33 +55,47 @@ export function renderList(pageSizeFallback = 20) {
     const id = row.expenseEntryId;
     const document = `${row.documentNumber || '-'}${row.documentSeries ? `/${row.documentSeries}` : ''}`;
     const supplier = row.supplierName || '-';
-    const supplierDocument = row.supplierDocument || '-';
-    const type = (row.documentType || 'NFE').toUpperCase();
-    const postButton = canPost(row.status)
-      ? `<button class="btn btn-new btn-sm" data-act="post" data-id="${id}" type="button">Postar</button>`
-      : '';
-    const editDisabled = String(row.status || '').toUpperCase() === 'POSTED' ? 'disabled' : '';
-    const cancelDisabled = canCancel(row.status) ? '' : 'disabled';
-    const deleteDisabled = canDelete(row.status) ? '' : 'disabled';
+    const supplierDocument = row.supplierDocument ? formatTaxId(row.supplierDocument) : '-';
+    const type = documentTypeLabel(row.documentType);
+    const isPosted = String(row.status || '').toUpperCase() === 'POSTED';
+    const actions = actionIconsHtml([
+      {
+        action: 'confirm',
+        title: canPost(row.status) ? 'Lançar (gera o Contas a Pagar)' : 'Já lançada',
+        disabled: !canPost(row.status),
+        attrs: { 'data-act': 'post', 'data-id': id },
+      },
+      {
+        action: 'edit',
+        title: isPosted ? 'Entrada lançada não pode ser editada' : 'Editar',
+        disabled: isPosted,
+        attrs: { 'data-act': 'edit', 'data-id': id },
+      },
+      {
+        action: 'cancel',
+        title: canCancel(row.status) ? 'Cancelar entrada' : 'Não pode ser cancelada',
+        disabled: !canCancel(row.status),
+        attrs: { 'data-act': 'cancel', 'data-id': id },
+      },
+      {
+        action: 'delete',
+        title: canDelete(row.status) ? 'Excluir' : 'Entrada lançada não pode ser excluída',
+        disabled: !canDelete(row.status),
+        attrs: { 'data-act': 'delete', 'data-id': id },
+      },
+    ]);
 
     return `
       <tr>
         <td>${id}</td>
-        <td>${toISODate(row.issueDate)}</td>
+        <td>${dateBR(row.issueDate)}</td>
         <td>${type}</td>
         <td>${escapeHtml(document)}</td>
         <td title="${escapeHtml(supplier)}">${escapeHtml(supplier)}</td>
         <td>${escapeHtml(supplierDocument)}</td>
         <td class="ee-right">${moneyBR(row.totalExpenseValue)}</td>
         <td>${badge(row.status)}</td>
-        <td>
-          <div class="ee-actions-cell">
-            ${postButton}
-            <button class="btn btn-new btn-sm" data-act="edit" data-id="${id}" type="button" ${editDisabled}>✏️</button>
-            <button class="btn btn-new btn-sm" data-act="cancel" data-id="${id}" type="button" ${cancelDisabled}>Cancelar</button>
-            <button class="btn btn-new btn-sm" data-act="delete" data-id="${id}" type="button" ${deleteDisabled}>🗑️</button>
-          </div>
-        </td>
+        <td>${actions}</td>
       </tr>
     `;
   }).join('');

@@ -11,5 +11,8 @@ export const state = {
   paging: { total: 0, page: 1, pageSize: DEFAULT_PAGE_SIZE },
   rows: [],
   xmlItems: [],
+  pendingFiles: [],
+  savedAttachments: [],
+  cashMovementId: null,
 };
 

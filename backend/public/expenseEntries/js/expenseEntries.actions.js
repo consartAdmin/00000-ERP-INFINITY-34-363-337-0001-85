@@ -13,10 +13,17 @@ import {
   setModalTitle,
 } from './expenseEntries.form.js';
 import { setExpenseEntriesModalOpen } from './expenseEntries.modal.js';
+import { addPendingFiles, loadSavedAttachments, uploadPendingAttachments } from './expenseEntries.attachments.js';
 import { renderList } from './expenseEntries.render.js';
 import { state } from './expenseEntries.state.js';
 import { $, toISODate, toast } from './expenseEntries.utils.js';
 import { validateExpenseEntry } from './expenseEntries.validation.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
+async function confirmCenter({ title, message, okText, variant = 'warning' }) {
+  const answer = await showCenterModal({ variant, title, message, okText, closeText: 'Voltar', timeoutMs: null });
+  return answer === true;
+}
 
 export function readFilters() {
   return {
@@ -80,13 +87,14 @@ export async function openEdit(id) {
     const row = json.data;
     if (!row) return toast('Registro não encontrado', 'error');
     if (String(row.status || '').toUpperCase() === 'POSTED') {
-      return toast('Entrada POSTED não pode ser editada.', 'error');
+      return toast('Entrada lançada não pode ser editada.', 'error');
     }
 
     clearForm();
     fillForm(row);
     setModalTitle(`Editar Entrada #${id}`, 'Atualize os dados e salve');
     setExpenseEntriesModalOpen(true);
+    loadSavedAttachments(id);
   } catch (error) {
     toast(`Erro ao abrir: ${error.message}`, 'error');
   }
@@ -100,46 +108,70 @@ export async function saveCurrent(event) {
     const validation = validateExpenseEntry(payload);
     if (!validation.valid) return toast(validation.errors[0], 'error');
 
-    await http(id ? `${API}/${id}` : API, {
+    const json = await http(id ? `${API}/${id}` : API, {
       method: id ? 'PUT' : 'POST',
       body: payload,
     });
 
+    // Anexos vão para a movimentação do Caixa desta entrada.
+    let attachmentsMessage = '';
+    const savedId = id || Number(json?.data?.expenseEntryId || 0);
+    if (savedId && state.pendingFiles.length) {
+      try {
+        const { sent, failed } = await uploadPendingAttachments(savedId, json?.data?.caixaMovement?.id);
+        attachmentsMessage = failed
+          ? `\n${sent} anexo(s) enviado(s) ao Caixa, ${failed} com erro.`
+          : `\n${sent} anexo(s) enviado(s) ao Caixa.`;
+      } catch (attachmentError) {
+        attachmentsMessage = `\nAnexos não enviados: ${attachmentError.message}`;
+      }
+    }
+
     setExpenseEntriesModalOpen(false);
     await loadList();
-    toast('Salvo com sucesso ✅');
+    toast(`Salvo com sucesso ✅${attachmentsMessage}`);
   } catch (error) {
     toast(`Erro ao salvar: ${error.message}`, 'error');
   }
 }
 
 export async function cancelEntry(id) {
-  if (!window.confirm(`Cancelar a entrada #${id}? (status → CANCELED)`)) return;
+  if (!await confirmCenter({
+    title: 'Cancelar entrada',
+    message: `Deseja cancelar a entrada <b>#${id}</b>?<br><br>A situação passa para <b>Cancelada</b>.`,
+    okText: 'Sim, cancelar',
+  })) return;
   try {
     await http(`${API}/${id}/cancel`, { method: 'PATCH' });
     await loadList();
-    toast('Cancelado ✅');
+    toast('Entrada cancelada ✅');
   } catch (error) {
     toast(`Erro ao cancelar: ${error.message}`, 'error');
   }
 }
 
 export async function deleteEntry(id) {
-  if (!window.confirm(`Excluir PERMANENTEMENTE a entrada #${id}?`)) return;
+  if (!await confirmCenter({
+    title: 'Excluir entrada',
+    message: `Deseja realmente excluir a entrada <b>#${id}</b>?<br><br>Esta operação não poderá ser desfeita.`,
+    okText: 'Sim, excluir',
+  })) return;
   try {
     await http(`${API}/${id}`, { method: 'DELETE' });
     await loadList();
-    toast('Excluído ✅');
+    toast('Entrada excluída ✅');
   } catch (error) {
     toast(`Erro ao excluir: ${error.message}`, 'error');
   }
 }
 
 export async function postEntry(id) {
-  const confirmed = window.confirm(
-    `POSTAR a entrada #${id}?\n\n` +
-    'Isso irá:\n• status → POSTED\n• gerar/atualizar Contas a Pagar\n\nContinuar?',
-  );
+  const confirmed = await confirmCenter({
+    variant: 'info',
+    title: 'Lançar entrada',
+    message: `Lançar a entrada <b>#${id}</b>?<br><br>A situação passa para <b>Lançada</b> e o título é gerado no <b>Contas a Pagar</b>.`,
+    okText: 'Sim, lançar',
+  });
   if (!confirmed) return;
 
   try {
@@ -147,10 +179,10 @@ export async function postEntry(id) {
     const accountsPayable = json?.data?.accountsPayable;
     await loadList();
     toast(accountsPayable?.id
-      ? `Postado ✅ Contas a Pagar gerada (#${accountsPayable.id}) ✅`
-      : 'Postado ✅ Contas a Pagar gerada ✅');
+      ? `Entrada lançada ✅ Contas a Pagar nº ${accountsPayable.id}`
+      : 'Entrada lançada ✅ Contas a Pagar gerado');
   } catch (error) {
-    toast(`Erro ao postar: ${error.message}`, 'error');
+    toast(`Erro ao lançar: ${error.message}`, 'error');
   }
 }
 
@@ -165,6 +197,7 @@ export async function importXmlFile(file) {
 
     clearForm();
     fillForm(entryDraft);
+    addPendingFiles([file]);
     state.xmlItems = items;
     renderItemsPreview(items);
     setModalTitle('Nova Entrada (via XML)', `XML importado: ${file.name} • Itens: ${items.length}`);
@@ -192,7 +225,10 @@ export function clearFilters() {
   $('#fSupplierDoc').value = '';
   $('#fDateFrom').value = '';
   $('#fDateTo').value = '';
+  const dateRange = $('#fDateRange');
+  if (dateRange && typeof dateRange.clear === 'function') dateRange.clear();
   $('#fOrderBy').value = DEFAULT_ORDER_BY;
+  state.sortable?.setSort?.('issueDate', 'desc', { notify: false });
   $('#pageSize').value = String(DEFAULT_PAGE_SIZE);
   state.page = 1;
   return loadList();
