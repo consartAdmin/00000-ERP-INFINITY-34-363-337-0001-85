@@ -56,8 +56,8 @@ async function loadProfiles(ids) {
   try {
     const { rows } = await pool.query(
       `SELECT to_jsonb(fp) AS fp FROM public."fiscalProfile" fp
-        WHERE fp.fiscal_profile_id = ANY($1::int[])`,
-      [ids],
+        WHERE (to_jsonb(fp)->>'fiscal_profile_id') = ANY($1::text[])`,
+      [ids.map(String)],
     );
     return Object.fromEntries(rows.map((r) => [String(r.fp.fiscal_profile_id), r.fp]));
   } catch (err) {
@@ -73,37 +73,50 @@ export async function getTaxMap(req, res) {
 
     if (!codes.length) return res.json({ ok: true, data: {} });
 
-    // 1) productsFiscal por product_code
-    const { rows } = await pool.query(
-      `SELECT TRIM(pf.product_code::text) AS code, to_jsonb(pf) AS pf
-         FROM public."productsFiscal" pf
-        WHERE TRIM(pf.product_code::text) = ANY($1::text[])`,
-      [codes],
-    );
-
     const best = {};
-    for (const r of rows) {
-      if (!best[r.code] || better(r.pf, best[r.code])) best[r.code] = r.pf;
-    }
+    const errors = [];
+    const keep = (code, pf) => {
+      if (!code || !pf) return;
+      if (!best[code] || better(pf, best[code])) best[code] = pf;
+    };
+    // cada consulta é independente: se uma falhar (coluna/tabela ausente) as outras seguem
+    const tryQuery = async (label, sql, params) => {
+      try {
+        const { rows } = await pool.query(sql, params);
+        return rows;
+      } catch (err) {
+        errors.push(`${label}: ${err.message}`);
+        console.warn(`[products][tax-map] ${label}:`, err.message);
+        return [];
+      }
+    };
 
-    // 2) produtos sem linha por product_code: tenta products.products_fiscal_id
+    // 1) productsFiscal.product_code
+    for (const r of await tryQuery(
+      'productsFiscal.product_code',
+      `SELECT TRIM(to_jsonb(pf)->>'product_code') AS code, to_jsonb(pf) AS pf
+         FROM public."productsFiscal" pf
+        WHERE TRIM(to_jsonb(pf)->>'product_code') = ANY($1::text[])`,
+      [codes],
+    )) keep(r.code, r.pf);
+
+    // 2) productsFiscal.product_id ou products.products_fiscal_id
     const missing = codes.filter((c) => !best[c]);
     if (missing.length) {
-      try {
-        const { rows: viaId } = await pool.query(
-          `SELECT TRIM(p.product_code::text) AS code, to_jsonb(pf) AS pf
-             FROM public."products" p
-             JOIN public."productsFiscal" pf
-               ON pf.products_fiscal_id = (to_jsonb(p)->>'products_fiscal_id')::int
-            WHERE TRIM(p.product_code::text) = ANY($1::text[])`,
-          [missing],
-        );
-        for (const r of viaId) {
-          if (!best[r.code] || better(r.pf, best[r.code])) best[r.code] = r.pf;
-        }
-      } catch (err) {
-        console.warn('[products][tax-map] fallback products_fiscal_id:', err.message);
-      }
+      for (const r of await tryQuery(
+        'products ↔ productsFiscal',
+        `SELECT TRIM(p.product_code::text) AS code, to_jsonb(pf) AS pf
+           FROM public."products" p
+           JOIN public."productsFiscal" pf
+             ON (to_jsonb(pf)->>'product_id') = (to_jsonb(p)->>'product_id')
+             OR (to_jsonb(pf)->>'products_fiscal_id') = (to_jsonb(p)->>'products_fiscal_id')
+          WHERE TRIM(p.product_code::text) = ANY($1::text[])`,
+        [missing],
+      )) keep(r.code, r.pf);
+    }
+
+    if (!Object.keys(best).length && errors.length) {
+      return res.status(500).json({ ok: false, error: `Erro ao buscar impostos dos produtos: ${errors.join(' | ')}` });
     }
 
     const profileIds = [...new Set(Object.values(best)
