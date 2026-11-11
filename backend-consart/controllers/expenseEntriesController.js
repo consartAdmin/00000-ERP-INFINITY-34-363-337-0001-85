@@ -50,7 +50,33 @@ async function findCashMovementIdForEntry(expenseEntryId) {
   return rows[0]?.id || null;
 }
 
-async function ensureCaixaMovementFromExpenseEntry({ expenseEntry }) {
+// Plano de contas / Categoria / Subcategoria escolhidos no modal (vão para o Caixa)
+function readClassification(body = {}) {
+  const c = body?.cashClassification;
+  if (!c || typeof c !== 'object') return null;
+  const chartId = Number(c.chart_account_id);
+  const text = (v) => {
+    const t = String(v ?? '').trim();
+    return t || null;
+  };
+  return {
+    chart_account_id: Number.isInteger(chartId) && chartId > 0 ? chartId : null,
+    categoria: text(c.categoria),
+    subcategoria: text(c.subcategoria),
+  };
+}
+
+async function applyClassificationToMovement(movementId, classification) {
+  if (!movementId || !classification) return;
+  await pool.query(
+    `UPDATE "cashMoviments"
+        SET category = $2, subcategory = $3, chart_account_id = $4
+      WHERE id = $1`,
+    [Number(movementId), classification.categoria, classification.subcategoria, classification.chart_account_id]
+  );
+}
+
+async function ensureCaixaMovementFromExpenseEntry({ expenseEntry, classification = null }) {
   if (!expenseEntry?.expenseEntryId) {
     throw new Error('expenseEntryId não encontrado para lançar no Caixa.');
   }
@@ -82,8 +108,9 @@ async function ensureCaixaMovementFromExpenseEntry({ expenseEntry }) {
     multa: 0,
     juros: 0,
     encargos: 0,
-    categoria: null,
-    subcategoria: null,
+    categoria: classification?.categoria ?? null,
+    subcategoria: classification?.subcategoria ?? null,
+    chart_account_id: classification?.chart_account_id ?? null,
     is_active: true,
   });
 }
@@ -137,9 +164,13 @@ export const expenseEntriesController = {
       let caixaMovement = null;
 
       try {
+        const classification = readClassification(req.body);
         caixaMovement = await ensureCaixaMovementFromExpenseEntry({
           expenseEntry: created,
+          classification,
         });
+        // Se a movimentação já existia, aplica a classificação escolhida
+        await applyClassificationToMovement(caixaMovement?.id, classification);
 
         console.log('[expenseEntries][CAIXA][AUTO_CREATED]', {
           expenseEntryId: created?.expenseEntryId,
@@ -180,6 +211,19 @@ export const expenseEntriesController = {
       });
 
       if (!updated) return fail(res, 404, 'Not found');
+
+      // Plano de contas / Categoria / Subcategoria → movimentação do Caixa
+      const classification = readClassification(req.body);
+      if (classification) {
+        try {
+          const movement = await ensureCaixaMovementFromExpenseEntry({ expenseEntry: updated, classification });
+          await applyClassificationToMovement(movement?.id, classification);
+        } catch (caixaError) {
+          console.error('[expenseEntries][CAIXA][CLASSIFICATION]', caixaError);
+          return ok(res, updated, { warning: 'Entrada salva, mas a classificação não foi gravada no Caixa.' });
+        }
+      }
+
       return ok(res, updated);
     } catch (e) {
       console.error('[expenseEntries] update error', e);
@@ -249,7 +293,17 @@ export const expenseEntriesController = {
       const expenseEntryId = Number(req.params.id);
       if (!expenseEntryId) return fail(res, 400, 'Invalid id');
       const id = await findCashMovementIdForEntry(expenseEntryId);
-      return ok(res, { id });
+      const movement = id ? await caixaApi.getMovementById(id) : null;
+      return ok(res, {
+        id,
+        movement: movement ? {
+          chart_account_id: movement.chart_account_id ?? null,
+          chart_account_code: movement.chart_account_code ?? null,
+          chart_account_description: movement.chart_account_description ?? null,
+          category: movement.categoria_nome ?? movement.category ?? movement.categoria ?? null,
+          subcategory: movement.subcategoria_nome ?? movement.subcategory ?? movement.subcategoria ?? null,
+        } : null,
+      });
     } catch (e) {
       console.error('[expenseEntries] getCashMovement error', e);
       return fail(res, 500, e.message || 'Internal error');

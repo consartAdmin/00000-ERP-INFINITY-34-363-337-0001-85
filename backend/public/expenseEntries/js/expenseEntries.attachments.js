@@ -87,6 +87,7 @@ export async function loadSavedAttachments(expenseEntryId) {
   try {
     const json = await http(`${API}/${expenseEntryId}/cash-movement`);
     state.cashMovementId = json?.data?.id || null;
+    state.cashMovement = json?.data?.movement || null;
     state.savedAttachments = state.cashMovementId ? await fetchSavedAttachments(state.cashMovementId) : [];
   } catch (error) {
     state.savedAttachments = [];
