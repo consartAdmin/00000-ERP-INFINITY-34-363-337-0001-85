@@ -956,6 +956,28 @@ export async function deleteItem(els, inventoryItemId) {
 /* ──────────────────────────────────────────────────────────────
    Products Modal Search
 ────────────────────────────────────────────────────────────── */
+function selectPickedUnit(els, { productUnitId, barcode, unit } = {}) {
+  const el = els.itemUnit;
+  if (!el || el.tagName !== 'SELECT') return false;
+
+  const options = Array.from(el.options).filter((o) => String(o.value || '').trim());
+  const byId = productUnitId != null && productUnitId !== ''
+    ? options.find((o) => o.dataset.productUnitId === String(productUnitId))
+    : null;
+  const byBarcode = !byId && barcode
+    ? options.find((o) => o.dataset.barcode && o.dataset.barcode === String(barcode))
+    : null;
+  const wanted = normalizeUnitText(unit);
+  const byUnit = !byId && !byBarcode && wanted
+    ? options.find((o) => normalizeUnitText(o.dataset.unit) === wanted)
+    : null;
+
+  const opt = byId || byBarcode || byUnit;
+  if (!opt) return false;
+  el.value = opt.value;
+  return true;
+}
+
 export function openProductSearchModal(els) {
   try {
     openProductsModalSearch({
@@ -986,6 +1008,14 @@ export function openProductSearchModal(els) {
           const sku = String(code || '').trim();
 
           await setItemProductDisplayAndCode(els, sku, name || '');
+
+          // Unidade escolhida na busca (ex.: linha CX.12 / código de barras da
+          // unidade alternativa) já vem selecionada, em vez da unidade padrão.
+          selectPickedUnit(els, {
+            productUnitId: product.product_unit_id,
+            barcode: product.barcode ?? product.matched_barcode,
+            unit: unitInicial,
+          });
 
           // ✅ força foco no lote após o modal fechar e após renderizar o select
           setTimeout(() => {
