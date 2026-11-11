@@ -185,167 +185,157 @@
     </section>
   </main>
 
-  <!-- Modal -->
+  <!-- Modal Nova / Editar Entrada (modals.css + modal.js) -->
   <div class="modal" id="modal" aria-hidden="true">
     <div class="modal__backdrop" data-close="1"></div>
 
     <div class="modal__dialog">
-      <div class="modal__panel modal__panel--lg" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <header class="modal__header">
+      <div class="modal__panel modal-width-12 modal-height-12" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal__header modal-header-color-3">
           <div>
-            <h2 id="modalTitle">Nova Entrada</h2>
+            <h2 id="modalTitle" class="modal__title">Nova Entrada</h2>
             <p class="ee-muted" id="modalSub">Preencha os dados da despesa/nota</p>
           </div>
-          <button class="ee-x" type="button" data-close="1" title="Fechar">✕</button>
-        </header>
+          <button class="modal__close" type="button" data-close="1" aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
 
-        <form class="modal__body" id="form">
-          <input type="hidden" id="expenseEntryId" />
+        <form id="form" autocomplete="off" style="display:flex; flex:1 1 auto; min-height:0; flex-direction:column;">
+          <div class="modal__body modal-section">
+            <input type="hidden" id="expenseEntryId" />
+            <!-- Campos técnicos mantidos para não perder valores já gravados -->
+            <input type="hidden" id="costCenterId" />
+            <input type="hidden" id="xmlPath" />
+            <input type="hidden" id="pdfPath" />
+            <input type="hidden" id="fiscalStatus" value="NO_CREDIT" />
 
-          <div class="fields-inline fields-gap-3">
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Document Type</label>
-              <select id="documentType">
-                <option value="NFE" selected>NF-e</option>
-                <option value="NFCE">NFC-e</option>
-                <option value="MANUAL">MANUAL</option>
-              </select>
+            <h3 class="section__title">Documento</h3>
+            <div class="modal-form-grid modal-form-grid--6">
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="documentType">Tipo de documento</label>
+                <select id="documentType">
+                  <option value="NFE" selected>NF-e</option>
+                  <option value="NFCE">NFC-e</option>
+                  <option value="MANUAL">Manual</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="documentNumber">Número</label>
+                <input id="documentNumber" type="text" placeholder="Ex.: 12345" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="documentSeries">Série</label>
+                <input id="documentSeries" type="text" placeholder="Ex.: 1" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="issueDate">Data de emissão *</label>
+                <input id="issueDate" type="date" required />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="entryDate">Data de entrada</label>
+                <input id="entryDate" type="date" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="status">Situação</label>
+                <select id="status">
+                  <option value="OPEN" selected>Aberta</option>
+                  <option value="POSTED">Lançada</option>
+                  <option value="CANCELED">Cancelada</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3 modal-field--span-full">
+                <label for="documentKey">Chave de acesso (NF-e)</label>
+                <input id="documentKey" type="text" maxlength="44" placeholder="44 dígitos (opcional)" />
+              </div>
             </div>
 
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Issue Date</label>
-              <input id="issueDate" type="date" required />
+            <div class="modal-divider--soft"></div>
+
+            <h3 class="section__title">Fornecedor</h3>
+            <div class="modal-form-grid modal-form-grid--6">
+              <div class="fields fields-w-full fields-h-6 fields-font-3 modal-field--span-4">
+                <label for="supplierName">Razão social / Nome</label>
+                <input id="supplierName" type="text" placeholder="Posto / Fornecedor..." />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3 modal-field--span-2">
+                <label for="supplierDocument">CNPJ / CPF</label>
+                <input id="supplierDocument" type="text" placeholder="Somente números" />
+              </div>
             </div>
 
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Entry Date</label>
-              <input id="entryDate" type="date" />
+            <div class="modal-divider--soft"></div>
+
+            <h3 class="section__title">Valores</h3>
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="totalProductsValue">Total dos produtos (R$)</label>
+                <input id="totalProductsValue" type="number" step="0.01" value="0" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="totalDiscountValue">Desconto (R$)</label>
+                <input id="totalDiscountValue" type="number" step="0.01" value="0" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="totalTaxValue">Impostos (R$)</label>
+                <input id="totalTaxValue" type="number" step="0.01" value="0" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="totalExpenseValue">Total da despesa (R$)</label>
+                <input id="totalExpenseValue" type="number" step="0.01" value="0" />
+              </div>
             </div>
 
-            <div class="fields fields-h-6 fields-w-5 fields-font-3">
-              <label>Status</label>
-              <select id="status">
-                <option value="OPEN" selected>OPEN</option>
-                <option value="POSTED">POSTED</option>
-                <option value="CANCELED">CANCELED</option>
-              </select>
+            <div class="modal-divider--soft"></div>
+
+            <h3 class="section__title">Classificação</h3>
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="vehicleId">Veículo (combustível)</label>
+                <select id="vehicleId">
+                  <option value="">Nenhum</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="taxCreditOption">Crédito de impostos</label>
+                <select id="taxCreditOption">
+                  <option value="0" selected>Não gera crédito</option>
+                  <option value="1">Gera crédito</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-font-3 modal-field--span-2">
+                <label for="notes">Observações</label>
+                <textarea id="notes" rows="2" placeholder="Observações..."></textarea>
+              </div>
             </div>
 
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Document Number</label>
-              <input id="documentNumber" type="text" placeholder="Ex: 12345" />
-            </div>
+            <!-- Itens do XML -->
+            <section id="itemsSection" class="modal-section" style="display:none;">
+              <div class="modal-divider--soft"></div>
+              <div class="section__header section-justify-between">
+                <h3 class="section__title">Itens da nota</h3>
+                <span class="ee-muted" id="itemsHint"></span>
+              </div>
 
-            <div class="fields fields-h-6 fields-w-5 fields-font-3">
-              <label>Series</label>
-              <input id="documentSeries" type="text" placeholder="Ex: 1" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-20 fields-font-3">
-              <label>Document Key (NF-e)</label>
-              <input id="documentKey" type="text" placeholder="44 dígitos (opcional)" />
-            </div>
+              <div class="table-scroll table-height-200 table-row-h-28" data-table-settings="expenseentries.itemstbody">
+                <table class="table table-zebra table-zebra-hover table-sticky-head">
+                  <thead>
+                    <tr>
+                      <th style="width:120px">Código</th>
+                      <th>Descrição</th>
+                      <th style="width:90px">Unidade</th>
+                      <th style="width:110px" class="ee-right">Quantidade</th>
+                      <th style="width:130px" class="ee-right">Valor unitário</th>
+                      <th style="width:140px" class="ee-right">Valor total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="itemsTbody"></tbody>
+                </table>
+              </div>
+            </section>
           </div>
-
-          <div class="fields-inline fields-gap-3">
-            <div class="fields fields-h-6 fields-w-20 fields-font-3">
-              <label>Supplier Name</label>
-              <input id="supplierName" type="text" placeholder="Posto / Fornecedor..." />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-18 fields-font-3">
-              <label>Supplier Document (CNPJ/CPF)</label>
-              <input id="supplierDocument" type="text" placeholder="Somente números..." />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Total Products</label>
-              <input id="totalProductsValue" type="number" step="0.01" value="0" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Total Discount</label>
-              <input id="totalDiscountValue" type="number" step="0.01" value="0" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Total Taxes</label>
-              <input id="totalTaxValue" type="number" step="0.01" value="0" />
-            </div>
-          </div>
-
-          <div class="fields-inline fields-gap-3">
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Total Expense</label>
-              <input id="totalExpenseValue" type="number" step="0.01" value="0" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Cost Center Id</label>
-              <input id="costCenterId" type="number" step="1" placeholder="opcional" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Vehicle Id</label>
-              <input id="vehicleId" type="number" step="1" placeholder="opcional (combustível)" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Notes</label>
-              <textarea id="notes" rows="3" placeholder="Observações..."></textarea>
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>XML Path</label>
-              <input id="xmlPath" type="text" placeholder="(opcional) caminho no servidor" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>PDF Path</label>
-              <input id="pdfPath" type="text" placeholder="(opcional) caminho no servidor" />
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label class="ee-row ee-row-center">
-                <input id="generatesTaxCredit" type="checkbox" />
-                <span>Generates Tax Credit</span>
-              </label>
-            </div>
-
-            <div class="fields fields-h-6 fields-w-8 fields-font-3">
-              <label>Fiscal Status</label>
-              <input id="fiscalStatus" type="text" value="NO_CREDIT" />
-            </div>
-          </div>
-
-          <!-- XML Items preview -->
-          <section class="ee-items" id="itemsSection" style="display:none;">
-            <div class="ee-items-head">
-              <h3>Itens do XML (preview)</h3>
-              <span class="ee-muted" id="itemsHint"></span>
-            </div>
-
-            <div class="table-scroll table-height-400 table-row-h-28" data-table-settings="expenseentries.itemstbody">
-
-              <table class="table table-zebra table-zebra-hover table-sticky-head">
-                <thead>
-                  <tr>
-                    <th style="width:120px">SKU</th>
-                    <th>Descrição</th>
-                    <th style="width:90px">Unid.</th>
-                    <th style="width:110px" class="ee-right">Qtd</th>
-                    <th style="width:130px" class="ee-right">V.Unit</th>
-                    <th style="width:140px" class="ee-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody id="itemsTbody"></tbody>
-              </table>
-            </div>
-          </section>
 
           <footer class="modal__footer">
-            <button type="button" class="btn btn-new btn-sm" data-close="1">Fechar</button>
-            <button type="submit" class="btn btn-new btn-sm" id="btnSave">Salvar</button>
+            <button type="button" class="btn btn-toolbar btn-sm" data-close="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Fechar</span></button>
+            <button type="submit" class="btn btn-new btn-sm" id="btnSave"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
           </footer>
         </form>
       </div>

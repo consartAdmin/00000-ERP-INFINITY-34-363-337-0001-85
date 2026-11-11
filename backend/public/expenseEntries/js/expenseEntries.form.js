@@ -5,6 +5,41 @@
 
 import { state } from './expenseEntries.state.js';
 import { $, escapeHtml, moneyBR, toISODate } from './expenseEntries.utils.js';
+import { apiBase } from './expenseEntries.config.js';
+
+// Veículos (frota de Entregas) para o select "Veículo (combustível)".
+export async function loadVehicleOptions() {
+  const select = $('#vehicleId');
+  if (!select) return;
+  try {
+    const response = await fetch(`${apiBase}/api/delivery-trips/vehicles`);
+    const json = await response.json().catch(() => null);
+    const rows = Array.isArray(json) ? json : (json?.data || []);
+    const current = select.value;
+    select.innerHTML = '<option value="">Nenhum</option>' + rows.map((v) => {
+      const label = [v.plate, v.description || v.brand].filter(Boolean).join(' • ');
+      const inactive = v.is_active === false ? ' (inativo)' : '';
+      return `<option value="${escapeHtml(v.vehicle_id)}">${escapeHtml(label || `Veículo ${v.vehicle_id}`)}${inactive}</option>`;
+    }).join('');
+    setVehicleValue(current);
+  } catch {
+    // Sem frota cadastrada: o select fica só com "Nenhum".
+  }
+}
+
+// Garante que um veículo gravado continue visível mesmo se não estiver na lista.
+function setVehicleValue(id) {
+  const select = $('#vehicleId');
+  const value = id === null || id === undefined ? '' : String(id);
+  if (value && ![...select.options].some((o) => o.value === value)) {
+    select.add(new Option(`Veículo ${value}`, value));
+  }
+  select.value = value;
+}
+
+function setTaxCredit(on) {
+  $('#taxCreditOption').value = on ? '1' : '0';
+}
 
 export function setModalTitle(title, subtitle = '') {
   $('#modalTitle').textContent = title;
@@ -62,11 +97,11 @@ export function clearForm() {
   $('#totalTaxValue').value = 0;
   $('#totalExpenseValue').value = 0;
   $('#costCenterId').value = '';
-  $('#vehicleId').value = '';
+  setVehicleValue('');
   $('#notes').value = '';
   $('#xmlPath').value = '';
   $('#pdfPath').value = '';
-  $('#generatesTaxCredit').checked = false;
+  setTaxCredit(false);
   $('#fiscalStatus').value = 'NO_CREDIT';
 
   state.xmlItems = [];
@@ -89,11 +124,11 @@ export function fillForm(row = {}) {
   $('#totalTaxValue').value = Number(row.totalTaxValue || 0);
   $('#totalExpenseValue').value = Number(row.totalExpenseValue || 0);
   $('#costCenterId').value = row.costCenterId ?? '';
-  $('#vehicleId').value = row.vehicleId ?? '';
+  setVehicleValue(row.vehicleId ?? '');
   $('#notes').value = row.notes ?? '';
   $('#xmlPath').value = row.xmlPath ?? '';
   $('#pdfPath').value = row.pdfPath ?? '';
-  $('#generatesTaxCredit').checked = Boolean(row.generatesTaxCredit);
+  setTaxCredit(row.generatesTaxCredit);
   $('#fiscalStatus').value = row.fiscalStatus ?? 'NO_CREDIT';
 }
 
@@ -117,7 +152,7 @@ export function readForm() {
     notes: $('#notes').value.trim() || null,
     xmlPath: $('#xmlPath').value.trim() || null,
     pdfPath: $('#pdfPath').value.trim() || null,
-    generatesTaxCredit: $('#generatesTaxCredit').checked,
+    generatesTaxCredit: $('#taxCreditOption').value === '1',
     fiscalStatus: $('#fiscalStatus').value.trim() || 'NO_CREDIT',
   };
 }
