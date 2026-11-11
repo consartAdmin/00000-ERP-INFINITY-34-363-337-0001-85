@@ -39,6 +39,7 @@ import {
 
 import { loadLogs, renderLogsTable, clearLogFilters } from './inventory.logs.js';
 import { focusProductField } from './inventory.utils.js';
+import { bindQuickCreate } from './inventory.quickCreate.js';
 
 /* ──────────────────────────────────────────────────────────────
    Helpers
@@ -487,6 +488,9 @@ function bindEvents(els) {
   });
 
   bindItemsTableActions(els);
+
+  // "+" ao lado de Unidade / Localização / Lote: cadastro rápido sem sair da tela
+  bindQuickCreate(els);
 
   return {
     handleSaveInventory,
