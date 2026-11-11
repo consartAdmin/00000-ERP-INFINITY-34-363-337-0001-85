@@ -1,8 +1,9 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ productsTaxMapController.js — alíquotas de venda por SKU (ESM)       ║
 // ║ Usado pelo modal Rentabilidade do Orçamento (public/budgets).        ║
-// ║ Fonte: productsFiscal (registro atual do produto) com fallback no    ║
-// ║ fiscalProfile, igual ao motor salesTaxCalculationService.            ║
+// ║ Fonte principal (V2): productsFiscalV2 → fiscalClassificationV2 →    ║
+// ║ fiscalProfileV2 (vínculo atual e ativo do produto).                  ║
+// ║ Fallback: tabelas legadas productsFiscal / fiscalProfile, se houver. ║
 // ║ Lê as linhas com to_jsonb(...) para não depender de colunas que      ║
 // ║ podem não existir em todos os bancos (Infinity / CONSART).           ║
 // ║                                                                      ║
@@ -56,8 +57,8 @@ async function loadProfiles(ids) {
   try {
     const { rows } = await pool.query(
       `SELECT to_jsonb(fp) AS fp FROM public."fiscalProfile" fp
-        WHERE fp.fiscal_profile_id = ANY($1::int[])`,
-      [ids],
+        WHERE (to_jsonb(fp)->>'fiscal_profile_id') = ANY($1::text[])`,
+      [ids.map(String)],
     );
     return Object.fromEntries(rows.map((r) => [String(r.fp.fiscal_profile_id), r.fp]));
   } catch (err) {
@@ -73,37 +74,87 @@ export async function getTaxMap(req, res) {
 
     if (!codes.length) return res.json({ ok: true, data: {} });
 
-    // 1) productsFiscal por product_code
-    const { rows } = await pool.query(
-      `SELECT TRIM(pf.product_code::text) AS code, to_jsonb(pf) AS pf
-         FROM public."productsFiscal" pf
-        WHERE TRIM(pf.product_code::text) = ANY($1::text[])`,
-      [codes],
-    );
-
     const best = {};
-    for (const r of rows) {
-      if (!best[r.code] || better(r.pf, best[r.code])) best[r.code] = r.pf;
+    const errors = [];
+    const keep = (code, pf) => {
+      if (!code || !pf) return;
+      if (!best[code] || better(pf, best[code])) best[code] = pf;
+    };
+    // cada consulta é independente: se uma falhar (coluna/tabela ausente) as outras seguem
+    const tryQuery = async (label, sql, params) => {
+      try {
+        const { rows } = await pool.query(sql, params);
+        return rows;
+      } catch (err) {
+        errors.push(`${label}: ${err.message}`);
+        console.warn(`[products][tax-map] ${label}:`, err.message);
+        return [];
+      }
+    };
+
+    const data = {};
+
+    // 0) V2: productsFiscalV2 → fiscalClassificationV2 → fiscalProfileV2
+    for (const r of await tryQuery(
+      'productsFiscalV2',
+      `SELECT TRIM(pf.product_code::text) AS code, to_jsonb(fc) AS fc, to_jsonb(fp) AS fp
+         FROM public."productsFiscalV2" pf
+         JOIN public."fiscalClassificationV2" fc
+           ON fc.fiscal_classification_id = pf.fiscal_classification_id
+         LEFT JOIN public."fiscalProfileV2" fp
+           ON fp.fiscal_profile_id = fc.fiscal_profile_id
+        WHERE TRIM(pf.product_code::text) = ANY($1::text[])
+          AND pf.is_current = true
+          AND pf.is_active = true`,
+      [codes],
+    )) {
+      const fc = r.fc || {};
+      const fp = r.fp || {};
+      const basePct = isNum(fp.icms_base_pct) ? Number(fp.icms_base_pct) : 100;
+      data[r.code] = {
+        icms: pickNum(fp.icms_rate),
+        reducao_bc: Math.max(0, 100 - basePct),
+        pis: pickNum(fp.pis_rate),
+        cofins: pickNum(fp.cofins_rate),
+        ipi: pickNum(fp.ipi_rate),
+        fcp: 0,
+        profile_name: pickStr(fp.profile_name, fc.classification_name),
+        ncm: pickStr(fc.ncm_code),
+        cst: pickStr(fp.icms_cst),
+      };
     }
 
-    // 2) produtos sem linha por product_code: tenta products.products_fiscal_id
-    const missing = codes.filter((c) => !best[c]);
+    // Legado: só para produtos sem vínculo V2
+    const legacyCodes = codes.filter((c) => !data[c]);
+    if (!legacyCodes.length) return res.json({ ok: true, data });
+
+    // 1) productsFiscal.product_code
+    for (const r of await tryQuery(
+      'productsFiscal.product_code',
+      `SELECT TRIM(to_jsonb(pf)->>'product_code') AS code, to_jsonb(pf) AS pf
+         FROM public."productsFiscal" pf
+        WHERE TRIM(to_jsonb(pf)->>'product_code') = ANY($1::text[])`,
+      [legacyCodes],
+    )) keep(r.code, r.pf);
+
+    // 2) productsFiscal.product_id ou products.products_fiscal_id
+    const missing = legacyCodes.filter((c) => !best[c]);
     if (missing.length) {
-      try {
-        const { rows: viaId } = await pool.query(
-          `SELECT TRIM(p.product_code::text) AS code, to_jsonb(pf) AS pf
-             FROM public."products" p
-             JOIN public."productsFiscal" pf
-               ON pf.products_fiscal_id = (to_jsonb(p)->>'products_fiscal_id')::int
-            WHERE TRIM(p.product_code::text) = ANY($1::text[])`,
-          [missing],
-        );
-        for (const r of viaId) {
-          if (!best[r.code] || better(r.pf, best[r.code])) best[r.code] = r.pf;
-        }
-      } catch (err) {
-        console.warn('[products][tax-map] fallback products_fiscal_id:', err.message);
-      }
+      for (const r of await tryQuery(
+        'products ↔ productsFiscal',
+        `SELECT TRIM(p.product_code::text) AS code, to_jsonb(pf) AS pf
+           FROM public."products" p
+           JOIN public."productsFiscal" pf
+             ON (to_jsonb(pf)->>'product_id') = (to_jsonb(p)->>'product_id')
+             OR (to_jsonb(pf)->>'products_fiscal_id') = (to_jsonb(p)->>'products_fiscal_id')
+          WHERE TRIM(p.product_code::text) = ANY($1::text[])`,
+        [missing],
+      )) keep(r.code, r.pf);
+    }
+
+    // erro só se nada carregou (nem V2 nem legado)
+    if (!Object.keys(best).length && !Object.keys(data).length && errors.length >= 3) {
+      return res.status(500).json({ ok: false, error: `Erro ao buscar impostos dos produtos: ${errors.join(' | ')}` });
     }
 
     const profileIds = [...new Set(Object.values(best)
@@ -111,7 +162,6 @@ export async function getTaxMap(req, res) {
       .filter((n) => Number.isInteger(n) && n > 0))];
     const profiles = await loadProfiles(profileIds);
 
-    const data = {};
     for (const [code, pf] of Object.entries(best)) {
       const fp = profiles[String(pf.fiscal_profile_id)] || {};
       data[code] = {
