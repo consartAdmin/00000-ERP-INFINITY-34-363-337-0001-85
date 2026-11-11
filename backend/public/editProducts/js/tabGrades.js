@@ -7,6 +7,7 @@
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 
@@ -280,7 +281,13 @@ export async function initGradesTab(ctx, { productId, productCode } = {}) {
   }
 
   async function removeGrade(product_grade_id) {
-    if (!confirm('Remover esta grade do produto?')) return;
+    if ((await showCenterModal({
+      variant: 'warning',
+      title: 'Remover grade',
+      message: 'Deseja remover esta grade do produto?<br><br>Esta operação não poderá ser desfeita.',
+      okText: 'Sim, remover',
+      closeText: 'Cancelar',
+    })) !== true) return;
     await GradesApi.remove(product_grade_id);
     ctx.toast('🗑️ Grade removida do produto.', 'success');
     await loadProductGrades();

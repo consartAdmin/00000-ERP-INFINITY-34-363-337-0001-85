@@ -8,6 +8,7 @@
 // ║ ✅ Principal por unidade / remoção                                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 'use strict';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 import {
   listProductImages,
@@ -277,7 +278,7 @@ export function initProductImages(ctx, { productCode } = {}) {
     }
   });
 
-  gallery.addEventListener('click', (event) => {
+  gallery.addEventListener('click', async (event) => {
     const button = event.target.closest('button[data-action]');
     if (!button || busy) return;
     const imageId = Number(button.closest('[data-image-id]')?.dataset.imageId);
@@ -286,7 +287,13 @@ export function initProductImages(ctx, { productCode } = {}) {
     if (button.dataset.action === 'primary') {
       mutate(() => setPrimaryProductImage(code, imageId), '✅ Imagem principal atualizada.');
     } else if (button.dataset.action === 'delete') {
-      if (!window.confirm('Remover esta imagem do produto?')) return;
+      if ((await showCenterModal({
+        variant: 'warning',
+        title: 'Remover imagem',
+        message: 'Deseja remover esta imagem do produto?<br><br>Esta operação não poderá ser desfeita.',
+        okText: 'Sim, remover',
+        closeText: 'Cancelar',
+      })) !== true) return;
       mutate(() => deleteProductImage(imageId), '✅ Imagem removida.');
     }
   });
