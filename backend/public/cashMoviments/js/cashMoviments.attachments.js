@@ -6,6 +6,7 @@
 
 import { API, PATH_MOV } from './cashMoviments.config.js';
 import { LE, badgeAnexo } from './cashMoviments.utils.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 export async function atualizarBadgeAnexo(movId, cellEl) {
   if (!cellEl) return;
@@ -60,7 +61,15 @@ export async function carregarAnexosEdicao(dom, movId) {
       const btn = ev.target.closest('button[data-del]');
       if (!btn) return;
 
-      if (!confirm('Excluir este anexo?')) return;
+      const ok = await showCenterModal({
+        variant: 'warning',
+        title: 'Excluir anexo',
+        message: 'Deseja realmente excluir este anexo?',
+        okText: 'Sim, excluir',
+        closeText: 'Cancelar',
+        timeoutMs: null,
+      });
+      if (ok !== true) return;
 
       const anexoId = btn.dataset.del;
       const bucketPath = btn.dataset.path || '';

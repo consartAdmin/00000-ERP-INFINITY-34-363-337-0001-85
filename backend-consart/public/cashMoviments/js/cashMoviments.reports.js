@@ -6,6 +6,7 @@
 
 import { API, PATH_MOV } from './cashMoviments.config.js';
 import { buildQueryFromFilters, getPeriodo } from './cashMoviments.filters.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 export async function onAbrirRelatorioPdf(dom) {
   try {
@@ -32,12 +33,15 @@ export async function onBaixarZipPeriodo(dom) {
     const { startDate: d1, endDate: d2 } = getPeriodo(dom);
 
     if (!d1 || !d2) {
-      const seguir = confirm(
-        'Você não definiu um período "De/Até".\n' +
-        'O sistema pode tentar baixar anexos de TODOS os lançamentos.\n\n' +
-        'Deseja continuar mesmo assim?'
-      );
-      if (!seguir) return;
+      const seguir = await showCenterModal({
+        variant: 'warning',
+        title: 'Período não definido',
+        message: 'Sem período "De/Até", o ZIP pode juntar os anexos de <b>todos</b> os lançamentos. Deseja continuar?',
+        okText: 'Continuar',
+        closeText: 'Cancelar',
+        timeoutMs: null,
+      });
+      if (seguir !== true) return;
     }
 
     const params = buildQueryFromFilters(dom);

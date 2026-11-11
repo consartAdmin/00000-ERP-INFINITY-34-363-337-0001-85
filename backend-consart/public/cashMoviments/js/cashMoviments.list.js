@@ -15,6 +15,11 @@ import {
 } from './cashMoviments.utils.js';
 
 import { buildQueryFromFilters } from './cashMoviments.filters.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+}[c]));
 import { actionIconSvg, actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { atualizarBadgeAnexo } from './cashMoviments.attachments.js';
 
@@ -128,17 +133,27 @@ export async function excluirMovimentacoesSelecionadas(dom) {
   const ids = getSelectedMovementIds();
 
   if (!ids.length) {
-    window.alert('Selecione pelo menos uma movimentação.');
+    showCenterModal({
+      variant: 'warning',
+      title: 'Nenhuma movimentação selecionada',
+      message: 'Selecione pelo menos uma movimentação.',
+    });
     return;
   }
 
-  const confirmed = window.confirm(
-    `Deseja excluir permanentemente ${ids.length} ` +
-    `${ids.length === 1 ? 'movimentação selecionada' : 'movimentações selecionadas'}?\n\n` +
-    'Essa operação não poderá ser desfeita.'
-  );
+  const confirmed = await showCenterModal({
+    variant: 'warning',
+    title: 'Excluir selecionados',
+    message:
+      `Deseja excluir permanentemente <b>${ids.length}</b> ` +
+      `${ids.length === 1 ? 'movimentação selecionada' : 'movimentações selecionadas'}?<br><br>` +
+      'Esta operação não poderá ser desfeita.',
+    okText: 'Sim, excluir',
+    closeText: 'Cancelar',
+    timeoutMs: null,
+  });
 
-  if (!confirmed) return;
+  if (confirmed !== true) return;
 
   const button = dom.elBtnExcluirSelecionados;
   const originalText = button?.textContent || '';
@@ -187,17 +202,24 @@ export async function excluirMovimentacoesSelecionadas(dom) {
 
     await recarregarLista(dom);
 
-    window.alert(
-      `${totalExcluido} ` +
-      `${totalExcluido === 1 ? 'movimentação foi excluída' : 'movimentações foram excluídas'} com sucesso.`
-    );
+    showCenterModal({
+      variant: 'success',
+      title: 'Exclusão concluída',
+      message:
+        `${totalExcluido} ` +
+        `${totalExcluido === 1 ? 'movimentação foi excluída' : 'movimentações foram excluídas'} com sucesso.`,
+    });
   } catch (error) {
     LE('[CAIXA][DELETE_BATCH]', error);
 
-    window.alert(
-      error?.message ||
-      'Não foi possível excluir as movimentações selecionadas.'
-    );
+    showCenterModal({
+      variant: 'error',
+      title: 'Erro ao excluir',
+      message: escapeHtml(
+        error?.message ||
+        'Não foi possível excluir as movimentações selecionadas.'
+      ),
+    });
 
     atualizarInterfaceSelecao(dom);
   } finally {

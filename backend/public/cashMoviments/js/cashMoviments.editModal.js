@@ -10,6 +10,7 @@
 
 import { openTransferModal, confirmDeleteTransfer, deleteTransferAndReload } from './cashMoviments.transfers.js';
 import { Modal } from '/public/includes/js/modal.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 import { API, PATH_MOV } from './cashMoviments.config.js';
 import { state } from './cashMoviments.state.js';
 
@@ -344,11 +345,16 @@ export async function onTabelaClick(dom, event) {
   }
 
   if (action === 'del') {
-    const confirmed = window.confirm(
-      'Excluir a movimentação?'
-    );
+    const confirmed = await showCenterModal({
+      variant: 'warning',
+      title: 'Excluir movimentação',
+      message: 'Deseja realmente excluir esta movimentação?<br><br>Esta operação não poderá ser desfeita.',
+      okText: 'Sim, excluir',
+      closeText: 'Cancelar',
+      timeoutMs: null,
+    });
 
-    if (!confirmed) return;
+    if (confirmed !== true) return;
 
     try {
       const response = await fetch(
@@ -369,7 +375,11 @@ export async function onTabelaClick(dom, event) {
       await recarregarLista(dom);
     } catch (error) {
       LE(error);
-      window.alert('Falha ao excluir a movimentação.');
+      showCenterModal({
+        variant: 'error',
+        title: 'Erro ao excluir',
+        message: 'Falha ao excluir a movimentação.',
+      });
     }
   }
 }
