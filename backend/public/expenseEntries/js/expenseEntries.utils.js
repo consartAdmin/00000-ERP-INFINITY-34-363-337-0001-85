@@ -3,11 +3,18 @@
 // ║ Path: backend/public/expenseEntries/expenseEntries.utils.js          ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+
 export const $ = (selector) => document.querySelector(selector);
 
+// Avisos da tela no centerAlertModal (sucesso some sozinho; erro espera o OK).
 export function toast(message, type = 'info') {
   if (type === 'error') console.error(message);
-  window.alert(message);
+  const text = String(message ?? '');
+  const variant = type === 'error' ? 'error' : /✅/.test(text) ? 'success' : type;
+  const html = escapeHtml(text.replace(/\s*✅/g, '').trim()).replace(/\n/g, '<br>');
+  const title = type === 'error' ? 'Atenção' : variant === 'success' ? 'Pronto' : 'Aviso';
+  showCenterModal({ variant, title, message: html, buttons: [{ label: 'OK', variant: 'ok' }] });
 }
 
 export function moneyBR(value) {

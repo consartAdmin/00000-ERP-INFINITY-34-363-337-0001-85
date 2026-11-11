@@ -13,6 +13,7 @@ import { http } from './expenseEntries.api.js';
 import { API, apiBase } from './expenseEntries.config.js';
 import { state } from './expenseEntries.state.js';
 import { $, escapeHtml, toast } from './expenseEntries.utils.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 function formatSize(bytes) {
   const n = Number(bytes || 0);
@@ -139,7 +140,15 @@ async function openSaved(object) {
 
 async function deleteSaved(anexoId) {
   if (!state.cashMovementId) return;
-  if (!window.confirm('Excluir este anexo da movimentação do Caixa?')) return;
+  const confirmed = await showCenterModal({
+    variant: 'warning',
+    title: 'Excluir anexo',
+    message: 'Excluir este anexo da movimentação do Caixa?<br><br>Esta operação não poderá ser desfeita.',
+    okText: 'Sim, excluir',
+    closeText: 'Voltar',
+    timeoutMs: null,
+  });
+  if (confirmed !== true) return;
   try {
     const response = await fetch(`${apiBase}/api/caixa/movimentacoes/${state.cashMovementId}/anexos/${anexoId}`, { method: 'DELETE' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
