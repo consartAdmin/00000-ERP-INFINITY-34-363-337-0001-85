@@ -20,6 +20,7 @@
 // ║   GET    /export                      → exportExcel                       ║
 // ║   GET    /cost-map                    → getCostMap                        ║
 // ║   GET    /costs                       → alias legado para getCostMap      ║
+// ║   GET    /tax-map                     → getTaxMap (impostos por SKU)      ║
 // ║   PUT    /by-code/:product_code       → updateBarcode                     ║
 // ║                                                                           ║
 // ║ Produto (:product_code):                                                  ║
@@ -35,6 +36,7 @@
 // ╚═══════════════════════════════════════════════════════════════════════════╝
 
 import { Router } from 'express';
+import { getTaxMap } from '../controllers/productsTaxMapController.js';
 import multer from 'multer';
 
 import {
@@ -116,6 +118,9 @@ router.get('/export', exportExcel);
 // Mapa de custos (modal Rentabilidade) + alias legado
 router.get('/cost-map', getCostMap);
 router.get('/costs', getCostMap);
+
+// Alíquotas de venda por SKU (modal Rentabilidade)
+router.get('/tax-map', getTaxMap);
 
 // Atualiza somente o barcode pelo SKU
 router.put('/by-code/:product_code', updateBarcode);

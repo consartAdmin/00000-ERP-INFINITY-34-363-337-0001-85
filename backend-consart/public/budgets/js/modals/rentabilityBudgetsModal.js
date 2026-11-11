@@ -1,585 +1,383 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ rentabilityBudgetsModal.js — Modal de Rentabilidade (CONSART ERP)    ║
-// ║ - Importa custo base via products.cost_price (por SKU)               ║
-// ║ - Ajusta custo pela U.M via productUnits.factor (sku + unit)         ║
-// ║ - Calcula: custo_unit = cost_price * factor                          ║
-// ║ - Calcula: custo_total = qtd * custo_unit                             ║
-// ║ - Calcula: lucro/margem por item e total                              ║
-// ║ ✅ FIX: display mantém "CX.10", lookup usa "CX" (multiplicador OK)     ║
-// ║ ✅ FIX: fallback com/sem ponto final ao buscar factor                 ║
-// ║ ✅ FIX: cost-map suporta {ok:true,data:{...}} ou {ok:true,rows:[...]} ║
-// ║ ✅ FIX: aliases de U.M robustos + UX estável                           ║
+// ║ Layout: modals.css + table.css + fields.css + summary.css (style.css)║
+// ║ - Custo: products.cost_price (por SKU) × fator da U.M (productUnits)  ║
+// ║ - Impostos: alíquotas do cadastro fiscal do produto (productsFiscal  ║
+// ║   + fiscalProfile) via /api/products/tax-map                         ║
+// ║   ICMS × (1 − redução BC) + PIS + COFINS + IPI + FCP sobre a receita ║
+// ║ - Lucro = Receita − Custo − Impostos | Margem = Lucro / Receita      ║
+// ║ - Custo unit. e % de impostos editáveis; "Aplicar" guarda os ajustes ║
+// ║   nos itens do orçamento aberto (rent_cost_unit / rent_tax_pct)      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-/**
- * @typedef {Object} RentItem
- * @property {string} sku
- * @property {string} description
- * @property {number} quantity
- * @property {number} unit_price
- * @property {number} discount_value
- * @property {string=} unit
- * @property {string=} unit_code
- * @property {string=} unidade
- * @property {string=} um
- * @property {string=} u_m
- * @property {string=} unidade_venda
- * @property {string=} unidadeVenda
- * @property {string=} unit_name
- * @property {string=} product_unit
- * @property {string=} unidade_medida
- * @property {number|string|null=} product_id
- * @property {number|string|null=} price_id
- * @property {number|null=} grade_id
- * @property {string=} grade
- * @property {number=} cost_price
- * @property {number=} preco_custo
- * @property {number=} cost
- */
+const MODAL_ID = 'rbRentabilityModal';
 
 /**
- * Open modal and compute profitability.
+ * Abre o modal e calcula a rentabilidade.
  * @param {Object} args
- * @param {RentItem[]} args.items
+ * @param {Array<Object>} args.items          itens do orçamento (sku, description, quantity, unit_price, discount_value, unit…)
  * @param {number=} args.freight_value
- * @param {Object<string, number>=} args.costBySku
- * @param {Object<string, number>=} args.factorBySkuUnit   // key: `${sku}||${unit}`
  * @param {string=} args.title
- * @param {boolean=} args.debug
  * @returns {Promise<{ok:boolean, data?:any}>}
  */
 export async function openRentabilityBudgetsModal(args = {}) {
   const items = Array.isArray(args.items) ? args.items : [];
   const freight = toNum(args.freight_value);
-  const costBySku = isObj(args.costBySku) ? args.costBySku : {};
-  const factorBySkuUnit = isObj(args.factorBySkuUnit) ? args.factorBySkuUnit : {};
   const title = String(args.title || 'Rentabilidade do Orçamento');
-  const DEBUG = !!args.debug;
 
   if (!items.length) return { ok: false, data: { reason: 'NO_ITEMS' } };
 
-  // -------------------------------------------------------------------
-  // API base
-  // -------------------------------------------------------------------
-  const API_BASE = (typeof window !== 'undefined' && (window.apiBase || window.API_BASE || window.location.origin))
-    .toString()
-    .replace(/\/$/, '');
+  const API_BASE = String(window.apiBase || window.API_BASE || window.location.origin).replace(/\/$/, '');
+  const skus = uniq(items.map((x) => String(x.sku || '').trim()).filter(Boolean));
+  const qs = encodeURIComponent(skus.join(','));
 
-  // -------------------------------------------------------------------
-  // Singleton root
-  // -------------------------------------------------------------------
-  const idRoot = 'rbRentabilityRoot';
-  let root = document.getElementById(idRoot);
+  // ------------------------------------------------------------------
+  // Cadastro: custo, fator da U.M e impostos
+  // ------------------------------------------------------------------
+  const dbCostBySku = {};
+  const dbFactorBySkuUnit = {};
+  let taxBySku = {};
+  let costOk = true;
+  let taxOk = true;
 
-  if (!root) {
-    root = document.createElement('div');
-    root.id = idRoot;
-    document.body.appendChild(root);
+  const [costRes, factorRes, taxRes] = await Promise.all([
+    fetchJson(`${API_BASE}/api/products/cost-map?codes=${qs}`).catch((e) => { costOk = false; console.warn('[rentability] cost-map', e); return null; }),
+    fetchJson(`${API_BASE}/api/barcodes/factors?skus=${qs}`).catch((e) => { console.warn('[rentability] factors', e); return null; }),
+    fetchJson(`${API_BASE}/api/products/tax-map?codes=${qs}`).catch((e) => { taxOk = false; console.warn('[rentability] tax-map', e); return null; }),
+  ]);
+
+  if (costRes?.ok) {
+    if (isObj(costRes.data)) {
+      for (const [k, v] of Object.entries(costRes.data)) {
+        const c = toNum(v);
+        if (String(k).trim() && c > 0) dbCostBySku[String(k).trim()] = c;
+      }
+    }
+    if (Array.isArray(costRes.rows)) {
+      for (const r of costRes.rows) {
+        const sku = String(r.sku ?? r.product_code ?? '').trim();
+        const c = toNum(r.cost_price ?? r.cost ?? r.preco_custo);
+        if (sku && c > 0) dbCostBySku[sku] = c;
+      }
+    }
+  } else {
+    costOk = false;
   }
 
+  if (factorRes?.ok && Array.isArray(factorRes.rows)) {
+    for (const r of factorRes.rows) {
+      const sku = String(r.sku ?? r.product_code ?? '').trim();
+      const unit = normUnitLookup(r.unit ?? r.unit_code ?? r.um ?? r.unidade ?? '');
+      const factor = toNum(r.factor ?? r.fator ?? r.multiplier ?? 1);
+      if (sku && unit && factor > 0) dbFactorBySkuUnit[`${sku}||${unit}`] = factor;
+    }
+  }
+
+  if (taxRes?.ok && isObj(taxRes.data)) taxBySku = taxRes.data;
+  else taxOk = false;
+
+  // ------------------------------------------------------------------
+  // Estado por item
+  // ------------------------------------------------------------------
+  const rows = items.map((it, idx) => {
+    const sku = String(it.sku || '').trim();
+    if (!sku) return null;
+
+    const unitRaw = String(
+      it.unit ?? it.unit_code ?? it.unidade ?? it.um ?? it.u_m ?? it.unidade_venda ??
+      it.unidadeVenda ?? it.unit_name ?? it.product_unit ?? it.unidade_medida ?? ''
+    ).trim();
+    const unit = normUnitDisplay(unitRaw);
+    const unitLookup = normUnitLookup(unit);
+
+    // U.M "CX.10" sem fator cadastrado → usa o número da própria U.M
+    const unitNumber = toNum((unit.match(/\.(\d+)$/) || [])[1]);
+    const factor = toNum(dbFactorBySkuUnit[`${sku}||${unitLookup}`]) || unitNumber || 1;
+
+    const baseCost = toNum(dbCostBySku[sku]) || toNum(it.cost_price) || toNum(it.preco_custo) || toNum(it.cost) || 0;
+    const costFromDb = Math.max(0, baseCost * factor);
+
+    const tax = isObj(taxBySku[sku]) ? taxBySku[sku] : null;
+    const taxFromDb = tax ? effectiveTaxPct(tax) : 0;
+
+    const qty = toNum(it.quantity);
+    const unitPrice = toNum(it.unit_price);
+    const disc = toNum(it.discount_value);
+
+    return {
+      idx,
+      sku,
+      description: String(it.description || ''),
+      unit,
+      factor,
+      base_cost: baseCost,
+      cost_db: costFromDb,
+      tax,
+      tax_db: taxFromDb,
+      quantity: qty,
+      unit_price: unitPrice,
+      discount_value: disc,
+      gross: qty * unitPrice,
+      revenue: Math.max(0, qty * unitPrice - disc),
+      cost_unit: it.rent_cost_unit != null ? Math.max(0, toNum(it.rent_cost_unit)) : costFromDb,
+      tax_pct: it.rent_tax_pct != null ? Math.max(0, toNum(it.rent_tax_pct)) : taxFromDb,
+    };
+  }).filter(Boolean);
+
+  // ------------------------------------------------------------------
+  // Markup (somente classes do design system)
+  // ------------------------------------------------------------------
+  document.getElementById(MODAL_ID)?.remove();
+
+  const root = document.createElement('div');
+  root.id = MODAL_ID;
+  root.className = 'modal is-open';
+  root.setAttribute('aria-hidden', 'false');
   root.innerHTML = `
-    <div class="rb-backdrop rb-hidden" id="rbBackdrop" aria-hidden="true"></div>
-    <div class="rb-modal rb-hidden" id="rbModal" role="dialog" aria-modal="true" aria-labelledby="rbTitle">
-      <div class="rb-card">
-        <div class="rb-header">
-          <div class="rb-header-left">
-            <h3 class="rb-title" id="rbTitle">${escapeHtml(title)}</h3>
-            <div class="rb-subtitle" id="rbSubtitle">Ajuste o custo por item para calcular lucro e margem.</div>
+    <div class="modal__backdrop" data-rb-close></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-12" role="dialog" aria-modal="true" aria-labelledby="rbTitle">
+        <header class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="rbTitle" class="modal__title">${escapeHtml(title)}</h2>
+            <p class="modal__subtitle">Custo e impostos vêm do cadastro de cada produto. Ajuste o custo ou o % de impostos para simular.</p>
           </div>
-          <div class="rb-header-actions">
-          <button type="button" class="rb-btn rb-btn--icon" id="rbClose" aria-label="Fechar">✖</button>
-          </div>
-        </div>
+          <button type="button" class="modal__close" data-rb-close title="Fechar" aria-label="Fechar">&times;</button>
+        </header>
 
-        <div class="rb-body">
-          <div class="rb-panel">
-            <div class="rb-panel__head">
-              <h4>Itens</h4>
-              <div class="rb-muted">
-                <span class="rb-pill" id="rbCount"></span>
-              </div>
-            </div>
+        <div class="modal__body modal-section">
+          <div class="summary summary--left summary-gap-8" id="rbSummary"></div>
 
-      <div class="table-scroll--rounded table-height-300 table-row-h-28">
-        <table class="table table-zebra table-zebra-hover table-sticky-head">
-                <thead>
-                  <tr>
-                    <th>SKU</th>
-                    <th>Descrição</th>
-                    <th class="num">U.M</th>
-                    <th class="num">Fator</th>
-                    <th class="num">Qtd</th>
-                    <th class="num">Unit.</th>
-                    <th class="num">Desc.</th>
-                    <th class="num">Receita</th>
-                    <th class="num">Custo (unit)</th>
-                    <th class="num">Custo total</th>
-                    <th class="num">Lucro</th>
-                    <th class="num">Margem</th>
-                  </tr>
-                </thead>
-                <tbody id="rbTbody"></tbody>
-              </table>
-            </div>
+          <div class="modal-divider modal-divider--soft"></div>
 
-            <div class="rb-foot">
-              <div class="rb-muted" id="rbFootLeft"></div>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <button type="button" class="btn btn-toolbar btn-sm" id="rbApply">Aplicar</button>
-                <button type="button" class="btn btn-toolbar btn-sm" id="rbCancel">Cancelar</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="rb-side">
-            <div class="rb-panel">
-              <div class="rb-panel__head">
-                <h4>Resumo</h4>
-                <div class="rb-muted">Totais</div>
-              </div>
-
-              <div class="rb-kpis">
-                <div class="rb-kpi"><span>Receita bruta</span><strong id="kGross">0,00</strong></div>
-                <div class="rb-kpi"><span>Descontos</span><strong id="kDisc">0,00</strong></div>
-                <div class="rb-kpi"><span>Receita líquida</span><strong class="accent" id="kNet">0,00</strong></div>
-                <div class="rb-kpi"><span>Frete</span><strong id="kFreight">0,00</strong></div>
-                <div class="rb-kpi"><span>Custo total</span><strong id="kCost">0,00</strong></div>
-                <div class="rb-kpi"><span>Lucro</span><strong id="kProfit">0,00</strong></div>
-                <div class="rb-kpi"><span>Margem (%)</span><strong id="kMargin">0,00%</strong></div>
-              </div>
-
-              <div class="rb-note" id="rbNote">
-                • <b>Receita</b> = (Qtd × Unit.) − Desconto<br/>
-                • <b>Custo (unit)</b> = <b>products.cost_price</b> × <b>productUnits.factor</b><br/>
-                • <b>Custo total</b> = Qtd × Custo (unit)<br/>
-                • <b>Margem</b> = Lucro / Receita líquida<br/>
-                <br/>
-                <span class="rb-chip" id="rbChipDb">⌛ Importando custos do banco…</span>
-              </div>
-            </div>
+          <div class="table-scroll table-scroll--rounded">
+            <table class="table table-zebra table-zebra-hover table-sticky-head table-row-h-32">
+              <thead>
+                <tr>
+                  <th class="table-col-w-3 th-left">SKU</th>
+                  <th class="table-col-w-9 th-left">Descrição</th>
+                  <th class="table-col-w-2">U.M</th>
+                  <th class="table-col-w-2 th-right">Qtd</th>
+                  <th class="table-col-w-3 th-right">Unit. (R$)</th>
+                  <th class="table-col-w-3 th-right">Receita (R$)</th>
+                  <th class="table-col-w-4 th-right">Custo unit. (R$)</th>
+                  <th class="table-col-w-3 th-right">Custo total</th>
+                  <th class="table-col-w-3 th-right">Impostos (%)</th>
+                  <th class="table-col-w-3 th-right">Impostos (R$)</th>
+                  <th class="table-col-w-3 th-right">Lucro (R$)</th>
+                  <th class="table-col-w-3 th-right">Margem</th>
+                </tr>
+              </thead>
+              <tbody id="rbTbody"></tbody>
+            </table>
           </div>
         </div>
 
-      </div>
+        <footer class="modal__footer modal-footer-color-3">
+          <button type="button" class="btn btn-clean btn-sm" id="rbReset" title="Voltar custo e impostos para os valores do cadastro">↺ Valores do cadastro</button>
+          <button type="button" class="btn btn-cancel btn-sm" data-rb-close>Cancelar</button>
+          <button type="button" class="btn btn-save btn-sm" id="rbApply">Aplicar</button>
+        </footer>
+      </section>
     </div>
   `;
+  document.body.appendChild(root);
+  document.body.classList.add('modal-open');
 
-  const $ = (sel) => root.querySelector(sel);
+  const tbody = root.querySelector('#rbTbody');
+  const summary = root.querySelector('#rbSummary');
 
-  const backdrop = $('#rbBackdrop');
-  const modal = $('#rbModal');
-  const tbody = $('#rbTbody');
+  const renderRows = () => {
+    tbody.innerHTML = rows.map((r) => {
+      const unitLabel = r.factor !== 1 ? `${r.unit || '-'} ×${fmtFactor(r.factor)}` : (r.unit || '-');
+      const revTitle = r.discount_value > 0
+        ? `Bruto R$ ${fmtMoney(r.gross)} − desconto R$ ${fmtMoney(r.discount_value)}`
+        : `Qtd × Unit.`;
+      const costTitle = r.base_cost > 0
+        ? `Cadastro: R$ ${fmtMoney(r.base_cost)}${r.factor !== 1 ? ` × fator ${fmtFactor(r.factor)}` : ''} = R$ ${fmtMoney(r.cost_db)}`
+        : 'Produto sem custo no cadastro';
+      return `
+        <tr data-i="${r.idx}">
+          <td class="td-left">${escapeHtml(r.sku)}</td>
+          <td class="td-left" title="${escapeHtml(r.description)}">${escapeHtml(r.description)}</td>
+          <td class="td-center" title="${r.factor !== 1 ? `1 ${escapeHtml(r.unit)} = ${fmtFactor(r.factor)} un. do custo` : ''}">${escapeHtml(unitLabel)}</td>
+          <td class="td-right">${fmtQty(r.quantity)}</td>
+          <td class="td-right">${fmtMoney(r.unit_price)}</td>
+          <td class="td-right" title="${escapeHtml(revTitle)}"><b>${fmtMoney(r.revenue)}</b></td>
+          <td class="td-right" title="${escapeHtml(costTitle)}">
+            <div class="fields fields-w-full fields-h-5 fields-font-3 fields-value-bold${r.cost_unit > 0 ? '' : ' fields-error'}">
+              <input type="number" inputmode="decimal" step="0.01" min="0" data-cost="${r.idx}" value="${round2(r.cost_unit).toFixed(2)}" aria-label="Custo unitário ${escapeHtml(r.sku)}" />
+            </div>
+          </td>
+          <td class="td-right" data-costtot="${r.idx}"></td>
+          <td class="td-right" title="${escapeHtml(taxTitle(r))}">
+            <div class="fields fields-w-full fields-h-5 fields-font-3">
+              <input type="number" inputmode="decimal" step="0.01" min="0" max="100" data-tax="${r.idx}" value="${round2(r.tax_pct).toFixed(2)}" aria-label="Impostos % ${escapeHtml(r.sku)}" />
+            </div>
+          </td>
+          <td class="td-right" data-taxval="${r.idx}" title="${escapeHtml(taxTitle(r))}"></td>
+          <td class="td-right" data-profit="${r.idx}"></td>
+          <td class="td-center" data-margin="${r.idx}"></td>
+        </tr>`;
+    }).join('');
+  };
 
-  const btnClose = $('#rbClose');
-  const btnCancel = $('#rbCancel');
-  const btnApply = $('#rbApply');
+  const pill = (variant, text, title = '') =>
+    `<span class="summary-pill summary-pill--${variant} summary-height-4" ${title ? `title="${escapeHtml(title)}"` : ''}>${text}</span>`;
 
-  const kGross = $('#kGross');
-  const kDisc = $('#kDisc');
-  const kNet = $('#kNet');
-  const kFreight = $('#kFreight');
-  const kCost = $('#kCost');
-  const kProfit = $('#kProfit');
-  const kMargin = $('#kMargin');
+  const marginVariant = (m, profit) => (profit < 0 ? 'danger' : m < 10 ? 'warning' : 'success');
 
-  const count = $('#rbCount');
-  const footLeft = $('#rbFootLeft');
-  const chipDb = $('#rbChipDb');
+  let totals = {};
 
-  // -------------------------------------------------------------------
-  // Load cost_base by SKU + unit factors by (SKU, U.M)
-  // -------------------------------------------------------------------
-  const skus = uniq(items.map((x) => String(x.sku || '').trim()).filter(Boolean));
-
-  /** @type {Record<string, number>} */
-  let dbCostBySku = {};
-  /** @type {Record<string, number>} */
-  let dbFactorBySkuUnit = {};
-  let dbLoadedOk = false;
-
-  let factorMissCount = 0;
-  let factorHitCount = 0;
-
-  try {
-    const [costRes, factorRes] = await Promise.all([
-      fetchJson(`${API_BASE}/api/products/cost-map?codes=${encodeURIComponent(skus.join(','))}`),
-      fetchJson(`${API_BASE}/api/barcodes/factors?skus=${encodeURIComponent(skus.join(','))}`),
-    ]);
-
-    // -----------------------
-    // COST MAP (aceita 2 formatos):
-    // A) { ok:true, data:{SKU: cost, ...} }
-    // B) { ok:true, rows:[{sku, cost_price}, ...] }
-    // -----------------------
-    if (costRes?.ok) {
-      // formato A
-      if (isObj(costRes.data)) {
-        for (const [k, v] of Object.entries(costRes.data)) {
-          const sku = String(k || '').trim();
-          const c = toNum(v);
-          if (sku && c > 0) dbCostBySku[sku] = c;
-        }
-      }
-      // formato B
-      if (Array.isArray(costRes.rows)) {
-        for (const r of costRes.rows) {
-          const sku = String(r.sku ?? r.product_code ?? '').trim();
-          if (!sku) continue;
-          const c = toNum(r.cost_price ?? r.cost ?? r.preco_custo);
-          if (c > 0) dbCostBySku[sku] = c;
-        }
-      }
-    }
-
-    // -----------------------
-    // FACTORS
-    // IMPORTANT: store keys for BOTH display and lookup variants
-    // - display keeps "CX.10"
-    // - lookup collapses "CX.10" -> "CX"
-    // -----------------------
-    if (factorRes?.ok && Array.isArray(factorRes.rows)) {
-      for (const r of factorRes.rows) {
-        const sku = String(r.sku ?? r.product_code ?? '').trim();
-        const unitDisp = normUnitDisplay(r.unit ?? r.unit_code ?? r.um ?? r.unidade ?? '');
-        const unitLook = normUnitLookup(unitDisp);
-        const factor = toNum(r.factor ?? r.fator ?? r.multiplier ?? 1) || 1;
-
-        if (!sku || !unitDisp) continue;
-        const safeFactor = factor > 0 ? factor : 1;
-
-        // display key (if DB ever returns CX.10)
-        dbFactorBySkuUnit[`${sku}||${unitDisp}`] = safeFactor;
-        dbFactorBySkuUnit[`${sku}||${withDot(unitDisp)}`] = safeFactor;
-
-        // lookup key (most common: DB stores CX, item shows CX.10)
-        if (unitLook) {
-          dbFactorBySkuUnit[`${sku}||${unitLook}`] = safeFactor;
-          dbFactorBySkuUnit[`${sku}||${withDot(unitLook)}`] = safeFactor;
-        }
-      }
-    }
-
-    dbLoadedOk = true;
-
-    if (DEBUG) {
-      console.log('[rentability][db] skus:', skus);
-      console.log('[rentability][db] costBySku:', dbCostBySku);
-      console.log('[rentability][db] factorBySkuUnit sample keys:', Object.keys(dbFactorBySkuUnit).slice(0, 120));
-    }
-  } catch (e) {
-    console.warn('[rentability][db-load] failed:', e);
-    dbLoadedOk = false;
-  }
-
-  // -------------------------------------------------------------------
-  // local state (editable)
-  // -------------------------------------------------------------------
-  const rows = items
-    .map((it, idx) => {
-      const sku = String(it.sku || '').trim();
-      if (!sku) return null;
-
-      const unitRaw = String(
-        it.unit ??
-        it.unit_code ??
-        it.unidade ??
-        it.um ??
-        it.u_m ??
-        it.unidade_venda ??
-        it.unidadeVenda ??
-        it.unit_name ??
-        it.product_unit ??
-        it.unidade_medida ??
-        it.unidadeMedida ??
-        it.unid ??
-        it.uom ??
-        ''
-      ).trim();
-
-      // display keeps CX.10 / lookup collapses to CX
-      const unit_display = normUnitDisplay(unitRaw);
-      const unit_lookup = normUnitLookup(unit_display);
-
-      const qty = toNum(it.quantity);
-      const unitPrice = toNum(it.unit_price);
-      const disc = toNum(it.discount_value);
-
-      const gross = qty * unitPrice;
-      const revenue = Math.max(0, gross - disc);
-
-      const preItemCost =
-        toNum(it.cost_price) ||
-        toNum(it.preco_custo) ||
-        toNum(it.cost) ||
-        0;
-
-      const baseCost =
-        (toNum(costBySku[sku]) > 0 ? toNum(costBySku[sku]) : 0) ||
-        (toNum(dbCostBySku[sku]) > 0 ? toNum(dbCostBySku[sku]) : 0) ||
-        preItemCost ||
-        0;
-
-      const factor = pickFactor({
-        sku,
-        unit: unit_lookup || unit_display, // lookup first
-        factorBySkuUnit,
-        dbFactorBySkuUnit
-      });
-
-      if ((unit_lookup || unit_display) && factor !== null) factorHitCount++;
-      else factorMissCount++;
-
-      console.log('[RENTABILITY FACTOR]', {
-        sku,
-        unit_display,
-        unit_lookup,
-        factor,
-        factorFromDb: dbFactorBySkuUnit,
-        factorFromArgs: factorBySkuUnit
-      });
-
-      const safeFactor = (Number.isFinite(factor) && factor > 0) ? factor : 1;
-      const costUnit = Math.max(0, baseCost * safeFactor);
-
-      return {
-        idx,
-        sku,
-        unit: unit_display,        // UI
-        unit_lookup,               // internal
-        unit_raw: unitRaw,
-        factor: safeFactor,
-        base_cost: baseCost,
-        description: String(it.description || ''),
-        quantity: qty,
-        unit_price: unitPrice,
-        discount_value: disc,
-        revenue,
-        cost_unit: costUnit,
-      };
-    })
-    .filter(Boolean);
-
-  // -------------------------------------------------------------------
-  // UI chip
-  // -------------------------------------------------------------------
-  if (chipDb) {
-    chipDb.classList.remove('ok', 'bad');
-    if (dbLoadedOk) {
-      chipDb.textContent =
-        `✅ DB OK — custos: ${Object.keys(dbCostBySku).length}/${skus.length} | fatores: ${factorHitCount}/${rows.length} (faltando ${factorMissCount}).`;
-      chipDb.classList.add('ok');
-    } else {
-      chipDb.textContent =
-        `⚠️ DB indisponível — usando custo do item / fallback. Fatores encontrados: ${factorHitCount}/${rows.length}.`;
-      chipDb.classList.add('bad');
-    }
-  }
-
-  count.textContent = `${rows.length} item(ns)`;
-  footLeft.textContent = `Frete considerado no resumo: R$ ${fmtMoney(freight)}`;
-
-  // -------------------------------------------------------------------
-  // Render rows
-  // -------------------------------------------------------------------
-  tbody.innerHTML = rows.map((r) => {
-    const costTot = r.quantity * r.cost_unit;
-    const profit = r.revenue - costTot;
-    const margin = r.revenue > 0 ? (profit / r.revenue) * 100 : 0;
-
-    return `
-      <tr data-i="${r.idx}">
-        <td>${escapeHtml(r.sku)}</td>
-        <td title="${escapeHtml(r.description)}">${escapeHtml(ellipsize(r.description, 54))}</td>
-        <td class="num" title="${escapeHtml(r.unit_raw || '')}">${escapeHtml(r.unit || '-')}</td>
-        <td class="num" data-factor="${r.idx}">${fmtFactor(r.factor)}</td>
-        <td class="num">${fmtNum(r.quantity)}</td>
-        <td class="num">${fmtMoney(r.unit_price)}</td>
-        <td class="num">${fmtMoney(r.discount_value)}</td>
-        <td class="num"><b>${fmtMoney(r.revenue)}</b></td>
-        <td class="num">
-          <input class="rb-cost-input" inputmode="decimal" type="number" step="0.01" min="0"
-            data-cost="${r.idx}" value="${Number(r.cost_unit || 0).toFixed(2)}"/>
-          <div class="rb-mini" data-mini="${r.idx}">base: ${fmtMoney(r.base_cost)} × ${fmtFactor(r.factor)}</div>
-        </td>
-        <td class="num" data-costtot="${r.idx}">${fmtMoney(costTot)}</td>
-        <td class="num" data-profit="${r.idx}">${fmtMoney(profit)}</td>
-        <td class="num" data-margin="${r.idx}">${fmtPct(margin)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  // -------------------------------------------------------------------
-  // recompute
-  // -------------------------------------------------------------------
   function recomputeAll() {
-    let gross = 0;
-    let disc = 0;
-    let net = 0;
-    let cost = 0;
+    let gross = 0, disc = 0, net = 0, cost = 0, taxes = 0;
+    let noCost = 0, noTax = 0;
 
     for (const r of rows) {
-      const g = r.quantity * r.unit_price;
-      const d = r.discount_value;
-      const rev = Math.max(0, g - d);
-      r.revenue = rev;
-
       const ct = r.quantity * r.cost_unit;
-      const pf = rev - ct;
+      const tv = r.revenue * (r.tax_pct / 100);
+      const pf = r.revenue - ct - tv;
+      const m = r.revenue > 0 ? (pf / r.revenue) * 100 : 0;
 
-      gross += g;
-      disc += d;
-      net += rev;
-      cost += ct;
+      gross += r.gross; disc += r.discount_value; net += r.revenue; cost += ct; taxes += tv;
+      if (!(r.cost_unit > 0)) noCost++;
+      if (!r.tax) noTax++;
 
-      const cellCostTot = tbody.querySelector(`[data-costtot="${r.idx}"]`);
-      const cellProfit = tbody.querySelector(`[data-profit="${r.idx}"]`);
-      const cellMargin = tbody.querySelector(`[data-margin="${r.idx}"]`);
-
-      const m = rev > 0 ? (pf / rev) * 100 : 0;
-
-      if (cellCostTot) cellCostTot.textContent = fmtMoney(ct);
-      if (cellProfit) cellProfit.textContent = fmtMoney(pf);
-      if (cellMargin) cellMargin.textContent = fmtPct(m);
+      const tr = tbody.querySelector(`tr[data-i="${r.idx}"]`);
+      if (!tr) continue;
+      tr.querySelector('[data-costtot]').textContent = fmtMoney(ct);
+      tr.querySelector('[data-taxval]').textContent = fmtMoney(tv);
+      tr.querySelector('[data-profit]').innerHTML = pf < 0 ? `<b>${fmtMoney(pf)}</b>` : fmtMoney(pf);
+      tr.querySelector('[data-margin]').innerHTML =
+        `<span class="summary-pill summary-pill--${marginVariant(m, pf)} summary-height-1">${fmtPct(m)}</span>`;
+      tr.querySelector('[data-cost]')?.parentElement?.classList.toggle('fields-error', !(r.cost_unit > 0));
     }
 
-    const profit = net - cost;
-    const marginTotal = net > 0 ? (profit / net) * 100 : 0;
+    const profit = net - cost - taxes;
+    const margin = net > 0 ? (profit / net) * 100 : 0;
+    totals = { gross, disc, net, cost, taxes, profit, margin };
 
-    kGross.textContent = fmtMoney(gross);
-    kDisc.textContent = fmtMoney(disc);
-    kNet.textContent = fmtMoney(net);
-    kFreight.textContent = fmtMoney(freight);
-    kCost.textContent = fmtMoney(cost);
-    kProfit.textContent = fmtMoney(profit);
-    kMargin.textContent = fmtPct(marginTotal);
-
-    kProfit.classList.remove('good', 'bad');
-    kMargin.classList.remove('good', 'bad');
-
-    if (profit >= 0) {
-      kProfit.classList.add('good');
-      kMargin.classList.add('good');
-    } else {
-      kProfit.classList.add('bad');
-      kMargin.classList.add('bad');
-    }
+    const pills = [
+      pill('info', `Receita: R$ ${fmtMoney(net)}`, disc > 0 ? `Bruta R$ ${fmtMoney(gross)} − descontos R$ ${fmtMoney(disc)}` : 'Soma de Qtd × Unit. dos itens'),
+      pill('primary', `Custo: R$ ${fmtMoney(cost)}`),
+      pill('primary', `Impostos: R$ ${fmtMoney(taxes)}`, 'ICMS, PIS, COFINS, IPI e FCP do cadastro fiscal de cada produto'),
+      pill(profit < 0 ? 'danger' : 'success', `Lucro: R$ ${fmtMoney(profit)}`, 'Receita − Custo − Impostos'),
+      pill(marginVariant(margin, profit), `Margem: ${fmtPct(margin)}`, 'Lucro ÷ Receita'),
+      pill('info', `Frete: R$ ${fmtMoney(freight)}`, 'Cobrado do cliente; não entra no lucro'),
+    ];
+    if (noCost) pills.push(pill('warning', `${noCost} ${noCost === 1 ? 'item sem custo' : 'itens sem custo'}`, 'Informe o custo na coluna Custo unit. ou no cadastro do produto'));
+    if (noTax) pills.push(pill('warning', `${noTax} ${noTax === 1 ? 'item sem impostos cadastrados' : 'itens sem impostos cadastrados'}`, 'Cadastre o perfil fiscal do produto ou informe o % na coluna Impostos'));
+    if (!costOk || !taxOk) pills.push(pill('danger', 'Não foi possível ler o cadastro', 'Custos ou impostos do cadastro não carregaram; confira a conexão e abra de novo'));
+    summary.innerHTML = pills.join('');
   }
 
   const onInput = (e) => {
-    const inp = e.target.closest?.('input[data-cost]');
-    if (!inp) return;
-    const i = Number(inp.dataset.cost);
-    const v = toNum(inp.value);
+    const inp = e.target;
+    const i = Number(inp.dataset.cost ?? inp.dataset.tax);
     const row = rows.find((x) => x.idx === i);
     if (!row) return;
-    row.cost_unit = Math.max(0, v);
+    if (inp.dataset.cost != null) row.cost_unit = Math.max(0, toNum(inp.value));
+    if (inp.dataset.tax != null) row.tax_pct = Math.min(100, Math.max(0, toNum(inp.value)));
     recomputeAll();
   };
-
   tbody.addEventListener('input', onInput);
 
-  // -------------------------------------------------------------------
-  // Auto actions
-  // -------------------------------------------------------------------
-  const refreshRowCells = (r) => {
-    const tr = tbody.querySelector(`tr[data-i="${r.idx}"]`);
-    if (!tr) return;
-
-    const unitCell = tr.children?.[2];
-    if (unitCell) unitCell.textContent = r.unit || '-';
-
-    const facCell = tr.querySelector(`[data-factor="${r.idx}"]`);
-    if (facCell) facCell.textContent = fmtFactor(r.factor);
-
-    const mini = tr.querySelector(`[data-mini="${r.idx}"]`);
-    if (mini) mini.textContent = `base: ${fmtMoney(r.base_cost)} × ${fmtFactor(r.factor)}`;
-
-    const inp = tr.querySelector(`input[data-cost="${r.idx}"]`);
-    if (inp) inp.value = Number(r.cost_unit || 0).toFixed(2);
-  };
-
-  // -------------------------------------------------------------------
-  // Open/close
-  // -------------------------------------------------------------------
-  function open() {
-    backdrop.classList.remove('rb-hidden');
-    modal.classList.remove('rb-hidden');
-    backdrop.setAttribute('aria-hidden', 'false');
-    modal.setAttribute('aria-hidden', 'false');
-
+  root.querySelector('#rbReset').addEventListener('click', () => {
+    for (const r of rows) { r.cost_unit = r.cost_db; r.tax_pct = r.tax_db; }
+    renderRows();
     recomputeAll();
+  });
 
-    setTimeout(() => {
-      const first = tbody.querySelector('input[data-cost]');
-      first?.focus?.();
-      first?.select?.();
-    }, 0);
-  }
-
-  function close() {
-    backdrop.classList.add('rb-hidden');
-    modal.classList.add('rb-hidden');
-    backdrop.setAttribute('aria-hidden', 'true');
-    modal.setAttribute('aria-hidden', 'true');
-  }
-
-  // Promise resolver
+  // ------------------------------------------------------------------
+  // Fechar / aplicar
+  // ------------------------------------------------------------------
   let resolvePromise;
   const p = new Promise((resolve) => (resolvePromise = resolve));
 
-  const cleanup = () => {
-    tbody.removeEventListener('input', onInput);
+  const close = (result) => {
     document.removeEventListener('keydown', onKey);
+    document.body.classList.remove('modal-open');
+    root.remove();
+    resolvePromise(result);
   };
-
-  function cancel() {
-    close();
-    cleanup();
-    resolvePromise({ ok: false });
-  }
 
   function apply() {
     recomputeAll();
-
-    const snapshot = {
-      freight_value: freight,
-      items: rows.map((r) => ({
-        sku: r.sku,
-        unit: r.unit,                     // display
-        unit_lookup: r.unit_lookup || null, // internal (helpful for audit)
-        unit_raw: r.unit_raw || null,
-        factor: Number(r.factor || 1),
-        base_cost: Number(r.base_cost || 0),
-        cost_unit: Number(r.cost_unit || 0),
-        revenue: Number(r.revenue || 0),
-        quantity: Number(r.quantity || 0),
-        unit_price: Number(r.unit_price || 0),
-        discount_value: Number(r.discount_value || 0),
-      })),
-      meta: {
-        db_loaded: !!dbLoadedOk,
-        factor_hit_count: Number(factorHitCount || 0),
-        factor_missing_count: Number(factorMissCount || 0),
-      }
-    };
-
-    close();
-    cleanup();
-    resolvePromise({ ok: true, data: snapshot });
+    // guarda os ajustes nos itens do orçamento aberto (reabrir mantém os valores)
+    for (const r of rows) {
+      const it = items[r.idx];
+      if (!it) continue;
+      it.rent_cost_unit = Math.abs(r.cost_unit - r.cost_db) > 0.0049 ? round2(r.cost_unit) : null;
+      it.rent_tax_pct = Math.abs(r.tax_pct - r.tax_db) > 0.0049 ? round2(r.tax_pct) : null;
+    }
+    close({
+      ok: true,
+      data: {
+        freight_value: freight,
+        totals: Object.fromEntries(Object.entries(totals).map(([k, v]) => [k, round2(v)])),
+        items: rows.map((r) => ({
+          sku: r.sku,
+          unit: r.unit,
+          factor: r.factor,
+          quantity: r.quantity,
+          unit_price: r.unit_price,
+          discount_value: r.discount_value,
+          revenue: round2(r.revenue),
+          cost_unit: round2(r.cost_unit),
+          tax_pct: round2(r.tax_pct),
+        })),
+      },
+    });
   }
 
-  btnClose.addEventListener('click', cancel);
-  btnCancel.addEventListener('click', cancel);
-  backdrop.addEventListener('click', cancel);
-  btnApply.addEventListener('click', apply);
+  root.querySelectorAll('[data-rb-close]').forEach((b) => b.addEventListener('click', () => close({ ok: false })));
+  root.querySelector('#rbApply').addEventListener('click', apply);
 
   function onKey(e) {
-    if (e.key === 'Escape' && !modal.classList.contains('rb-hidden')) cancel();
+    if (e.key !== 'Escape') return;
+    if (document.querySelector('.center-modal-layer')) return; // aviso por cima
+    close({ ok: false });
   }
   document.addEventListener('keydown', onKey);
 
-  open();
+  renderRows();
+  recomputeAll();
+  setTimeout(() => {
+    const first = tbody.querySelector('input[data-cost]');
+    first?.focus?.();
+    first?.select?.();
+  }, 0);
+
   return p;
+}
+
+/** % efetivo sobre a receita: ICMS × (1 − redução BC) + PIS + COFINS + IPI + FCP */
+function effectiveTaxPct(t) {
+  const icms = toNum(t.icms) * (1 - toNum(t.reducao_bc) / 100);
+  return Math.max(0, icms + toNum(t.pis) + toNum(t.cofins) + toNum(t.ipi) + toNum(t.fcp));
+}
+
+function taxTitle(r) {
+  const t = r.tax;
+  if (!t) return 'Produto sem cadastro fiscal — informe o % manualmente';
+  const parts = [
+    `ICMS ${fmtPct(t.icms)}${toNum(t.reducao_bc) > 0 ? ` (redução BC ${fmtPct(t.reducao_bc)})` : ''}`,
+    `PIS ${fmtPct(t.pis)}`,
+    `COFINS ${fmtPct(t.cofins)}`,
+  ];
+  if (toNum(t.ipi) > 0) parts.push(`IPI ${fmtPct(t.ipi)}`);
+  if (toNum(t.fcp) > 0) parts.push(`FCP ${fmtPct(t.fcp)}`);
+  const extra = [t.profile_name && `Perfil: ${t.profile_name}`, t.ncm && `NCM ${t.ncm}`].filter(Boolean).join(' • ');
+  return `${parts.join(' + ')} = ${fmtPct(r.tax_db)}${extra ? `\n${extra}` : ''}`;
+}
+
+function round2(v) {
+  return Math.round((Number(v) || 0) * 100) / 100;
+}
+
+function fmtQty(v) {
+  const n = Number(v) || 0;
+  return n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
 }
 
 // ----------------------- helpers -----------------------
@@ -603,36 +401,6 @@ function normUnitLookup(u) {
   const s = normUnitDisplay(u);
   if (!s) return '';
   return s.replace(/\.\d+$/, '');
-}
-
-function withDot(u) {
-  const s = normUnitLookup(u);
-  if (!s) return '';
-  return s.endsWith('.') ? s : `${s}.`;
-}
-
-/**
- * Retorna factor (number) ou null se não achou.
- * Fallback:
- * - tenta unit lookup (colapsada)
- * - tenta com ponto final
- */
-function pickFactor({ sku, unit, factorBySkuUnit, dbFactorBySkuUnit }) {
-  const s = String(sku || '').trim();
-  const u = normUnitLookup(unit);
-
-  if (!s || !u) return null;
-
-  const k1 = `${s}||${u}`;
-  const k2 = `${s}||${withDot(u)}`;
-
-  const a1 = toNum(factorBySkuUnit[k1]); if (a1 > 0) return a1;
-  const a2 = toNum(factorBySkuUnit[k2]); if (a2 > 0) return a2;
-
-  const d1 = toNum(dbFactorBySkuUnit[k1]); if (d1 > 0) return d1;
-  const d2 = toNum(dbFactorBySkuUnit[k2]); if (d2 > 0) return d2;
-
-  return null;
 }
 
 async function fetchJson(url, { timeout = 15000 } = {}) {
@@ -694,20 +462,10 @@ function fmtPct(v) {
   return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 }
 
-function fmtNum(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? String(n) : '0';
-}
-
 function fmtFactor(v) {
   const n = Number(v || 1);
   if (!Number.isFinite(n) || n <= 0) return '1';
   return n.toLocaleString('pt-BR', { maximumFractionDigits: 6 });
-}
-
-function ellipsize(s, max = 40) {
-  const t = String(s || '');
-  return t.length > max ? t.slice(0, max - 1) + '…' : t;
 }
 
 function escapeHtml(str) {
