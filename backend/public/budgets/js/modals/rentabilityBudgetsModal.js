@@ -39,11 +39,12 @@ export async function openRentabilityBudgetsModal(args = {}) {
   let taxBySku = {};
   let costOk = true;
   let taxOk = true;
+  let loadError = '';
 
   const [costRes, factorRes, taxRes] = await Promise.all([
-    fetchJson(`${API_BASE}/api/products/cost-map?codes=${qs}`).catch((e) => { costOk = false; console.warn('[rentability] cost-map', e); return null; }),
+    fetchJson(`${API_BASE}/api/products/cost-map?codes=${qs}`).catch((e) => { costOk = false; loadError ||= e.message; console.warn('[rentability] cost-map', e); return null; }),
     fetchJson(`${API_BASE}/api/barcodes/factors?skus=${qs}`).catch((e) => { console.warn('[rentability] factors', e); return null; }),
-    fetchJson(`${API_BASE}/api/products/tax-map?codes=${qs}`).catch((e) => { taxOk = false; console.warn('[rentability] tax-map', e); return null; }),
+    fetchJson(`${API_BASE}/api/products/tax-map?codes=${qs}`).catch((e) => { taxOk = false; loadError ||= e.message; console.warn('[rentability] tax-map', e); return null; }),
   ]);
 
   if (costRes?.ok) {
@@ -267,7 +268,10 @@ export async function openRentabilityBudgetsModal(args = {}) {
     ];
     if (noCost) pills.push(pill('warning', `${noCost} ${noCost === 1 ? 'item sem custo' : 'itens sem custo'}`, 'Informe o custo na coluna Custo unit. ou no cadastro do produto'));
     if (noTax) pills.push(pill('warning', `${noTax} ${noTax === 1 ? 'item sem impostos cadastrados' : 'itens sem impostos cadastrados'}`, 'Cadastre o perfil fiscal do produto ou informe o % na coluna Impostos'));
-    if (!costOk || !taxOk) pills.push(pill('danger', 'Não foi possível ler o cadastro', 'Custos ou impostos do cadastro não carregaram; confira a conexão e abra de novo'));
+    if (!costOk || !taxOk) {
+      const what = !costOk && !taxOk ? 'custos e impostos' : (!costOk ? 'custos' : 'impostos');
+      pills.push(pill('danger', `Não foi possível ler ${what} do cadastro`, loadError || 'Confira a conexão e abra de novo'));
+    }
     summary.innerHTML = pills.join('');
   }
 
