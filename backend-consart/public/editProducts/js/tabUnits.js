@@ -17,6 +17,7 @@ import {
   PRODUCT_IMAGES_CHANGED,
   notifyProductImagesChanged,
 } from './productImagesApi.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 const UNITS_EVENT_SOURCE = 'units';
 const UNIT_IMAGE_TYPES = /^image\/(jpeg|png|webp)$/i;
@@ -510,7 +511,13 @@ export async function initUnitsTab(ctx, { productId, productCode }) {
   }
 
   async function removeUnitImage(imageId) {
-    if (!confirm('Remover a imagem desta unidade?')) return;
+    if ((await showCenterModal({
+      variant: 'warning',
+      title: 'Remover imagem',
+      message: 'Deseja remover a imagem desta unidade?<br><br>Esta operação não poderá ser desfeita.',
+      okText: 'Sim, remover',
+      closeText: 'Cancelar',
+    })) !== true) return;
 
     await deleteProductImage(imageId);
     safeToast('🗑️ Imagem da unidade removida.', 'success');
@@ -663,7 +670,13 @@ export async function initUnitsTab(ctx, { productId, productCode }) {
   }
 
   async function removeUnit(id) {
-    if (!confirm('Remover esta unidade?')) return;
+    if ((await showCenterModal({
+      variant: 'warning',
+      title: 'Remover unidade',
+      message: 'Deseja remover esta unidade do produto?<br><br>Esta operação não poderá ser desfeita.',
+      okText: 'Sim, remover',
+      closeText: 'Cancelar',
+    })) !== true) return;
 
     await UnitsApi.remove(id);
 

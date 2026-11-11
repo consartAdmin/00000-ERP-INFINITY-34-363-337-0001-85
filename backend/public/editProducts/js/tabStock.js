@@ -2754,7 +2754,13 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     async function deleteModal() {
       const id = modalLotId();
       if (!id) return;
-      if (!confirm(`Excluir lote #${id}?`)) return;
+      if ((await showCenterModal({
+        variant: 'warning',
+        title: 'Excluir lote',
+        message: `Deseja realmente excluir o lote <b>#${id}</b>?<br><br>Esta operação não poderá ser desfeita.`,
+        okText: 'Sim, excluir',
+        closeText: 'Cancelar',
+      })) !== true) return;
 
       await LotsApi.remove(id);
       ctx.toast?.('✅ Lote excluído!', 'success');
@@ -2777,7 +2783,13 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       if (op === 'reserve') await LotsApi.reserve(id, qty);
       if (op === 'unreserve') await LotsApi.unreserve(id, qty);
       if (op === 'consume') {
-        if (!confirm(`Confirmar baixa (consume) de ${qty}?`)) return;
+        if ((await showCenterModal({
+          variant: 'warning',
+          title: 'Confirmar baixa',
+          message: `Confirmar a baixa (consumo) de <b>${qty}</b> deste lote?`,
+          okText: 'Sim, dar baixa',
+          closeText: 'Cancelar',
+        })) !== true) return;
         await LotsApi.consume(id, qty);
       }
 
@@ -2855,7 +2867,13 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
           if (act === 'reserve') await LotsApi.reserve(id, qty);
           if (act === 'unreserve') await LotsApi.unreserve(id, qty);
           if (act === 'consume') {
-            if (!confirm(`Confirmar baixa (consume) de ${qty}?`)) return;
+            if ((await showCenterModal({
+              variant: 'warning',
+              title: 'Confirmar baixa',
+              message: `Confirmar a baixa (consumo) de <b>${qty}</b> deste lote?`,
+              okText: 'Sim, dar baixa',
+              closeText: 'Cancelar',
+            })) !== true) return;
             await LotsApi.consume(id, qty);
           }
 
