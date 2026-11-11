@@ -195,23 +195,10 @@ function bindEvents(els) {
   });
 
   /* ────────────────────────────────────────────────────────────
-     Delete item
+     Delete item: fica só no bindItemsTableActions (inventory.items.js),
+     que confirma com centerAlertModal. Um segundo listener aqui excluía
+     sem perguntar e o DELETE repetido voltava 404.
   ──────────────────────────────────────────────────────────── */
-
-  els.itemsTbody?.addEventListener('click', async (event) => {
-    const button = event.target.closest('.js-delete-item');
-
-    if (!button) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    const itemId = button.dataset.id;
-
-    if (!itemId) return;
-
-    await deleteItem(els, itemId);
-  });
 
   /* ────────────────────────────────────────────────────────────
      Open/select inventory by clicking table row
