@@ -1096,7 +1096,16 @@
           </span>
           <button class="btn btn-flat btn-xs" data-id="${a.id}">Remover</button>`;
             li.querySelector('button').onclick = async () => {
-              if (!confirm('Remover este anexo?')) return;
+              const { showCenterModal } = await import('/public/includes/js/centerAlertModal.js');
+              const ok = await showCenterModal({
+                variant: 'warning',
+                title: 'Remover anexo',
+                message: 'Deseja realmente remover este anexo?',
+                okText: 'Sim, remover',
+                closeText: 'Cancelar',
+                timeoutMs: null,
+              });
+              if (ok !== true) return;
               const url = `${API_CAIXA}/movimentacoes/${state.movId}/anexos/${a.id}`;
               group('🗑️ DELETE anexo'); logDim('→', url);
               try {
