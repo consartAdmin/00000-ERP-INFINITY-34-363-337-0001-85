@@ -307,6 +307,23 @@
               </div>
             </div>
 
+            <div class="modal-divider--soft"></div>
+
+            <!-- Anexos: vão para a movimentação do Caixa ligada a esta entrada -->
+            <div class="section__header section-justify-between">
+              <h3 class="section__title">Anexos</h3>
+              <span class="ee-muted" id="attachmentsHint">Os arquivos ficam na movimentação do Caixa desta entrada.</span>
+            </div>
+            <input id="attachmentsInput" type="file" multiple hidden />
+            <div class="modal-upload-grid">
+              <div class="modal-dropzone modal-dropzone-font-10" id="attachmentsDropzone" role="button" tabindex="0"
+                aria-label="Selecionar ou arrastar arquivos">
+                <strong>📎 Arraste os arquivos aqui</strong>
+                <span>ou clique para selecionar (XML, PDF, imagens...)</span>
+              </div>
+              <div class="modal-attachments" id="attachmentsList" role="list"></div>
+            </div>
+
             <!-- Itens do XML -->
             <section id="itemsSection" class="modal-section" style="display:none;">
               <div class="modal-divider--soft"></div>

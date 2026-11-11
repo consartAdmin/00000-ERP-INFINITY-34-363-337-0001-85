@@ -10,6 +10,7 @@ import {
 } from '../repositories/expenseEntries/expenseEntries.index.js';
 
 import caixaApi from '../repositories/cashMoviments/cashMoviments.index.js';
+import pool from '../config/db.js';
 
 function ok(res, data, extra = {}) {
   return res.json({ ok: true, ...extra, data });
@@ -37,6 +38,18 @@ function buildCaixaObservation(entry, expenseEntryId) {
     .join('\n');
 }
 
+// Movimentação do Caixa gerada pela entrada: a observação leva a linha
+// "expenseEntryId=N". O regex evita que a entrada 1 encontre a 12.
+async function findCashMovementIdForEntry(expenseEntryId) {
+  const id = Number(expenseEntryId);
+  if (!id) return null;
+  const { rows } = await pool.query(
+    `SELECT id FROM "cashMoviments" WHERE notes ~ $1 ORDER BY id ASC LIMIT 1`,
+    [`expenseEntryId=${id}([^0-9]|$)`]
+  );
+  return rows[0]?.id || null;
+}
+
 async function ensureCaixaMovementFromExpenseEntry({ expenseEntry }) {
   if (!expenseEntry?.expenseEntryId) {
     throw new Error('expenseEntryId não encontrado para lançar no Caixa.');
@@ -49,16 +62,9 @@ async function ensureCaixaMovementFromExpenseEntry({ expenseEntry }) {
     throw new Error('Valor da despesa inválido para lançar no Caixa.');
   }
 
-  const searchRef = `expenseEntryId=${expenseEntryId}`;
-
-  const existing = await caixaApi.listMovements({
-    search: searchRef,
-    limit: 1,
-    offset: 0,
-  });
-
-  if (existing?.items?.length) {
-    return existing.items[0];
+  const existingId = await findCashMovementIdForEntry(expenseEntryId);
+  if (existingId) {
+    return (await caixaApi.getMovementById(existingId)) || { id: existingId };
   }
 
   return await caixaApi.createMovement({
@@ -233,6 +239,34 @@ export const expenseEntriesController = {
       });
     } catch (e) {
       console.error('[expenseEntries] post error', e);
+      return fail(res, 400, e.message || 'Internal error');
+    }
+  },
+
+  // GET /api/expense-entries/:id/cash-movement → { id } ou { id: null }
+  async getCashMovement(req, res) {
+    try {
+      const expenseEntryId = Number(req.params.id);
+      if (!expenseEntryId) return fail(res, 400, 'Invalid id');
+      const id = await findCashMovementIdForEntry(expenseEntryId);
+      return ok(res, { id });
+    } catch (e) {
+      console.error('[expenseEntries] getCashMovement error', e);
+      return fail(res, 500, e.message || 'Internal error');
+    }
+  },
+
+  // POST /api/expense-entries/:id/cash-movement → garante a movimentação (para anexos)
+  async ensureCashMovement(req, res) {
+    try {
+      const expenseEntryId = Number(req.params.id);
+      if (!expenseEntryId) return fail(res, 400, 'Invalid id');
+      const entry = await expenseEntriesApi.getById({ expenseEntryId });
+      if (!entry) return fail(res, 404, 'Not found');
+      const movement = await ensureCaixaMovementFromExpenseEntry({ expenseEntry: entry });
+      return ok(res, { id: movement?.id || null });
+    } catch (e) {
+      console.error('[expenseEntries] ensureCashMovement error', e);
       return fail(res, 400, e.message || 'Internal error');
     }
   },

@@ -6,6 +6,7 @@
 import { state } from './expenseEntries.state.js';
 import { $, escapeHtml, moneyBR, toISODate } from './expenseEntries.utils.js';
 import { apiBase } from './expenseEntries.config.js';
+import { resetAttachments } from './expenseEntries.attachments.js';
 
 // Veículos (frota de Entregas) para o select "Veículo (combustível)".
 export async function loadVehicleOptions() {
@@ -106,6 +107,7 @@ export function clearForm() {
 
   state.xmlItems = [];
   renderItemsPreview([]);
+  resetAttachments();
 }
 
 export function fillForm(row = {}) {

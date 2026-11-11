@@ -13,6 +13,7 @@ import {
   setModalTitle,
 } from './expenseEntries.form.js';
 import { setExpenseEntriesModalOpen } from './expenseEntries.modal.js';
+import { addPendingFiles, loadSavedAttachments, uploadPendingAttachments } from './expenseEntries.attachments.js';
 import { renderList } from './expenseEntries.render.js';
 import { state } from './expenseEntries.state.js';
 import { $, toISODate, toast } from './expenseEntries.utils.js';
@@ -87,6 +88,7 @@ export async function openEdit(id) {
     fillForm(row);
     setModalTitle(`Editar Entrada #${id}`, 'Atualize os dados e salve');
     setExpenseEntriesModalOpen(true);
+    loadSavedAttachments(id);
   } catch (error) {
     toast(`Erro ao abrir: ${error.message}`, 'error');
   }
@@ -100,14 +102,28 @@ export async function saveCurrent(event) {
     const validation = validateExpenseEntry(payload);
     if (!validation.valid) return toast(validation.errors[0], 'error');
 
-    await http(id ? `${API}/${id}` : API, {
+    const json = await http(id ? `${API}/${id}` : API, {
       method: id ? 'PUT' : 'POST',
       body: payload,
     });
 
+    // Anexos vão para a movimentação do Caixa desta entrada.
+    let attachmentsMessage = '';
+    const savedId = id || Number(json?.data?.expenseEntryId || 0);
+    if (savedId && state.pendingFiles.length) {
+      try {
+        const { sent, failed } = await uploadPendingAttachments(savedId, json?.data?.caixaMovement?.id);
+        attachmentsMessage = failed
+          ? `\n${sent} anexo(s) enviado(s) ao Caixa, ${failed} com erro.`
+          : `\n${sent} anexo(s) enviado(s) ao Caixa.`;
+      } catch (attachmentError) {
+        attachmentsMessage = `\nAnexos não enviados: ${attachmentError.message}`;
+      }
+    }
+
     setExpenseEntriesModalOpen(false);
     await loadList();
-    toast('Salvo com sucesso ✅');
+    toast(`Salvo com sucesso ✅${attachmentsMessage}`);
   } catch (error) {
     toast(`Erro ao salvar: ${error.message}`, 'error');
   }
@@ -165,6 +181,7 @@ export async function importXmlFile(file) {
 
     clearForm();
     fillForm(entryDraft);
+    addPendingFiles([file]);
     state.xmlItems = items;
     renderItemsPreview(items);
     setModalTitle('Nova Entrada (via XML)', `XML importado: ${file.name} • Itens: ${items.length}`);

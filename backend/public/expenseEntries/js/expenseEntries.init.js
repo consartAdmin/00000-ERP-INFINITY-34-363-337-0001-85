@@ -20,6 +20,7 @@ import { initImportFromDfe } from '/public/inboundInvoices/js/inboundInvoices.df
 import { apiBase } from './expenseEntries.config.js';
 import { setupExpenseEntriesModal } from './expenseEntries.modal.js';
 import { loadVehicleOptions } from './expenseEntries.form.js';
+import { setupAttachments } from './expenseEntries.attachments.js';
 import { state } from './expenseEntries.state.js';
 import { $, toast } from './expenseEntries.utils.js';
 
@@ -96,6 +97,7 @@ function setupImportFromDfe() {
 export function initExpenseEntries() {
   setupExpenseEntriesModal();
   bindEvents();
+  setupAttachments();
   setupImportFromDfe();
   loadVehicleOptions();
   loadList();

@@ -32,6 +32,14 @@ router.post('/import-xml', upload.single('xml'), expenseEntriesController.import
 router.post('/:id/post', expenseEntriesController.post);
 
 /**
+ * MOVIMENTAÇÃO DO CAIXA da entrada (usada pelos anexos do modal)
+ * GET  /api/expense-entries/:id/cash-movement → { id | null }
+ * POST /api/expense-entries/:id/cash-movement → cria se não existir
+ */
+router.get('/:id/cash-movement', expenseEntriesController.getCashMovement);
+router.post('/:id/cash-movement', expenseEntriesController.ensureCashMovement);
+
+/**
  * LIST
  * GET /api/expense-entries?page=1&pageSize=20&q=...&status=OPEN&dateFrom=2026-01-01&dateTo=2026-01-31
  */
