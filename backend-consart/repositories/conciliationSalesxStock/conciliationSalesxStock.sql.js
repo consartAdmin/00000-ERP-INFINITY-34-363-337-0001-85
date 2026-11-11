@@ -3,6 +3,18 @@
 // ║ Fonte operacional: productMovements                                ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
+// Ajustes de inventário e de estoque: aparecem na lista para explicar os
+// saltos do saldo, mas não contam como venda nem como entrada nos totais.
+const ADJUSTMENT_TYPES_SQL = [
+  'INVENTARIO',
+  'INVENTÁRIO',
+  'INVENTORY',
+  'AJUSTE',
+  'ADJUSTMENT',
+  'ADJUSTMENT_IN',
+  'ADJUSTMENT_OUT',
+].map((type) => `'${type}'`).join(', ');
+
 export function reportCte(stockMode = {}) {
   const simpleStock = stockMode?.isSimple === true;
   const qtyOnHand = simpleStock
@@ -24,13 +36,40 @@ export function reportCte(stockMode = {}) {
         CASE
           WHEN UPPER(BTRIM(pm.movement_type)) IN ('INBOUND', 'ENTRADA') THEN 'ENTRADA'
           WHEN UPPER(BTRIM(pm.movement_type)) IN ('OUTBOUND', 'SAIDA', 'SAÍDA') THEN 'SAIDA'
+          WHEN UPPER(BTRIM(pm.movement_type)) IN (${ADJUSTMENT_TYPES_SQL}) THEN 'AJUSTE'
         END AS movement_type,
-        ABS(COALESCE(pm.quantity, 0))::numeric AS quantity,
-        COALESCE(
-          NULLIF(BTRIM(pm.nfe_number), ''),
-          inbound.invoice_number,
-          issued.nfe_number::text
-        ) AS invoice_number,
+        CASE
+          WHEN UPPER(BTRIM(pm.movement_type)) IN (${ADJUSTMENT_TYPES_SQL})
+            THEN COALESCE(
+              pm.new_stock::numeric - pm.previous_stock::numeric,
+              pm.quantity::numeric,
+              0
+            )
+          ELSE ABS(COALESCE(pm.quantity, 0))::numeric
+        END AS quantity,
+        CASE
+          WHEN UPPER(BTRIM(pm.movement_type)) IN (${ADJUSTMENT_TYPES_SQL})
+            THEN CASE
+              WHEN LOWER(BTRIM(COALESCE(pm.origin_module, ''))) = 'inventory'
+                THEN 'Inventário ' || COALESCE(
+                  NULLIF(BTRIM(pm.metadata->>'inventory_code'), ''),
+                  NULLIF(BTRIM(pm.metadata->>'inventory_id'), ''),
+                  ''
+                )
+              ELSE 'Ajuste'
+            END
+          ELSE COALESCE(
+            NULLIF(BTRIM(pm.nfe_number), ''),
+            inbound.invoice_number,
+            issued.nfe_number::text
+          )
+        END AS invoice_number,
+        -- Ajustes não se agrupam entre si: cada um vira uma linha.
+        CASE
+          WHEN UPPER(BTRIM(pm.movement_type)) IN (${ADJUSTMENT_TYPES_SQL})
+            THEN pm.movement_id::text
+          ELSE ''
+        END AS group_key,
         COALESCE(
           CASE
             WHEN UPPER(BTRIM(pm.origin_module)) = 'INBOUND_INVOICE'
@@ -120,7 +159,8 @@ export function reportCte(stockMode = {}) {
         'ENTRADA',
         'OUTBOUND',
         'SAIDA',
-        'SAÍDA'
+        'SAÍDA',
+        ${ADJUSTMENT_TYPES_SQL}
       )
         AND NULLIF(BTRIM(pm.product_code), '') IS NOT NULL
     ),
@@ -152,7 +192,26 @@ export function reportCte(stockMode = {}) {
           )
         )[1] AS stock_after,
         MIN(fm.movement_created_at) AS movement_created_at,
-        MIN(fm.movement_id) AS movement_sort_id
+        MIN(fm.movement_id) AS movement_sort_id,
+        -- Diferença entre o "antes" desta operação e o "depois" da operação
+        -- anterior do mesmo produto. Diferente de zero = o estoque mudou
+        -- sem nenhum movimento registrado entre as duas.
+        (
+          ARRAY_AGG(
+            fm.stock_before
+            ORDER BY fm.movement_created_at, fm.movement_id
+          )
+        )[1] - LAG(
+          (
+            ARRAY_AGG(
+              fm.stock_after
+              ORDER BY fm.movement_created_at DESC, fm.movement_id DESC
+            )
+          )[1]
+        ) OVER (
+          PARTITION BY fm.sku
+          ORDER BY MIN(fm.movement_created_at), MIN(fm.movement_id)
+        ) AS stock_gap
       FROM filtered_movements fm
       LEFT JOIN public.products p
         ON p.product_code = fm.sku
@@ -161,7 +220,8 @@ export function reportCte(stockMode = {}) {
         fm.invoice_id,
         fm.invoice_number,
         fm.movement_date,
-        fm.sku
+        fm.sku,
+        fm.group_key
     ),
     sales_by_product AS (
       SELECT

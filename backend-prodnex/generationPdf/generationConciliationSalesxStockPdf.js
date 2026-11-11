@@ -40,6 +40,7 @@ function movementLabel(value) {
   const normalized = String(value || 'TOTAL').trim().toUpperCase();
   if (['SAIDA', 'SAÍDA', 'OUTBOUND'].includes(normalized)) return 'Saída';
   if (['ENTRADA', 'INBOUND'].includes(normalized)) return 'Entrada';
+  if (['AJUSTE', 'ADJUSTMENT', 'INVENTARIO', 'INVENTORY'].includes(normalized)) return 'Ajuste';
   return 'Total';
 }
 
