@@ -147,7 +147,7 @@ async function loadLotsByProductCode(productCode) {
   return rows;
 }
 
-async function resolveProductStockIdBySku(productCode) {
+export async function resolveProductStockIdBySku(productCode) {
   const sku = normalizeSku10(productCode);
   if (!sku) return null;
 

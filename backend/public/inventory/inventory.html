@@ -7,6 +7,7 @@
      ║    table-layout-integrated com filtros/ações na faixa de cima              ║
      ║  - Ações: actionIcons.js · Avisos: centerAlertModal.js · modais: modal.js  ║
      ║ JS: js/inventory.index.js (+ inventoryImportXls.js)                        ║
+     ║  - "+" ao lado de Unidade / Localização / Lote: js/inventory.quickCreate.js ║
      ║ API: /api/inventories                                                      ║
      ╚════════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
@@ -182,6 +183,7 @@
                 <option value="">Selecione...</option>
               </select>
             </div>
+            <div class="action-icons"><button type="button" id="btnQuickUnit" class="action-icon action-icon--add" title="Nova unidade para o produto" aria-label="Nova unidade para o produto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></button></div>
 
             <div class="fields fields-h-6 fields-w-12 fields-font-3" data-feature="PRODUCT_LOCATIONS">
               <label for="itemLocation">Localização</label>
@@ -189,6 +191,7 @@
                 <option value="">Selecione...</option>
               </select>
             </div>
+            <div class="action-icons" data-feature="PRODUCT_LOCATIONS"><button type="button" id="btnQuickLocation" class="action-icon action-icon--add" title="Nova localização para o produto" aria-label="Nova localização para o produto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></button></div>
 
             <div class="fields fields-h-6 fields-w-12 fields-font-3">
               <label for="lotSelect">Lote / Validade</label>
@@ -196,6 +199,7 @@
                 <option value="">Selecione o lote...</option>
               </select>
             </div>
+            <div class="action-icons"><button type="button" id="btnQuickLot" class="action-icon action-icon--add" title="Novo lote / validade para o produto" aria-label="Novo lote / validade para o produto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></button></div>
 
             <div class="fields fields-h-6 fields-w-6 fields-font-3">
               <label for="itemCountedQty">Qtd. contada</label>
@@ -376,8 +380,175 @@
     </div>
   </div>
 
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — NOVA UNIDADE                         │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-4 modal-header-color-3 modal-footer-color-3" id="quickUnitModal" role="dialog"
+    aria-modal="true" aria-labelledby="quickUnitModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <div>
+            <h3 class="modal__title" id="quickUnitModalTitle">Nova unidade</h3>
+            <small id="quickUnitModalSubtitle"></small>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <div class="modal-form-grid modal-form-grid--6">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="quickUnitUnit">Unidade *</label>
+              <select id="quickUnitUnit">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="quickUnitFactor">Fator</label>
+              <input id="quickUnitFactor" type="text" readonly>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="quickUnitBarcode">Código de barras</label>
+              <input id="quickUnitBarcode" type="text" maxlength="60" inputmode="numeric" placeholder="Automático se vazio" autocomplete="off">
+            </div>
+
+            <label class="checkbox modal-field--span-full">
+              <input id="quickUnitStandard" type="checkbox">
+              <span>Unidade padrão do produto</span>
+            </label>
+
+            <small class="modal-field--span-full">A unidade é gravada no cadastro do produto (mesma aba Unidades da Edição de Produtos) e já fica selecionada no item.</small>
+          </div>
+        </div>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="button" id="btnSaveQuickUnit" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar unidade</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — NOVA LOCALIZAÇÃO                     │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-5 modal-header-color-3 modal-footer-color-3" id="quickLocationModal" role="dialog"
+    aria-modal="true" aria-labelledby="quickLocationModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <div>
+            <h3 class="modal__title" id="quickLocationModalTitle">Nova localização</h3>
+            <small id="quickLocationModalSubtitle"></small>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <div class="modal-form-grid modal-form-grid--6">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="quickLocLocal">Local *</label>
+              <select id="quickLocLocal">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="quickLocCorridor">Corredor *</label>
+              <select id="quickLocCorridor">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="quickLocShelf">Prateleira *</label>
+              <select id="quickLocShelf">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="quickLocBin">Bandeja</label>
+              <select id="quickLocBin">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="quickLocPosition">Box</label>
+              <select id="quickLocPosition">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+
+            <div class="fields fields-w-full fields-font-3 modal-field--span-full">
+              <label for="quickLocNotes">Observação</label>
+              <textarea id="quickLocNotes" class="textarea" rows="2" placeholder="Opcional"></textarea>
+            </div>
+
+            <label class="checkbox modal-field--span-full">
+              <input id="quickLocPrimary" type="checkbox">
+              <span>Tornar a localização principal do produto</span>
+            </label>
+
+            <small class="modal-field--span-full">Local, corredor, prateleira, bandeja e box vêm dos cadastros de Localizações. A nova localização já fica selecionada no item.</small>
+          </div>
+        </div>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="button" id="btnSaveQuickLocation" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar localização</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — NOVO LOTE / VALIDADE                 │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-4 modal-header-color-3 modal-footer-color-3" id="quickLotModal" role="dialog"
+    aria-modal="true" aria-labelledby="quickLotModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <div>
+            <h3 class="modal__title" id="quickLotModalTitle">Novo lote / validade</h3>
+            <small id="quickLotModalSubtitle"></small>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <div class="modal-form-grid modal-form-grid--6">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="quickLotCode">Código do lote *</label>
+              <input id="quickLotCode" type="text" maxlength="100" autocomplete="off" placeholder="Ex.: L240915">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="quickLotExpires">Validade</label>
+              <input id="quickLotExpires" type="date">
+            </div>
+
+            <small class="modal-field--span-full">O lote nasce com saldo 0. A quantidade contada entra no estoque quando o inventário for finalizado.</small>
+          </div>
+        </div>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="button" id="btnSaveQuickLot" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar lote</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/inventory/js/inventory.index.js?v=dock-01"></script>
+  <script type="module" src="/public/inventory/js/inventory.index.js?v=dock-02"></script>
   <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta [data-feature="PRODUCT_LOCATIONS"] -->
   <script type="module">import { initProductLocationsFeature } from "/public/includes/js/productLocationsFeature.js"; initProductLocationsFeature();</script>
   <!-- Importador XLS + download do modelo CSV -->
