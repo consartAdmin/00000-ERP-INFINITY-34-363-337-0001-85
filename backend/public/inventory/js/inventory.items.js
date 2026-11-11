@@ -974,6 +974,9 @@ function selectPickedUnit(els, { productUnitId, barcode, unit } = {}) {
 
   const opt = byId || byBarcode || byUnit;
   if (!opt) return false;
+
+  // Só a unidade escolhida na busca fica na lista (ex.: CX.12 não mostra a UN.)
+  Array.from(el.options).forEach((o) => { if (o !== opt) o.remove(); });
   el.value = opt.value;
   return true;
 }
