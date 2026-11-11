@@ -280,6 +280,30 @@
 
             <h3 class="section__title">Classificação</h3>
             <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6 fields-font-3 modal-field--span-2">
+                <label for="chartAccountLabel">Plano de contas</label>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <input id="chartAccountLabel" type="text" readonly placeholder="Clique na lupa para buscar..."
+                    title="Duplo clique ou lupa para buscar a conta contábil" style="flex:1 1 auto; min-width:0;" />
+                  <button type="button" id="btnSearchChartAccount" class="action-icon action-icon--search"
+                    title="Buscar conta contábil" aria-label="Buscar conta contábil"><svg viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg></button>
+                  <button type="button" id="btnClearChartAccount" class="action-icon action-icon--cancel"
+                    title="Limpar conta contábil" aria-label="Limpar conta contábil"><svg viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+                </div>
+                <input type="hidden" id="chartAccountId" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="cashCategory">Categoria</label>
+                <select id="cashCategory"><option value="">Selecione...</option></select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="cashSubcategory">Subcategoria</label>
+                <select id="cashSubcategory"><option value="">— escolha a categoria —</option></select>
+              </div>
               <div class="fields fields-w-full fields-h-6 fields-font-3">
                 <label for="vehicleId">Veículo (combustível)</label>
                 <select id="vehicleId">

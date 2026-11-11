@@ -7,6 +7,7 @@ import { state } from './expenseEntries.state.js';
 import { $, escapeHtml, moneyBR, toISODate } from './expenseEntries.utils.js';
 import { apiBase } from './expenseEntries.config.js';
 import { resetAttachments } from './expenseEntries.attachments.js';
+import { readClassification, resetClassification } from './expenseEntries.classification.js';
 
 // Veículos (frota de Entregas) para o select "Veículo (combustível)".
 export async function loadVehicleOptions() {
@@ -108,6 +109,7 @@ export function clearForm() {
   state.xmlItems = [];
   renderItemsPreview([]);
   resetAttachments();
+  resetClassification();
 }
 
 export function fillForm(row = {}) {
@@ -156,6 +158,8 @@ export function readForm() {
     pdfPath: $('#pdfPath').value.trim() || null,
     generatesTaxCredit: $('#taxCreditOption').value === '1',
     fiscalStatus: $('#fiscalStatus').value.trim() || 'NO_CREDIT',
+    // Vai para a movimentação do Caixa (não é coluna da entrada)
+    cashClassification: readClassification(),
   };
 }
 
