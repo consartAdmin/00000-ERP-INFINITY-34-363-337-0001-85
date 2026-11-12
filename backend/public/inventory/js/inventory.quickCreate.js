@@ -52,6 +52,8 @@ function textOrNull(value) {
 }
 
 function asRows(data) {
+  // GET /api/units responde { ok, data: { rows, total } }
+  if (data?.data && !Array.isArray(data.data) && Array.isArray(data.data.rows)) return data.data.rows;
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.rows)) return data.rows;
   if (Array.isArray(data?.data)) return data.data;
