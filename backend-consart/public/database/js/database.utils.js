@@ -5,10 +5,26 @@
 
 import { state } from './database.state.js';
 
-export function formatValue(value) {
+const ISO_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(\.\d+)?Z$/;
+
+// col (opcional) = linha de information_schema.columns da coluna.
+// date → 2026-11-12 | timestamp sem fuso → 2026-11-12 10:00:00 (o mesmo valor gravado,
+// sem o "T...Z" do JSON). timestamptz continua ISO (com fuso) para não perder o horário.
+export function formatValue(value, col = null) {
     if (value === null || value === undefined) return '';
     if (typeof value === 'object') return JSON.stringify(value);
-    return String(value);
+
+    const text = String(value);
+    const iso = ISO_RE.exec(text);
+
+    if (iso && col?.data_type === 'date') return iso[1];
+    if (iso && col?.data_type === 'timestamp without time zone') return `${iso[1]} ${iso[2]}${iso[3] && iso[3] !== '.000' ? iso[3] : ''}`;
+
+    return text;
+}
+
+export function isMaskedColumn(columnName) {
+    return state.maskedColumns.includes(columnName);
 }
 
 export function escapeHtml(value) {

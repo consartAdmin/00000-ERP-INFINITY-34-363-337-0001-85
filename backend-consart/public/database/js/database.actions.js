@@ -35,6 +35,10 @@ import { canGoNext, canGoPrev } from './database.validation.js';
 
 let searchTimer = null;
 
+// Trocar de tabela/página rápido dispara várias buscas; só a última pode desenhar a tela
+let rowsSeq = 0;
+let structureSeq = 0;
+
 export async function loadTables() {
     renderTablesMessage('Carregando tabelas...');
 
@@ -49,7 +53,8 @@ export async function loadTables() {
 export async function loadRows() {
     if (!state.currentTable) return;
 
-    renderRowsMessage('Carregando registros...');
+    const seq = ++rowsSeq;
+    renderRowsMessage('Carregando registros...', els.tableHead.querySelectorAll('th').length || 1);
 
     try {
         const data = await fetchRows(state.currentTable, {
@@ -59,10 +64,15 @@ export async function loadRows() {
             search: state.search,
         });
 
+        if (seq !== rowsSeq) return;
+
         setRowsData(data);
         renderMeta();
         renderTable();
     } catch (err) {
+        if (seq !== rowsSeq) return;
+
+        els.tableHead.innerHTML = '';
         renderRowsMessage(err.message);
     }
 }
@@ -70,12 +80,18 @@ export async function loadRows() {
 export async function loadStructure() {
     if (!state.currentTable) return;
 
+    const seq = ++structureSeq;
     renderStructureMessage('Carregando estrutura...');
 
     try {
-        setStructure(await fetchStructure(state.schema, state.currentTable));
+        const structure = await fetchStructure(state.schema, state.currentTable);
+        if (seq !== structureSeq) return;
+
+        setStructure(structure);
         renderStructure();
     } catch (err) {
+        if (seq !== structureSeq) return;
+
         setStructure(null);
         renderStructureMessage(err.message);
     }
@@ -87,13 +103,19 @@ async function selectTable(tableName) {
     setCurrentTable(tableName);
 
     els.rowSearch.value = '';
+    els.tableHead.innerHTML = '';
 
     renderTableHeader();
     renderTables();
 
+    // No tablet/celular a lista de tabelas fica em cima: rola até os registros
+    if (window.matchMedia('(max-width: 1024px)').matches) {
+        els.currentTableTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     // A estrutura alimenta os ícones 🔑/🔗 da grade de registros
     await loadStructure();
-    await loadRows();
+    if (state.currentTable === tableName) await loadRows();
 }
 
 function selectTab(tab) {

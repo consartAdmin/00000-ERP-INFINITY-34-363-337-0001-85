@@ -2,13 +2,13 @@
 // ║ databaseCreate.repository.js — insertRow                           ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import pool from '../../config/db.js';
 import { DEFAULT_SCHEMA } from './database.constants.js';
-import { assertSafeIdentifier, quoteIdent, assertTableAllowed } from './database.sanitizers.js';
+import { assertSchemaAllowed, assertTableAllowed, coerceEntries, maskRow, quoteIdent } from './database.sanitizers.js';
+import { dropMaskedEntries, withRowAudit } from './databaseRowAudit.js';
 import { getTableColumns } from './databaseSchema.repository.js';
 
-export async function insertRow({ schema = DEFAULT_SCHEMA, table, data }) {
-  const schemaName = assertSafeIdentifier(schema, 'Schema');
+export async function insertRow({ schema = DEFAULT_SCHEMA, table, data, userId = null }) {
+  const schemaName = assertSchemaAllowed(schema);
   const tableName = assertTableAllowed(table);
 
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
@@ -20,10 +20,13 @@ export async function insertRow({ schema = DEFAULT_SCHEMA, table, data }) {
   const columnsInfo = await getTableColumns({ schema: schemaName, table: tableName });
   const allowedColumns = new Set(columnsInfo.columns.map((c) => c.column_name));
 
-  const entries = Object.entries(data).filter(([key]) => allowedColumns.has(key));
+  const entries = coerceEntries(
+    columnsInfo.columns,
+    dropMaskedEntries(Object.entries(data).filter(([key]) => allowedColumns.has(key)))
+  );
 
   if (!entries.length) {
-    const err = new Error('Nenhuma coluna válida enviada.');
+    const err = new Error('Preencha ao menos um campo.');
     err.status = 400;
     throw err;
   }
@@ -40,6 +43,11 @@ export async function insertRow({ schema = DEFAULT_SCHEMA, table, data }) {
     RETURNING *
   `;
 
-  const { rows } = await pool.query(sql, params);
-  return rows[0];
+  return withRowAudit(
+    { schemaName, tableName, pkColumns: columnsInfo.primaryKey, operation: 'INSERT', userId },
+    async (client) => {
+      const { rows } = await client.query(sql, params);
+      return { after: rows[0], result: maskRow(rows[0]) };
+    }
+  );
 }

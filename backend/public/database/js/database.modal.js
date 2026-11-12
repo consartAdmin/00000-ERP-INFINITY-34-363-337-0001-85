@@ -3,16 +3,36 @@
 // ║ MODULE: Database Viewer / Editor                                    ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 import { COMMON_TYPES, els, FK_ACTIONS, STRUCTURE_TITLES } from './database.config.js';
 import { setEditingRow, setStructOp, setStructPreviewReady, state } from './database.state.js';
-import { describeFk, escapeHtml, formatValue, getColumnKeys } from './database.utils.js';
+import { describeFk, escapeHtml, formatValue, getColumnKeys, isMaskedColumn } from './database.utils.js';
 
-export function showMessage(message) {
-    alert(message);
+// Avisos no padrão do sistema (centerAlertModal). O texto é escapado porque
+// mensagens do PostgreSQL podem conter < > e o modal usa innerHTML.
+export function showMessage(message, { variant = 'error', title = 'Banco de Dados' } = {}) {
+    return showCenterModal({ variant, title, message: escapeHtml(message) });
 }
 
-export function confirmAction(message) {
-    return confirm(message);
+export function showSuccess(message) {
+    return showMessage(message, { variant: 'success', title: 'Pronto' });
+}
+
+export async function confirmAction(message, { title = 'Confirmar', okText = 'Confirmar' } = {}) {
+    const ok = await showCenterModal({
+        variant: 'warning',
+        title,
+        message: escapeHtml(message),
+        okText,
+        closeText: 'Cancelar',
+    });
+
+    return ok === true;
+}
+
+// O modal de confirmação/aviso está aberto? (o ESC dele não deve fechar o modal de baixo)
+export function isCenterModalOpen() {
+    return Boolean(document.getElementById('center-modal-layer-consart'));
 }
 
 function openModalEl(modal) {
@@ -47,6 +67,7 @@ function fieldHelp(col, isNew) {
         isPk && 'PK',
         fk && `FK → ${describeFk(fk)}`,
         isNew && col.column_default && 'vazio = padrão do banco',
+        isMaskedColumn(col.column_name) && 'valor oculto',
     ].filter(Boolean).join(' | ');
 }
 
@@ -54,12 +75,19 @@ function renderModalFields(row, isNew) {
     els.modalFields.innerHTML = state.columns
         .map((col, index) => {
             const name = col.column_name;
-            const value = formatValue(row[name]);
+            const masked = isMaskedColumn(name);
+            // Coluna sensível: o campo vem vazio; só é gravada se digitar um valor novo
+            const value = masked ? '' : formatValue(row[name], col);
             const id = `dbField_${index}`;
+            const attrs = `id="${id}" data-field="${escapeHtml(name)}" data-original="${escapeHtml(value)}"`
+                + (masked ? ' data-masked' : '');
+            const placeholder = masked && !isNew && row[name] !== null && row[name] !== undefined
+                ? ' placeholder="•••••• (oculto — digite para trocar)"'
+                : '';
 
-            const input = col.data_type === 'text'
-                ? `<textarea id="${id}" data-field="${escapeHtml(name)}">${escapeHtml(value)}</textarea>`
-                : `<input id="${id}" type="text" data-field="${escapeHtml(name)}" value="${escapeHtml(value)}" />`;
+            const input = col.data_type === 'text' && !masked
+                ? `<textarea ${attrs}>${escapeHtml(value)}</textarea>`
+                : `<input ${attrs} type="${masked ? 'password' : 'text'}" value="${escapeHtml(value)}"${placeholder} autocomplete="off" />`;
 
             return `
                 <div class="fields fields-h-6 fields-w-full fields-font-3">
@@ -79,6 +107,7 @@ export function openNewModal() {
 
     els.modalTitle.textContent = `Novo registro em ${state.currentTable}`;
     els.btnDeleteRow.classList.add('hidden');
+    els.btnSaveRow.classList.remove('hidden');
 
     renderModalFields({}, true);
     openModalEl(els.rowModal);
@@ -89,8 +118,14 @@ export function openEditModal(row) {
 
     setEditingRow(row);
 
-    els.modalTitle.textContent = `Editar registro em ${state.currentTable}`;
-    els.btnDeleteRow.classList.remove('hidden');
+    // Sem PK não dá para localizar o registro: abre só para consulta
+    const canWrite = state.primaryKey.length > 0;
+
+    els.modalTitle.textContent = canWrite
+        ? `Editar registro em ${state.currentTable}`
+        : `Registro de ${state.currentTable} (tabela sem chave primária: somente consulta)`;
+    els.btnDeleteRow.classList.toggle('hidden', !canWrite);
+    els.btnSaveRow.classList.toggle('hidden', !canWrite);
 
     renderModalFields(row, false);
     openModalEl(els.rowModal);

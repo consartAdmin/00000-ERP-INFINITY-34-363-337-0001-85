@@ -12,6 +12,8 @@ export const state = {
     activeTab: TABS.rows,
     columns: [],
     primaryKey: [],
+    // Colunas com segredo (senha/token): o servidor manda •••••• no lugar do valor
+    maskedColumns: [],
     rows: [],
     page: 1,
     limit: DEFAULTS.limit,
@@ -41,6 +43,7 @@ export function setCurrentTable(tableName) {
 export function setRowsData(data) {
     state.columns = data.columns || [];
     state.primaryKey = data.primaryKey || [];
+    state.maskedColumns = data.maskedColumns || [];
     state.rows = data.rows || [];
     state.total = Number(data.total || 0);
     state.page = Number(data.page || 1);

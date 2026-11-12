@@ -245,3 +245,116 @@
 .hidden {
   display: none !important;
 }
+
+/* =========================================================
+   TABLET / CELULAR (até 1024px)
+   Uma coluna: lista de tabelas em cima (caixa com rolagem),
+   registros embaixo. A página rola normalmente, sem a altura
+   fixa da versão desktop (que deixava um vazio no tablet).
+========================================================= */
+@media (max-width: 1024px) {
+  .db-page {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .db-sidebar {
+    padding: 14px 16px;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .brand h1 {
+    font-size: 20px;
+  }
+
+  .sidebar-search {
+    margin: 10px 0 8px;
+  }
+
+  .tables-list {
+    max-height: 210px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 2px 8px;
+    align-content: start;
+  }
+
+  .table-item {
+    padding: 9px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .db-content {
+    padding: 16px 12px;
+    overflow: visible;
+    gap: 14px;
+  }
+
+  .db-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    scroll-margin-top: 12px;
+  }
+
+  .db-header h2 {
+    font-size: 20px;
+    word-break: break-all;
+  }
+
+  .db-tabs {
+    margin-bottom: -14px;
+  }
+
+  #rowsPanel .table-scroll {
+    max-height: 62vh;
+  }
+
+  #dataTable th,
+  #dataTable td {
+    max-width: 180px;
+  }
+
+  .table-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .db-structure {
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .db-structure__header {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .tables-list {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .db-header .btn-position-right {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .db-header .btn-position-right .btn {
+    flex: 1;
+  }
+
+  .table-footer__info,
+  .table-footer__pagination,
+  .table-footer__page-size {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .db-check-list {
+    grid-template-columns: 1fr;
+  }
+}

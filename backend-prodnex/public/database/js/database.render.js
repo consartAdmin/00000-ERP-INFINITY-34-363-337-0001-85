@@ -75,7 +75,10 @@ export function renderMeta() {
         ? state.primaryKey.join(', ')
         : 'Sem PK';
 
-    els.paginationLabel.textContent = `Página ${state.page}`;
+    const pages = Math.max(Math.ceil(state.total / state.limit), 1);
+    els.paginationLabel.textContent = `Página ${state.page} de ${pages}`;
+    els.btnPrev.disabled = state.page <= 1;
+    els.btnNext.disabled = state.page >= pages;
 }
 
 function columnHeader(columnName) {
@@ -117,7 +120,7 @@ export function renderTable() {
 
                     ${state.columns
                         .map((c) => {
-                            const value = formatValue(row[c.column_name]);
+                            const value = formatValue(row[c.column_name], c);
                             return `<td title="${escapeHtml(value)}">${escapeHtml(value)}</td>`;
                         })
                         .join('')}

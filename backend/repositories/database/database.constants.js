@@ -49,3 +49,13 @@ export const SAFE_DEFAULT_EXPRESSIONS = [
 ];
 
 export const PG_IDENTIFIER_MAX = 63;
+
+// Schemas que o módulo pode abrir (o front só usa "public")
+export const ALLOWED_SCHEMAS = new Set([DEFAULT_SCHEMA]);
+
+// Colunas com segredo (senha SMTP, senha do certificado A1, tokens de API):
+// o valor nunca sai do servidor e não entra na pesquisa. Para trocar, digite um valor novo.
+// Conferido por "palavra" do nome (snake_case ou camelCase): smtp_pass, certificate_password,
+// access_token, apiKey... mas não bypass_stock.
+export const SENSITIVE_COLUMN_WORDS = new Set(['pass', 'passwd', 'password', 'senha', 'secret', 'token', 'apikey']);
+export const MASKED_VALUE = '••••••';
