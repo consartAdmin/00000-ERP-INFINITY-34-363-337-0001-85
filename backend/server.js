@@ -672,6 +672,10 @@ app.use('/api/products-mobile', productsMobileRoutes);
 import voiceBudgetsRoutes from './routes/voiceBudgetsRoutes.js';
 app.use('/api/voice-budgets', voiceBudgetsRoutes);
 
+// Consart — assistente de IA por voz (app Consart): POST /api/assistant/chat
+import assistantRoutes from './routes/assistantRoutes.js';
+app.use('/api/assistant', assistantRoutes);
+
 /* ╔══════════════════════════════════════════════════════════╗
    ║                ROTA: "cancelarNfeRoutes"                 ║
    ╚══════════════════════════════════════════════════════════╝ */
