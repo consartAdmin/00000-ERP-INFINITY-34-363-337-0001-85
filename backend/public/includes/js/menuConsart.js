@@ -101,7 +101,7 @@ const ICON_RULES = [
   ['inicio', 'home'], ['suporte', 'chat'], ['e-commerce', 'cart'], ['ecommerce', 'cart'],
   ['gestao erp', 'layers'], ['comercial', 'briefcase'], ['vendas', 'trend'],
   ['logistica', 'truck'], ['transportadora', 'truck'], ['financeiro', 'wallet'],
-  ['relatorio', 'chart'], ['contabilidade', 'calculator'], ['configurac', 'settings'],
+  ['relatorio', 'chart'], ['contabil', 'calculator'], ['configurac', 'settings'],
   ['ferramenta', 'wrench'], ['cliente', 'users'], ['produto', 'package'],
   ['ajustes em lote', 'sliders'], ['lote', 'sliders'], ['secundario', 'list'],
   ['fiscal', 'receipt'], ['imposto', 'receipt'], ['estoque', 'archive'],
