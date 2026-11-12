@@ -1,0 +1,102 @@
+# ============================================================
+# Modelo do .env da DEMONSTRAÇÃO (secret ENV_FILE_DEMO no GitHub)
+#
+# Como montar:
+#   1. Copie o backend/.env do Infinity inteiro.
+#   2. Troque os valores do bloco "TROCAR" abaixo.
+#   3. APAGUE as linhas do bloco "APAGAR" (chave que não está no .env da
+#      demo é removida dela; chave que está, com outro valor, é trocada).
+#   4. Cole o resultado no secret ENV_FILE_DEMO (Settings > Secrets and
+#      variables > Actions). Não salve este .env no git.
+# ============================================================
+
+# ---------- TROCAR ----------
+
+# Banco vazio criado pelo criar_banco_demo.ps1 (mesma instância do Infinity)
+DB_NAME=erp-demo
+
+# OBRIGATÓRIO ser diferente do Infinity: com o mesmo segredo, o login do
+# admin da demo (usuário 1) valeria como o usuário 1 do ERP real.
+# Gere um novo, por exemplo no PowerShell:
+#   [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Max 256 }))
+JWT_SECRET=troque-por-um-segredo-novo-so-da-demo
+
+# Arquivos enviados na demo (imagens, anexos, DANFE) vão para um bucket
+# só da demo. Sem estas linhas o sistema usa os buckets do Infinity.
+# Crie o bucket antes (Cloud Storage > Criar bucket), ex.: erp-demo-arquivos
+GCS_BUCKET=erp-demo-arquivos
+UPLOAD_BUCKET=erp-demo-arquivos
+STORAGE_BUCKET=erp-demo-arquivos
+GOOGLE_CLOUD_BUCKET=erp-demo-arquivos
+GCS_BUCKET_PRODUCTS=erp-demo-arquivos
+GCS_BUCKET_MOBILIZED=erp-demo-arquivos
+GCS_BUCKET_CUSTOMERS=erp-demo-arquivos
+GCS_BUCKET_ENTERPRISE_LOGOS=erp-demo-arquivos
+GCS_ACCOUNTS_PAYABLE_BUCKET=erp-demo-arquivos
+ACCOUNTS_PAYABLE_GCS_BUCKET=erp-demo-arquivos
+GCS_EMPLOYEES_BUCKET=erp-demo-arquivos
+EMPLOYEES_GCS_BUCKET=erp-demo-arquivos
+DANFE_EMITIDAS_GCS_BUCKET=erp-demo-arquivos
+XML_EMITIDAS_GCS_BUCKET=erp-demo-arquivos
+PDF_BUCKET_DANFE_EMITIDAS=erp-demo-arquivos
+PDF_BUCKET_XML_EMITIDAS=erp-demo-arquivos
+# (se o .env do Infinity tiver GCS_PUBLIC_BASE_URL / GCS_PUBLIC_BASE com o
+#  nome do bucket, troque para o bucket da demo também)
+
+# NF-e sempre simulada / homologação: cliente nenhum emite nota real
+NFE_AMBIENTE=homologacao
+NFE_ENVIRONMENT=homologacao
+PLUGNOTAS_MOCK=1
+TECNOSPEED_MOCK=1
+PDV_NFCE=false
+
+# Empresa fictícia da demonstração
+EMPRESA_RAZAO=EMPRESA DEMONSTRACAO LTDA
+EMPRESA_FANTASIA=Empresa Demonstração
+EMPRESA_CNPJ=00000000000191
+EMPRESA_IE=ISENTO
+EMPRESA_UF=SP
+EMPRESA_CIDADE=São Paulo
+EMPRESA_MUNICIPIO=São Paulo
+EMPRESA_CODIGO_IBGE=3550308
+EMPRESA_CEP=01001000
+EMPRESA_BAIRRO=Sé
+EMPRESA_LOGRADOURO=Praça da Sé
+EMPRESA_NUMERO=1
+EMPRESA_FONE=
+EMPRESA_TELEFONE=
+EMPRESA_EMAIL=
+PDV_COMPANY_NAME=Empresa Demonstração
+
+# Senha de finalizar inventário: uma só da demo
+INVENTORY_FINALIZE_PASSWORD=demo1234
+
+# ---------- APAGAR (não deixe estas chaves no .env da demo) ----------
+# Chaves de API e certificado de NF-e da BH3:
+#   NFE_API_KEY, NFE_API_URL, NFE_API_BASE_URL, PLUGNOTAS_API_KEY,
+#   PLUGNOTAS_API_KEY_REAL, PLUGNOTAS_API_KEY_SANDBOX, PLUGNOTAS_API_KEY_HOMOLOG,
+#   PLUGNOTAS_TOKEN, PLUGNOTAS_APIKEY, PLUGNOTAS_WEBHOOK_SECRET, NFE_WEBHOOK_SECRET,
+#   TECNOSPEED_TOKEN, TECNOSPEED_TOKEN_SH, NFE_CERT_BUCKET, NFE_CERT_OBJECT,
+#   NFE_CERT_GCS_URI, NFE_CERT_PASSWORD, NFE_CERT_PFX_PASS, NFE_EMIT_CNPJ,
+#   NFE_EMIT_RAZAO, NFE_EMIT_FANTASIA, NFE_INBOX_CNPJ_EMPRESA, DFE_CNPJS,
+#   COMPANY_TAX_ID, RESPONSAVEL_CNPJ, RESPONSAVEL_NOME, RESPONSAVEL_EMAIL,
+#   RESPONSAVEL_TELEFONE
+# Cobrança, anúncios e analytics:
+#   ASAAS_API_KEY, ASAAS_BASE_URL, GA4_PROPERTY_ID, GA4_CLIENT_EMAIL,
+#   GA4_PRIVATE_KEY, GOOGLE_ADS_CUSTOMER_ID, GOOGLE_ADS_MANAGER_ID,
+#   GADS_CONV_PURCHASE, GADS_CONV_ADD_TO_CART
+# E-mail da empresa:
+#   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE,
+#   ROCHIN_AIR_EMAIL_USER, ROCHIN_AIR_EMAIL_PASS, ROCHIN_AIR_EMAIL_HOST,
+#   ROCHIN_AIR_EMAIL_PORT, ROCHIN_AIR_SMTP_HOST, ROCHIN_AIR_SMTP_PORT,
+#   ROCHIN_AIR_SMTP_SECURE, DEFAULT_EMAIL_ACCOUNT_ID, ASSISTANT_EMAIL_ACCOUNT_ID
+# Integrações e chaves internas:
+#   CONSART_API_KEY, CONSART_API_BASE_URL, CONSART_ADMIN_TOKEN,
+#   EXPORT_DOWNLOAD_KEY, BUDGET_TO_ORDER_KEY, BUDGET_STOCK_OVERRIDE_KEY,
+#   BUDGET_STOCK_OVERRIDE_SECRET
+# IA (orçamento por voz / assistente) — apague para não gerar custo na demo:
+#   ANTHROPIC_API_KEY
+#
+# As linhas DEPLOY_* podem ficar iguais (são ignoradas na demo).
+# DB_HOST, DB_PORT, DB_USER, DB_PASS e INSTANCE_CONNECTION_NAME ficam iguais
+# aos do Infinity (mesma instância de banco).

@@ -305,6 +305,14 @@ app.use(logisticaDemoProxy());
 app.use(logisticaDemoProxy(process.env.PRODNEX_URL, "/prodnex"));
 // /consart → CONSART ERP (backend-consart/, banco próprio; CONSART_URL vazio = desligado)
 app.use(logisticaDemoProxy(process.env.CONSART_URL, "/consart"));
+// /demo → versão demonstração para clientes: este mesmo código com o banco
+// vazio (start.js sobe outra cópia na porta 8084; DEMO_URL vazio = desligado)
+app.use(logisticaDemoProxy(process.env.DEMO_URL, "/demo"));
+
+// Caminho base (APP_BASE_PATH=/demo só no processo da demonstração):
+// tira o prefixo e reescreve links. Vazio (Infinity) = não faz nada.
+import basePath from "./middleware/basePath.js";
+app.use(basePath());
 
 /* ╔══════════════════════════════════════════════════════════╗
    ║ Middlewares globais                                      ║

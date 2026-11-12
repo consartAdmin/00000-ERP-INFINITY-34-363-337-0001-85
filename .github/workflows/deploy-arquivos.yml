@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       pasta:
-        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex, backend-consart = CONSART ERP (banco próprio). Todos vão para o serviço do Infinity"
+        description: "Projeto: backend = Infinity (BH3/CONSART) e a demonstração /demo, backend-logistics = Consart Logistics, backend-prodnex = ProdNex, backend-consart = CONSART ERP (banco próprio). Todos vão para o serviço do Infinity"
         type: choice
         options:
           - backend

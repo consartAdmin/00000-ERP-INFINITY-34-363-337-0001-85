@@ -14,6 +14,9 @@
 # ║     -> leva junto backend-logistics/, backend-prodnex/ e   ║
 # ║        backend-consart/ (cada um com o próprio .env/banco) ║
 # ║        no mesmo serviço; ver start.js                      ║
+# ║   .\deploy.ps1 -Projetos logistics,prodnex,consart,demo    ║
+# ║     -> demo = este mesmo código com o banco vazio da       ║
+# ║        demonstração (backend-demo/.env, rota /demo)        ║
 # ║ Senhas que o serviço lê do Secret Manager continuam lá     ║
 # ║ (o valor do .env para essas chaves é ignorado).            ║
 # ╚════════════════════════════════════════════════════════════╝
@@ -151,13 +154,16 @@ $PROJETOS_CONHECIDOS = [ordered]@{
   logistics = @{ Pasta = "backend-logistics"; Prefixo = "LOGISTICS" }
   prodnex   = @{ Pasta = "backend-prodnex";   Prefixo = "PRODNEX" }
   consart   = @{ Pasta = "backend-consart";   Prefixo = "CONSART" }
+  # Demonstração: roda o próprio backend/ (nada é copiado para apps/);
+  # backend-demo/ guarda só o .env (secret ENV_FILE_DEMO) e o script do banco
+  demo      = @{ Pasta = "backend-demo";      Prefixo = "DEMO"; MesmoCodigo = $true }
 }
 
 # Chaves que nunca passam para o projeto (o start.js define ou o Infinity controla)
 $PROJETO_ENV_IGNORADAS = @(
   "PORT", "K_SERVICE", "K_REVISION", "K_CONFIGURATION",
   "GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_PROJECT", "CLOUD_RUN_REGION",
-  "APP_BASE_PATH", "LOGISTICA_DEMO_URL", "PRODNEX_URL", "CONSART_URL",
+  "APP_BASE_PATH", "LOGISTICA_DEMO_URL", "PRODNEX_URL", "CONSART_URL", "DEMO_URL",
   "ENABLE_EMAIL_INBOUND", "ENABLE_DFE_SCHEDULER"
 )
 
@@ -182,6 +188,7 @@ function Copy-Projetos([string[]]$nomes) {
   # Só arquivos versionados no git: .env, chaves e dados locais nunca entram na imagem
   if (Test-Path $APPS_DIR) { Remove-Item $APPS_DIR -Recurse -Force }
   foreach ($n in $nomes) {
+    if ($PROJETOS_CONHECIDOS[$n].MesmoCodigo) { continue } # demo usa o próprio backend/
     $pasta = $PROJETOS_CONHECIDOS[$n].Pasta
     try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
     $files = @(& git -C $REPO_ROOT -c core.quotepath=off ls-files -- $pasta)
@@ -216,6 +223,13 @@ function ConvertTo-Mi([string]$mem) {
   if ($mem -match '^(\d+)G$')  { return [int]$Matches[1] * 1000 }
   if ($mem -match '^(\d+)M$')  { return [int]$Matches[1] }
   return 0
+}
+
+# A demo é uma segunda cópia do Infinity inteiro: pede 1 GiB a mais
+function Get-MemoriaMinima([string[]]$nomes) {
+  if ($nomes.Count -eq 0) { return "1Gi" }
+  if ($nomes -contains "demo") { return "3Gi" }
+  return "2Gi"
 }
 
 # Variáveis de cada projeto: só o que difere do Infinity, com prefixo (CONSART__DB_NAME=...)
@@ -376,9 +390,12 @@ if ($ImageOnly) {
       }
     }
     $liveMem = [string]$live.spec.template.spec.containers[0].resources.limits.memory
-    if ((ConvertTo-Mi $liveMem) -lt 2048) {
-      Write-Host "[PROJETOS] Memória $liveMem -> 2Gi (4 projetos no mesmo contêiner)" -ForegroundColor Yellow
-      $extra = @("--memory", "2Gi")
+    # Demo sem DEMO__DB_NAME no serviço não sobe: não pede memória para ela
+    $memSel = @($PROJETOS_SEL | Where-Object { $_ -ne "demo" -or ($liveEnvNames -contains "DEMO__DB_NAME") })
+    $minMem = Get-MemoriaMinima $memSel
+    if ((ConvertTo-Mi $liveMem) -lt (ConvertTo-Mi $minMem)) {
+      Write-Host "[PROJETOS] Memória $liveMem -> $minMem ($($PROJETOS_SEL.Count + 1) projetos no mesmo contêiner)" -ForegroundColor Yellow
+      $extra = @("--memory", $minMem)
     }
   }
 
@@ -433,9 +450,10 @@ if (-not $MIN_INST)            { $MIN_INST = "0" }
 if (-not $MAX_INST)            { $MAX_INST = "1" }
 if (-not $CPU)                 { $CPU = "1" }
 if (-not $MEMORY)              { $MEMORY = "1Gi" }
-if ($PROJETOS_SEL.Count -gt 0 -and (ConvertTo-Mi $MEMORY) -lt 2048) {
-  Write-Host "[PROJETOS] DEPLOY_MEMORY=$MEMORY -> 2Gi (4 projetos no mesmo contêiner)" -ForegroundColor Yellow
-  $MEMORY = "2Gi"
+$minMem = Get-MemoriaMinima $PROJETOS_SEL
+if ($PROJETOS_SEL.Count -gt 0 -and (ConvertTo-Mi $MEMORY) -lt (ConvertTo-Mi $minMem)) {
+  Write-Host "[PROJETOS] DEPLOY_MEMORY=$MEMORY -> $minMem ($($PROJETOS_SEL.Count + 1) projetos no mesmo contêiner)" -ForegroundColor Yellow
+  $MEMORY = $minMem
 }
 
 # Antes do build: falta de .env de um projeto aborta sem gastar o Cloud Build
