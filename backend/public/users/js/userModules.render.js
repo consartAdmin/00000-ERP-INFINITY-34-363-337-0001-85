@@ -1,3 +1,5 @@
+import { createActionIcons } from '/public/includes/js/actionIcons.js';
+
 (() => {
   'use strict';
   const app = (window.userModules = window.userModules || {});
@@ -39,19 +41,12 @@
 
       const tdAcoes = document.createElement('td');
       tdAcoes.classList.add('col-acoes');
-      const div = document.createElement('div');
+      // Padrão de ícones de ação do sistema (actionIcons.js / actionIcons.css)
+      const div = createActionIcons([
+        { action: 'edit', title: 'Editar usuário', onClick: () => app.modal.abrirEdicao(user) },
+        { action: 'delete', title: 'Excluir usuário', onClick: () => app.actions.excluirUsuario(user.user_id, user.name) },
+      ]);
       div.classList.add('users-actions');
-      const editar = document.createElement('button');
-      editar.type = 'button';
-      editar.className = 'btn btn-new btn-sm btn-gap-3';
-      editar.textContent = '✏️';
-      editar.addEventListener('click', () => app.modal.abrirEdicao(user));
-      const excluir = document.createElement('button');
-      excluir.type = 'button';
-      excluir.className = 'btn btn-new btn-sm';
-      excluir.textContent = '🗑️';
-      excluir.addEventListener('click', () => app.actions.excluirUsuario(user.user_id, user.name));
-      div.append(editar, excluir);
       tdAcoes.appendChild(div);
       tr.appendChild(tdAcoes);
       tbody.appendChild(tr);
