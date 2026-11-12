@@ -132,6 +132,86 @@ async function erpGet(ctx, path, query = {}) {
   return body;
 }
 
+/** POST numa rota do próprio ERP (JSON), com o login e a empresa de quem pediu. */
+async function erpPost(ctx, path, body) {
+  const port = process.env.PORT || 8080;
+  const headers = { accept: 'application/json', 'content-type': 'application/json' };
+  if (ctx.authorization) headers.authorization = ctx.authorization;
+  if (ctx.company) headers['x-erp-company'] = ctx.company;
+  const res = await fetch(new URL(path, `http://127.0.0.1:${port}`), {
+    method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(60_000),
+  });
+  const out = await res.json().catch(() => null);
+  if (!res.ok || out?.ok === false) {
+    const msg = out?.message || out?.error || `HTTP ${res.status}`;
+    throw new AssistantError(`Falha ao enviar o e-mail: ${msg}${out?.details ? ` (${out.details})` : ''}`, 502);
+  }
+  return out;
+}
+
+// ----------------------------------------------------------------------
+// E-mail de cobrança: a Consart só PREPARA. O envio acontece depois que o
+// usuário confirma no app (POST /api/assistant/send-email), e só para um
+// e-mail que está no cadastro do cliente.
+// ----------------------------------------------------------------------
+const EMAIL_FIELDS = ['billing_email', 'financial_contact_email', 'invoice_email', 'email'];
+const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+/** E-mails cadastrados do cliente (cobrança/financeiro primeiro). */
+export function customerEmails(c) {
+  const out = [];
+  for (const f of EMAIL_FIELDS) {
+    for (const part of String(c?.[f] ?? '').split(/[;,\s]+/)) {
+      const e = part.trim().toLowerCase();
+      if (e && isEmail(e) && !out.includes(e)) out.push(e);
+    }
+  }
+  return out;
+}
+
+async function loadCustomer(id) {
+  const cid = String(id ?? '').trim();
+  if (!cid) return null;
+  try {
+    return await customersApi.getById(cid);
+  } catch {
+    return null;
+  }
+}
+
+/** Conta de e-mail do ERP usada para enviar (preferência: financeiro/cobrança). */
+async function pickEmailAccount(ctx) {
+  const envId = Number(process.env.ASSISTANT_EMAIL_ACCOUNT_ID || process.env.DEFAULT_EMAIL_ACCOUNT_ID);
+  const res = await erpGet(ctx, '/api/email/accounts', { onlyActive: 'true' });
+  const accounts = Array.isArray(res?.accounts) ? res.accounts : [];
+  if (!accounts.length) {
+    throw new AssistantError('Nenhuma conta de e-mail ativa no ERP (Configurações › Contas de e-mail).', 503);
+  }
+  const byEnv = accounts.find((a) => Number(a.id) === envId);
+  const finance = accounts.find((a) => /financ|cobran|receb/i.test(`${a.label ?? ''} ${a.email_address ?? ''}`));
+  const acc = byEnv || finance || accounts[0];
+  return { id: Number(acc.id), email: acc.email_address, label: acc.label };
+}
+
+/** Envia o e-mail que o usuário confirmou no app. */
+export async function sendCollectionEmail({ customer_id: customerId, to, subject, body }, ctx = {}) {
+  const customer = await loadCustomer(customerId);
+  if (!customer) throw new AssistantError('Cliente não encontrado.', 404);
+  const allowed = customerEmails(customer);
+  const dest = String(to ?? '').trim().toLowerCase();
+  if (!allowed.includes(dest)) {
+    throw new AssistantError('Por segurança, só envio para um e-mail que está no cadastro do cliente.', 400);
+  }
+  const subj = String(subject ?? '').trim().slice(0, 200);
+  const text = String(body ?? '').trim().slice(0, 8000);
+  if (!subj || !text) throw new AssistantError('Assunto e mensagem são obrigatórios.');
+  const account = await pickEmailAccount(ctx);
+  const out = await erpPost(ctx, '/api/email/outbounds', {
+    account_id: account.id, to: dest, subject: subj, body_text: text,
+  });
+  return { ok: true, to: dest, from: account.email, message_id: out?.message_id ?? out?.data?.message_id ?? null };
+}
+
 const str = (desc) => ({ type: 'string', description: desc });
 const date = (desc) => ({ type: 'string', description: `${desc} (AAAA-MM-DD)` });
 const obj = (properties, required = []) => ({
@@ -270,6 +350,24 @@ const TOOLS = [
     }),
   },
   {
+    name: 'preparar_email_cobranca',
+    description:
+      'Prepara (NÃO envia) um e-mail de cobrança para um cliente com boletos/títulos em aberto ou vencidos. ' +
+      'Antes, use buscar_clientes (para o customer_id e os e-mails cadastrados) e contas_a_receber com busca pelo cliente ' +
+      '(para os títulos, valores, vencimentos e o link do boleto, ex.: bank_slip_url). O app mostra o rascunho e o ' +
+      'usuário confirma o envio. Use só e-mail do cadastro do cliente (prefira o de cobrança/financeiro).',
+    input_schema: obj({
+      cliente_id: str('customer_id do cliente'),
+      para: str('E-mail de destino (um dos e-mails cadastrados do cliente)'),
+      assunto: str('Assunto curto, ex.: "Boleto em aberto - vencimento 05/11"'),
+      mensagem: str(
+        'Corpo do e-mail em texto, português formal e cordial: saudação ao cliente, lista dos títulos ' +
+        '(número/documento, vencimento, valor), total, link do boleto quando houver, pedido de regularização ' +
+        'ou envio do comprovante se já pagou, e assinatura com o nome da empresa. Não invente dados.',
+      ),
+    }, ['cliente_id', 'para', 'assunto', 'mensagem']),
+  },
+  {
     name: 'responder',
     description:
       'Entrega a resposta final ao usuário. Chame exatamente uma vez, no fim, depois de consultar o que precisar.',
@@ -321,7 +419,8 @@ A pergunta vem do reconhecimento de voz do celular: pode ter erros de transcriç
 Regras:
 - Sempre consulte as ferramentas antes de afirmar qualquer número. Nunca invente dados.
 - Converta datas relativas ("hoje", "essa semana", "mês passado") em datas reais a partir de hoje.
-- Você só consulta: não consegue criar, alterar, baixar ou excluir nada. Se pedirem, explique com gentileza e diga em qual app ou tela fazer.
+- Você consulta os dados, mas não cria, altera, baixa nem exclui nada. Se pedirem, explique com gentileza e diga em qual app ou tela fazer.
+- A única ação é o e-mail de cobrança: use preparar_email_cobranca. Ele NÃO envia; o usuário confirma no app (botão Enviar ou falando "pode enviar"). Na fala, diga para quem vai, o valor total e peça a confirmação.
 - Se a pergunta for ambígua, responda o mais provável e diga o que assumiu, ou faça uma pergunta curta.
 - Se uma ferramenta falhar ou não trouxer dados, diga isso com franqueza.
 - Pode conversar sobre assuntos gerais de gestão, mas o foco é a empresa.
@@ -381,6 +480,7 @@ async function runTool(ctx, name, input = {}) {
         cnpj_cpf: r.tax_id,
         cidade: [r.city, r.state].filter(Boolean).join('/'),
         telefone: r.phone ?? r.mobile,
+        emails: customerEmails(r).join(', '),
         ativo: r.is_active === false ? false : null,
       }));
     }
@@ -448,6 +548,31 @@ async function runTool(ctx, name, input = {}) {
       return erpGet(ctx, '/api/inbound-invoices', {
         search: input.busca, dateFrom: input.data_de, dateTo: input.data_ate, limit: 30,
       });
+    case 'preparar_email_cobranca': {
+      const customer = await loadCustomer(input.cliente_id);
+      if (!customer) return 'Cliente não encontrado. Use buscar_clientes e o customer_id devolvido.';
+      const allowed = customerEmails(customer);
+      if (!allowed.length) {
+        return 'Este cliente não tem e-mail no cadastro. Avise o usuário para cadastrar o e-mail de cobrança no ERP.';
+      }
+      const para = String(input.para ?? '').trim().toLowerCase();
+      if (!allowed.includes(para)) {
+        return `Use um dos e-mails cadastrados do cliente: ${allowed.join(', ')}.`;
+      }
+      const assunto = String(input.assunto ?? '').trim();
+      const mensagem = String(input.mensagem ?? '').trim();
+      if (!assunto || !mensagem) return 'Informe assunto e mensagem.';
+      ctx.pendingAction = {
+        type: 'email',
+        customer_id: String(customer.customer_id ?? input.cliente_id),
+        customer_name: customer.trade_name || customer.legal_name || '',
+        to: para,
+        to_options: allowed,
+        subject: assunto.slice(0, 200),
+        body: mensagem.slice(0, 8000),
+      };
+      return 'Rascunho pronto e mostrado no app. NÃO foi enviado: o usuário precisa confirmar.';
+    }
     default:
       throw new Error(`Ferramenta desconhecida: ${name}`);
   }
@@ -531,6 +656,7 @@ export async function askAssistant({ text, history = [] }, ctx = {}) {
       label: String(d.rotulo ?? ''), value: String(d.valor ?? ''),
     })),
     sources: (answer.fontes ?? []).map(String).slice(0, 6),
+    action: ctx.pendingAction ?? null,
     tools: toolsUsed,
     model,
     usage,
