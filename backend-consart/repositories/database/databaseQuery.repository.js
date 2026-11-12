@@ -5,34 +5,49 @@
 
 import pool from '../../config/db.js';
 import { DEFAULT_SCHEMA } from './database.constants.js';
-import { assertSafeIdentifier, quoteIdent, assertTableAllowed } from './database.sanitizers.js';
+import {
+  assertSchemaAllowed,
+  assertTableAllowed,
+  escapeLike,
+  isSensitiveColumn,
+  maskRow,
+  quoteIdent,
+} from './database.sanitizers.js';
 import { getTableColumns } from './databaseSchema.repository.js';
 
-export async function countTableRows({ schema = DEFAULT_SCHEMA, table, search = '' }) {
-  const schemaName = assertSafeIdentifier(schema, 'Schema');
+// Tipos que não fazem sentido pesquisar como texto
+const NOT_SEARCHABLE_TYPES = new Set(['bytea']);
+
+// Pesquisa em todas as colunas (inclusive números, datas e booleanos, via ::text),
+// menos binárias e sensíveis. Devolve o WHERE e já coloca o termo em params.
+function buildSearchWhere(columns, search, params) {
+  const term = String(search || '').trim();
+  if (!term) return '';
+
+  const searchable = columns.filter((c) =>
+    !NOT_SEARCHABLE_TYPES.has(c.data_type) && !isSensitiveColumn(c.column_name)
+  );
+
+  if (!searchable.length) return '';
+
+  params.push(`%${escapeLike(term)}%`);
+  const ref = `$${params.length}`;
+
+  return `WHERE ${searchable
+    .map((c) => `${quoteIdent(c.column_name)}::text ILIKE ${ref}`)
+    .join(' OR ')}`;
+}
+
+export async function countTableRows({ schema = DEFAULT_SCHEMA, table, search = '', columnsInfo = null }) {
+  const schemaName = assertSchemaAllowed(schema);
   const tableName = assertTableAllowed(table);
+  const info = columnsInfo || await getTableColumns({ schema: schemaName, table: tableName });
 
   const fullTable = `${quoteIdent(schemaName)}.${quoteIdent(tableName)}`;
-
-  let sql = `SELECT COUNT(*)::bigint AS total FROM ${fullTable}`;
   const params = [];
+  const whereSql = buildSearchWhere(info.columns, search, params);
 
-  if (search) {
-    const columns = await getTableColumns({ schema: schemaName, table: tableName });
-    const textColumns = columns.columns.filter((c) =>
-      ['character varying', 'text', 'char', 'uuid'].includes(c.data_type)
-    );
-
-    if (textColumns.length) {
-      params.push(`%${search}%`);
-      const where = textColumns
-        .map((c) => `${quoteIdent(c.column_name)}::text ILIKE $1`)
-        .join(' OR ');
-      sql += ` WHERE ${where}`;
-    }
-  }
-
-  const { rows } = await pool.query(sql, params);
+  const { rows } = await pool.query(`SELECT COUNT(*)::bigint AS total FROM ${fullTable} ${whereSql}`, params);
   return Number(rows[0]?.total || 0);
 }
 
@@ -45,7 +60,7 @@ export async function getTableRows({
   orderBy = '',
   orderDir = 'ASC',
 }) {
-  const schemaName = assertSafeIdentifier(schema, 'Schema');
+  const schemaName = assertSchemaAllowed(schema);
   const tableName = assertTableAllowed(table);
 
   const safePage = Math.max(Number(page) || 1, 1);
@@ -58,27 +73,15 @@ export async function getTableRows({
   const fullTable = `${quoteIdent(schemaName)}.${quoteIdent(tableName)}`;
 
   const params = [];
-  let whereSql = '';
-
-  if (search) {
-    const textColumns = columnsInfo.columns.filter((c) =>
-      ['character varying', 'text', 'char', 'uuid'].includes(c.data_type)
-    );
-
-    if (textColumns.length) {
-      params.push(`%${search}%`);
-      whereSql = `WHERE ${textColumns
-        .map((c) => `${quoteIdent(c.column_name)}::text ILIKE $1`)
-        .join(' OR ')}`;
-    }
-  }
+  const whereSql = buildSearchWhere(columnsInfo.columns, search, params);
 
   let orderSql = '';
   if (orderBy && columnNames.includes(orderBy)) {
     const dir = String(orderDir).toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
     orderSql = `ORDER BY ${quoteIdent(orderBy)} ${dir}`;
   } else if (columnsInfo.primaryKey.length) {
-    orderSql = `ORDER BY ${quoteIdent(columnsInfo.primaryKey[0])} ASC`;
+    // Ordena pela PK inteira: com PK composta a paginação fica estável
+    orderSql = `ORDER BY ${columnsInfo.primaryKey.map((c) => quoteIdent(c)).join(', ')}`;
   }
 
   params.push(safeLimit, offset);
@@ -92,8 +95,10 @@ export async function getTableRows({
     OFFSET $${params.length}
   `;
 
-  const { rows } = await pool.query(sql, params);
-  const total = await countTableRows({ schema: schemaName, table: tableName, search });
+  const [{ rows }, total] = await Promise.all([
+    pool.query(sql, params),
+    countTableRows({ schema: schemaName, table: tableName, search, columnsInfo }),
+  ]);
 
   return {
     schema: schemaName,
@@ -103,6 +108,7 @@ export async function getTableRows({
     total,
     primaryKey: columnsInfo.primaryKey,
     columns: columnsInfo.columns,
-    rows,
+    maskedColumns: columnsInfo.maskedColumns,
+    rows: rows.map(maskRow),
   };
 }

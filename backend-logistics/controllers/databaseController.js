@@ -17,6 +17,10 @@ import {
   applyStructureChange,
 } from '../repositories/database/database.index.js';
 
+function currentUserId(req) {
+  return req.user?.user_id ?? req.user?.id ?? req.user?.payload?.user_id ?? null;
+}
+
 function ok(res, data) {
   return res.json({
     success: true,
@@ -82,6 +86,7 @@ export async function createDatabaseRow(req, res) {
       schema: req.query.schema || 'public',
       table: req.params.table,
       data: req.body?.data || req.body || {},
+      userId: currentUserId(req),
     });
 
     return ok(res, data);
@@ -97,6 +102,7 @@ export async function updateDatabaseRow(req, res) {
       table: req.params.table,
       pk: req.body?.pk,
       data: req.body?.data,
+      userId: currentUserId(req),
     });
 
     return ok(res, data);
@@ -111,6 +117,7 @@ export async function deleteDatabaseRow(req, res) {
       schema: req.query.schema || 'public',
       table: req.params.table,
       pk: req.body?.pk,
+      userId: currentUserId(req),
     });
 
     return ok(res, data);
@@ -152,7 +159,7 @@ export async function applyDatabaseStructureChange(req, res) {
       schema: req.query.schema || 'public',
       table: req.params.table,
       operation: req.body?.operation,
-      userId: req.user?.user_id ?? null,
+      userId: currentUserId(req),
     });
 
     return ok(res, data);

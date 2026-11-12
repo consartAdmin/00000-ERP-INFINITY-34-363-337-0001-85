@@ -18,9 +18,11 @@ import {
     closeStructureModal,
     confirmAction,
     hideStructPreview,
+    isCenterModalOpen,
     renderRefColumnOptions,
     showMessage,
     showStructPreview,
+    showSuccess,
 } from './database.modal.js';
 import { state } from './database.state.js';
 import { getPkObject } from './database.utils.js';
@@ -40,6 +42,14 @@ function collectModalData() {
 
         // Em novo registro, campo vazio fica de fora para o banco aplicar o DEFAULT (ex.: serial)
         if (value === '' && isNew) return;
+
+        // Coluna sensível (senha/token) vazia = manter o valor atual
+        if (value === '' && 'masked' in input.dataset) return;
+
+        // Na edição só vão os campos alterados: arrays, JSON, datas e bytea que
+        // não foram mexidos não são reenviados (e não quebram o salvar)
+        if (!isNew && value === (input.dataset.original ?? '')) return;
+
         if (value === '') value = null;
 
         data[key] = value;
@@ -48,19 +58,31 @@ function collectModalData() {
     return data;
 }
 
+let saving = false;
+
 async function saveRow() {
-    if (!state.currentTable) return;
+    if (!state.currentTable || saving) return;
 
     const data = collectModalData();
+
+    if (!Object.keys(data).length) {
+        showMessage(state.editingRow ? 'Nenhuma alteração para salvar.' : 'Preencha ao menos um campo.',
+            { variant: 'warning' });
+        return;
+    }
+
+    saving = true;
+    els.btnSaveRow.disabled = true;
 
     try {
         if (state.editingRow) {
             const pk = getPkObject(state.editingRow);
-            const pkChanged = state.primaryKey.some((col) => String(data[col] ?? '') !== String(pk[col] ?? ''));
+            const pkChanged = state.primaryKey.some((col) => col in data);
 
-            if (pkChanged && !confirmAction(
+            if (pkChanged && !await confirmAction(
                 'Você alterou a chave primária deste registro. '
-                + 'Registros de outras tabelas que apontam para ele podem impedir a alteração. Continuar?'
+                + 'Registros de outras tabelas que apontam para ele podem impedir a alteração. Continuar?',
+                { title: 'Alterar chave primária' }
             )) return;
 
             await updateRow(state.schema, state.currentTable, pk, data);
@@ -70,23 +92,37 @@ async function saveRow() {
 
         closeModal();
         await loadRows();
+        showSuccess('Registro salvo.');
     } catch (err) {
         showMessage(err.message);
+    } finally {
+        saving = false;
+        els.btnSaveRow.disabled = false;
     }
 }
 
 async function removeRow() {
-    if (!state.editingRow) return;
+    if (!state.editingRow || saving) return;
 
-    if (!confirmAction('Tem certeza que deseja excluir este registro?')) return;
+    if (!await confirmAction('Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.', {
+        title: 'Excluir registro',
+        okText: 'Sim, excluir',
+    })) return;
+
+    saving = true;
+    els.btnDeleteRow.disabled = true;
 
     try {
         await deleteRow(state.schema, state.currentTable, getPkObject(state.editingRow));
 
         closeModal();
         await loadRows();
+        showSuccess('Registro excluído.');
     } catch (err) {
         showMessage(err.message);
+    } finally {
+        saving = false;
+        els.btnDeleteRow.disabled = false;
     }
 }
 
@@ -147,7 +183,10 @@ async function applyStructure() {
 
     const op = collectStructureOperation();
 
-    if (!confirmAction('Executar o SQL exibido no banco de dados? Esta ação altera a estrutura da tabela.')) return;
+    if (!await confirmAction('Executar o SQL exibido no banco de dados? Esta ação altera a estrutura da tabela.', {
+        title: 'Alterar estrutura',
+        okText: 'Executar',
+    })) return;
 
     els.btnStructApply.disabled = true;
 
@@ -157,7 +196,7 @@ async function applyStructure() {
         closeStructureModal();
         await loadStructure();
         await loadRows();
-        showMessage('Estrutura alterada com sucesso.');
+        showSuccess('Estrutura alterada com sucesso.');
     } catch (err) {
         showMessage(err.message);
     } finally {
@@ -200,7 +239,8 @@ export function registerForm() {
     els.structFields.addEventListener('change', handleStructFieldChange);
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
+        // ESC com aviso/confirmação aberto fecha só o aviso
+        if (event.key === 'Escape' && !isCenterModalOpen()) {
             closeModal();
             closeStructureModal();
         }

@@ -2,82 +2,79 @@
 // ║ databaseUpdate.repository.js — updateRow (por chave primária)      ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import pool from '../../config/db.js';
 import { DEFAULT_SCHEMA } from './database.constants.js';
-import { assertSafeIdentifier, quoteIdent, assertTableAllowed } from './database.sanitizers.js';
+import { assertSchemaAllowed, assertTableAllowed, coerceEntries, maskRow, quoteIdent } from './database.sanitizers.js';
+import { dropMaskedEntries, withRowAudit } from './databaseRowAudit.js';
 import { getTableColumns } from './databaseSchema.repository.js';
 
-export async function updateRow({ schema = DEFAULT_SCHEMA, table, pk, data }) {
-  const schemaName = assertSafeIdentifier(schema, 'Schema');
-  const tableName = assertTableAllowed(table);
+function badRequest(message, status = 400) {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+}
 
-  if (!pk || typeof pk !== 'object') {
-    const err = new Error('Chave primária inválida.');
-    err.status = 400;
-    throw err;
+// WHERE pela PK original; params recebe os valores a partir de params.length + 1
+export function buildPkWhere(pkColumns, pk, params) {
+  if (!pk || typeof pk !== 'object' || Array.isArray(pk)) {
+    throw badRequest('Chave primária inválida.');
   }
 
+  return pkColumns.map((col) => {
+    if (!(col in pk)) throw badRequest(`Chave primária incompleta. Campo ausente: ${col}`);
+
+    params.push(pk[col]);
+    return `${quoteIdent(col)} = $${params.length}`;
+  }).join(' AND ');
+}
+
+export async function updateRow({ schema = DEFAULT_SCHEMA, table, pk, data, userId = null }) {
+  const schemaName = assertSchemaAllowed(schema);
+  const tableName = assertTableAllowed(table);
+
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    const err = new Error('Dados inválidos para atualização.');
-    err.status = 400;
-    throw err;
+    throw badRequest('Dados inválidos para atualização.');
   }
 
   const columnsInfo = await getTableColumns({ schema: schemaName, table: tableName });
   const allowedColumns = new Set(columnsInfo.columns.map((c) => c.column_name));
-
   const pkColumns = columnsInfo.primaryKey;
 
   if (!pkColumns.length) {
-    const err = new Error('Esta tabela não possui chave primária. Edição bloqueada.');
-    err.status = 400;
-    throw err;
-  }
-
-  for (const col of pkColumns) {
-    if (!(col in pk)) {
-      const err = new Error(`Chave primária incompleta. Campo ausente: ${col}`);
-      err.status = 400;
-      throw err;
-    }
+    throw badRequest('Esta tabela não possui chave primária. Edição bloqueada.');
   }
 
   // Colunas da PK também podem ser alteradas: o WHERE usa o valor original (pk)
-  const entries = Object.entries(data).filter(([key]) => allowedColumns.has(key));
+  const entries = coerceEntries(
+    columnsInfo.columns,
+    dropMaskedEntries(Object.entries(data).filter(([key]) => allowedColumns.has(key)))
+  );
 
   if (!entries.length) {
-    const err = new Error('Nenhuma coluna válida para atualizar.');
-    err.status = 400;
-    throw err;
+    throw badRequest('Nenhuma alteração para salvar.');
   }
-
-  const params = [];
-  const setSql = entries.map(([key, value], index) => {
-    params.push(value);
-    return `${quoteIdent(key)} = $${index + 1}`;
-  });
-
-  const whereSql = pkColumns.map((col) => {
-    params.push(pk[col]);
-    return `${quoteIdent(col)} = $${params.length}`;
-  });
 
   const fullTable = `${quoteIdent(schemaName)}.${quoteIdent(tableName)}`;
 
-  const sql = `
-    UPDATE ${fullTable}
-    SET ${setSql.join(', ')}
-    WHERE ${whereSql.join(' AND ')}
-    RETURNING *
-  `;
+  const selectParams = [];
+  const selectWhere = buildPkWhere(pkColumns, pk, selectParams);
 
-  const { rows } = await pool.query(sql, params);
+  const params = entries.map(([, value]) => value);
+  const setSql = entries.map(([key], index) => `${quoteIdent(key)} = $${index + 1}`);
+  const whereSql = buildPkWhere(pkColumns, pk, params);
 
-  if (!rows.length) {
-    const err = new Error('Registro não encontrado para atualização.');
-    err.status = 404;
-    throw err;
-  }
+  return withRowAudit(
+    { schemaName, tableName, pkColumns, operation: 'UPDATE', userId },
+    async (client) => {
+      const current = await client.query(`SELECT * FROM ${fullTable} WHERE ${selectWhere} FOR UPDATE`, selectParams);
 
-  return rows[0];
+      if (!current.rows.length) throw badRequest('Registro não encontrado para atualização.', 404);
+
+      const { rows } = await client.query(
+        `UPDATE ${fullTable} SET ${setSql.join(', ')} WHERE ${whereSql} RETURNING *`,
+        params
+      );
+
+      return { before: current.rows[0], after: rows[0], result: maskRow(rows[0]) };
+    }
+  );
 }

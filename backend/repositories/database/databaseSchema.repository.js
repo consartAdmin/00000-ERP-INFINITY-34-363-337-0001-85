@@ -5,7 +5,7 @@
 
 import pool from '../../config/db.js';
 import { DEFAULT_SCHEMA, BLOCKED_TABLES } from './database.constants.js';
-import { assertSafeIdentifier, assertTableAllowed } from './database.sanitizers.js';
+import { assertSchemaAllowed, assertTableAllowed, isSensitiveColumn } from './database.sanitizers.js';
 
 export async function getPrimaryKey(schemaName, tableName) {
 
@@ -16,6 +16,7 @@ export async function getPrimaryKey(schemaName, tableName) {
     JOIN information_schema.key_column_usage kcu
       ON tc.constraint_name = kcu.constraint_name
       AND tc.table_schema = kcu.table_schema
+      AND tc.table_name = kcu.table_name
     WHERE tc.constraint_type = 'PRIMARY KEY'
       AND tc.table_schema = $1
       AND tc.table_name = $2
@@ -31,7 +32,7 @@ export async function getPrimaryKey(schemaName, tableName) {
 }
 
 export async function listTables({ schema = DEFAULT_SCHEMA } = {}) {
-  const schemaName = assertSafeIdentifier(schema, 'Schema');
+  const schemaName = assertSchemaAllowed(schema);
 
   const sql = `
     SELECT
@@ -50,7 +51,7 @@ export async function listTables({ schema = DEFAULT_SCHEMA } = {}) {
 }
 
 export async function getTableColumns({ schema = DEFAULT_SCHEMA, table }) {
-  const schemaName = assertSafeIdentifier(schema, 'Schema');
+  const schemaName = assertSchemaAllowed(schema);
   const tableName = assertTableAllowed(table);
 
   const sql = `
@@ -71,6 +72,12 @@ export async function getTableColumns({ schema = DEFAULT_SCHEMA, table }) {
   `;
 
   const { rows } = await pool.query(sql, [schemaName, tableName]);
+  if (!rows.length) {
+    const err = new Error(`Tabela não encontrada: ${schemaName}.${tableName}`);
+    err.status = 404;
+    throw err;
+  }
+
   const primaryKey = await getPrimaryKey(schemaName, tableName);
 
   return {
@@ -78,5 +85,7 @@ export async function getTableColumns({ schema = DEFAULT_SCHEMA, table }) {
     table: tableName,
     primaryKey,
     columns: rows,
+    // Valores escondidos na tela (senhas, tokens): ver isSensitiveColumn
+    maskedColumns: rows.map((c) => c.column_name).filter(isSensitiveColumn),
   };
 }

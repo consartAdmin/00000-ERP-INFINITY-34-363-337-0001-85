@@ -5,7 +5,7 @@
 
 import pool from '../../config/db.js';
 import { DEFAULT_SCHEMA, FK_ACTION_CODES } from './database.constants.js';
-import { assertSafeIdentifier, assertTableAllowed } from './database.sanitizers.js';
+import { assertSchemaAllowed, assertTableAllowed } from './database.sanitizers.js';
 
 const COLUMNS_SQL = `
   SELECT
@@ -104,7 +104,7 @@ function mapConstraint(row) {
 }
 
 export async function getTableStructure({ schema = DEFAULT_SCHEMA, table, db = pool }) {
-  const schemaName = assertSafeIdentifier(schema, 'Schema');
+  const schemaName = assertSchemaAllowed(schema);
   const tableName = assertTableAllowed(table);
   const params = [schemaName, tableName];
 
