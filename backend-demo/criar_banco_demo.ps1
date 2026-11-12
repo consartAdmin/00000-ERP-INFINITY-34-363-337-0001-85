@@ -15,7 +15,7 @@
 #
 # Uso (PowerShell, com pg_dump/pg_restore/createdb/psql do PostgreSQL no PATH):
 #   .\criar_banco_demo.ps1
-#   .\criar_banco_demo.ps1 -Destino erp-demo -AdminEmail demo@consart.com.br
+#   .\criar_banco_demo.ps1 -Destino erp-demo -AdminEmail contato@consart.com.br
 # ============================================================
 param(
   [string]$DbHost     = "34.45.142.53",
@@ -24,7 +24,7 @@ param(
   [string]$Origem     = "erp-infinity-00000",
   [string]$Destino    = "erp-demo",
   [string]$AdminNome  = "admin.demo",
-  [string]$AdminEmail = "demo@consart.com.br"
+  [string]$AdminEmail = "contato@consart.com.br"
 )
 
 $ErrorActionPreference = "Stop"

@@ -28,7 +28,7 @@ verdade (`backend-demo/.env`) nunca vai para o git; no GitHub ele vem do secret.
    ```
 
    Ele pede a senha do `postgres` e a senha do administrador da demo
-   (login `demo@consart.com.br` ou `admin.demo`). O banco do Infinity só é lido.
+   (login `contato@consart.com.br` ou `admin.demo`). O banco do Infinity só é lido.
 
 2. **Bucket.** No Cloud Storage, crie um bucket só da demo (ex.:
    `erp-demo-arquivos`, mesma região do serviço). A conta do Cloud Run precisa
