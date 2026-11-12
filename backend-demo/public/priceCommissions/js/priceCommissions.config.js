@@ -1,0 +1,80 @@
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║ priceCommissions.config.js — Configuração e DOM | CONSART ERP       ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
+'use strict';
+
+export const ROUTES = Object.freeze({
+  base: '/api/price-commissions',
+  prices: '/api/price-commissions/prices',
+  sellers: '/api/price-commissions/sellers',
+  export: '/api/price-commissions/export'
+});
+
+/** Colunas aceitas na ordenação (mesma lista do backend). */
+export const SORT_COLUMNS = Object.freeze([
+  'commission_id',
+  'price_name',
+  'seller_name',
+  'commission_type',
+  'value',
+  'valid_from',
+  'valid_to',
+  'active'
+]);
+
+export const DEFAULT_LIMIT = 50;
+
+export const dom = {};
+
+const DOM_IDS = [
+  'fQ',
+  'fPrice',
+  'fSeller',
+  'fActive',
+  'fDate',
+  'btnSearch',
+  'btnClear',
+  'btnNew',
+  'btnExportPdf',
+  'btnExportExcel',
+  'commissionsTable',
+  'tbody',
+  'tableInfo',
+  'pageInfo',
+  'btnPrevious',
+  'btnNext',
+  'pageSize',
+  'modal',
+  'form',
+  'mTitle',
+  'btnDelete',
+  'btnSave',
+  'commission_id',
+  'price_id',
+  'seller_id',
+  'commission_type',
+  'percent_value',
+  'fixed_value',
+  'active',
+  'valid_from',
+  'valid_to'
+];
+
+export function refreshDom() {
+  for (const id of DOM_IDS) {
+    dom[id] = document.getElementById(id);
+  }
+
+  return dom;
+}
+
+export function assertRequiredDom() {
+  const missing = DOM_IDS.filter((id) => !dom[id]);
+
+  if (missing.length) {
+    throw new Error(
+      `Elementos HTML não encontrados: ${missing.join(', ')}.`
+    );
+  }
+}

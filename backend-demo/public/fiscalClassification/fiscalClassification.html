@@ -1,0 +1,314 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ fiscalClassification.html — Classificação Fiscal | CONSART ERP             ║
+     ║ Path: backend/public/fiscalClassification/fiscalClassification.html        ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated + sortableTable + table-footer           ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Cadastro/edição: modals.css + modal.js (sem abas)                       ║
+     ║ API: /api/v2/fiscal-classifications                                        ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CLASSIFICAÇÃO FISCAL | CONSART ERP</title>
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <!-- Design system CONSART (importa modals, fields, summary, sortableTable, actionIcons...) -->
+  <link rel="stylesheet" href="/public/includes/css/style.css">
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="table-layout-integrated table-max-height-700">
+
+      <!-- FILTROS + AÇÕES (div, não <header>: topGradientBar injeta o título) -->
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="busca">Buscar</label>
+            <input id="busca" type="search" placeholder="Nome, descrição, NCM, CEST ou perfil..." autocomplete="off">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="buscaNcm">NCM</label>
+            <input id="buscaNcm" type="search" placeholder="Ex.: 4818.20.00" autocomplete="off">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="buscaCest">CEST</label>
+            <input id="buscaCest" type="search" placeholder="Ex.: 10.005.00" autocomplete="off">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="filtroPerfil">Perfil fiscal</label>
+            <select id="filtroPerfil">
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="filtroAtivo">Status</label>
+            <select id="filtroAtivo">
+              <option value="true" selected>Ativas</option>
+              <option value="false">Inativas</option>
+              <option value="all">Todas</option>
+            </select>
+          </div>
+
+          <button id="btnBuscar" type="button" class="btn btn-filter btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar Filtros</span></button>
+          <button id="btnLimparFiltros" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnNovo" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova classificação</span></button>
+            <button id="btnRecarregar" type="button" class="btn btn-load btn-sm" title="Recarregar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Recarregar</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LISTA -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="fiscalclassification.bodytable">
+        <table id="classificationTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-2 table-sortable" data-sort-column="fiscal_classification_id" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>ID <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="classification_name" aria-sort="ascending"><button
+                  type="button" class="table-sort-button is-sorted" data-sort-button
+                  data-sort-direction="asc">Classificação <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="table-col-w-8 table-sortable" data-sort-column="ncm_code" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>NCM <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="cest_code" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>CEST <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-8 table-sortable" data-sort-column="ibscbs_cst" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>IBS/CBS (CST / cClassTrib) <span
+                    data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="profile_name" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Perfil fiscal <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-3 table-sortable" data-sort-column="is_active" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="bodyTable"></tbody>
+        </table>
+      </div>
+
+      <!-- RODAPÉ PADRÃO -->
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="apTableInfo">0 registros encontrados</span>
+          </div>
+
+          <div class="summary summary--center summary-gap-8">
+            <div class="summary-pill summary-pill--primary" id="sumActive">0 ativas</div>
+            <div class="summary-pill summary-pill--danger" id="sumInactive">0 inativas</div>
+            <div class="summary-pill summary-pill--warning" id="sumMissingIbs" style="display:none">0 sem IBS/CBS</div>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="btnPrev" class="btn btn-clean btn-sm">Anterior</button>
+          <span id="paginacaoInfo">Página 1 de 1</span>
+          <button type="button" id="btnNext" class="btn btn-new btn-sm">Próxima</button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="pageSize">Mostrar</label>
+          <select id="pageSize" class="table-footer__page-size-select" name="pageSize">
+            <option value="10">10 linhas</option>
+            <option value="20">20 linhas</option>
+            <option value="50" selected>50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — NOVA / EDITAR CLASSIFICAÇÃO           │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-10 modal-header-color-3 modal-footer-color-3" id="classificationModal" role="dialog"
+    aria-modal="true" aria-labelledby="formTitulo" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="formTitulo">Nova classificação</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="formFiscalClassification" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="fiscal_classification_id">
+
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+
+            <!-- IDENTIFICAÇÃO -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Identificação</h4>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="classification_name">Nome da classificação *</label>
+              <input id="classification_name" type="text" maxlength="150" required
+                placeholder="Ex.: Papel toalha – consumo próprio">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="fiscal_profile_id">Perfil fiscal padrão</label>
+              <select id="fiscal_profile_id">
+                <option value="">— Sem perfil vinculado —</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="is_active">Status</label>
+              <select id="is_active">
+                <option value="true" selected>Ativa</option>
+                <option value="false">Inativa</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="description">Descrição interna</label>
+              <input id="description" type="text" placeholder="Observação interna sobre o vínculo fiscal...">
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- NCM / CEST -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>NCM / CEST</h4>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="ncm_code">NCM</label>
+              <input id="ncm_code" type="text" maxlength="10" inputmode="numeric" placeholder="Ex.: 4818.20.00">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="ex_tipi">EX TIPI</label>
+              <input id="ex_tipi" type="text" maxlength="3" inputmode="numeric">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="ncm_description">Descrição NCM</label>
+              <input id="ncm_description" type="text" placeholder="Descrição oficial do NCM (opcional)">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="cest_code">CEST</label>
+              <input id="cest_code" type="text" maxlength="10" inputmode="numeric" placeholder="Ex.: 10.005.00">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-5">
+              <label for="cest_description">Descrição CEST</label>
+              <input id="cest_description" type="text" placeholder="Descrição oficial do CEST (opcional)">
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- IBS / CBS -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Reforma Tributária — IBS / CBS</h4>
+              <div class="summary summary--inline summary-gap-8">
+                <div class="summary-pill summary-pill--info" id="rates2026Info">Ano-teste 2026: IBS UF 0,1000% · CBS 0,9000%</div>
+                <button id="btnAplicar2026" type="button" class="btn btn-toolbar btn-sm">Aplicar alíquotas 2026</button>
+              </div>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="ibscbs_cst">CST IBS/CBS</label>
+              <input id="ibscbs_cst" type="text" inputmode="numeric" maxlength="3" placeholder="000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="ibscbs_classification">Classificação (cClassTrib)</label>
+              <input id="ibscbs_classification" type="text" inputmode="numeric" maxlength="6" placeholder="000000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="ibs_uf_rate">Alíquota IBS UF (%)</label>
+              <input id="ibs_uf_rate" type="text" inputmode="decimal" data-decimals="4" value="0,0000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="ibs_municipal_rate">Alíquota IBS Municipal (%)</label>
+              <input id="ibs_municipal_rate" type="text" inputmode="decimal" data-decimals="4" value="0,0000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="cbs_rate">Alíquota CBS (%)</label>
+              <input id="cbs_rate" type="text" inputmode="decimal" data-decimals="4" value="0,0000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="donation_indicator">Doação</label>
+              <select id="donation_indicator">
+                <option value="1" selected>Não</option>
+                <option value="0">Sim</option>
+              </select>
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- IMPOSTO SELETIVO -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Imposto Seletivo</h4>
+              <small>Preencha só para produtos sujeitos ao IS</small>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="is_cst">CST IS</label>
+              <input id="is_cst" type="text" maxlength="3" inputmode="numeric">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="is_classification">Classificação IS</label>
+              <input id="is_classification" type="text" maxlength="10">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="is_rate">Alíquota IS (%)</label>
+              <input id="is_rate" type="text" inputmode="decimal" data-decimals="4" value="0,0000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="is_specific_rate">Alíquota específica</label>
+              <input id="is_specific_rate" type="text" inputmode="decimal" data-decimals="6" value="0,000000">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="is_unit">Unidade</label>
+              <input id="is_unit" type="text" maxlength="6" value="UN">
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button id="btnToggleActive" type="button" class="btn btn-danger btn-sm btn-position-left" style="display:none">⏸ Desativar</button>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnSalvar" type="submit" form="formFiscalClassification" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/fiscalClassification/js/fiscalClassification.init.js?v=2"></script>
+</body>
+
+</html>

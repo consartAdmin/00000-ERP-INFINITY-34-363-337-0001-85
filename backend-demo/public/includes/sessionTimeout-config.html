@@ -1,0 +1,96 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ sessionTimeout-config.html — Configurar Timeout de Sessão | CONSART ERP    ║
+     ║ Path: backend/public/includes/sessionTimeout-config.html                   ║
+     ║                                                                            ║
+     ║ Uma tela controla tudo da sessão:                                          ║
+     ║  - Inatividade: sai depois de X minutos sem usar (reinicia a cada clique)  ║
+     ║  - Validade do login (token JWT, em horas), renovada sozinha enquanto usa  ║
+     ║  - O contador ⏳ do rodapé mostra o que terminar primeiro                  ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║ API: GET/PUT /api/session-config (PUT só administrador)                    ║
+     ║ JS: /public/includes/js/sessionTimeoutConfigPage.js                        ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TIMEOUT DE SESSÃO | CONSART ERP</title>
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <!-- Design system CONSART -->
+  <link rel="stylesheet" href="/public/includes/css/style.css">
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <form id="stoForm" class="section section-max-md section-center section-panel section-gap-3" novalidate>
+
+      <div class="section__header">
+        <span class="badge-step"></span>
+        <h2 class="section__title">Sair por inatividade</h2>
+      </div>
+
+      <div class="section__body">
+        <label class="checkbox" for="enabled">
+          <input id="enabled" type="checkbox">
+          <span>Habilitar: sair do sistema depois de um tempo sem uso</span>
+        </label>
+
+        <div class="fields-inline fields-inline-wrap fields-align-start fields-gap-4">
+          <div class="fields fields-w-16 fields-h-6">
+            <label for="idleMinutes">Minutos de inatividade</label>
+            <input id="idleMinutes" type="number" min="1" step="1" placeholder="10">
+            <small class="fields-help">Reinicia a cada clique ou tecla.</small>
+          </div>
+
+          <div class="fields fields-w-16 fields-h-6">
+            <label for="warnSeconds">Aviso antes (segundos)</label>
+            <input id="warnSeconds" type="number" min="0" step="5" placeholder="0">
+            <small class="fields-help">0 = sem aviso.</small>
+          </div>
+        </div>
+
+        <label class="checkbox" for="silent">
+          <input id="silent" type="checkbox">
+          <span>Redirecionar em silêncio (sem aviso nem alerta)</span>
+        </label>
+      </div>
+
+      <div class="section__header">
+        <span class="badge-step"></span>
+        <h2 class="section__title">Login</h2>
+      </div>
+
+      <div class="section__body">
+        <div class="fields-inline fields-inline-wrap fields-align-start fields-gap-4">
+          <div class="fields fields-w-16 fields-h-6">
+            <label for="tokenHours">Validade do login (horas)</label>
+            <input id="tokenHours" type="number" min="1" max="24" step="1" placeholder="2">
+            <small class="fields-help">De 1 a 24. Renova sozinho com o uso.</small>
+          </div>
+
+        </div>
+
+        <small class="fields-help" id="stoFooterHint">
+          O contador ⏳ do rodapé mostra o que terminar primeiro: a inatividade (se habilitada) ou a validade do login.
+        </small>
+        <div class="summary summary--between summary-gap-8">
+          <small class="fields-help" id="stoUpdated"></small>
+          <div class="btn-inline btn-gap-2">
+            <button id="reset" type="button" class="btn btn-toolbar">Padrão</button>
+            <button id="save" type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </form>
+
+  </main>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/includes/js/sessionTimeoutConfigPage.js"></script>
+</body>
+
+</html>

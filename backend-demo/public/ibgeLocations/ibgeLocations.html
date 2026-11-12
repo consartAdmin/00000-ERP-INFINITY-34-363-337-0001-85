@@ -1,0 +1,220 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ ibgeLocations.html — UFs e Cidades IBGE | CONSART ERP                      ║
+     ║ Path: backend/public/ibgeLocations/ibgeLocations.html                      ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - 2 listas lado a lado (c-grid), cada uma um table-layout-integrated      ║
+     ║  - Estados: as 27 UFs com nome, nº de cidades e situação da importação;    ║
+     ║    clicar numa UF filtra as cidades (clicar de novo desfaz)                ║
+     ║  - Cidades: busca, Status, ordenação no servidor e paginação no rodapé     ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Cadastro/edição: modals.css + modal.js                                  ║
+     ║ API: /api/ibge-locations (+ /count-by-state, /import/state, /ensure)       ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UFS E CIDADES IBGE | CONSART ERP</title>
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <!-- Design system CONSART (importa modals, fields, summary, sortableTable, actionIcons...) -->
+  <link rel="stylesheet" href="/public/includes/css/style.css">
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <div class="c-grid gap-12 a-start" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));">
+
+    <!-- ╭──────────────────────────────────────────────╮
+         │ ESTADOS (UF)                                 │
+         ╰──────────────────────────────────────────────╯ -->
+    <section class="table-layout-integrated table-max-height-700" aria-label="Estados">
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--between summary-gap-8">
+          <h4 class="table-layout-integrated__filter-title">Estados (UF)</h4>
+          <small>Clique numa UF para ver as cidades</small>
+        </div>
+
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-14 fields-font-3">
+            <label for="ufsSearch">Buscar</label>
+            <input id="ufsSearch" type="search" placeholder="UF ou nome do estado..." autocomplete="off">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-7 fields-font-3">
+            <label for="ufsSituation">Situação</label>
+            <select id="ufsSituation">
+              <option value="all" selected>Todas</option>
+              <option value="imported">Importadas</option>
+              <option value="pending">Não importadas</option>
+            </select>
+          </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnEnsure" type="button" class="btn btn-toolbar btn-sm" title="Cria a tabela e os índices, se ainda não existirem"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span>Verificar tabela</span></button>
+            <button id="btnRefreshAll" type="button" class="btn btn-toolbar btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span>Atualizar</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="ibgelocations.ufs">
+        <table id="ufsTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-1 table-sortable" data-sort-column="uf" aria-sort="ascending"><button type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="asc">UF <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="th-left table-sortable" data-sort-column="name" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Estado <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-2 table-sortable" data-sort-column="active" title="Cidades ativas" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Cidades <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-3 table-sortable" data-sort-column="imported" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Situação <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="ufsTableBody"></tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-left-space-3">
+            <span id="ufsInfo">Carregando...</span>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ╭──────────────────────────────────────────────╮
+         │ CIDADES / MUNICÍPIOS                         │
+         ╰──────────────────────────────────────────────╯ -->
+    <section class="table-layout-integrated table-max-height-700" aria-label="Cidades">
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--between summary-gap-8">
+          <h4 class="table-layout-integrated__filter-title">Cidades / Municípios</h4>
+          <small>Código IBGE usado em NF-e, SPED e cadastros</small>
+        </div>
+
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-16 fields-font-3">
+            <label for="citiesSearch">Buscar</label>
+            <input id="citiesSearch" type="search" placeholder="Cidade ou código IBGE..." autocomplete="off">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-6 fields-font-3">
+            <label for="citiesStatus">Status</label>
+            <select id="citiesStatus">
+              <option value="true" selected>Ativas</option>
+              <option value="false">Inativas</option>
+              <option value="all">Todas</option>
+            </select>
+          </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnImportUf" type="button" class="btn btn-toolbar btn-sm" title="Busca as cidades da UF selecionada no IBGE"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>Importar da UF</span></button>
+            <button id="btnNewCity" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova cidade</span></button>
+          </div>
+        </div>
+
+        <div id="citiesFilterBar" class="summary summary--between summary-gap-8" style="display:none">
+          <div class="summary-pill summary-pill--info" id="citiesFilterLabel">UF: —</div>
+          <button id="btnClearUf" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Mostrar todas</span></button>
+        </div>
+      </div>
+
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="ibgelocations.cities">
+        <table id="citiesTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-1 table-sortable" data-sort-column="ibge_location_id" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>ID <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-1 table-sortable" data-sort-column="state" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>UF <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="th-left table-sortable" data-sort-column="city" aria-sort="ascending"><button type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="asc">Cidade <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="table-col-w-2 table-sortable" data-sort-column="ibge_code" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Código IBGE <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-2 table-sortable" data-sort-column="status" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-3">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="citiesTableBody"></tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-left-space-3">
+            <span id="citiesInfo">Carregando...</span>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="citiesPrev" class="btn btn-clean btn-sm">Anterior</button>
+          <span id="citiesPageInfo">Página 1 de 1</span>
+          <button type="button" id="citiesNext" class="btn btn-new btn-sm">Próxima</button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="citiesPerPage">Mostrar</label>
+          <select id="citiesPerPage" class="table-footer__page-size-select">
+            <option value="20">20 linhas</option>
+            <option value="50" selected>50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+      </footer>
+    </section>
+    </div>
+  </main>
+
+  <!-- MODAL — NOVA / EDITAR CIDADE -->
+  <div class="modal modal-width-4 modal-header-color-3 modal-footer-color-3" id="cityModal" role="dialog"
+    aria-modal="true" aria-labelledby="cityModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="cityModalTitle">Nova cidade</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="cityForm" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="cityId">
+
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="cityState">UF *</label>
+              <select id="cityState" required></select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="cityName">Cidade *</label>
+              <input id="cityName" type="text" maxlength="120" required placeholder="Ex.: Belo Horizonte">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="cityIbgeCode">Código IBGE *</label>
+              <input id="cityIbgeCode" type="text" inputmode="numeric" maxlength="7" required placeholder="Ex.: 3106200">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="cityStatus">Status</label>
+              <select id="cityStatus">
+                <option value="true" selected>Ativa</option>
+                <option value="false">Inativa</option>
+              </select>
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="submit" form="cityForm" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/ibgeLocations/ibgeLocations.js?v=dock-01"></script>
+</body>
+
+</html>

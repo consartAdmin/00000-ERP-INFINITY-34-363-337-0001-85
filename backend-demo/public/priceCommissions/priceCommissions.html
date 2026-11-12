@@ -1,0 +1,226 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ priceCommissions.html — Cadastro de Comissões | CONSART ERP                ║
+     ║ Path: backend/public/priceCommissions/priceCommissions.html                ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated + sortableTable + table-footer           ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Modal: modals.css + modal.js · Datas: brDateTimeInput (dd/mm/aaaa)      ║
+     ║  - Relatórios: GET /api/price-commissions/export?format=pdf|xlsx           ║
+     ║ API: /api/price-commissions                                                ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CADASTRO DE COMISSÕES | CONSART ERP</title>
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <!-- Design system CONSART (importa modals, summary, sortableTable, actionIcons...) -->
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="table-layout-integrated table-max-height-700">
+
+      <!-- FILTROS + AÇÕES (div, não <header>: topGradientBar injeta o título) -->
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="fQ">Buscar</label>
+            <input id="fQ" type="search" placeholder="Tabela, vendedor ou ID..." autocomplete="off" />
+          </div>
+
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="fPrice">Tabela de Preço</label>
+            <select id="fPrice"></select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-16 fields-font-3">
+            <label for="fSeller">Vendedor</label>
+            <select id="fSeller"></select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="fActive">Status</label>
+            <select id="fActive">
+              <option value="">Todos</option>
+              <option value="true" selected>Ativos</option>
+              <option value="false">Inativos</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <label for="fDate">Vigente em</label>
+            <input id="fDate" type="date" />
+          </div>
+
+          <button id="btnSearch" type="button" class="btn btn-filter btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar Filtros</span></button>
+          <button id="btnClear" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnExportPdf" type="button" class="btn btn-toolbar btn-sm"
+              title="Relatório em PDF (respeita os filtros e a ordenação)">
+              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar PDF</span>
+            </button>
+            <button id="btnExportExcel" type="button" class="btn btn-toolbar btn-sm"
+              title="Relatório em Excel (respeita os filtros e a ordenação)">
+              <img src="/iconsImagens/excelIcons.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar Excel</span>
+            </button>
+            <button id="btnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova Comissão</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LISTA -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="pricecommissions.tbody">
+        <table id="commissionsTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-3 table-sortable" data-sort-column="commission_id" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>ID <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="price_name" aria-sort="ascending"><button
+                  type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="asc">Tabela
+                  de Preço <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="seller_name" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Vendedor <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5 table-sortable" data-sort-column="commission_type" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Tipo <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5 table-sortable th-right" data-sort-column="value" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Comissão <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5 table-sortable" data-sort-column="valid_from" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Válido a partir <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5 table-sortable" data-sort-column="valid_to" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Válido até <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="active" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- RODAPÉ PADRÃO -->
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="tableInfo">0 registros encontrados</span>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="btnPrevious" class="btn btn-clean btn-sm">Anterior</button>
+          <span id="pageInfo">Página 1 de 1</span>
+          <button type="button" id="btnNext" class="btn btn-new btn-sm">Próxima</button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="pageSize">Mostrar</label>
+          <select id="pageSize" class="table-footer__page-size-select">
+            <option value="10">10 linhas</option>
+            <option value="20">20 linhas</option>
+            <option value="50" selected>50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — REGRA DE COMISSÃO                     │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-8 modal-header-color-3 modal-footer-color-3" id="modal" role="dialog"
+    aria-modal="true" aria-labelledby="mTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="mTitle">Nova comissão</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="form" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="commission_id" />
+
+          <div class="modal-form-grid modal-form-grid--3 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="price_id">Tabela de Preço *</label>
+              <select id="price_id" required></select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="seller_id">Vendedor *</label>
+              <select id="seller_id" required></select>
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="commission_type">Tipo *</label>
+              <select id="commission_type" required>
+                <option value="PERCENT">Percentual (%)</option>
+                <option value="FIXED">Fixo (R$)</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="percent_value">Percentual (%)</label>
+              <input id="percent_value" type="number" step="0.0001" min="0" value="0" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="fixed_value">Fixo (R$)</label>
+              <input id="fixed_value" type="number" step="0.01" min="0" value="0" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="valid_from">Válido a partir *</label>
+              <input id="valid_from" type="date" required />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="valid_to">Válido até</label>
+              <input id="valid_to" type="date" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="active">Status</label>
+              <select id="active">
+                <option value="true" selected>Ativo</option>
+                <option value="false">Inativo</option>
+              </select>
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button id="btnDelete" type="button" class="btn btn-danger btn-sm btn-position-left" hidden>🗑️ Excluir</button>
+          <button id="btnCancel" type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnSave" type="submit" form="form" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/priceCommissions/js/priceComissions.init.js?v=3"></script>
+</body>
+
+</html>

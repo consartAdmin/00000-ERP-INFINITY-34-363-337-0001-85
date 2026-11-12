@@ -1,0 +1,324 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ OrdersLogisticsPacking.html — Montar Pedido para Despacho | CONSART ERP    ║
+     ║ Path: backend/public/OrdersLogisticsPacking/OrdersLogisticsPacking.html    ║
+     ║                                                                            ║
+     ║ Monta volumes a partir de um PEDIDO ou de um ORÇAMENTO.                    ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Título: topGradientBar · Layout: table-layout-integrated + consart-lr   ║
+     ║  - Modais: modals.css + modal.js · Avisos: centerAlertModal.js             ║
+     ║  - Ações: actionIcons.js                                                   ║
+     ║ API: /api/packing (routes/OrdersLogisticsPackingRoutes.js)                 ║
+     ║ URL direta: ?source=ORDER|BUDGET&id=724  (ou ?order_id=724)                ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MONTAR PEDIDO PARA DESPACHO | CONSART ERP</title>
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <!-- FILTROS + AÇÕES (div, não <header>: topGradientBar injeta o título) -->
+    <section class="table-layout-integrated">
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <label for="fSource">Origem</label>
+            <select id="fSource">
+              <option value="ORDER">Pedido</option>
+              <option value="BUDGET">Orçamento</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="fId" id="fIdLabel">Nº do pedido</label>
+            <input id="fId" type="number" min="1" placeholder="Ex: 724" autocomplete="off" />
+          </div>
+
+          <button id="btnSearch" type="button" class="btn btn-filter btn-sm" title="Pesquisar pedido ou orçamento (F2)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Pesquisar</span></button>
+          <button id="btnLoad" type="button" class="btn btn-new btn-sm">Carregar</button>
+          <button id="btnReload" type="button" class="btn btn-clean btn-sm" title="Recarregar">↻</button>
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="fScan" id="fScanLabel">Bipar código de barras</label>
+            <input id="fScan" type="search" placeholder="Leia o código do produto (entra no volume ativo)" autocomplete="off" disabled />
+          </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnPdf" type="button" class="btn btn-toolbar btn-sm" title="Romaneio com volumes e itens" disabled>
+              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Romaneio PDF</span>
+            </button>
+            <button id="btnLabels" type="button" class="btn btn-toolbar btn-sm" title="Etiquetas de todos os volumes (4 por folha)" disabled>
+              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Etiquetas dos volumes</span>
+            </button>
+            <button id="btnNewVolume" type="button" class="btn btn-new btn-sm" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Criar volume</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--inline summary-gap-8" id="infoPills">
+          <div class="summary-pill summary-pill--info summary-width-auto">Informe a origem e o número e clique em Carregar.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="consart-lr consart-lr--right-bigger" id="workArea" style="margin-top:14px; height: calc(100vh - 250px); min-height: 460px;">
+
+      <!-- ESQUERDA: itens -->
+      <section class="consart-lr-panel">
+        <div class="consart-lr-header">
+          <div>
+            <b id="itemsTitle">Itens do pedido</b>
+            <div class="text-muted">Arraste para um volume ou use ＋</div>
+          </div>
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <select id="fItemsFilter" aria-label="Filtrar itens">
+              <option value="PENDING">Pendentes</option>
+              <option value="ALL">Todos</option>
+              <option value="DONE">Embalados</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="consart-lr-scroll">
+          <table class="table table-zebra table-zebra-hover table-sticky-head">
+            <thead>
+              <tr>
+                <th class="th-left">Produto</th>
+                <th class="table-col-w-2">U.M.</th>
+                <th class="table-col-w-3 th-right">Pedido</th>
+                <th class="table-col-w-3 th-right">Embalado</th>
+                <th class="table-col-w-3 th-right">Restante</th>
+                <th class="table-col-w-2">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody">
+              <tr><td colspan="6" class="text-muted">Nenhum pedido carregado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="consart-lr-footer">
+          <span class="summary-pill summary-pill--success summary-width-auto" id="itemsInfo">0 itens</span>
+          <button id="btnAllocateAll" type="button" class="btn btn-new btn-sm" disabled>Alocar todos os pendentes</button>
+        </div>
+      </section>
+
+      <!-- DIREITA: volumes -->
+      <section class="consart-lr-panel">
+        <div class="consart-lr-header">
+          <div>
+            <b>Volumes</b>
+            <div class="text-muted">Clique num volume para torná-lo o volume ativo do leitor</div>
+          </div>
+          <span class="summary-pill summary-pill--info summary-width-auto" id="activeVolumePill">Nenhum volume ativo</span>
+        </div>
+
+        <div class="consart-lr-scroll">
+          <div id="volumesGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap:12px; align-items:start;"></div>
+          <div id="volumesEmpty" class="section section-gray section-border-thin section-center section-p-5 text-muted">
+            Nenhum volume criado ainda. Clique em <b>&nbsp;+ Criar volume</b>.
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — PESQUISAR PEDIDO OU ORÇAMENTO         │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-8 modal-header-color-3 modal-footer-color-3" id="searchModal" role="dialog"
+    aria-modal="true" aria-labelledby="searchTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="searchTitle">Pesquisar pedido ou orçamento</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <div class="fields-inline fields-inline-wrap fields-gap-3">
+            <div class="fields fields-h-6 fields-w-24 fields-font-3">
+              <label for="sQ">Buscar</label>
+              <input id="sQ" type="search" placeholder="Número, cliente, CNPJ/CPF ou status..." autocomplete="off" />
+            </div>
+            <div class="fields fields-h-6 fields-w-10 fields-font-3">
+              <label for="sSource">Origem</label>
+              <select id="sSource">
+                <option value="ALL">Todos</option>
+                <option value="ORDER">Pedidos</option>
+                <option value="BUDGET">Orçamentos</option>
+              </select>
+            </div>
+            <div class="fields fields-h-6 fields-w-12 fields-font-3">
+              <label for="sSituation">Situação da embalagem</label>
+              <select id="sSituation">
+                <option value="PENDING">Pendentes</option>
+                <option value="ALL">Todos</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-scroll" style="margin-top:10px; max-height: 420px;">
+            <table class="table table-zebra table-zebra-hover table-sticky-head">
+              <thead>
+                <tr>
+                  <th class="table-col-w-5">Origem</th>
+                  <th class="table-col-w-3">Nº</th>
+                  <th class="th-left">Cliente</th>
+                  <th class="table-col-w-5">Data</th>
+                  <th class="table-col-w-5">Status</th>
+                  <th class="table-col-w-5 th-right">Total</th>
+                  <th class="table-col-w-5" title="Quanto do pedido/orçamento já está em volumes">Embalagem</th>
+                </tr>
+              </thead>
+              <tbody id="searchBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <footer class="modal__footer">
+          <span class="text-muted btn-position-left" id="searchHint">↑/↓ e Enter para selecionar</span>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Fechar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — CRIAR / EDITAR VOLUME                 │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-6 modal-header-color-3 modal-footer-color-3" id="volumeModal" role="dialog"
+    aria-modal="true" aria-labelledby="volumeTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="volumeTitle">Criar volume</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="volumeForm" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="vId" />
+          <div class="modal-form-grid modal-form-grid--4 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="vType">Tipo</label>
+              <select id="vType">
+                <option value="BOX">Caixa</option>
+                <option value="PALLET">Palete</option>
+                <option value="BUNDLE">Fardo</option>
+                <option value="BAG">Saco</option>
+                <option value="OTHER">Outro</option>
+              </select>
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="vDesc">Descrição</label>
+              <input id="vDesc" type="text" maxlength="200" placeholder="Opcional (ex.: caixa reforçada)" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3" id="vCopiesWrap">
+              <label for="vCopies">Volumes iguais</label>
+              <input id="vCopies" type="number" min="1" max="50" step="1" value="1" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="vH">Altura (cm)</label>
+              <input id="vH" type="number" min="0" step="0.1" placeholder="0" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="vW">Largura (cm)</label>
+              <input id="vW" type="number" min="0" step="0.1" placeholder="0" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="vL">Comprimento (cm)</label>
+              <input id="vL" type="number" min="0" step="0.1" placeholder="0" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="vTare">Tara (kg)</label>
+              <input id="vTare" type="number" min="0" step="0.001" placeholder="0" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="vNotes">Observações</label>
+              <input id="vNotes" type="text" maxlength="500" placeholder="Opcional" />
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnSaveVolume" type="submit" form="volumeForm" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Criar volume</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — ADICIONAR ITEM AO VOLUME              │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-5 modal-header-color-3 modal-footer-color-3" id="itemModal" role="dialog"
+    aria-modal="true" aria-labelledby="itemTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="itemTitle">Adicionar ao volume</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="itemForm" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="iItemId" />
+          <div class="modal-form-grid modal-form-grid--3 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="iProduct">Produto</label>
+              <input id="iProduct" type="text" readonly />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="iVolume">Volume</label>
+              <select id="iVolume"></select>
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="iUnit">Unidade</label>
+              <select id="iUnit"></select>
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="iQty" id="iQtyLabel">Quantidade</label>
+              <input id="iQty" type="number" min="0.001" step="0.001" />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="iWeight" id="iWeightLabel">Peso por unidade do item (kg)</label>
+              <input id="iWeight" type="number" min="0" step="0.001" title="Por unidade do item. Pode corrigir aqui." />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="iDims">Medidas (cm)</label>
+              <input id="iDims" type="text" readonly />
+            </div>
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="iTotalWeight">Peso total (kg)</label>
+              <input id="iTotalWeight" type="text" readonly />
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="submit" form="itemForm" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Adicionar ao volume</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/OrdersLogisticsPacking/OrdersLogisticsPacking.js?v=2"></script>
+</body>
+
+</html>

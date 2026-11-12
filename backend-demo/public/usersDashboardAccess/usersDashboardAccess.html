@@ -1,0 +1,158 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ usersDashboardAccess.html — Acesso aos Dashboards | CONSART ERP            ║
+     ║ Path: backend/public/usersDashboardAccess/usersDashboardAccess.html        ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista de usuários: table-layout-integrated + sortableTable + rodapé     ║
+     ║  - Modal (modals.css + modal.js): indicadores agrupados por slide da Home  ║
+     ║  - Avisos/confirmações: centerAlertModal.js · Ações: actionIcons.js        ║
+     ║ API: /api/users-dashboard-access · /api/users/search                       ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACESSO AOS DASHBOARDS | CONSART ERP</title>
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png" />
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="table-layout-integrated table-max-height-700">
+
+      <!-- FILTROS (div, não <header>: topGradientBar injeta o título) -->
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+
+          <div class="fields fields-h-6 fields-w-25 fields-font-3">
+            <label for="fQ">Buscar usuário</label>
+            <input id="fQ" type="search" placeholder="Nome, login ou ID..." autocomplete="off" />
+          </div>
+
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="fSlide">Slide da Home</label>
+            <select id="fSlide">
+              <option value="">Todos</option>
+              <option value="finance">Financeiro</option>
+              <option value="analytics">Vendas</option>
+              <option value="taxes">Impostos e Apuração</option>
+              <option value="stock">Estoque</option>
+              <option value="none">Sem nenhum acesso</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="fActive">Status</label>
+            <select id="fActive">
+              <option value="">Todos</option>
+              <option value="true" selected>Ativos</option>
+              <option value="false">Inativos</option>
+            </select>
+          </div>
+
+          <button id="btnClear" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
+        </div>
+      </div>
+
+      <!-- LISTA DE USUÁRIOS -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="usersdashboardaccess.tbody">
+        <table id="usersTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-3 table-sortable" data-sort-column="user_id" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>ID <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="name" aria-sort="ascending"><button type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="asc">Usuário <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="login" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Login <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="finance" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Financeiro <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="analytics" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Vendas <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="taxes" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Impostos e Apuração <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="stock" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Estoque <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5 table-sortable" data-sort-column="total" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Liberados <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="active" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="10" class="td-center">Carregando usuários...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RODAPÉ PADRÃO -->
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="tableInfo">0 usuários</span>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="btnPrevious" class="btn btn-clean btn-sm">Anterior</button>
+          <span id="pageInfo">Página 1 de 1</span>
+          <button type="button" id="btnNext" class="btn btn-new btn-sm">Próxima</button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="pageSize">Mostrar</label>
+          <select id="pageSize" class="table-footer__page-size-select">
+            <option value="10">10 linhas</option>
+            <option value="20">20 linhas</option>
+            <option value="50" selected>50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — ACESSOS DO USUÁRIO                    │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-7 modal-header-color-3 modal-footer-color-3" id="modal" role="dialog"
+    aria-modal="true" aria-labelledby="mTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="mTitle">Acessos do usuário</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+
+          <div class="fields-inline fields-inline-wrap fields-gap-3">
+            <div class="fields fields-h-6 fields-w-25 fields-font-3">
+              <label for="mCopyFrom">Copiar acessos de</label>
+              <select id="mCopyFrom"></select>
+            </div>
+
+            <button id="btnCopyFrom" type="button" class="btn btn-toolbar btn-sm" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copiar</span></button>
+
+            <div class="btn-inline btn-gap-2 btn-position-right">
+              <button id="btnCheckAll" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg><span>Marcar todos</span></button>
+              <button id="btnUncheckAll" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Desmarcar todos</span></button>
+            </div>
+          </div>
+
+          <div class="modal-divider modal-divider--soft"></div>
+
+          <div id="mBody" class="modal-form-grid modal-form-grid--2"></div>
+        </div>
+
+        <footer class="modal__footer">
+          <span class="summary-pill summary-pill--info btn-position-left" id="mCount">0 de 0 liberados</span>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnSave" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar acessos</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/usersDashboardAccess/js/usersDashboardAccess.js?v=20261109-1"></script>
+</body>
+
+</html>

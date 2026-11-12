@@ -1,0 +1,102 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ productsLocationsBatch.css — Localizações em Lote (CONSART ERP)      ║
+   ║ Tabela/filtro/rodapé/modal vêm do Design System (style.css/modals)  ║
+   ║ Aqui ficam só colunas, seleção e o conteúdo do modal                 ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+/* ── Filtro ─────────────────────────────────────────────────────────── */
+.plb-filter { align-items: flex-end; }
+
+.plb-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.plb-check {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+  white-space: nowrap;
+  padding-bottom: 6px;
+  cursor: pointer;
+}
+
+/* ── Tabela ─────────────────────────────────────────────────────────── */
+.plb-col-sku { width: 90px; }
+.plb-col-desc { width: auto; }
+.plb-col-local { width: 140px; }
+.plb-col-small { width: 85px; }
+.plb-col-qty { width: 85px; }
+.plb-col-other { width: 70px; }
+
+#plbTable td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#plbTable tbody tr { cursor: pointer; }
+#plbTable tbody tr.plb-row-selected td { background: rgba(59, 130, 246, .10) !important; }
+#plbTable td.plb-qty { text-align: right; }
+#plbTable td.plb-other { text-align: center; color: #6b7280; }
+#plbTable td.plb-empty { text-align: center; color: #6b7280; padding: 18px 0; }
+
+.plb-none { color: #b45309; font-style: italic; }
+
+.plb-page-info { padding: 0 8px; font-size: 13px; }
+
+/* ── Modal ──────────────────────────────────────────────────────────── */
+.plb-modal-panel { max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+.plb-modal-body { overflow-x: hidden; overflow-y: auto; flex: 1 1 auto; }
+.plb-modal-body * { box-sizing: border-box; }
+.plb-modal-body .fields { min-width: 0; max-width: 100%; }
+
+.plb-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+}
+
+.plb-step-title { font-weight: 800; font-size: 13px; margin: 4px 0 8px; }
+
+.plb-scan { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; }
+.plb-scan-info { font-size: 12px; padding-bottom: 8px; color: #6b7280; }
+.plb-scan-info.is-ok { color: #15803d; }
+.plb-scan-info.is-error { color: #b91c1c; }
+
+.plb-dest { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.plb-dest .fields { width: auto; }
+.plb-dest select { width: 100%; }
+
+.plb-mode { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.plb-mode__opt {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+}
+.plb-mode__opt.is-on { border-color: #3b82f6; background: rgba(59, 130, 246, .08); }
+.plb-mode__opt small { display: block; color: #6b7280; }
+
+.plb-notes { margin-top: 10px; }
+.plb-notes input { width: 100%; }
+
+.plb-preview { max-height: 220px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 8px; }
+.plb-preview table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.plb-preview th { position: sticky; top: 0; background: #f9fafb; }
+.plb-preview td, .plb-preview th { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; text-align: left; }
+.plb-preview .plb-loc { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+.plb-preview .plb-arrow { color: #16a34a; font-weight: 700; }
+.plb-preview .plb-same { color: #6b7280; }
+
+@media (max-width: 900px) {
+  .plb-dest { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

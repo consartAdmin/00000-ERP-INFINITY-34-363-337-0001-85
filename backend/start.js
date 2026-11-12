@@ -6,10 +6,6 @@
 // numa porta interna, com o próprio banco; o Infinity encaminha
 // /logistica-demo, /prodnex e /consart para eles (middleware/logisticaDemoProxy.js).
 //
-// Demonstração (/demo): roda ESTE mesmo código (server.js do Infinity) numa
-// segunda cópia, com o banco vazio da demo (DEMO__DB_NAME). Não precisa de
-// pasta em apps/: o que vai para o Infinity vai junto para a demo.
-//
 // Variáveis de cada projeto: as mesmas do Infinity, trocando as que vêm com
 // prefixo (ex.: CONSART__DB_NAME=consart vira DB_NAME=consart só no CONSART).
 // <PREFIXO>__UNSET lista as chaves do Infinity que o projeto não usa.
@@ -27,13 +23,6 @@ export const PROJETOS = [
   { nome: "logistics", prefixo: "LOGISTICS", basePath: "/logistica-demo", porta: 8081, urlVar: "LOGISTICA_DEMO_URL" },
   { nome: "prodnex",   prefixo: "PRODNEX",   basePath: "/prodnex",        porta: 8082, urlVar: "PRODNEX_URL" },
   { nome: "consart",   prefixo: "CONSART",   basePath: "/consart",        porta: 8083, urlVar: "CONSART_URL" },
-  {
-    nome: "demo", prefixo: "DEMO", basePath: "/demo", porta: 8084, urlVar: "DEMO_URL",
-    mesmoCodigo: true, // usa o próprio backend/, não apps/demo
-    // Nunca liga, na demo, as rotinas que buscam dados da empresa real
-    // (e-mails recebidos e notas da SEFAZ pelo CNPJ do Infinity)
-    envFixo: { ENABLE_EMAIL_INBOUND: "false", ENABLE_DFE_SCHEDULER: "false", NFE_INBOX_AUTO_SYNC: "false" },
-  },
 ];
 
 const PREFIXOS = PROJETOS.map(p => `${p.prefixo}__`);
@@ -63,7 +52,6 @@ export function envDoProjeto(p, origem = process.env) {
   }
 
   for (const q of PROJETOS) delete env[q.urlVar];
-  Object.assign(env, p.envFixo || {});
   env.PORT = String(p.porta);
   env.APP_BASE_PATH = p.basePath;
   // 4 processos no mesmo contêiner: limita o heap dos projetos extras
@@ -134,7 +122,7 @@ function main() {
   const infinityEnv = envBase();
 
   for (const p of PROJETOS) {
-    const dir = p.mesmoCodigo ? ROOT : path.join(ROOT, "apps", p.nome);
+    const dir = path.join(ROOT, "apps", p.nome);
     if (!fs.existsSync(path.join(dir, "server.js"))) continue;
     if (!process.env[`${p.prefixo}__DB_NAME`]) {
       console.warn(`[start] ${p.nome}: ${p.prefixo}__DB_NAME não definido; projeto não iniciado (${p.basePath} segue para ${process.env[p.urlVar] || "lugar nenhum"}).`);

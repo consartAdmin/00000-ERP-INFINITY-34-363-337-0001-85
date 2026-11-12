@@ -1,0 +1,428 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ employees.css — Colaboradores + Documentos (CONSART ERP)             ║
+   ║ Layout: Lista na página + modal do colaborador (modals.css)          ║
+   ║ ✅ Tabela/filtro/campos/modal vêm do Design System (style.css)       ║
+   ║    Aqui ficam só abas do modal, cards de campos e ajustes do módulo  ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+:root{
+  --emp-gap: 12px;
+  --emp-radius: 12px;
+  --emp-border: rgba(17, 24, 39, .10);
+  --emp-soft: rgba(17, 24, 39, .06);
+  --emp-card: rgba(255, 255, 255, 1);
+  --emp-text: rgba(17, 24, 39, 1);
+  --emp-muted: rgba(107, 114, 128, 1);
+  --emp-primary: rgba(59, 130, 246, 1);
+  --emp-success: rgba(22, 163, 74, 1);
+  --emp-danger: rgba(220, 38, 38, 1);
+
+  /* ✅ mesmas cores/bordas da tabela integrada (lista) */
+  --emp-line: var(--table-border-color, #02080f);
+  --emp-line-w: var(--table-border-width, 1px);
+  --emp-panel-bg: var(--table-filter-bg, #f3f4f6);
+  --emp-radius-ds: var(--table-radius-top, 10px);
+
+  /* ✅ modal: fundo branco único e bordas internas suaves */
+  --emp-soft-line: #dbe1e8;
+  --emp-title-bg: #f8fafc;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TOGGLE / CHECKBOX (alinha com campos fields-h-6)
+   ───────────────────────────────────────────────────────────── */
+.emp-toggle,
+.emp-checkbox{
+  display:inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items:center;
+  height: 30px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  font-size: 12px;
+  color: var(--emp-text);
+  border: 1px solid var(--fields-border-color, #020508);
+  border-radius: var(--fields-border-radius, 6px);
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TABELAS (colunas + ações + status)
+   ───────────────────────────────────────────────────────────── */
+.emp-col-id{ width: 54px; }
+.emp-col-name{ width: 280px; }
+.emp-col-dept{ width: 160px; }
+.emp-col-role{ width: 160px; }
+.emp-col-cpf{ width: 120px; }
+.emp-col-date{ width: 100px; }
+.emp-col-status{ width: 90px; }
+.emp-col-actions{ width: 170px; text-align:right; }
+
+.emp-table-actions{
+  display:flex;
+  gap: 4px;
+  justify-content:flex-end;
+}
+
+.emp-row--selected > td{
+  background: rgba(59,130,246,.14) !important;
+}
+
+#employeesTableBody tr[data-id]{ cursor: pointer; }
+
+.emp-empty{
+  color: var(--emp-muted);
+  padding: 12px 10px !important;
+}
+
+.emp-pill{
+  display:inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.emp-pill--active{ color: var(--emp-success); background: rgba(22,163,74,.10); }
+.emp-pill--inactive{ color: var(--emp-danger); background: rgba(220,38,38,.10); }
+
+/* ─────────────────────────────────────────────────────────────
+   FORM
+   ───────────────────────────────────────────────────────────── */
+.emp-actions-left,
+.emp-actions-right{
+  display:flex;
+  gap: 8px;
+  align-items:center;
+  flex-wrap: wrap;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CARDS DE CAMPOS (Dados pessoais, Contato, Contrato, Experiência...)
+   ───────────────────────────────────────────────────────────── */
+.emp-section{
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--emp-soft-line);
+  border-radius: var(--emp-radius-ds);
+  padding: 10px 12px 12px;
+}
+
+/* campos dentro do card: grid de 2 colunas, textos longos ocupam a linha toda */
+.emp-section__grid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: end;
+}
+
+.emp-section__grid > .fields{ width: auto; }
+.emp-section__grid > .emp-span-full{ grid-column: 1 / -1; }
+.emp-section__grid > .emp-checkbox{ justify-self: start; }
+
+/* textarea de Observações preenche a altura do card */
+.emp-section__fill{
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+.emp-section__fill textarea{ flex: 1 1 auto; min-height: 90px; }
+
+.emp-section__title{
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin: -10px -12px 10px;
+  padding: 7px 12px;
+  background: var(--emp-title-bg);
+  border-bottom: 1px solid var(--emp-soft-line);
+  border-radius: var(--emp-radius-ds) var(--emp-radius-ds) 0 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DOCUMENTOS
+   ───────────────────────────────────────────────────────────── */
+
+.emp-docs__header{
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  align-items:center;
+  margin-bottom: 10px;
+}
+
+.emp-docs__subtitle{
+  margin: 0;
+  font-size: 11px;
+  color: var(--emp-muted);
+}
+
+.emp-doc-form{
+  border: 1px solid var(--emp-soft-line);
+  background: #fff;
+  border-radius: var(--emp-radius-ds);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.emp-doc-form.is-editing{
+  border-color: rgba(59,130,246,.45);
+  background: rgba(59,130,246,.05);
+}
+
+.emp-mini-hint{
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--emp-muted);
+}
+
+.emp-mini-hint__legend{
+  margin-left: 8px;
+  opacity: .9;
+}
+
+.emp-docs-scroll{
+  max-height: 260px;
+  background: #fff;
+}
+
+/* Endereço: Cidade | UF | CEP na mesma linha */
+.emp-section__grid--address{
+  grid-template-columns: minmax(0, 2fr) minmax(0, .6fr) minmax(0, 1fr);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DADOS PRINCIPAIS (cards: Dados pessoais | Contato | Contrato e folha)
+   ───────────────────────────────────────────────────────────── */
+.emp-main{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.emp-section__grid--3{
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.emp-section__grid > .emp-checkbox{ align-self: end; }
+
+@media (max-width: 1200px){
+  .emp-main{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .emp-main > .emp-section--wide{ grid-column: 1 / -1; }
+}
+
+@media (max-width: 720px){
+  .emp-main{ grid-template-columns: minmax(0, 1fr); }
+  .emp-section__grid--3{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL DO COLABORADOR (estrutura em modals.css)
+   ───────────────────────────────────────────────────────────── */
+.emp-modal__subtitle{
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--emp-muted);
+}
+
+/* abas internas: Dados | Experiência, benefícios e endereço | Documentos */
+.emp-modal-tabs{
+  display: flex;
+  gap: 4px;
+  padding: 0 var(--modal-header-footer-pad-x, 20px);
+  border-bottom: 1px solid var(--emp-soft-line);
+  background: #fff;
+}
+
+.emp-modal-tab{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--emp-muted);
+  cursor: pointer;
+}
+
+.emp-modal-tab:hover{ color: var(--emp-text); }
+
+.emp-modal-tab.is-active{
+  color: #1d4ed8;
+  border-bottom-color: #2563eb;
+}
+
+.emp-modal-tab:disabled{
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.emp-modal-tab__count{
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.emp-pane{ display: none; }
+.emp-pane.is-active{ display: block; }
+
+/* aba "Experiência, benefícios e endereço": cards lado a lado */
+.emp-pane--grid.is-active{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.emp-modal__footer{ justify-content: space-between; }
+
+.emp-modal .emp-checkbox{ border-color: var(--fields-border-color); }
+.emp-modal .table-scroll--rounded{ border-color: var(--emp-soft-line); }
+
+/* altura estável entre as abas (sem altura fixa: o modal não sobra em branco) */
+.emp-modal .modal__body{ min-height: 400px; }
+.emp-modal{ --fields-border-color: #c7d0db; }
+
+.emp-docs__footer{ padding: 8px 2px 0; }
+.emp-docs__summary{ font-size: 12px; color: var(--emp-muted); }
+
+/* ─────────────────────────────────────────────────────────────
+   TOOLBAR DA LISTA (título + filtros + ações, integrado à tabela)
+   ───────────────────────────────────────────────────────────── */
+.emp-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.emp-toolbar__title{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 8px;
+}
+
+.emp-toolbar__icon{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-size: 18px;
+}
+
+.emp-toolbar__title h1{
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--emp-text);
+  line-height: 1.2;
+}
+
+.emp-toolbar__title p{
+  margin: 0;
+  font-size: 11px;
+  color: var(--emp-muted);
+}
+
+.emp-toolbar__actions{ margin-left: auto; }
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL DE RELATÓRIOS
+   ───────────────────────────────────────────────────────────── */
+.emp-report-form{
+  display: grid;
+  gap: 12px;
+}
+
+.emp-report-types{
+  display: grid;
+  gap: 8px;
+}
+
+.emp-report-type{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--emp-soft-line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.emp-report-type:hover{ background: var(--emp-title-bg); }
+
+.emp-report-type:has(input:checked){
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.emp-report-type input{ grid-row: span 2; margin: 0; }
+.emp-report-type__name{ font-size: 13px; font-weight: 700; color: var(--emp-text); }
+.emp-report-type__hint{ font-size: 11px; color: var(--emp-muted); }
+.emp-toolbar > .fields-inline{ flex: 0 1 auto; width: auto; margin: 0; }
+.emp-toolbar > .emp-toolbar__actions{ flex: 0 0 auto; width: auto; }
+
+/* ─────────────────────────────────────────────────────────────
+   DEPARTAMENTOS E CARGOS (telas employeesDepartments / employeesPositions)
+   ───────────────────────────────────────────────────────────── */
+.cat-col-name{ width: 240px; }
+.cat-col-dept{ width: 200px; }
+.cat-col-desc{ width: auto; }
+.cat-col-count{ width: 110px; }
+.cat-col-actions{ width: 100px; }
+.cat-cell-left{ text-align: left !important; }
+.cat-cell-muted{ color: var(--emp-muted); }
+
+/* ─────────────────────────────────────────────────────────────
+   CAMPO COM ÍCONES NO RÓTULO (Departamento / Cargo do colaborador)
+   lupa = localizar | + = cadastro rápido (actionIcons, cinza → cor no hover)
+   ───────────────────────────────────────────────────────────── */
+.emp-field-actions{ position: relative; }
+.emp-field-actions__icons{
+  position: absolute;
+  top: -3px;
+  right: 0;
+}
+.emp-field-actions .action-icons{ --action-icon-gap: 2px; --action-icon-size: 14px; }
+.emp-field-actions .action-icon{ padding: 1px 3px; }
+
+.emp-picker-input{ cursor: pointer; background: #fff !important; color: var(--emp-text) !important; }
+
+/* Modal localizar departamento/cargo */
+.emp-picker-toolbar{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.emp-picker-toolbar .fields{ flex: 1 1 auto; }
+.emp-picker-scroll{
+  max-height: 320px;
+  border: 1px solid var(--emp-soft-line);
+  border-radius: var(--emp-radius-ds);
+  background: #fff;
+}
+.emp-picker-scroll tbody tr{ cursor: pointer; }
+.emp-picker-scroll tbody tr.is-current > td{ background: rgba(59,130,246,.10) !important; font-weight: 600; }

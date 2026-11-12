@@ -1,0 +1,257 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ accountsReceivable.css — Contas a Receber (CONSART ERP)              ║
+   ║ Modais Nova/Editar Conta e Receber no padrão modals.css / modal.js   ║
+   ║ (mesmo visual de cards do modal de Débitos e de Colaboradores)       ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.ar-modal {
+  --ar-soft-line: #dbe1e8;
+  --ar-title-bg: #f8fafc;
+  --ar-radius: var(--table-radius-top, 10px);
+  --fields-border-color: #c7d0db;
+}
+
+/* altura automática, mas nunca maior que a tela (o corpo rola, cabeçalho e rodapé ficam fixos) */
+.ar-modal .modal__panel {
+  max-height: calc(100vh - (var(--modal-space, 16px) * 2));
+}
+
+.ar-modal__subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Cards em 3 colunas */
+.ar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.ar-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--ar-soft-line);
+  border-radius: var(--ar-radius);
+  padding: 10px 12px 12px;
+}
+
+.ar-section--wide {
+  grid-column: span 2;
+}
+
+.ar-section--full {
+  grid-column: 1 / -1;
+}
+
+.ar-section__title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin: -10px -12px 10px;
+  padding: 7px 12px;
+  background: var(--ar-title-bg);
+  border-bottom: 1px solid var(--ar-soft-line);
+  border-radius: var(--ar-radius) var(--ar-radius) 0 0;
+}
+
+.ar-section__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: end;
+}
+
+.ar-section__grid > .fields {
+  width: auto;
+}
+
+.ar-span-full {
+  grid-column: 1 / -1;
+}
+
+/* Observações preenche a altura do card */
+.ar-section__fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 8px;
+  width: auto;
+}
+
+.ar-section__fill textarea {
+  flex: 1 1 auto;
+  min-height: 60px;
+  resize: vertical;
+}
+
+/* Receber: observações + anexo lado a lado */
+.ar-notes-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 8px 12px;
+}
+
+.ar-notes-row--half {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ar-notes-row > .fields {
+  width: auto;
+}
+
+.ar-help {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Caixa de anexos (botão + lista; aceita arrastar e soltar) */
+.ar-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+  padding: 8px;
+  border: 1px dashed var(--fields-border-color, #c7d0db);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+
+.ar-files input[type="file"] {
+  display: none !important;
+}
+
+.ar-files.is-dragover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.ar-files__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ar-files__hint {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.ar-files__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.ar-files__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 2px;
+  border-bottom: 1px solid #eef2f6;
+  font-size: 12px;
+}
+
+.ar-files__item:last-child {
+  border-bottom: 0;
+}
+
+.ar-files__item.is-pending {
+  color: #1d4ed8;
+}
+
+.ar-files__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.ar-files__name {
+  color: #0f2747;
+  text-decoration: none;
+}
+
+a.ar-files__name:hover {
+  text-decoration: underline;
+}
+
+.ar-files__meta {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.ar-files__empty {
+  font-size: 12px;
+  color: #94a3b8;
+  padding: 2px;
+}
+
+.ar-files .action-icon {
+  --action-icon-size: 14px;
+  padding: 1px 3px;
+}
+
+/* Ícone 🔗 no rótulo do Cliente (vínculo com Categoria/Subcategoria/Plano de Contas) */
+.ar-field-actions { position: relative; }
+.ar-field-actions__icons { position: absolute; top: -3px; right: 0; }
+.ar-field-actions .action-icons { --action-icon-gap: 2px; --action-icon-size: 14px; }
+.ar-field-actions .action-icon { padding: 1px 3px; }
+
+.ar-link-status {
+  display: block;
+  margin-top: 8px;
+}
+
+/* Valor Original em destaque discreto */
+.ar-modal .ar-total {
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.ar-modal .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .ar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .ar-grid,
+  .ar-notes-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ar-section--wide,
+  .ar-section--full {
+    grid-column: auto;
+  }
+}
+
+/* Editar em lote: duas seções lado a lado (vira uma coluna no celular) */
+.ar-grid.ar-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .ar-grid.ar-grid--two {
+    grid-template-columns: 1fr;
+  }
+}

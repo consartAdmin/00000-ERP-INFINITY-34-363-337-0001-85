@@ -1,0 +1,337 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ groupsAndSubgroups.html — Grupos, Subgrupos e Famílias | CONSART ERP       ║
+     ║ Path: backend/public/groupsAndSubgroups/groupsAndSubgroups.html            ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - 3 listas lado a lado (c-grid, mín. 460px por coluna), cada uma um                    ║
+     ║    table-layout-integrated com busca, Status, sortableTable e rodapé       ║
+     ║  - Clicar no grupo filtra subgrupos e famílias; no subgrupo, as famílias  ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Cadastro/edição: modals.css + modal.js                                  ║
+     ║ API: /api/products-groups · /api/products-subgroups · /api/products-families
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GRUPOS, SUBGRUPOS & FAMÍLIAS | CONSART ERP</title>
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <!-- Design system CONSART (importa modals, fields, summary, sortableTable, actionIcons...) -->
+  <link rel="stylesheet" href="/public/includes/css/style.css">
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <div class="c-grid gap-12 a-start" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));">
+
+    <!-- ╭──────────────────────────────────────────────╮
+         │ GRUPOS                                       │
+         ╰──────────────────────────────────────────────╯ -->
+    <section class="table-layout-integrated table-max-height-700" aria-label="Grupos">
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--between summary-gap-8">
+          <h4 class="table-layout-integrated__filter-title">Grupos</h4>
+          <small>Nível 1 · clique para filtrar</small>
+        </div>
+
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="groupsSearch">Buscar</label>
+            <input id="groupsSearch" type="search" placeholder="Nome do grupo..." autocomplete="off">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-6 fields-font-3">
+            <label for="groupsStatus">Status</label>
+            <select id="groupsStatus">
+              <option value="true" selected>Ativos</option>
+              <option value="false">Inativos</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="groupsBtnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo grupo</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="groupsandsubgroups.groups">
+        <table id="groupsTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-1 table-sortable" data-sort-column="product_group_id" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>ID <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="th-left table-sortable" data-sort-column="name" aria-sort="ascending"><button type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="asc">Nome <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="table-col-w-2 table-sortable" data-sort-column="subgroups_count" title="Quantidade de subgrupos" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Qtd <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-2 table-sortable" data-sort-column="is_active" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="groupsTableBody"></tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-left-space-3">
+            <span id="groupsInfo">Carregando...</span>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ╭──────────────────────────────────────────────╮
+         │ SUBGRUPOS                                    │
+         ╰──────────────────────────────────────────────╯ -->
+    <section class="table-layout-integrated table-max-height-700" aria-label="Subgrupos">
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--between summary-gap-8">
+          <h4 class="table-layout-integrated__filter-title">Subgrupos</h4>
+          <small>Nível 2 · clique para filtrar</small>
+        </div>
+
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="subgroupsSearch">Buscar</label>
+            <input id="subgroupsSearch" type="search" placeholder="Nome do subgrupo..." autocomplete="off">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-6 fields-font-3">
+            <label for="subgroupsStatus">Status</label>
+            <select id="subgroupsStatus">
+              <option value="true" selected>Ativos</option>
+              <option value="false">Inativos</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="subgroupsBtnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo subgrupo</span></button>
+          </div>
+        </div>
+
+        <div id="subgroupsFilterBar" class="summary summary--between summary-gap-8" style="display:none">
+          <div class="summary-pill summary-pill--info" id="subgroupsFilterLabel">Grupo: —</div>
+          <button id="subgroupsBtnClearFilter" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Mostrar todos</span></button>
+        </div>
+      </div>
+
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="groupsandsubgroups.subgroups">
+        <table id="subgroupsTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-1 table-sortable" data-sort-column="product_subgroup_id" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>ID <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="th-left table-sortable" data-sort-column="name" aria-sort="ascending"><button type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="asc">Nome <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="th-left table-sortable" data-sort-column="group_name" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Grupo <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-2 table-sortable" data-sort-column="is_active" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="subgroupsTableBody"></tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-left-space-3">
+            <span id="subgroupsInfo">Carregando...</span>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ╭──────────────────────────────────────────────╮
+         │ FAMÍLIAS                                     │
+         ╰──────────────────────────────────────────────╯ -->
+    <section class="table-layout-integrated table-max-height-700" aria-label="Famílias">
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--between summary-gap-8">
+          <h4 class="table-layout-integrated__filter-title">Famílias</h4>
+          <small>Nível 3</small>
+        </div>
+
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="familiesSearch">Buscar</label>
+            <input id="familiesSearch" type="search" placeholder="Nome da família..." autocomplete="off">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-6 fields-font-3">
+            <label for="familiesStatus">Status</label>
+            <select id="familiesStatus">
+              <option value="true" selected>Ativos</option>
+              <option value="false">Inativos</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="familiesBtnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova família</span></button>
+          </div>
+        </div>
+
+        <div id="familiesFilterBar" class="summary summary--between summary-gap-8" style="display:none">
+          <div class="summary-pill summary-pill--info" id="familiesFilterLabel">Subgrupo: —</div>
+          <button id="familiesBtnClearFilter" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Mostrar todos</span></button>
+        </div>
+      </div>
+
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="groupsandsubgroups.families">
+        <table id="familiesTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-1 table-sortable" data-sort-column="product_family_id" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>ID <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="th-left table-sortable" data-sort-column="name" aria-sort="ascending"><button type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="asc">Nome <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="th-left table-sortable" data-sort-column="subgroup_name" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Subgrupo <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-2 table-sortable" data-sort-column="is_active" aria-sort="none"><button type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="familiesTableBody"></tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-left-space-3">
+            <span id="familiesInfo">Carregando...</span>
+          </div>
+        </div>
+      </footer>
+    </section>
+    </div>
+  </main>
+
+  <!-- MODAL — NOVO GRUPO -->
+  <div class="modal modal-width-4 modal-header-color-3 modal-footer-color-3" id="groupModal" role="dialog"
+    aria-modal="true" aria-labelledby="groupModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="groupModalTitle">Novo grupo</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="groupForm" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="groupId">
+
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="groupName">Nome do grupo *</label>
+              <input id="groupName" type="text" maxlength="100" required placeholder="Ex.: Limpeza Profissional">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="groupIsActive">Status</label>
+              <select id="groupIsActive">
+                <option value="true" selected>Ativo</option>
+                <option value="false">Inativo</option>
+              </select>
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="submit" form="groupForm" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- MODAL — NOVO SUBGRUPO -->
+  <div class="modal modal-width-4 modal-header-color-3 modal-footer-color-3" id="subgroupModal" role="dialog"
+    aria-modal="true" aria-labelledby="subgroupModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="subgroupModalTitle">Novo subgrupo</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="subgroupForm" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="subgroupId">
+
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="subgroupName">Nome do subgrupo *</label>
+              <input id="subgroupName" type="text" maxlength="100" required placeholder="Ex.: Desinfetantes Hospitalares">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="subgroupIsActive">Status</label>
+              <select id="subgroupIsActive">
+                <option value="true" selected>Ativo</option>
+                <option value="false">Inativo</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="subgroupGroupSelect">Grupo vinculado</label>
+              <select id="subgroupGroupSelect"></select>
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="submit" form="subgroupForm" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- MODAL — NOVA FAMÍLIA -->
+  <div class="modal modal-width-4 modal-header-color-3 modal-footer-color-3" id="familyModal" role="dialog"
+    aria-modal="true" aria-labelledby="familyModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="familyModalTitle">Nova família</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="familyForm" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="familyId">
+
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="familyName">Nome da família *</label>
+              <input id="familyName" type="text" maxlength="100" required placeholder="Ex.: Luva Nitrílica">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="familyIsActive">Status</label>
+              <select id="familyIsActive">
+                <option value="true" selected>Ativo</option>
+                <option value="false">Inativo</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="familySubgroupSelect">Subgrupo vinculado *</label>
+              <select id="familySubgroupSelect" required></select>
+            </div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="submit" form="familyForm" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/groupsAndSubgroups/groupsAndSubgroups.js?v=dock-01"></script>
+</body>
+
+</html>

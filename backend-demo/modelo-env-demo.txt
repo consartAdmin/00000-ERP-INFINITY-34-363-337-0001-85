@@ -1,22 +1,30 @@
 # ============================================================
 # Modelo do .env da DEMONSTRAÇÃO (secret ENV_FILE_DEMO no GitHub)
+# Serviço próprio no Cloud Run (erp-demo), no mesmo projeto do Infinity,
+# com o banco erp-demo no mesmo servidor PostgreSQL.
 #
 # Como montar:
 #   1. Copie o backend/.env do Infinity inteiro.
-#   2. Troque os valores do bloco "TROCAR" abaixo.
-#   3. APAGUE as linhas do bloco "APAGAR" (chave que não está no .env da
-#      demo é removida dela; chave que está, com outro valor, é trocada).
-#   4. Cole o resultado no secret ENV_FILE_DEMO (Settings > Secrets and
-#      variables > Actions). Não salve este .env no git.
+#   2. Troque os valores do bloco "TROCAR" abaixo (acrescente os que faltarem).
+#   3. APAGUE as linhas listadas no bloco "APAGAR".
+#   4. Cole o resultado no secret ENV_FILE_DEMO (GitHub > Settings > Secrets
+#      and variables > Actions). Não salve este .env no git.
 # ============================================================
 
 # ---------- TROCAR ----------
 
+# Serviço novo da demo. O deploy.ps1 exige DEPLOY_SERVICE igual ao DB_NAME
+# na primeira vez. DEPLOY_PROJECT e DEPLOY_REGION ficam iguais aos do Infinity.
+DEPLOY_SERVICE=erp-demo
+DEPLOY_MIN_INSTANCES=0
+DEPLOY_MAX_INSTANCES=1
+DEPLOY_MEMORY=1Gi
+
 # Banco vazio criado pelo criar_banco_demo.ps1 (mesma instância do Infinity)
 DB_NAME=erp-demo
 
-# OBRIGATÓRIO ser diferente do Infinity: com o mesmo segredo, o login do
-# admin da demo (usuário 1) valeria como o usuário 1 do ERP real.
+# OBRIGATÓRIO ser diferente do Infinity: com o mesmo segredo, um login da
+# demo (ex.: usuário 1) valeria como o usuário 1 do ERP real.
 # Gere um novo, por exemplo no PowerShell:
 #   [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Max 256 }))
 JWT_SECRET=troque-por-um-segredo-novo-so-da-demo
@@ -71,6 +79,11 @@ PDV_COMPANY_NAME=Empresa Demonstração
 # Senha de finalizar inventário: uma só da demo
 INVENTORY_FINALIZE_PASSWORD=demo1234
 
+# Rotinas que buscam dados da empresa real: sempre desligadas na demo
+ENABLE_EMAIL_INBOUND=false
+ENABLE_DFE_SCHEDULER=false
+NFE_INBOX_AUTO_SYNC=false
+
 # ---------- APAGAR (não deixe estas chaves no .env da demo) ----------
 # Chaves de API e certificado de NF-e da BH3:
 #   NFE_API_KEY, NFE_API_URL, NFE_API_BASE_URL, PLUGNOTAS_API_KEY,
@@ -96,7 +109,9 @@ INVENTORY_FINALIZE_PASSWORD=demo1234
 #   BUDGET_STOCK_OVERRIDE_SECRET
 # IA (orçamento por voz / assistente) — apague para não gerar custo na demo:
 #   ANTHROPIC_API_KEY
+# Outros sistemas (a demo não leva Logistics/ProdNex/Consart):
+#   DEPLOY_PROJETOS, LOGISTICA_DEMO_URL, PRODNEX_URL, CONSART_URL, APP_BASE_PATH
 #
-# As linhas DEPLOY_* podem ficar iguais (são ignoradas na demo).
-# DB_HOST, DB_PORT, DB_USER, DB_PASS e INSTANCE_CONNECTION_NAME ficam iguais
-# aos do Infinity (mesma instância de banco).
+# Ficam iguais aos do Infinity: DEPLOY_PROJECT, DEPLOY_REGION, DEPLOY_ACCOUNT,
+# DEPLOY_VPC_*/CONNECTOR/ROUTER/NAT (mesma rede) e DB_HOST, DB_PORT, DB_USER,
+# DB_PASS, INSTANCE_CONNECTION_NAME (mesmo servidor de banco).

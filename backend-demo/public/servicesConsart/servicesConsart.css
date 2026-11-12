@@ -1,0 +1,67 @@
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║ servicesConsart.css — Cadastro de serviços (CONSART ERP)         ║
+   ║ Base: style.css (tabela integrada + modals.css)                  ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+/* ── Lista ─────────────────────────────────────────────────────────── */
+.services-table th,
+.services-table td { text-align: center; }
+
+/* Cabeçalhos ordenáveis (sortableTable.css): alinhamento por coluna */
+.services-table th.services-col-left .table-sort-button  { justify-content: flex-start; }
+.services-table th.services-col-money .table-sort-button { justify-content: flex-end; }
+
+/* Rótulo "Consart ERP" à direita da barra de filtros */
+.services-company {
+  margin-left: auto;
+  align-self: center;
+}
+
+.services-company:empty { display: none; }
+
+.services-table .services-col-left,
+.services-table td.services-col-left { text-align: left; }
+
+.services-table .services-col-money,
+.services-table td.services-col-money { text-align: right; }
+
+.services-col-code     { width: 100px; }
+.services-col-unit     { width: 60px; }
+.services-col-lc       { width: 110px; }
+.services-col-category { width: 160px; }
+.services-col-money    { width: 120px; }
+.services-col-status   { width: 90px; }
+.services-col-actions  { width: 100px; }
+
+.services-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.services-table tbody tr { cursor: pointer; }
+.services-table tbody tr.is-inactive td { color: #94a3b8; }
+
+.services-empty {
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+}
+
+.service-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.service-status--ativo   { background: #dcfce7; color: #15803d; }
+.service-status--inativo { background: #e2e8f0; color: #475569; }
+
+/* ── Modal ─────────────────────────────────────────────────────────── */
+/* Abaixo da barra fixa do menu (que fica por cima dos modais) */
+.service-modal { --modal-max-height: calc(100vh - 80px); }
+.service-modal .modal__dialog { padding-top: 56px; }
+.service-modal .services-details { margin-top: 10px; }
+.service-modal textarea { resize: vertical; }

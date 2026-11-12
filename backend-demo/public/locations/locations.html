@@ -1,0 +1,144 @@
+<!-- ╔══════════════════════════════════════════════════════════════════════════╗
+     ║ locations.html — Localizações (endereçamento do estoque) | CONSART ERP   ║
+     ║ Path: backend/public/locations/locations.html                            ║
+     ║ UI: navegador em colunas Local → Corredor → Prateleira → Bandeja →       ║
+     ║     Posição. Clicar num item abre os filhos na coluna seguinte; ＋ em    ║
+     ║     cada coluna cria já dentro do item selecionado (modal.js).           ║
+     ║ Produto → localização: telas Mapa de Localização / Localizações em Lote  ║
+     ║ API: /api/locations/*                                                    ║
+     ╚══════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>LOCALIZAÇÕES | CONSART ERP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/includes/css/modals.css?v=2" />
+  <link rel="stylesheet" href="/public/locations/locations.css?v=loc-02" />
+</head>
+
+<body class="consart-theme page-locations-tree p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="loc-shell">
+
+      <!-- BARRA SUPERIOR (div, não <header>: topGradientBar injeta título após o 1º header) -->
+      <div class="loc-toolbar">
+        <div class="loc-toolbar__title">
+          <span class="loc-toolbar__icon" aria-hidden="true">📍</span>
+          <div>
+            <h1>Localizações</h1>
+            <p>Clique num item para abrir o que está dentro dele. Use <b>＋</b> na coluna para criar ali.</p>
+          </div>
+        </div>
+
+        <div class="loc-toolbar__search">
+          <input id="locSearch" type="search" placeholder="🔎 Buscar endereço em todos os níveis..." autocomplete="off" />
+          <div id="locSearchResults" class="loc-search-results" hidden></div>
+        </div>
+
+        <div class="loc-toolbar__actions">
+          <label class="loc-check" for="locShowInactive">
+            <input id="locShowInactive" type="checkbox" />
+            <span>Mostrar inativos</span>
+          </label>
+          <a class="btn btn-toolbar btn-sm" href="/public/productsLocations/productsLocations.html" title="Onde cada produto está guardado">📦 Produtos x localização</a>
+          <a class="btn btn-toolbar btn-sm" href="/public/productsLocationsBatch/productsLocationsBatch.html" title="Alterar a localização de vários produtos">🗂️ Em lote</a>
+          <button id="locBtnReload" class="btn btn-toolbar btn-sm" type="button" title="Recarregar">🔄</button>
+        </div>
+      </div>
+
+      <!-- CAMINHO SELECIONADO -->
+      <nav id="locBreadcrumb" class="loc-breadcrumb" aria-label="Caminho selecionado"></nav>
+
+      <!-- COLUNAS (JS) -->
+      <div id="locColumns" class="loc-columns"></div>
+
+      <!-- RODAPÉ -->
+      <div class="loc-footer">
+        <div class="summary-pill summary-pill--success"><span id="locTotals">—</span></div>
+        <span class="loc-footer__hint">Duplo clique num item edita · ⛔ inativa · 🗑️ exclui (só sem itens dentro)</span>
+      </div>
+    </section>
+  </main>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — NOVO / EDITAR NÍVEL                  │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal" id="locModal" role="dialog" aria-modal="true" aria-labelledby="locModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel modal__panel--md loc-modal-panel" role="document">
+        <div class="modal__header">
+          <h3 class="modal__title" id="locModalTitle">Novo</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </div>
+
+        <form id="locForm" class="modal__body modal-section" autocomplete="off">
+          <div id="locModalPath" class="loc-modal-path"></div>
+
+          <div class="modal-form-grid modal-form-grid--2">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="locName">Nome *</label>
+              <input id="locName" type="text" maxlength="120" placeholder="Ex.: A, 01, PRAT-01, BIN-02" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="locDesc">Descrição</label>
+              <input id="locDesc" type="text" maxlength="255" placeholder="Opcional" />
+            </div>
+
+            <label class="loc-check modal-field--span-full" for="locActive">
+              <input id="locActive" type="checkbox" checked />
+              <span>Ativo — inativos somem das listas de seleção</span>
+            </label>
+          </div>
+
+          <div id="locBulkBox" class="loc-bulk">
+            <label class="loc-check" for="locBulk">
+              <input id="locBulk" type="checkbox" />
+              <span>Criar vários em sequência</span>
+            </label>
+            <div id="locBulkFields" class="loc-bulk__fields" hidden>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="locBulkFrom">De</label>
+                <input id="locBulkFrom" type="number" min="0" value="1" />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="locBulkTo">Até</label>
+                <input id="locBulkTo" type="number" min="0" value="10" />
+              </div>
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="locBulkPad">Dígitos</label>
+                <select id="locBulkPad">
+                  <option value="1">1</option>
+                  <option value="2" selected>2 (01)</option>
+                  <option value="3">3 (001)</option>
+                </select>
+              </div>
+              <small id="locBulkPreview" class="loc-bulk__preview"></small>
+            </div>
+          </div>
+        </form>
+
+        <div class="modal__footer loc-modal-footer">
+          <button type="button" id="locBtnDelete" class="btn btn-clean btn-sm loc-btn-danger" hidden>🗑️ Excluir</button>
+          <span class="loc-modal-footer__spacer"></span>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="button" id="locBtnSaveNew" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar e novo</span></button>
+          <button type="button" id="locBtnSave" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → página bloqueada com aviso -->
+  <script type="module">import { guardProductLocationsPage } from "/public/includes/js/productLocationsFeature.js"; guardProductLocationsPage();</script>
+  <script type="module" src="/public/locations/locations.js?v=loc-02"></script>
+</body>
+</html>

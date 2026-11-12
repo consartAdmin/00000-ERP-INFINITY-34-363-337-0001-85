@@ -70,8 +70,6 @@
   // quatro; só PROJETO muda. Com URL_PROJETO.CONSART vazio, a CONSART volta a
   // ser só o filtro de menu dentro do Infinity (como antes do backend-consart).
   const PROJETO = 'INFINITY'; // 'INFINITY' | 'CONSART' | 'LOGISTICS' | 'PRODNEX'
-  // Demonstração: o mesmo Infinity servido em /demo (basePath.js marca a página)
-  const DEMO = PROJETO === 'INFINITY' && window.__storageScope === 'demo:';
   const URL_PROJETO = {
     CONSART: 'https://erp.consart.com.br/consart/public/home/home.html',
     INFINITY: 'https://erp.consart.com.br/public/home/home.html',
@@ -129,17 +127,6 @@
 
   function montarSeletorEmpresa(el) {
     if (!el) return;
-    // Demonstração (/demo): sem botões para os sistemas reais
-    if (DEMO) {
-      const tag = document.createElement('button');
-      tag.type = 'button';
-      tag.textContent = 'DEMONSTRAÇÃO';
-      tag.disabled = true;
-      tag.classList.add('is-active');
-      tag.title = 'Versão de demonstração: os dados aqui não são reais';
-      el.appendChild(tag);
-      return;
-    }
     // Escolha salva que virou outro projeto (ex.: CONSART com backend próprio):
     // o menu do Infinity volta para a BH3
     if (PROJETO === 'INFINITY') {

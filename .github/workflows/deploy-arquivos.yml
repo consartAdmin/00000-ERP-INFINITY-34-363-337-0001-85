@@ -5,7 +5,8 @@
 # Usa a mesma configuração do deploy-cloud-run.yml (GCP_WIF_PROVIDER e ENV_FILE).
 # Os 4 projetos estão no mesmo serviço (erp-infinity-00000): arquivos de
 # backend-logistics/, backend-prodnex/ e backend-consart/ vão para apps/<projeto>
-# dentro da imagem do Infinity (ver backend/start.js).
+# dentro da imagem do Infinity (ver backend/start.js). backend-demo tem serviço
+# próprio (erp-demo) e lê o secret ENV_FILE_DEMO.
 
 name: Deploy arquivos
 
@@ -13,13 +14,14 @@ on:
   workflow_dispatch:
     inputs:
       pasta:
-        description: "Projeto: backend = Infinity (BH3/CONSART) e a demonstração /demo, backend-logistics = Consart Logistics, backend-prodnex = ProdNex, backend-consart = CONSART ERP (banco próprio). Todos vão para o serviço do Infinity"
+        description: "Projeto: backend = Infinity (BH3/CONSART), backend-logistics = Consart Logistics, backend-prodnex = ProdNex, backend-consart = CONSART ERP (banco próprio): vão para o serviço do Infinity. backend-demo = demonstração (serviço próprio, secret ENV_FILE_DEMO)"
         type: choice
         options:
           - backend
           - backend-logistics
           - backend-prodnex
           - backend-consart
+          - backend-demo
         default: backend
       arquivos:
         description: "Arquivos ou pastas dentro da pasta do projeto, separados por vírgula (ex.: public/accountsReceivable). Vazio = arquivos alterados no último commit dentro dessa pasta"
@@ -43,7 +45,7 @@ on:
         default: ""
 
 concurrency:
-  group: deploy-${{ inputs.service || inputs.env_secret || 'ENV_FILE' }}
+  group: deploy-${{ inputs.service || inputs.env_secret || (inputs.pasta == 'backend-demo' && 'ENV_FILE_DEMO') || 'ENV_FILE' }}
   cancel-in-progress: false
 
 permissions:
@@ -55,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      ENV_SECRET: ${{ inputs.env_secret || 'ENV_FILE' }}
+      ENV_SECRET: ${{ inputs.env_secret || (inputs.pasta == 'backend-demo' && 'ENV_FILE_DEMO') || 'ENV_FILE' }}
     defaults:
       run:
         working-directory: ${{ inputs.pasta }}
@@ -126,12 +128,14 @@ jobs:
         run: |
           $paths = @(Get-Content (Join-Path $env:RUNNER_TEMP "arquivos.txt") | Where-Object { $_ })
           $params = @{ Path = $paths }
+          # backend-demo tem serviço próprio: usa o deploy-file.ps1 da própria pasta
+          $script = if ($env:PASTA -eq "backend-demo") { "./deploy-file.ps1" } else { "../backend/deploy-file.ps1" }
           # backend-consart -> apps/consart dentro da imagem do Infinity
-          if ($env:PASTA -ne "backend") { $params.Destino = "apps/" + $env:PASTA.Substring("backend-".Length) }
+          if ($env:PASTA -ne "backend" -and $env:PASTA -ne "backend-demo") { $params.Destino = "apps/" + $env:PASTA.Substring("backend-".Length) }
           if ($env:IN_SERVICE) { $params.Service = $env:IN_SERVICE }
           if ($env:IN_PROJECT) { $params.Project = $env:IN_PROJECT }
           if ($env:IN_REGION)  { $params.Region  = $env:IN_REGION }
-          ../backend/deploy-file.ps1 @params
+          & $script @params
 
       - name: Apagar .env do runner
         if: always()

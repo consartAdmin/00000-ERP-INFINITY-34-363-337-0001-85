@@ -1,0 +1,355 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ mobilized.html — Mobilizado (Controle) | CONSART ERP                       ║
+     ║ Path: backend/public/mobilized/mobilized.html                              ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated + sortableTable + table-footer           ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Modais: modals.css + modal.js (Detalhes e Item)                         ║
+     ║  - Datas: date-range-field (filtro) + brDateTimeInput (dd/mm/aaaa hh:mm)   ║
+     ║ API: /api/mobilized/*                                                      ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>MOBILIZADO | CONSART ERP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <!-- Design system CONSART (importa modals, summary, sortableTable, actionIcons...) -->
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="table-layout-integrated table-max-height-700">
+
+      <!-- FILTROS + AÇÕES (div, não <header>: topGradientBar injeta o título) -->
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="q">Buscar</label>
+            <input id="q" type="search" placeholder="Título, notas, referência externa..." autocomplete="off" />
+          </div>
+
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="statusFilter">Status</label>
+            <select id="statusFilter">
+              <option value="">Todos</option>
+              <option value="ACTIVE">Ativo</option>
+              <option value="ARCHIVED">Arquivado</option>
+              <option value="CANCELED">Cancelado</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-16 fields-font-3">
+            <date-range-field id="periodFilter" class="drf-width-3 drf-height-3" label="Data de aquisição"
+              locale="pt-BR"></date-range-field>
+          </div>
+
+          <button id="btnSearch" type="button" class="btn btn-filter btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar Filtros</span></button>
+          <button id="btnClearFilters" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo Mobilizado</span></button>
+            <button id="btnRefresh" type="button" class="btn btn-load btn-sm" title="Recarregar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Recarregar</span></button>
+            <button id="btnPdfAll" type="button" class="btn btn-toolbar btn-sm"
+              title="PDF com todos os mobilizados (respeita os filtros)">
+              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar PDF</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LISTA -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="mobilized.tablebody">
+        <table id="mobilizedTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-5 table-sortable" data-sort-column="acquired_at" aria-sort="descending"><button
+                  type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="desc">Data
+                  aquisição <span data-sort-icon aria-hidden="true">↓</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="title" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Título <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="status" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-3 table-sortable" data-sort-column="items_count" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Itens <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable th-right" data-sort-column="items_total" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Valor total <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- RODAPÉ PADRÃO -->
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="apTableInfo">0 registros encontrados</span>
+          </div>
+
+          <div class="summary summary--center summary-gap-8">
+            <div class="summary-pill" id="sumItems">Itens 0</div>
+            <div class="summary-pill summary-pill--primary" id="sumTotal">Total (filtro) R$ 0,00</div>
+            <div class="summary-pill summary-pill--warning" id="sumMissing" hidden>0 itens sem valor</div>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="pagAnterior" class="btn btn-clean btn-sm">Anterior</button>
+          <span id="infoPagina">Página 1 de 1</span>
+          <button type="button" id="pagProxima" class="btn btn-new btn-sm">Próxima</button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="perPage">Mostrar</label>
+          <select id="perPage" class="table-footer__page-size-select" name="perPage">
+            <option value="10">10 linhas</option>
+            <option value="20">20 linhas</option>
+            <option value="30">30 linhas</option>
+            <option value="50" selected>50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — DETALHES DO MOBILIZADO                │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-10 modal-height-10 modal-header-color-3 modal-footer-color-3" id="detailsModal"
+    role="dialog" aria-modal="true" aria-labelledby="detailsModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="detailsModalTitle">Novo mobilizado</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="formMobilized" class="modal__body modal-section" autocomplete="off">
+          <input type="hidden" id="mobilized_id" />
+
+          <div class="modal-form-grid modal-form-grid--5 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="title">Título *</label>
+              <input id="title" type="text" maxlength="180" placeholder="Ex.: Impressoras da loja 2" required />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="status">Status</label>
+              <select id="status">
+                <option value="ACTIVE">Ativo</option>
+                <option value="ARCHIVED">Arquivado</option>
+                <option value="CANCELED">Cancelado</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="acquired_at">Data aquisição</label>
+              <input id="acquired_at" type="datetime-local" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="external_ref">Referência externa</label>
+              <input id="external_ref" type="text" maxlength="80" placeholder="Nº documento / NF" />
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="source_system">Origem</label>
+              <input id="source_system" type="text" maxlength="60" placeholder="Ex.: Compra direta, Fornecedor X" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="notes">Notas</label>
+              <input id="notes" type="text" placeholder="Observações gerais do mobilizado" />
+            </div>
+          </div>
+
+          <div class="modal-divider modal-divider--soft"></div>
+
+          <!-- PDF -->
+          <div class="summary summary--between summary-gap-8">
+            <div class="summary summary--inline summary-gap-8">
+              <h4>PDF</h4>
+              <small id="pdfInfo">Salve o mobilizado para gerar o PDF.</small>
+            </div>
+            <div class="btn-inline btn-gap-2">
+              <button id="btnPdfDownload" type="button" class="btn btn-toolbar btn-sm" disabled>
+                <img src="/iconsImagens/pdf.png" alt="" width="18" height="18" aria-hidden="true" />
+                <span>Visualizar PDF</span>
+              </button>
+              <button id="btnOpenPdf" type="button" class="btn btn-toolbar btn-sm" disabled
+                title="Abrir o último PDF salvo no GCS">📂 Abrir salvo</button>
+              <button id="btnPdfGenerateUpload" type="button" class="btn btn-toolbar btn-sm" disabled>☁️ Gerar e salvar</button>
+              <button id="btnPdfPickUpload" type="button" class="btn btn-toolbar btn-sm" disabled>⬆️ Enviar PDF</button>
+              <input id="pdfFile" type="file" accept="application/pdf" hidden />
+            </div>
+          </div>
+
+          <div class="modal-divider modal-divider--soft"></div>
+
+          <!-- ITENS -->
+          <div class="summary summary--between summary-gap-8">
+            <div class="summary summary--inline summary-gap-8">
+              <h4>Itens</h4>
+              <div class="summary-pill" id="kpiItemsCount">0 itens</div>
+              <div class="summary-pill summary-pill--primary" id="kpiItemsTotal">Total R$ 0,00</div>
+              <div class="summary-pill summary-pill--warning" id="kpiItemsMissing" hidden>0 sem valor unitário</div>
+            </div>
+            <button id="btnAddItem" type="button" class="btn btn-new btn-sm" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Adicionar item</span></button>
+          </div>
+
+          <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="mobilized.itemsbody">
+            <table class="table table-zebra table-zebra-hover table-sticky-head">
+              <thead>
+                <tr>
+                  <th class="table-col-w-2">Img</th>
+                  <th class="table-col-w-3">SKU</th>
+                  <th class="th-left">Descrição</th>
+                  <th class="table-col-w-4">Modelo</th>
+                  <th class="table-col-w-4">S/N</th>
+                  <th class="table-col-w-4">NF-e</th>
+                  <th class="table-col-w-2">Qtd</th>
+                  <th class="table-col-w-2">Un.</th>
+                  <th class="table-col-w-4 th-right">Unitário</th>
+                  <th class="table-col-w-4 th-right">Total</th>
+                  <th class="table-col-w-4">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody"></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="9" class="td-right"><b>Total geral</b></td>
+                  <td id="itemsFootTotal" class="td-right"><b>R$ 0,00</b></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button id="btnDelete" type="button" class="btn btn-danger btn-sm btn-position-left" disabled>🗑️ Excluir</button>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnSave" type="button" class="btn btn-new btn-sm" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — ITEM DO MOBILIZADO                    │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-8 modal-header-color-3 modal-footer-color-3" id="itemModal" role="dialog"
+    aria-modal="true" aria-labelledby="itemModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="itemModalTitle">Item do mobilizado</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <input type="hidden" id="mobilized_item_id" />
+
+          <div class="modal-form-grid modal-form-grid--4 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="item_sku">SKU</label>
+              <input id="item_sku" type="text" maxlength="60" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-3">
+              <label for="item_description">Descrição *</label>
+              <input id="item_description" type="text" maxlength="500" required />
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="item_model">Modelo</label>
+              <input id="item_model" type="text" maxlength="120" placeholder="Ex.: Dell OptiPlex 7090" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="item_serial_number">S/N (número de série)</label>
+              <input id="item_serial_number" type="text" maxlength="120" placeholder="Ex.: ABCD-1234-XYZ" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="item_nfe_ref">NF-e</label>
+              <input id="item_nfe_ref" type="text" maxlength="120" placeholder="Chave ou nº da NF" />
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="item_quantity">Quantidade *</label>
+              <input id="item_quantity" type="number" step="0.0001" min="0" value="1" required />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="item_unit">Un.</label>
+              <input id="item_unit" type="text" maxlength="10" placeholder="UN, CX, PCT..." />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="item_unit_price">Valor unitário</label>
+              <input id="item_unit_price" type="number" step="0.01" min="0" placeholder="0,00" />
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="item_total_value">Total</label>
+              <input id="item_total_value" type="text" readonly />
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="item_notes">Notas</label>
+              <input id="item_notes" type="text" />
+            </div>
+          </div>
+
+          <div class="modal-divider modal-divider--soft"></div>
+
+          <div class="summary summary-gap-8">
+            <img id="item_img_preview" alt="Imagem do item" width="72" height="72" />
+            <small id="itemImageHint">Salve o item e envie uma imagem JPG, PNG ou WEBP.</small>
+            <div class="btn-inline btn-gap-2 btn-position-right">
+              <button id="btnItemSetImageUrl" type="button" class="btn btn-toolbar btn-sm">🖼️ Enviar imagem</button>
+              <button id="btnItemClearImageUrl" type="button" class="btn btn-clean btn-sm">Remover imagem</button>
+            </div>
+          </div>
+        </div>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnItemSave" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar item</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/mobilized/js/mobilized.init.js?v=4"></script>
+</body>
+
+</html>

@@ -1,0 +1,313 @@
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║ ACCOUNTS PAYABLE — FILTER ACTIONS                           ║
+   ║ CONSART ERP                                                 ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+
+/* ==============================================================
+   DESKTOP
+   ============================================================== */
+
+.ap-filter-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+
+    width: 100%;
+    margin-left: auto;
+
+    gap: 10px;
+}
+
+.ap-filter-actions>.btn {
+    flex: 0 0 auto;
+    margin: 0;
+
+    white-space: nowrap;
+}
+
+.ap-filter-actions .btn img {
+    flex: 0 0 auto;
+}
+
+
+/* ==============================================================
+   TABLET
+   ============================================================== */
+
+@media (max-width: 900px) {
+    .ap-filter-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+
+        row-gap: 10px;
+        column-gap: 10px;
+    }
+}
+
+
+/* ==============================================================
+   MOBILE
+   ============================================================== */
+
+@media (max-width: 600px) {
+    .ap-filter-actions {
+        align-items: stretch;
+        flex-direction: column;
+
+        width: 100%;
+    }
+
+    .ap-filter-actions>.btn {
+        width: 100%;
+    }
+}
+
+.ap-payment-classification-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ap-payment-classification-grid .ap-chart-account-field {
+    grid-column: span 1;
+}
+
+/* Section dividers — modal "Pagar Conta a Pagar" */
+/* Section titles — Pagar e Editar Conta a Pagar */
+#payModal .ap-modal-section-title,
+#new-accounts-payable-modal-consart .ap-modal-section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 6px 0 2px;
+    color: #2c609f;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+#payModal .ap-modal-section-title::after,
+#new-accounts-payable-modal-consart .ap-modal-section-title::after {
+    content: "";
+    height: 1px;
+    flex: 1 1 auto;
+    background: #d8e2ef;
+}
+
+#payModal .ap-modal-section-title:first-of-type,
+#new-accounts-payable-modal-consart .ap-modal-section-title:first-of-type {
+    margin-top: 0;
+}
+
+.ap-chart-account-picker {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 4px;
+}
+
+.ap-chart-account-picker #pay_chart_account_display {
+    min-width: 0;
+    cursor: pointer;
+    background: #fff;
+}
+
+.ap-chart-account-picker .btn {
+    width: 30px;
+    min-width: 30px;
+    padding-inline: 4px;
+}
+
+@media (max-width: 1100px) {
+    .ap-payment-classification-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .ap-payment-classification-grid {
+        grid-template-columns: 1fr;
+    }
+}
+/* =========================================================
+   Filtro "Grupo" (multi-seleção) + chips + tag na tabela
+========================================================= */
+
+.ap-group-filter {
+    position: relative;
+}
+
+.ap-group-trigger {
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
+    height: var(--fields-height);
+    padding: 0 var(--fields-padding-x, 6px);
+    font: inherit;
+    font-size: var(--fields-font-size);
+    color: #111827;
+    text-align: left;
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid #9ca3af;
+    border-radius: 3px;
+}
+
+.ap-group-trigger span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ap-group-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 50;
+    width: 290px;
+    padding: 4px 0;
+    background: #fff;
+    border: 1px solid #9ca3af;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.ap-group-menu[hidden] {
+    display: none;
+}
+
+.ap-group-menu__head {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 10px 6px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.ap-group-menu__head button {
+    padding: 0;
+    font-size: 11px;
+    color: #2563eb;
+    cursor: pointer;
+    background: none;
+    border: 0;
+}
+
+.ap-group-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.ap-group-option:hover {
+    background: #f3f4f6;
+}
+
+.ap-group-option input {
+    width: auto !important;
+    height: auto !important;
+    margin: 0;
+}
+
+.ap-group-option small {
+    margin-left: auto;
+    color: #6b7280;
+}
+
+.ap-group-dot {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.ap-group-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.ap-group-chips[hidden] {
+    display: none;
+}
+
+.ap-group-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 0;
+    border-radius: 12px;
+}
+
+/* baixa em lote */
+.ap-batch-pay__list {
+    max-height: 260px;
+    overflow: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+.ap-batch-pay__list th { position: sticky; top: 0; background: #f8fafc; }
+.ap-batch-pay__skipped { margin-left: 8px; font-weight: 400; color: #6b7280; }
+.ap-batch-pay__progress { min-height: 18px; margin-top: 8px; font-size: 12px; color: #1d4ed8; }
+
+/* título gerado por Compromissos Financeiros */
+.ap-debt-tag {
+    display: inline-block;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1d4ed8;
+    white-space: nowrap;
+    text-decoration: none;
+    background: #e8f0ff;
+    border-radius: 10px;
+}
+.ap-debt-tag:hover { text-decoration: underline; }
+
+.apm-debt-notice {
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #1e3a8a;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+}
+
+.ap-group-tag {
+    display: inline-block;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    border-radius: 10px;
+}
+
+/* cores por grupo (tag/chip = fundo claro; dot = cor cheia) */
+.ap-group--impostos { color: #991b1b; background: #fee2e2; }
+.ap-group--parcelamentos { color: #92400e; background: #fef3c7; }
+.ap-group--rh { color: #5b21b6; background: #ede9fe; }
+.ap-group--fornecedores { color: #1e40af; background: #dbeafe; }
+.ap-group--operacionais { color: #115e59; background: #ccfbf1; }
+.ap-group--financeiro { color: #334155; background: #e2e8f0; }
+.ap-group--outros { color: #4b5563; background: #f3f4f6; }
+
+.ap-group-dot.ap-group--impostos { background: #dc2626; }
+.ap-group-dot.ap-group--parcelamentos { background: #d97706; }
+.ap-group-dot.ap-group--rh { background: #7c3aed; }
+.ap-group-dot.ap-group--fornecedores { background: #2563eb; }
+.ap-group-dot.ap-group--operacionais { background: #0d9488; }
+.ap-group-dot.ap-group--financeiro { background: #475569; }
+.ap-group-dot.ap-group--outros { background: #9ca3af; }

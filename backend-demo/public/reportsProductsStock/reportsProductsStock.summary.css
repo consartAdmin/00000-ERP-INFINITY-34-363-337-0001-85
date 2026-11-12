@@ -1,0 +1,103 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║ reportsProductsStock.summary.css — Posição de Estoque                   ║
+   ║ ✅ Custo total em estoque no rodapé (ao lado de "Registros")            ║
+   ║ ✅ Modal de filtros + contador no botão Filtros                         ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+:root {
+  --rps-main: #1d4ed8;
+}
+
+/* ===== Rodapé: custo total ===== */
+.table-footer__info {
+  gap: 8px;
+}
+
+.rps-footer-cost {
+  width: auto;
+  white-space: nowrap;
+}
+
+.rps-footer-cost b {
+  color: var(--rps-main);
+}
+
+/* Tela média: contador + custo numa linha, paginação e "Mostrar" na de baixo */
+@media (max-width: 1100px) and (min-width: 801px) {
+  .table-layout-integrated > .table-footer {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .table-footer .table-footer__info {
+    grid-column: 1 / -1;
+  }
+
+  .table-footer .table-footer__pagination {
+    grid-column: 1;
+    justify-self: start;
+    margin-left: 12px;
+  }
+
+  .table-footer .table-footer__page-size {
+    grid-column: 2;
+  }
+}
+
+/* ===== Modal de filtros ===== */
+.rps-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.rps-filters-grid > .fields {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+.rps-filters-grid input,
+.rps-filters-grid select {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .rps-filters-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rps-filters-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rps-filters-footer__spacer {
+  flex: 1 1 auto;
+}
+
+.rps-filters-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--rps-main);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rps-filters-badge[hidden] {
+  display: none;
+}

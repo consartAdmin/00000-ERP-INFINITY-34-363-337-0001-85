@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NF-e CONSUMO</title>
+    <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+    <link rel="stylesheet" href="/public/includes/css/style.css">
+    <link rel="stylesheet" href="/public/includes/css/modals.css">
+        <link rel="stylesheet" href="./usoConsumo.css?v=2">
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+    <main class="consart-container consart-container--full consart-container--ultraslim">
+
+
+        <!-- A criação de Uso e Consumo agora acontece em modal. -->
+        <div id="modalUsoConsumo" class="modal" aria-hidden="true">
+            <div class="modal__dialog">
+                <section class="modal__panel uc-modal-panel" role="dialog" aria-modal="true"
+                    aria-labelledby="modalUsoConsumoTitle">
+                    <header class="modal__header modal-header-color-3">
+                        <h2 id="modalUsoConsumoTitle" class="modal__title">Novo Uso e Consumo</h2>
+                        <button id="btnCloseUsoConsumo" class="modal__close" type="button" aria-label="Fechar">&times;</button>
+                    </header>
+
+                    <div class="modal__body uc-modal-body">
+                        <input id="usoConsumoId" type="hidden">
+
+                        <div class="uc-sec">Dados da saída</div>
+                        <div class="uc-row">
+                            <label class="uc-field uc-w-date">Data
+                                <input id="movementDate" type="date">
+                            </label>
+                            <label class="uc-field uc-w-cfop">CFOP
+                                <select id="cfop">
+                                    <option value="5.949">5.949 - Uso e consumo interno (outra saída não especificada)</option>
+                                </select>
+                            </label>
+                            <label class="uc-field uc-w-md">Departamento
+                                <select id="departmentId"><option value="">Carregando...</option></select>
+                            </label>
+                            <label class="uc-field uc-w-md">Responsável
+                                <select id="employeeId"><option value="">Carregando...</option></select>
+                            </label>
+                            <label class="uc-field uc-grow">Motivo
+                                <input id="reason" type="text" maxlength="500" placeholder="Ex: Produtos retirados para uso interno da empresa.">
+                            </label>
+                        </div>
+
+                        <div class="uc-sec">Itens</div>
+                        <div class="uc-row" id="itemEditor">
+                            <label class="uc-field uc-w-product">Produto
+                                <input id="productSearch" type="text" placeholder="Código ou descrição (Enter busca)" autocomplete="off">
+                            </label>
+                            <button id="btnSearchProduct" class="uc-icon-btn" type="button" title="Buscar produto" aria-label="Buscar produto">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                            </button>
+                            <label class="uc-field uc-w-sm">Grade
+                                <select id="itemGrade" disabled><option value="">—</option></select>
+                            </label>
+                            <label class="uc-field uc-w-xs">U.M
+                                <select id="itemUnit" disabled><option value="">—</option></select>
+                            </label>
+                            <label class="uc-field uc-w-lot">Lote (FEFO)
+                                <select id="itemLot" disabled><option value="">—</option></select>
+                            </label>
+                            <label class="uc-field uc-w-xs">Qtd
+                                <input id="itemQty" type="number" min="0" step="any" value="1">
+                            </label>
+                            <label class="uc-field uc-w-xs">Custo unit.
+                                <input id="itemCost" type="text" readonly tabindex="-1">
+                            </label>
+                            <label class="uc-field uc-w-xs">Estoque
+                                <input id="itemStock" type="text" readonly tabindex="-1">
+                            </label>
+                            <button id="btnAddItem" class="uc-add-btn" type="button" disabled>+ Adicionar</button>
+                        </div>
+
+                        <table class="uc-items">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th class="uc-left">Descrição</th>
+                                    <th>Grade</th>
+                                    <th>U.M</th>
+                                    <th>Lote</th>
+                                    <th>Qtd</th>
+                                    <th>Custo unit.</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsBody">
+                                <tr><td colspan="9" class="uc-empty">Nenhum item adicionado.</td></tr>
+                            </tbody>
+                        </table>
+
+                        <div class="uc-totals">
+                            <div>Itens<span id="totItems">0</span></div>
+                            <div>Quantidade<span id="totQty">0</span></div>
+                            <div>Total (custo)<b id="totCost">R$ 0,00</b></div>
+                        </div>
+                    </div>
+
+                    <footer class="modal__footer uc-modal-footer">
+                        <span class="uc-pill">O estoque e o lote só baixam ao finalizar</span>
+                        <button id="btnClear" class="btn btn-clean btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
+                        <button id="btnSaveDraft" class="btn btn-new btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar rascunho</span></button>
+                        <button id="btnFinish" class="btn btn-new btn-sm" type="button">Finalizar e baixar estoque</button>
+                    </footer>
+                </section>
+            </div>
+        </div>
+
+        <section class="table-layout-integrated">
+            <div class="table-layout-integrated__filter table-max-height-500">
+
+                <div class="uc-list-title-row">
+                    <h2>Registros finalizados e NF-e</h2>
+                    <button id="btnNewUsoConsumo" class="btn btn-new btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo Uso e Consumo</span></button>
+                </div>
+
+                <!-- Container for all vertical lines -->
+                <div class="fields-inline fields-gap-3">
+
+                    <!-- Line 1: fields side by side -->
+                    <div class="fields-inline">
+                        <div class="fields fields-h-6 fields-w-30 fields-font-3">
+                            <input id="search" type="search" placeholder="Pesquisar...">
+                        </div>
+
+                        <div class="btn-inline">
+                            <button id="btnSearch" class="btn btn-search btn-sm" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="usoconsumo.rows">
+                <table class="table table-zebra table-zebra-hover table-sticky-head">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Número</th>
+                            <th>Origem</th>
+                            <th>Departamento</th>
+                            <th>Responsável</th>
+                            <th>CFOP</th>
+                            <th>Itens</th>
+                            <th>Total</th>
+                            <th>Situação</th>
+                            <th>NF-e</th>
+                            <th>Status NF-e</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rows">
+                        <tr>
+                            <td colspan="13">Carregando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <footer class="table-footer">
+
+                <div class="table-footer__info">
+                    <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+                        <span id="apTableInfo">0 Registros </span>
+                    </div>
+                </div>
+
+                <div class="table-footer__pagination">
+                    <button type="button" id="btnPreviousPage" class="btn btn-clean btn-sm">
+                        Anterior
+                    </button>
+
+                    <span id="apPageInfo">Página 1 de 1</span>
+
+                    <button type="button" id="btnNextPage" class="btn btn-new btn-sm">
+                        Próxima
+                    </button>
+                </div>
+
+                <div class="table-footer__page-size">
+                    <label for="apRowsPerPage">Mostrar</label>
+
+                    <select id="apRowsPerPage" class="table-footer__page-size-select" name="rowsPerPage">
+                        <option value="10">10 linhas</option>
+                        <option value="20">20 linhas</option>
+                        <option value="30">30 linhas</option>
+                        <option value="50" selected>50 linhas</option>
+                        <option value="100">100 linhas</option>
+                    </select>
+                </div>
+
+            </footer>
+        </section>
+
+    </main>
+    <script type="module" src="/public/includes/js/core.js"></script>
+    <script type="module" src="./usoConsumo.js?v=2"></script>
+</body>
+
+</html>

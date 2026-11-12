@@ -1,0 +1,45 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ compactSelect.css — Lista do <select> com altura limitada            ║
+   ║ Compatível com includes/js/compactSelect.js                          ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.compact-select__panel {
+  position: fixed;
+  z-index: 100000; /* acima dos modais (modals.css usa 99998) */
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  padding: 4px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border: 1px solid #c7d0db;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.compact-select__option {
+  height: 24px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.compact-select__option:hover,
+.compact-select__option.is-active {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.compact-select__option.is-selected {
+  font-weight: 700;
+}
+
+.compact-select__option.is-disabled {
+  color: #94a3b8;
+  cursor: default;
+  background: transparent;
+}

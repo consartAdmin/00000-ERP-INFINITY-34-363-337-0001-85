@@ -1,0 +1,269 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ expenseCreateModal.css — Modal Criar/Editar Despesa                  ║
+   ║ Path: public/expenses/expenseCreateModal.css                         ║
+   ║ Estrutura/abertura: includes/css/modals.css + includes/js/modal.js   ║
+   ║ Aqui ficam só os cards internos (exp-*).                             ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+.exp-modal {
+  --exp-soft-line: #dbe1e8;
+  --exp-title-bg: #f8fafc;
+  --exp-radius: var(--table-radius-top, 10px);
+  --fields-border-color: #c7d0db;
+}
+
+.exp-modal .modal__panel {
+  max-height: calc(100vh - (var(--modal-space, 16px) * 2));
+}
+
+.exp-modal__subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Cards em 3 colunas */
+.exp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.exp-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--exp-soft-line);
+  border-radius: var(--exp-radius);
+  padding: 10px 12px 12px;
+}
+
+.exp-section--full {
+  grid-column: 1 / -1;
+}
+
+.exp-section__title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin: -10px -12px 10px;
+  padding: 7px 12px;
+  background: var(--exp-title-bg);
+  border-bottom: 1px solid var(--exp-soft-line);
+  border-radius: var(--exp-radius) var(--exp-radius) 0 0;
+}
+
+.exp-section__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: end;
+}
+
+.exp-section__grid > .fields {
+  width: auto;
+}
+
+.exp-span-full {
+  grid-column: 1 / -1;
+}
+
+.exp-section__fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: auto;
+}
+
+.exp-section__fill textarea {
+  min-height: 60px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+/* Campo + botão (fornecedor) */
+.exp-input-btn {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.exp-input-btn input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.exp-modal .exp-readonly {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.exp-modal .exp-money {
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Rodapé: Excluir à esquerda, Cancelar/Salvar à direita */
+.exp-modal__footer {
+  justify-content: space-between;
+}
+
+.exp-modal__footer-right {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.exp-modal .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .exp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 2 colunas: Dados extras ocupa o espaço ao lado de Valor e pagamento */
+  .exp-section--full {
+    grid-column: auto;
+  }
+
+  .exp-section--full .exp-section__fill textarea {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .exp-section--full {
+    grid-column: 1 / -1;
+  }
+
+  .exp-grid,
+  .exp-section__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Página: Buscar/Limpar ao lado do Período + total das marcadas ── */
+.exp-filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  align-self: flex-end;
+}
+
+.exp-selected-pill {
+  margin-left: 8px;
+  color: #64748b;
+}
+
+.exp-selected-pill.is-active {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #93c5fd;
+  font-weight: 700;
+}
+
+/* ── Tela de Despesas (filtros + tabela) ─────────────────────────────── */
+
+/* Subcategoria do Caixa embaixo da Categoria na tabela */
+.exp-subcategory {
+  font-size: 0.82em;
+  opacity: 0.65;
+  line-height: 1.2;
+}
+
+/* Período: título sem negrito, igual aos outros rótulos dos filtros */
+#fDateRange .date-range-field-label {
+  font-weight: 400;
+}
+
+/* Filtros + ações (Novo, Alterar, Excluir, Exportar) na mesma linha.
+   Busca e Nome encolhem para caber; as ações ficam à direita. */
+.table-layout-integrated__filter > .fields-inline:has(.exp-toolbar-actions) {
+  flex-wrap: nowrap;
+  align-items: flex-end;
+}
+.table-layout-integrated__filter > .fields-inline:has(.exp-toolbar-actions) > .fields-w-20 {
+  flex: 1 1 250px;
+  min-width: 130px;
+}
+.exp-toolbar-actions {
+  margin-left: auto;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+/* telas menores: volta a quebrar linha para não cortar nada */
+@media (max-width: 1650px) {
+  .table-layout-integrated__filter > .fields-inline:has(.exp-toolbar-actions) {
+    flex-wrap: wrap;
+  }
+}
+
+/* Despesa já enviada ao Contas a Pagar (embaixo do Status) */
+.exp-payable-link {
+  font-size: 0.78em;
+  opacity: 0.7;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Enviar ao Contas a Pagar: prévia dos vencimentos */
+.exp-payable-preview ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+.exp-payable-preview__hint {
+  margin: 8px 0 0;
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+/* ── 📎 Contratos e documentos (mesmo padrão do Contas a Receber) ── */
+.exp-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+  padding: 8px;
+  border: 1px dashed var(--fields-border-color, #c7d0db);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+.exp-files input[type="file"] { display: none !important; }
+.exp-files.is-dragover { border-color: #3b82f6; background: #eff6ff; }
+.exp-files__bar { display: flex; align-items: center; gap: 8px; }
+.exp-files__hint { font-size: 11px; color: #64748b; }
+.exp-files__list { list-style: none; margin: 0; padding: 0; max-height: 140px; overflow: auto; }
+.exp-files__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 2px;
+  border-bottom: 1px solid #eef2f6;
+  font-size: 12px;
+}
+.exp-files__item:last-child { border-bottom: 0; }
+.exp-files__item.is-pending { color: #1d4ed8; }
+.exp-files__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+a.exp-files__name { color: #0f2747; text-decoration: none; }
+a.exp-files__name:hover { text-decoration: underline; }
+.exp-files__meta { flex: 0 0 auto; font-size: 11px; color: #64748b; }
+.exp-files__empty { font-size: 12px; color: #94a3b8; }
+
+/* 📎 N ao lado do nome na tabela */
+.exp-attach-count {
+  margin-left: 6px;
+  font-size: 0.82em;
+  opacity: 0.75;
+  white-space: nowrap;
+}

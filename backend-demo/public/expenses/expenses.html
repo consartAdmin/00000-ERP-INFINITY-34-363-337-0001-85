@@ -1,0 +1,498 @@
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║ expenses.html — Despesas (Expenses)                                ║
+     ║ Path: public/expenses/expenses.html                                ║
+     ║ CONSART ERP | Frontend (ESM)                                       ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DESPESAS • CONSART ERP</title>
+
+  <!-- 🟦 Favicons CONSART -->
+  <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <link rel="stylesheet" href="/public/modalsSearch/suppliersModalSearch.css">
+
+  <!-- CSS global do sistema -->
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+
+  <!-- CSS do modal -->
+  <link rel="stylesheet" href="./expenseCreateModal.css" />
+
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr page-fiscal-profile">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="table-layout-integrated">
+      <div class="table-layout-integrated__filter table-max-height-500">
+
+        <!-- Filters + ações na mesma linha -->
+        <div class="fields-inline fields-gap-3">
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label>Busca</label>
+            <input id="fQ" class="input" placeholder="Procurar em Nome, Descrição, Fornecedor, Categoria..." />
+          </div>
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label>Nome</label>
+            <input id="fName" class="input" placeholder="ex: Aluguel, CEMIG..." />
+          </div>
+
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <label>Categoria</label>
+            <select id="fCategory" class="select" title="Categorias do Caixa">
+              <option value="">Todas</option>
+            </select>
+          </div>
+
+          <!-- Período (vencimento): date-range-field (carregado pelo core.js) -->
+          <div class="fields fields-h-6 fields-w-16 fields-font-3">
+            <date-range-field id="fDateRange" class="drf-width-3 drf-height-3" label="Período (vencimento)"
+              locale="pt-BR"></date-range-field>
+          </div>
+
+          <input type="hidden" id="fFrom" />
+          <input type="hidden" id="fTo" />
+
+          <!-- Buscar (aplica os filtros) + Limpar, logo depois do Período -->
+          <div class="btn-inline exp-filter-actions">
+            <button id="btnFilter" type="button" class="btn btn-new btn-sm" title="Buscar (aplicar filtros)"
+              aria-label="Buscar">🔎</button>
+            <button id="btnClear" type="button" class="btn btn-clean btn-sm" title="Limpar filtros"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
+          </div>
+
+          <!-- Ações (mesma altura dos filtros, à direita) -->
+          <div class="btn-inline bnt-gap-3 btn-position-right exp-toolbar-actions">
+
+            <button id="btnNew" type="button" class="btn btn-new btn-sm">
+              <span class="btn-ico">＋</span>Novo</button>
+
+            <button id="btnBatchEdit" type="button" class="btn btn-new btn-sm"
+              title="Alterar as despesas marcadas" disabled>✏️ Alterar (0)</button>
+
+            <button id="btnBatchDelete" type="button" class="btn btn-cancel btn-sm"
+              title="Excluir as despesas marcadas" disabled>🗑️ Excluir (0)</button>
+
+            <button id="btnBatchPayable" type="button" class="btn btn-new btn-sm"
+              title="Enviar as despesas marcadas ao Contas a Pagar (um título por despesa)" disabled>📤 Contas a Pagar (0)</button>
+
+            <button id="btnPdfGenrate" type="button" class="btn btn-toolbar btn-sm" title="Exportar PDF">
+              <img src="/iconsImagens/pdf.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar PDF</span>
+            </button>
+
+            <button id="btnExcelGenerate" type="button" class="btn btn-toolbar btn-sm" title="Exportar Excel">
+              <img src="/iconsImagens/excelIcons.png" alt="" width="20" height="20" aria-hidden="true" />
+              <span>Exportar Excel</span>
+            </button>
+
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ✅ Internal scroll area (only here) -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="expenses.tbbody">
+        <table id="expensesTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-select">
+                <input type="checkbox" id="expSelectAll" aria-label="Marcar todas as despesas desta página"
+                  title="Marcar todas desta página" />
+              </th>
+              <th class="col-id table-sortable" data-sort-column="id" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por ID">
+                  ID <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="name" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Nome">
+                  Nome <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="category" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Categoria">
+                  Categoria <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="vendor" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Fornecedor">
+                  Fornecedor <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-money table-sortable" data-sort-column="value" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Valor">
+                  Valor <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-date table-sortable" data-sort-column="due_date" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Vencimento">
+                  Venc. <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-date table-sortable" data-sort-column="created_at" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Criado em">
+                  Criado em <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-date table-sortable" data-sort-column="updated_at" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Atualizado em">
+                  Atualizado em <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbBody">
+            <tr>
+              <td colspan="11" class="muted center">Carregando…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- =================================================== -->
+      <!-- TABLE FOOTER                                        -->
+      <!-- =================================================== -->
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill-success summary-width-5 summary-left-space-3">
+            <span id="apTableInfo">
+              0 Registros
+            </span>
+          </div>
+
+          <div class="summary-pill summary-width-5 exp-selected-pill" id="expSelectedPill">
+            <span id="expSelectedInfo">0 marcadas • R$ 0,00</span>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button id="btnPrevious" type="button" class="btn btn-toolbar btn-sm">
+            Anterior
+          </button>
+
+          <span id="pageInfo">
+            Página 1 de 1
+          </span>
+
+          <button id="btnNext" type="button" class="btn btn-toolbar btn-sm">
+            Próxima
+          </button>
+        </div>
+        <div class="table-footer__page-size">
+          <label for="pageSize">
+            Mostrar
+          </label>
+          <div class="fields fields-h-6 fields-w-3 fields-font-3">
+            <select id="pageSize" class="table-footer__page-size-select">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+  </main>
+
+  <!-- Modal Nova / Editar Despesa (padrão modals.css + modal.js) -->
+  <div id="expenseModal" class="modal exp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-10" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+
+        <!-- div (e não <header>): a barra de título global (topGradientBar) se ancora no 1º <header> da página -->
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="modalTitle" class="modal__title">🧾 Nova Despesa</h2>
+            <p id="modalSub" class="exp-modal__subtitle">Preencha os campos e salve.</p>
+          </div>
+          <button type="button" id="btnClose" class="modal__close" data-modal-close aria-label="Fechar"
+            title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="formExpense" class="exp-form" autocomplete="off">
+            <input type="hidden" id="id" />
+
+            <div class="exp-grid">
+
+              <!-- Despesa -->
+              <div class="exp-section">
+                <div class="exp-section__title">📄 Despesa</div>
+                <div class="exp-section__grid">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="expense_id">Código (automático)</label>
+                    <input id="expense_id" placeholder="Gerado ao salvar" readonly tabindex="-1" class="exp-readonly" />
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="name">Nome *</label>
+                    <input id="name" required placeholder="ex: Aluguel" />
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3 exp-span-full">
+                    <label for="description">Descrição</label>
+                    <input id="description" placeholder="ex: Galpão BH3..." />
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="category">Categoria</label>
+                    <select id="category" title="Categorias do Caixa (as mesmas do Financeiro)">
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="cash_subcategory">Subcategoria</label>
+                    <select id="cash_subcategory" title="Subcategorias do Caixa" disabled>
+                      <option value="">— escolha a categoria —</option>
+                    </select>
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="cost_center">Centro de custo</label>
+                    <input id="cost_center" placeholder="ex: ADM" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vencimento -->
+              <div class="exp-section">
+                <div class="exp-section__title">📅 Vencimento</div>
+                <div class="exp-section__grid">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="due_date">Vencimento *</label>
+                    <input id="due_date" type="date" required />
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="recurrence_type">Recorrência</label>
+                    <select id="recurrence_type">
+                      <option value="MONTHLY">Mensal</option>
+                      <option value="WEEKLY">Semanal</option>
+                      <option value="YEARLY">Anual</option>
+                      <option value="NONE">Sem recorrência</option>
+                    </select>
+                  </div>
+
+<!-- Competência saiu da tela (a despesa gera parcelas mês a mês); colunas ficam no banco -->
+                  <input id="competence_month" type="hidden" />
+                  <input id="competence_year" type="hidden" />
+
+                  <div class="fields fields-h-6 fields-font-3 exp-span-full">
+                    <label for="expVendor">Fornecedor</label>
+                    <div class="exp-input-btn">
+                      <input id="expVendor" type="search" placeholder="Clique na lupa ou dê Enter para buscar..."
+                        autocomplete="off" />
+                      <button id="btnExpVendor" type="button" class="btn btn-new btn-sm" title="Buscar fornecedor"
+                        aria-label="Buscar fornecedor">🔎</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Valor e pagamento -->
+              <div class="exp-section">
+                <div class="exp-section__title">💰 Valor e pagamento</div>
+                <div class="exp-section__grid">
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="value">Valor (R$) *</label>
+                    <input id="value" required inputmode="decimal" placeholder="ex: 5500,00" class="exp-money" />
+                  </div>
+
+                  <!-- Despesa = parâmetro (modelo), não pagamento: status/pagamento
+                       ficam guardados no banco, mas não aparecem na tela -->
+                  <input id="status" type="hidden" value="PENDING" />
+                  <input id="paid_date" type="hidden" />
+                  <input id="payment_method" type="hidden" />
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="account_payable_id">Conta a pagar (ID)</label>
+                    <input id="account_payable_id" inputmode="numeric" placeholder="opcional" />
+                  </div>
+
+                  <div class="fields fields-h-6 fields-font-3">
+                    <label for="is_active">Ativo</label>
+                    <select id="is_active">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contratos e documentos (bucket expenses/expense-{id}/) -->
+              <div class="exp-section exp-section--full">
+                <div class="exp-section__title">📎 Contratos e documentos</div>
+                <div id="expFilesBox" class="exp-files">
+                  <div class="exp-files__bar">
+                    <button type="button" id="expFilesBtn" class="btn btn-flat btn-sm">📎 Anexar</button>
+                    <span class="exp-files__hint">ou arraste aqui (até 50 MB por arquivo). Os arquivos sobem ao salvar.</span>
+                  </div>
+                  <ul id="expFilesList" class="exp-files__list" aria-live="polite"></ul>
+                  <input type="file" id="expFilesInput" multiple
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.odt,.ods,.txt,.xml,.zip" />
+                </div>
+              </div>
+
+              <!-- Dados extras -->
+              <div class="exp-section exp-section--full">
+                <div class="exp-section__title">🧩 Dados extras (JSON opcional)</div>
+                <div class="fields fields-font-3 exp-section__fill">
+                  <label for="payload" class="sr-only">Payload (JSON opcional)</label>
+                  <textarea id="payload" rows="3" placeholder='{"any":"extra"}'></textarea>
+                </div>
+              </div>
+
+            </div>
+          </form>
+        </div>
+
+        <div class="modal__footer exp-modal__footer">
+          <button id="btnDelete" type="button" class="btn btn-cancel btn-sm">🗑️ Excluir</button>
+
+          <div class="exp-modal__footer-right">
+            <button type="button" id="btnCancel" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+            <button id="btnSave" type="submit" form="formExpense" class="btn btn-save btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar Despesa</span></button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal Alterar despesas marcadas (em lote) -->
+  <div id="expenseBatchModal" class="modal exp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="batchTitle">
+
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="batchTitle" class="modal__title">✏️ Alterar despesas marcadas</h2>
+            <p id="batchSub" class="exp-modal__subtitle">Só os campos preenchidos serão alterados.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="formBatch" class="exp-form" autocomplete="off">
+            <div class="exp-section">
+              <div class="exp-section__title">📋 <span id="batchSummary">0 despesas • R$ 0,00</span></div>
+              <div class="exp-section__grid">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_recurrence_type">Recorrência</label>
+                  <select id="batch_recurrence_type">
+                    <option value="">— não alterar —</option>
+                    <option value="MONTHLY">Mensal</option>
+                    <option value="WEEKLY">Semanal</option>
+                    <option value="YEARLY">Anual</option>
+                    <option value="NONE">Sem recorrência</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_category">Categoria</label>
+                  <select id="batch_category">
+                    <option value="">— não alterar —</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_subcategory">Subcategoria</label>
+                  <select id="batch_subcategory" disabled>
+                    <option value="">— escolha a categoria —</option>
+                  </select>
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_cost_center">Centro de custo</label>
+                  <input id="batch_cost_center" placeholder="— não alterar —" />
+                </div>
+
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="batch_is_active">Ativo</label>
+                  <select id="batch_is_active">
+                    <option value="">— não alterar —</option>
+                    <option value="true">Sim</option>
+                    <option value="false">Não</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button id="btnBatchSave" type="submit" form="formBatch" class="btn btn-save btn-sm">💾 Aplicar nas marcadas</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===================== Enviar ao Contas a Pagar (parcelas) ===================== -->
+  <div id="expensePayableModal" class="modal exp-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-7" role="dialog" aria-modal="true" aria-labelledby="payableTitle">
+
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="payableTitle" class="modal__title">📤 Enviar ao Contas a Pagar</h2>
+            <p class="exp-modal__subtitle">Um título por parcela. A 1ª vence no vencimento da despesa; as outras, mês a mês.</p>
+          </div>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <form id="formPayable" class="exp-form" autocomplete="off">
+            <div class="exp-section">
+              <div class="exp-section__title">📋 <span id="payableSummary">0 despesas • R$ 0,00</span></div>
+              <div class="exp-section__grid">
+                <div class="fields fields-h-6 fields-font-3">
+                  <label for="payable_parcels">Quantidade de parcelas *</label>
+                  <input id="payable_parcels" type="number" min="1" max="60" step="1" value="1" required />
+                </div>
+                <div class="fields fields-h-6 fields-font-3">
+                  <label>Total a gerar</label>
+                  <input id="payable_total" type="text" readonly tabindex="-1" />
+                </div>
+              </div>
+            </div>
+
+            <div class="exp-section">
+              <div class="exp-section__title">📅 Vencimentos</div>
+              <div id="payablePreview" class="exp-payable-preview"></div>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button id="btnPayableSend" type="submit" form="formPayable" class="btn btn-save btn-sm">📤 Gerar títulos</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+
+    <script type="module" src="/public/includes/js/core.js"></script>
+    <script type="module" src="./expenses.js"></script>
+</body>
+
+</html>

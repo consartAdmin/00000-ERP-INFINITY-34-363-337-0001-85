@@ -1,0 +1,128 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ productsStockLots.css — Estoque por Lote (lotes e validades)         ║
+   ║ Padrão Consart: cad-toolbar + table-layout-integrated + modals.css   ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+/* ───────── Cabeçalho integrado ───────── */
+.cad-toolbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.cad-toolbar__title { display: flex; align-items: center; gap: 10px; margin-right: 8px; }
+.cad-toolbar__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: #eff6ff; border: 1px solid #bfdbfe; font-size: 18px;
+}
+.cad-toolbar__title h1 { margin: 0; font-size: 18px; font-weight: 800; color: #0f172a; line-height: 1.2; }
+.cad-toolbar__title p { margin: 0; font-size: 11px; color: #64748b; }
+.cad-toolbar > .cad-toolbar__filters { flex: 0 1 auto; width: auto; margin: 0; }
+.cad-toolbar__actions { flex: 0 0 auto; margin-left: auto; align-items: center; }
+.lots-filter-actions { display: flex; gap: 6px; align-items: flex-end; }
+.lots-count {
+  display: inline-flex; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  align-items: center; justify-content: center; background: #2563eb; color: #fff; font-size: 10px; font-weight: 800;
+}
+
+/* ───────── Cards por situação ───────── */
+.lots-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 10px 0 8px; }
+.lots-count[hidden] { display: none; }
+.lots-note { margin: 6px 0 0; padding: 6px 8px; border-radius: 8px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 11px; }
+.lots-kpi {
+  display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 12px;
+  border: 1px solid #e2e8f0; border-left: 5px solid var(--k, #94a3b8);
+  background: #fff; cursor: pointer; text-align: left; font: inherit;
+}
+.lots-kpi:hover { background: #f8fafc; }
+.lots-kpi.is-active { box-shadow: 0 0 0 2px var(--k) inset; background: #f8fafc; }
+.lots-kpi__label { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .02em; }
+.lots-kpi__label i { width: 9px; height: 9px; border-radius: 50%; background: var(--k); }
+.lots-kpi__value { font-size: 20px; font-weight: 900; color: #0f172a; line-height: 1.1; }
+.lots-kpi__sub { font-size: 11px; color: #64748b; }
+
+/* ───────── Tabela ───────── */
+.lots-table { width: 100%; table-layout: fixed; }
+.lots-table .c-fefo { width: 62px; }
+.lots-table .c-prod { width: 290px; }
+.lots-table .c-grade { width: 85px; }
+.lots-table .c-lot { width: 125px; }
+.lots-table .c-date { width: 98px; }
+.lots-table .c-days { width: 78px; }
+.lots-table .c-sit { width: 120px; }
+.lots-table .c-num { width: 95px; }
+.lots-table .c-origin { width: 200px; }
+.lots-table .c-actions { width: 150px; }
+.lots-table th, .lots-table td { text-align: center; }
+.lots-table .l { text-align: left !important; }
+.lots-table .num { text-align: right !important; font-variant-numeric: tabular-nums; }
+.lots-table th button[data-sort-button] {
+  all: unset; cursor: pointer; font-weight: 800; display: inline-flex; gap: 4px; align-items: center;
+}
+.lots-table td { overflow: hidden; text-overflow: ellipsis; }
+.lots-table tr.is-blocked td { background: repeating-linear-gradient(135deg, #f8fafc, #f8fafc 6px, #f1f5f9 6px, #f1f5f9 12px); }
+.lots-prod b { display: block; font-size: 12px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lots-prod small { color: #64748b; font-size: 11px; }
+.lots-origin small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569; }
+.lots-fefo {
+  display: inline-flex; min-width: 26px; justify-content: center; padding: 1px 6px; border-radius: 6px;
+  background: #eff6ff; color: #1d4ed8; font-weight: 800; font-size: 11px;
+}
+.lots-fefo.is-next { background: #1d4ed8; color: #fff; }
+.lots-days { font-weight: 800; }
+.lot-badge {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; white-space: nowrap;
+  color: var(--c); background: color-mix(in srgb, var(--c) 14%, #fff);
+}
+.lot-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.lot-badge--blocked { --c: #475569; margin-left: 4px; }
+.lot-badge--blocked::before { content: none; }
+.lots-empty { text-align: center; color: #64748b; padding: 28px 0 !important; }
+.lots-table .action-icons { justify-content: center; }
+
+/* ───────── Modais ───────── */
+.lots-modal-sub { margin: 0; font-size: 12px; color: #64748b; }
+.lots-sec-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.lots-sec { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px 12px; margin-bottom: 0; }
+.modal__body > .lots-sec + .lots-sec { margin-top: 12px; }
+.lots-sec--full { grid-column: 1 / -1; }
+.lots-sec__title {
+  font-size: 12px; font-weight: 800; color: #334155; margin: -10px -12px 10px; padding: 7px 12px;
+  background: #f1f5f9; border-bottom: 1px solid #e2e8f0; border-radius: 12px 12px 0 0;
+}
+.lots-sec__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; align-items: end; }
+.lots-sec__grid > .fields { width: auto; }
+.lots-span { grid-column: 1 / -1; }
+.lots-input-btn { display: flex; gap: 6px; }
+.lots-input-btn input { flex: 1 1 auto; }
+.lots-help { display: block; font-size: 11px; color: #64748b; margin-top: 4px; }
+.lots-situation { padding-top: 4px; min-height: 22px; }
+.lots-move { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+
+/* Faixas de alerta */
+.band-row {
+  display: grid; grid-template-columns: 40px 1.3fr 1fr 0.8fr 1.4fr 32px; gap: 10px; align-items: center;
+  padding: 7px 0; border-bottom: 1px dashed #e2e8f0; font-size: 12px;
+}
+.band-row--head { font-weight: 800; color: #475569; font-size: 11px; text-transform: uppercase; }
+.band-row input[type="text"], .band-row input[type="number"], .band-row select {
+  height: 30px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 8px; width: 100%; font-size: 12px; box-sizing: border-box;
+}
+.band-row input:disabled { background: #f8fafc; color: #64748b; }
+.band-color { width: 34px; height: 30px; padding: 0; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; cursor: pointer; }
+.band-hint { font-size: 11px; color: #94a3b8; }
+.band-remove { all: unset; cursor: pointer; color: #94a3b8; font-size: 18px; text-align: center; }
+.band-remove:hover { color: #dc2626; }
+.tl { display: flex; height: 10px; border-radius: 6px; overflow: hidden; margin: 10px 0 2px; background: #16a34a; }
+.tl span { display: block; height: 100%; }
+.tl-legend { display: flex; justify-content: space-between; font-size: 10px; color: #64748b; }
+.lots-band-tools { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+.lots-band-tools small { color: #64748b; font-size: 11px; }
+.chk { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; padding: 6px 0; cursor: pointer; }
+.chk small { display: block; color: #64748b; }
+.lots-kardex-scroll { max-height: 55vh; }
+
+@media (max-width: 1100px) {
+  .lots-sec-grid { grid-template-columns: 1fr; }
+  .band-row { grid-template-columns: 36px 1fr 0.8fr 0.6fr 1fr 28px; }
+}
+
+/* Rodapé: resumo de custo/quantidade dos lotes filtrados (coluna da esquerda mais larga) */
+.table-footer.lots-footer { grid-template-columns: minmax(0, 2fr) auto minmax(0, 1fr); }

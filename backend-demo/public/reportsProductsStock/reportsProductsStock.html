@@ -1,0 +1,294 @@
+<!-- ╔══════════════════════════════════════════════════════════════════════════╗
+     ║ 📊 public/reportsProductsStock/reportsProductsStock.html — Relatório Estoque (CONSART)
+     ║ ✅ Barra de filtros avançados (Fornecedor/Grupo/Subgrupo/Marca/Estoque/Ativo/Custo)
+     ║ ✅ Estoque Positivo (>0) com filtro real no backend (only_stock=1)
+     ║ ✅ Tabela rolável + footer interno fixo + Paginação + PDF/EXCEL
+     ║ ✅ Custo total em estoque (registros filtrados) no rodapé
+     ║ ✅ Filtros avançados em modal (cabeçalho: Buscar + Somente positivo)
+     ╚══════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- 🟦 Favicons CONSART -->
+  <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <title>RELATÓRIO | POSIÇÃO DE ESTOQUE — CONSART ERP</title>
+
+  <!-- 🎨 CSS — Design System CONSART -->
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <link rel="stylesheet" href="/public/reportsProductsStock/reportsProductsStock.summary.css" />
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr page-sales-report">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <!-- ===================================================== -->
+    <!-- INTEGRATED TABLE                                      -->
+    <!-- ===================================================== -->
+    <section class="table-layout-integrated">
+      <div class="table-layout-integrated__filter">
+
+        <div class="fields fields-inline fields-gap-3">
+
+          <div>
+            <p class="muted">Custo × Quantidade (com totalização)</p>
+          </div>
+        </div>
+
+        <!-- ✅ FILTROS (BAR) -->
+        <div class="fields fields-inline fields-gap-3">
+
+          <!-- Buscar -->
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="txtBusca"><b>Buscar</b></label>
+            <input type="text" id="txtBusca" placeholder="Código, descrição…" />
+          </div>
+
+          <!-- ✅ Estoque Positivo > 0 -->
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label><b>Estoque</b></label>
+            <label class="inline-check" title="Mostra apenas produtos com estoque maior que zero">
+              <input type="checkbox" id="chkOnlyStock">
+              <span>Somente positivo (&gt; 0)</span>
+            </label>
+          </div>
+
+          <!-- Ações -->
+          <div class="button-inline">
+            <label><b>Ações</b></label>
+            <button id="btnBuscar" class="btn btn-search btn-sm" title="Buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar</span></button>
+
+            <button id="btnFiltros" type="button" class="btn btn-toolbar btn-sm" title="Mais filtros"
+              data-modal-open="filtersModal">
+              <span class="btn-ico">🔎</span>
+              <span class="btn-label">Filtros</span>
+              <span id="filtersBadge" class="rps-filters-badge" hidden>0</span>
+            </button>
+
+            <button id="btnPdf" class="btn btn-toolbar btn-sm" title="Gerar PDF">
+              <span class="btn-ico">🧾</span>
+              <span class="btn-label">PDF</span>
+            </button>
+
+            <button id="btnExcel" class="btn btn-toolbar btn-sm" title="Exportar Excel">
+              <span class="btn-ico">⎘</span>
+              <span class="btn-label">EXCEL</span>
+            </button>
+
+            <button id="btnLimpar" class="btn btn-toolbar btn-sm" title="Limpar filtros">
+              <span class="btn-ico">🧹</span>
+              <span class="btn-label">Limpar</span>
+            </button>
+          </div>
+          <div id="statusArea" class="module-status"></div>
+        </div>
+      </div>
+
+
+
+      <!-- Tabela -->
+      <div class="table-scroll table-height-550 table-row-h-28" data-table-settings="reportsproductsstock.tablebody">
+        <table id="stockTable" class="table table-zebra table-zebra-hover table-sticky-head" aria-label="Posição de Estoque">
+          <thead>
+            <tr>
+              <th class="col-id table-sortable" data-sort-column="id" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  ID
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-code table-sortable" data-sort-column="code" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Código
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-desc table-sortable" data-sort-column="description" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Descrição
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-money text-right table-sortable" data-sort-column="cost" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Custo
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-num text-right table-sortable" data-sort-column="stock" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Estoque
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="col-money text-right table-sortable" data-sort-column="total" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Total (Custo)
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Rodapé: total de registros + paginação -->
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-5 summary-left-space-3">
+            <span id="apTableInfo">Carregando...</span>
+          </div>
+          <div class="summary-pill summary-pill--success rps-footer-cost" title="Custo total de todos os registros filtrados">
+            <span>Custo total em estoque: <b id="sumCost">—</b></span>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="btnPreviousPage" class="btn btn-clean btn-sm">
+            Anterior
+          </button>
+
+          <span id="apPageInfo">Página 1 de 1</span>
+
+          <button type="button" id="btnNextPage" class="btn btn-new btn-sm">
+            Próxima
+          </button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="apRowsPerPage">Mostrar</label>
+
+          <select id="apRowsPerPage" class="table-footer__page-size-select" name="rowsPerPage">
+            <option value="10">10 linhas</option>
+            <option value="20">20 linhas</option>
+            <option value="30">30 linhas</option>
+            <option value="50" selected>50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ╭──────────────────────────────────────────────────────────────╮
+       │ MODAL — Filtros (Fornecedor, Grupo, Subgrupo, Marca, Ativo,  │
+       │ Custo). Buscar e Somente positivo ficam no cabeçalho.        │
+       ╰──────────────────────────────────────────────────────────────╯ -->
+  <div id="filtersModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-5" role="dialog" aria-modal="true" aria-labelledby="filtersModalTitle">
+
+        <div class="modal__header modal-header-color-3">
+          <h2 id="filtersModalTitle" class="modal__title">🔎 Filtros</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="rps-filters-grid">
+              <!-- Fornecedor (autocomplete) -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="txtFornecedor"><b>Fornecedor</b></label>
+                <input id="txtFornecedor" type="text" placeholder="Digite para localizar…" list="dlFornecedores"
+                  autocomplete="off">
+                <datalist id="dlFornecedores"></datalist>
+                <input type="hidden" id="hidFornecedorId" value="">
+              </div>
+
+              <!-- Grupo -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="selGrupo"><b>Grupo</b></label>
+                <select id="selGrupo">
+                  <option value="">Todos</option>
+                </select>
+              </div>
+
+              <!-- Subgrupo -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="selSubgrupo"><b>Subgrupo</b></label>
+                <select id="selSubgrupo" disabled>
+                  <option value="">Todos</option>
+                </select>
+              </div>
+
+              <!-- Marca -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="selMarca"><b>Marca</b></label>
+                <select id="selMarca">
+                  <option value="">Todas</option>
+                </select>
+              </div>
+
+              <!-- Ativo -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="selAtivo"><b>Ativo</b></label>
+                <select id="selAtivo">
+                  <option value="">Todos</option>
+                  <option value="1" selected>Somente ativos</option>
+                  <option value="0">Somente inativos</option>
+                </select>
+              </div>
+
+              <!-- Custo min -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="numCustoMin"><b>Custo mín.</b></label>
+                <input id="numCustoMin" type="number" step="0.01" placeholder="0,00">
+              </div>
+
+              <!-- Custo max -->
+              <div class="fields fields-h-6 fields-font-3">
+                <label for="numCustoMax"><b>Custo máx.</b></label>
+                <input id="numCustoMax" type="number" step="0.01" placeholder="0,00">
+              </div>
+
+          </div>
+        </div>
+
+        <div class="modal__footer rps-filters-footer">
+          <button type="button" id="btnFiltrosLimpar" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar filtros</span></button>
+          <span class="rps-filters-footer__spacer"></span>
+          <button type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button type="button" id="btnFiltrosAplicar" class="btn btn-save btn-sm">✔ Aplicar</button>
+        </div>
+
+      </section>
+    </div>
+  </div>
+
+  <!-- 🔌 Menu carregado dinamicamente (PADRÃO CONSART) -->
+  <script>
+    (async function loadConsartMenu() {
+      try {
+        const res = await fetch('/public/home/home.html');
+        if (!res.ok) throw new Error('home.html não encontrado');
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const menu = doc.querySelector('.menu-principal');
+        if (!menu) return;
+        document.getElementById('topo').appendChild(menu);
+        const applyHeight = () => {
+          const h = (menu.offsetHeight || 80);
+          document.documentElement.style.setProperty('--consart-header-height', h + 'px');
+        };
+        requestAnimationFrame(applyHeight);
+        window.addEventListener('resize', applyHeight);
+      } catch (e) {
+        console.warn('[MENU] Falha ao injetar menu:', e);
+      }
+    })();
+  </script>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/reportsProductsStock/js/reportsProductsStock.js"></script>
+</body>
+
+</html>

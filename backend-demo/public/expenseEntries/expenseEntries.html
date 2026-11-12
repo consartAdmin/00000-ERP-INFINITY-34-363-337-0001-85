@@ -1,0 +1,432 @@
+<!-- ╔══════════════════════════════════════════════════════════════════════╗
+     ║ expenseEntries.html — Expense Entries (CONSART ERP)                  ║
+     ║ Path: backend/public/expenseEntries/expenseEntries.html              ║
+     ║ - CRUD + filtros + paginação + IMPORT XML NF-e                       ║
+     ╚══════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- 🟦 Favicons CONSART -->
+  <link rel="icon" type="image/png" sizes="16x16" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <title>ENTRADA DESPESAS • CONSART</title>
+
+  <link rel="stylesheet" href="./expenseEntriesModal.css" />
+  <!-- CSS global do sistema (ajuste se necessário) -->
+  <link rel="stylesheet" href="/public/includes/css/style.css" />
+  <!-- CSS do módulo -->
+  <link rel="stylesheet" href="./expenseEntries.css" />
+  <!-- Modal "Importar do DF-e" compartilhado com Entradas Fiscais -->
+  <link rel="stylesheet" href="/public/inboundInvoices/inboundInvoicesDfeModal.css" />
+
+
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+
+    <!-- Sem <header> de card: o topGradientBar injeta o título e o breadcrumb -->
+    <input id="xmlFile" type="file" accept=".xml,text/xml,application/xml" hidden />
+
+    <section class="table-layout-integrated table-max-height-700">
+
+      <!-- FILTER -->
+      <div class="table-layout-integrated__filter">
+        <span id="loadingHint" class="ee-muted" role="status" aria-live="polite"></span>
+
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="fQ">Busca</label>
+            <input id="fQ" type="text" placeholder="Fornecedor, número, série, chave ou observação..." />
+          </div>
+
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <label for="fStatus">Situação</label>
+            <select id="fStatus">
+              <option value="">Todas</option>
+              <option value="OPEN">Aberta</option>
+              <option value="POSTED">Lançada</option>
+              <option value="CANCELED">Cancelada</option>
+            </select>
+          </div>
+
+          <div class="fields fields-h-6 fields-w-12 fields-font-3">
+            <label for="fSupplierDoc">CNPJ / CPF</label>
+            <input id="fSupplierDoc" type="text" placeholder="Somente números" />
+          </div>
+
+          <!-- Período (emissão): date-range-field (carregado pelo core.js) -->
+          <div class="fields fields-h-6 fields-w-16 fields-font-3">
+            <date-range-field id="fDateRange" class="drf-width-3 drf-height-3" label="Período (emissão)"
+              locale="pt-BR"></date-range-field>
+          </div>
+
+          <input type="hidden" id="fDateFrom" />
+          <input type="hidden" id="fDateTo" />
+          <input type="hidden" id="fOrderBy" value="issueDate desc" />
+
+          <button class="btn btn-filter btn-sm" id="btnApply" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar Filtros</span></button>
+          <button class="btn btn-clean btn-sm" id="btnClear" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button class="btn btn-load btn-sm" id="btnImportXml" type="button" title="Importar XML NF-e"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>Importar XML</span></button>
+            <button class="btn btn-load btn-sm" id="btnImportFromDfe" type="button" title="Importar o XML direto da caixa de entrada DF-e"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H4z"/><path d="m4 16 4 4h8l4-4"/><path d="M12 7v6"/><path d="m9 10 3 3 3-3"/></svg><span>Importar do DF-e</span></button>
+            <button class="btn btn-new btn-sm" id="btnNew" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova Entrada</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE SCROLL -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="expenseentries.tbody">
+        <table id="expenseEntriesTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-sortable" data-sort-column="expenseEntryId" aria-sort="none" style="width:70px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por ID">
+                  ID <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="issueDate" aria-sort="none" style="width:110px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Emissão">
+                  Emissão <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="documentType" aria-sort="none" style="width:80px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Tipo">
+                  Tipo <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="documentNumber" aria-sort="none" style="width:110px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Nº / Série">
+                  Nº / Série <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="supplierName" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Fornecedor">
+                  Fornecedor <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="supplierDocument" aria-sort="none" style="width:170px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por CNPJ / CPF">
+                  CNPJ / CPF <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="ee-right table-sortable" data-sort-column="totalExpenseValue" aria-sort="none" style="width:130px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Total">
+                  Total <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th class="table-sortable" data-sort-column="status" aria-sort="none" style="width:120px">
+                <button type="button" class="table-sort-button" data-sort-button title="Ordenar por Situação">
+                  Situação <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+              <th style="width:150px">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- TABLE FOOTER -->
+      <footer class="table-footer">
+
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-5 summary-left-space-3">
+            <span id="apTableInfo">0 registros</span>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button id="btnPrevious" class="btn btn-new btn-sm" type="button">
+            Anterior
+          </button>
+
+          <span id="pageInfo">
+            Página 1 de 1
+          </span>
+
+          <button id="btnNext" class="btn btn-new btn-sm" type="button">
+            Próxima
+          </button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="pageSize">Mostrar</label>
+
+          <div class="fields fields-h-6 fields-w-3 fields-font-3">
+            <select id="pageSize" class="table-footer__page-size-select">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+
+      </footer>
+    </section>
+  </main>
+
+  <!-- Modal Nova / Editar Entrada (modals.css + modal.js) -->
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-close="1"></div>
+
+    <div class="modal__dialog">
+      <div class="modal__panel modal-width-12 modal-height-12" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal__header modal-header-color-3">
+          <div>
+            <h2 id="modalTitle" class="modal__title">Nova Entrada</h2>
+            <p class="ee-muted" id="modalSub">Preencha os dados da despesa/nota</p>
+          </div>
+          <button class="modal__close" type="button" data-close="1" aria-label="Fechar" title="Fechar">&times;</button>
+        </div>
+
+        <form id="form" autocomplete="off" style="display:flex; flex:1 1 auto; min-height:0; flex-direction:column;">
+          <div class="modal__body modal-section">
+            <input type="hidden" id="expenseEntryId" />
+            <!-- Campos técnicos mantidos para não perder valores já gravados -->
+            <input type="hidden" id="costCenterId" />
+            <input type="hidden" id="xmlPath" />
+            <input type="hidden" id="pdfPath" />
+            <input type="hidden" id="fiscalStatus" value="NO_CREDIT" />
+
+            <h3 class="section__title">Documento</h3>
+            <div class="modal-form-grid modal-form-grid--6">
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="documentType">Tipo de documento</label>
+                <select id="documentType">
+                  <option value="NFE" selected>NF-e</option>
+                  <option value="NFCE">NFC-e</option>
+                  <option value="MANUAL">Manual</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="documentNumber">Número</label>
+                <input id="documentNumber" type="text" placeholder="Ex.: 12345" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="documentSeries">Série</label>
+                <input id="documentSeries" type="text" placeholder="Ex.: 1" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="issueDate">Data de emissão *</label>
+                <input id="issueDate" type="date" required />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="entryDate">Data de entrada</label>
+                <input id="entryDate" type="date" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="status">Situação</label>
+                <select id="status">
+                  <option value="OPEN" selected>Aberta</option>
+                  <option value="POSTED">Lançada</option>
+                  <option value="CANCELED">Cancelada</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3 modal-field--span-full">
+                <label for="documentKey">Chave de acesso (NF-e)</label>
+                <input id="documentKey" type="text" maxlength="44" placeholder="44 dígitos (opcional)" />
+              </div>
+            </div>
+
+            <div class="modal-divider--soft"></div>
+
+            <h3 class="section__title">Fornecedor</h3>
+            <div class="modal-form-grid modal-form-grid--6">
+              <div class="fields fields-w-full fields-h-6 fields-font-3 modal-field--span-4">
+                <label for="supplierName">Razão social / Nome</label>
+                <input id="supplierName" type="text" placeholder="Posto / Fornecedor..." />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3 modal-field--span-2">
+                <label for="supplierDocument">CNPJ / CPF</label>
+                <input id="supplierDocument" type="text" placeholder="Somente números" />
+              </div>
+            </div>
+
+            <div class="modal-divider--soft"></div>
+
+            <h3 class="section__title">Valores</h3>
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="totalProductsValue">Total dos produtos (R$)</label>
+                <input id="totalProductsValue" type="number" step="0.01" value="0" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="totalDiscountValue">Desconto (R$)</label>
+                <input id="totalDiscountValue" type="number" step="0.01" value="0" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="totalTaxValue">Impostos (R$)</label>
+                <input id="totalTaxValue" type="number" step="0.01" value="0" />
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="totalExpenseValue">Total da despesa (R$)</label>
+                <input id="totalExpenseValue" type="number" step="0.01" value="0" />
+              </div>
+            </div>
+
+            <div class="modal-divider--soft"></div>
+
+            <h3 class="section__title">Classificação</h3>
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="vehicleId">Veículo (combustível)</label>
+                <select id="vehicleId">
+                  <option value="">Nenhum</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-h-6 fields-font-3">
+                <label for="taxCreditOption">Crédito de impostos</label>
+                <select id="taxCreditOption">
+                  <option value="0" selected>Não gera crédito</option>
+                  <option value="1">Gera crédito</option>
+                </select>
+              </div>
+              <div class="fields fields-w-full fields-font-3 modal-field--span-2">
+                <label for="notes">Observações</label>
+                <textarea id="notes" rows="2" placeholder="Observações..."></textarea>
+              </div>
+            </div>
+
+            <div class="modal-divider--soft"></div>
+
+            <!-- Anexos: vão para a movimentação do Caixa ligada a esta entrada -->
+            <div class="section__header section-justify-between">
+              <h3 class="section__title">Anexos</h3>
+              <span class="ee-muted" id="attachmentsHint">Os arquivos ficam na movimentação do Caixa desta entrada.</span>
+            </div>
+            <input id="attachmentsInput" type="file" multiple hidden />
+            <div class="modal-upload-grid">
+              <div class="modal-dropzone modal-dropzone-font-10" id="attachmentsDropzone" role="button" tabindex="0"
+                aria-label="Selecionar ou arrastar arquivos">
+                <strong>📎 Arraste os arquivos aqui</strong>
+                <span>ou clique para selecionar (XML, PDF, imagens...)</span>
+              </div>
+              <div class="modal-attachments" id="attachmentsList" role="list"></div>
+            </div>
+
+            <!-- Itens do XML -->
+            <section id="itemsSection" class="modal-section" style="display:none;">
+              <div class="modal-divider--soft"></div>
+              <div class="section__header section-justify-between">
+                <h3 class="section__title">Itens da nota</h3>
+                <span class="ee-muted" id="itemsHint"></span>
+              </div>
+
+              <div class="table-scroll table-height-200 table-row-h-28" data-table-settings="expenseentries.itemstbody">
+                <table class="table table-zebra table-zebra-hover table-sticky-head">
+                  <thead>
+                    <tr>
+                      <th style="width:120px">Código</th>
+                      <th>Descrição</th>
+                      <th style="width:90px">Unidade</th>
+                      <th style="width:110px" class="ee-right">Quantidade</th>
+                      <th style="width:130px" class="ee-right">Valor unitário</th>
+                      <th style="width:140px" class="ee-right">Valor total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="itemsTbody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <footer class="modal__footer">
+            <button type="button" class="btn btn-toolbar btn-sm" data-close="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Fechar</span></button>
+            <button type="submit" class="btn btn-new btn-sm" id="btnSave"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- MODAL — IMPORTAR XML DIRETO DO DF-e                            -->
+  <!-- Mesmo modal de Entradas Fiscais (inboundInvoices.dfe.js)       -->
+  <!-- ============================================================= -->
+  <div id="dfeImportModal" class="modal">
+    <div id="dfeImportBackdrop" class="modal__backdrop"></div>
+
+    <div class="modal__dialog">
+      <div class="modal__panel modal-width-11 modal-height-12" role="dialog" aria-modal="true"
+        aria-labelledby="dfeModalTitle">
+
+        <header class="modal__header modal-header-color-3">
+          <h3 id="dfeModalTitle" class="modal__title">Importar do DF-e (Despesa / Uso e Consumo)</h3>
+
+          <button type="button" id="btnCloseDfeModal" class="modal__close" aria-label="Fechar">
+            &times;
+          </button>
+        </header>
+
+        <div class="modal__body">
+          <div class="modal-section">
+
+            <div class="modal-form-grid modal-form-grid--4">
+              <div class="fields fields-h-5 fields-w-20 fields-font-3 modal-field--span-2">
+                <label for="dfeSearch">Buscar</label>
+                <input id="dfeSearch" type="text" placeholder="Chave (44), n&ordm; NF-e ou emitente&hellip;"
+                  autocomplete="off" />
+              </div>
+
+              <div class="fields fields-h-5 fields-font-3 dfe-check-field">
+                <label class="dfe-check" for="dfeOnlyPending">
+                  <input type="checkbox" id="dfeOnlyPending" checked />
+                  Somente pendentes
+                </label>
+              </div>
+
+              <div class="fields fields-h-5 fields-font-3">
+                <button type="button" id="btnReloadDfe" class="btn btn-load btn-sm btn-h-5">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Atualizar</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="modal-divider"></div>
+
+            <div class="table-scroll dfe-table-scroll" data-table-settings="expenseentries.dfetablebody">
+              <table class="table table-zebra table-zebra-hover table-sticky-head">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Chave NF-e</th>
+                    <th>N&ordm; NF-e</th>
+                    <th>Emitente</th>
+                    <th class="dfe-col-right">Valor Total</th>
+                    <th>A&ccedil;&atilde;o</th>
+                  </tr>
+                </thead>
+                <tbody id="dfeTableBody"></tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-2">
+          <span id="dfeStatus" class="dfe-status" data-tone="info"></span>
+        </footer>
+
+      </div>
+    </div>
+  </div>
+
+    <script type="module" src="/public/includes/js/core.js"></script>
+
+    <script type="module" src="/public/expenseEntries/js/expenseEntries.init.js?v=20260924-dfe"></script>
+
+</body>
+
+</html>

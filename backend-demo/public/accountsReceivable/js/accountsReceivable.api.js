@@ -1,0 +1,162 @@
+import { API_BASE } from './accountsReceivable.config.js';
+
+const CASH_CATEGORIES_API =
+  window.CASH_CATEGORIES_API || `${API_BASE}/cash-categories`;
+const CASH_SUBCATEGORIES_API =
+  window.CASH_SUBCATEGORIES_API || `${API_BASE}/cash-subcategories`;
+const CASH_DOCUMENT_TYPES_API =
+  window.CASH_DOCUMENT_TYPES_API || `${API_BASE}/cash-document-types`;
+const CHART_OF_ACCOUNTS_API =
+  window.CHART_OF_ACCOUNTS_API || `${API_BASE}/chart-of-accounts`;
+
+export async function safeFetch(url, options = {}) {
+  const response = await fetch(url, {
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    credentials: 'include',
+    ...options,
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.error || data?.message || `HTTP ${response.status}`);
+  }
+  return data;
+}
+
+export const listAccounts = (params) => safeFetch(`${API_BASE}?${params}`);
+export const listCashCategories = () => safeFetch(CASH_CATEGORIES_API);
+export const listCashSubcategories = () => safeFetch(CASH_SUBCATEGORIES_API);
+export const listCashDocumentTypes = () => safeFetch(CASH_DOCUMENT_TYPES_API);
+export const listChartOfAccounts = () => safeFetch(CHART_OF_ACCOUNTS_API);
+export const listBankAccounts = () => safeFetch(`${API_BASE}/bank-accounts`);
+export const getAccount = (id) => safeFetch(`${API_BASE}/${encodeURIComponent(id)}`);
+export const createAccount = (payload) => safeFetch(API_BASE, {
+  method: 'POST', body: JSON.stringify(payload),
+});
+export const updateAccount = (id, payload) => safeFetch(`${API_BASE}/${encodeURIComponent(id)}`, {
+  method: 'PUT', body: JSON.stringify(payload),
+});
+export const updateBoleto = (id, payload) => safeFetch(
+  `${API_BASE}/${encodeURIComponent(id)}/boleto`,
+  {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }
+);
+export const batchUpdateAccounts = (ids, fields) => safeFetch(`${API_BASE}/batch-update`, {
+  method: 'POST', body: JSON.stringify({ ids, fields }),
+});
+export const receiveAccount = (id, payload) => safeFetch(`${API_BASE}/${encodeURIComponent(id)}/receive`, {
+  method: 'POST', body: JSON.stringify(payload),
+});
+export const cancelBoleto = (id) => safeFetch(`${API_BASE}/${encodeURIComponent(id)}/boleto`, {
+  method: 'DELETE', body: JSON.stringify({ reason: 'Cancelado pelo usuário no ERP' }),
+});
+export const syncAsaas = (payload) => safeFetch(`${API_BASE}/sync-asaas`, {
+  method: 'POST', body: JSON.stringify(payload),
+});
+/**
+ * Sync com progresso: o backend responde NDJSON (uma linha JSON por evento).
+ * onEvent recebe { type: 'start' | 'item' | 'done' | 'error', ... }.
+ * Resolve com o result final ou lança erro.
+ */
+export async function syncAsaasStream(onEvent) {
+  const response = await fetch(`${API_BASE}/sync-asaas?stream=1`, {
+    method: 'POST',
+    headers: { Accept: 'application/x-ndjson', 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: '{}',
+  });
+
+  if (!response.ok || !response.body) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error || data?.message || `HTTP ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let result = null;
+
+  const handleLine = (line) => {
+    if (!line.trim()) return;
+    const event = JSON.parse(line);
+    if (event.type === 'error') throw new Error(event.message || 'Falha ao sincronizar com o Asaas.');
+    if (event.type === 'done') result = event.result;
+    onEvent?.(event);
+  };
+
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    lines.forEach(handleLine);
+  }
+
+  handleLine(buffer + decoder.decode());
+
+  if (!result) throw new Error('A sincronização foi interrompida antes de terminar.');
+  return result;
+}
+
+export const boletoUrl = (id) => `${API_BASE}/${encodeURIComponent(id)}/boleto`;
+export const pdfUrl = (params) => `${API_BASE}/export/pdf?${params}`;
+export const excelUrl = (params) => `${API_BASE}/export/excel?${params}`;
+
+// -------------------------------------------------------------------
+// ANEXOS (bucket do projeto)
+// -------------------------------------------------------------------
+async function postFile(url, formData) {
+  const response = await fetch(url, { method: 'POST', body: formData, credentials: 'include' });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || data?.details || data?.error || `HTTP ${response.status}`);
+  }
+  return data;
+}
+
+export const listAttachments = (id) =>
+  safeFetch(`${API_BASE}/${encodeURIComponent(id)}/attachments`);
+
+export const attachmentDownloadUrl = (id, attachmentId) =>
+  `${API_BASE}/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}/download`;
+
+export const deleteAttachment = (id, attachmentId) =>
+  safeFetch(`${API_BASE}/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`, {
+    method: 'DELETE',
+  });
+
+export function uploadAttachment(id, file) {
+  const formData = new FormData();
+  formData.append('arquivo', file, file.name);
+  return postFile(`${API_BASE}/${encodeURIComponent(id)}/attachments`, formData);
+}
+
+// Mesmo endpoint do cadastro em Movimentações (e de Débitos): o arquivo
+// fica na pasta accountsReceivable/ do bucket, vinculado à movimentação.
+export function uploadCashMovementFile(movId, file) {
+  const formData = new FormData();
+  formData.append('movId', String(movId));
+  formData.append('basePrefix', 'accountsReceivable');
+  formData.append('arquivo', file, file.name);
+  return postFile(`${window.API_BASE || window.apiBase || ''}/api/upload/anexo`, formData);
+}
+
+// -------------------------------------------------------------------
+// VÍNCULO FINANCEIRO DO CLIENTE (default_* em public."customers")
+// -------------------------------------------------------------------
+const ROOT_API = `${window.API_BASE || window.apiBase || ''}/api`;
+
+export const getCustomer = (id) =>
+  safeFetch(`${ROOT_API}/customers/${encodeURIComponent(id)}`);
+
+export const getChartAccount = (id) =>
+  safeFetch(`${ROOT_API}/chart-of-accounts/${encodeURIComponent(id)}`);
+
+export const updateCustomerFinancialDefaults = (id, payload) =>
+  safeFetch(`${ROOT_API}/customers/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });

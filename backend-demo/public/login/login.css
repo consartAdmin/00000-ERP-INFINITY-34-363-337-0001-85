@@ -1,0 +1,316 @@
+/* 📁 backend/app/login/login.css
+   Layout de Login – estilo ERP horizontal (tipo ResultH)
+   ------------------------------------------------------------- */
+
+/* Paleta + dimensões base */
+:root{
+  --bg1:#f6f9ff;
+  --bg2:#ecf3ff;
+
+  --card-radius:18px;
+  --card-width:880px;
+  --card-min-h:260px;
+
+  --input-h:40px;
+  --input-font:.95rem;
+
+  --btn:#2563eb;
+  --btn-hover:#1d4ed8;
+  --focus:#2563eb;
+}
+
+html, body{
+  height:100%;
+  margin:0;
+  font-family: Arial, sans-serif;
+}
+
+/* Fundo semelhante ao que já estava: gradiente + grid sutil */
+body{
+  position:relative;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: linear-gradient(180deg, var(--bg1), var(--bg2));
+  overflow:hidden;
+}
+
+/* Se você já controla bg-layer / bg-aurora / bg-grid em outro CSS,
+   pode remover esse bloco. Aqui deixei um padrão simples. */
+.bg-layer{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+}
+.bg-aurora{
+  position:absolute;
+  inset:-15%;
+  background:
+    radial-gradient(62% 70% at 26% 24%, rgba(168,201,255,.55) 0 35%, transparent 65%),
+    radial-gradient(58% 65% at 78% 32%, rgba(189,214,255,.42) 0 30%, transparent 62%),
+    radial-gradient(55% 62% at 50% 82%, rgba(160,205,255,.38) 0 24%, transparent 58%);
+  filter: blur(90px);
+  opacity:.55;
+}
+.bg-grid{
+  position:absolute;
+  inset:0;
+  background-image:url('data:image/svg+xml;utf8,\
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">\
+<rect x="0" y="0" width="9" height="9" fill="%23eef5ff"/>\
+<rect x="11" y="11" width="9" height="9" fill="%23eef5ff"/>\
+</svg>');
+  background-size:40px 40px;
+  opacity:.14;
+}
+.bg-vignette{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(1000px 700px at -10% -10%,  #fff 0 45%, transparent 60%),
+    radial-gradient(1000px 700px at 110% -10%, #fff 0 45%, transparent 60%),
+    radial-gradient(1000px 700px at -10% 110%, #fff 0 45%, transparent 60%),
+    radial-gradient(1000px 700px at 110% 110%,#fff 0 45%, transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.70), rgba(255,255,255,0));
+  opacity:.60;
+}
+
+/* Container que centraliza o card */
+.login-container{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  padding:40px 16px;
+}
+
+/* CARD EM 2 COLUNAS – ESTILO RESULTH */
+.login-panel{
+  position:relative;
+  display:grid;
+  grid-template-columns: 1.1fr 1.4fr;
+  width:min(var(--card-width), 100%);
+  min-height:var(--card-min-h);
+  background: linear-gradient(135deg,#fdfdfd,#f3f4f7);
+  border-radius:var(--card-radius);
+  overflow:hidden;
+  box-shadow:
+    0 14px 40px rgba(15,23,42,0.25),
+    0 0 0 1px rgba(255,255,255,0.8);
+  animation: loginFadeIn .6s ease-out;
+}
+
+/* faixa diagonal suave */
+.login-panel::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(135deg,
+      transparent 0%,
+      transparent 46%,
+      rgba(148,163,184,0.12) 58%,
+      rgba(148,163,184,0.22) 100%
+    );
+  pointer-events:none;
+}
+
+/* LADO ESQUERDO --------------------------------------------------- */
+.login-left{
+  position:relative;
+  padding:32px 26px;
+  background: radial-gradient(circle at top left,#ffffff 0,#f7fafc 55%,#e5edf9 100%);
+  border-right:1px solid rgba(209,213,219,0.9);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+.login-logo{
+  width:500px;
+  height:auto;
+  margin-bottom:14px;
+  object-fit:contain;
+}
+
+/* ===== Centraliza o texto GESTÃO EMPRESARIAL ===== */
+.login-brand {
+  text-align: center;          /* centraliza o conteúdo */
+  width: 100%;                 /* garante alinhamento completo */
+  margin-top: 10px;            /* espaço entre logo e texto */
+}
+
+.brand-main {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: #111827;
+  text-align: center;          /* centraliza o nome CONSART */
+}
+
+.brand-sub {
+  display: block;
+  font-size: .9rem;
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  color: #6b7280;
+  text-align: center;          /* centraliza o GESTÃO EMPRESARIAL */
+}
+
+/* LADO DIREITO ----------------------------------------------------- */
+.login-right{
+  position:relative;
+  padding:26px 30px 22px;
+  background:#fdfdfd;
+  display:flex;
+  flex-direction:column;
+}
+
+.login-right h2{
+  margin:0 0 6px;
+  font-size:1.15rem;
+  font-weight:600;
+  color:#111827;
+}
+
+.login-subtitle{
+  margin:0 0 16px;
+  font-size:.86rem;
+  color:#4b5563;
+}
+
+/* FORM ------------------------------------------------------------- */
+.form-row{
+  margin-bottom:12px;
+}
+
+.form-row label{
+  display:block;
+  margin-bottom:4px;
+  font-size:.92rem;
+  font-weight:600;
+  color:#374151;
+}
+
+/* Wrapper de input (se quiser ícones depois) */
+.input-wrap{
+  position:relative;
+}
+
+/* Input base */
+.input{
+  width:100%;
+  height:var(--input-h);
+  padding:0 10px;
+  border-radius:4px;
+  border:1px solid #cbd5e1;
+  background:#ffffff;
+  font-size:var(--input-font);
+  color:#111827;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+  transition:border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+
+.input:hover{
+  border-color:#94a3b8;
+}
+
+.input:focus{
+  outline:none;
+  border-color:var(--focus);
+  box-shadow:
+    0 0 0 1px rgba(37,99,235,.35),
+    0 0 0 3px rgba(191,219,254,0.8);
+}
+
+/* Botão “olho” da senha */
+.input-action{
+  position:absolute;
+  right:6px;
+  top:50%;
+  transform:translateY(-50%);
+  width:30px;
+  height:30px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,0.65);
+  background:#ffffff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  font-size:.8rem;
+  box-shadow:0 1px 3px rgba(15,23,42,0.18);
+}
+.input-action:hover{
+  box-shadow:0 2px 6px rgba(15,23,42,0.25);
+}
+
+/* Estados de erro */
+.input[aria-invalid="true"],
+.input.error{
+  border-color:#dc2626;
+}
+
+/* Botão Entrar (lado direito, tipo ResultH) */
+.btn.block{
+  margin-top:10px;
+  width:120px;
+  align-self:flex-end;
+  height:38px;
+  border:none;
+  border-radius:4px;
+  background:var(--btn);
+  color:#f9fafb;
+  font-weight:600;
+  font-size:.95rem;
+  cursor:pointer;
+  box-shadow:0 2px 4px rgba(0,0,0,0.2);
+  transition:background .18s ease, transform .06s ease, box-shadow .18s ease;
+}
+.btn.block:hover{
+  background:var(--btn-hover);
+  box-shadow:0 3px 8px rgba(0,0,0,0.28);
+}
+.btn.block:active{
+  transform:translateY(1px);
+  box-shadow:0 1px 4px rgba(0,0,0,0.22);
+}
+
+/* Rodapé tipo “nova versão já em uso...” */
+.login-note{
+  margin-top:14px;
+  font-size:.75rem;
+  color:#6b7280;
+}
+
+/* Mensagem de erro */
+.erro{
+  margin-top:8px;
+  color:#dc2626;
+  font-size:.85rem;
+}
+
+/* Responsivo: empilha colunas no mobile */
+@media (max-width:720px){
+  .login-panel{
+    grid-template-columns:1fr;
+  }
+  .login-left{
+    align-items:center;
+    text-align:center;
+    border-right:none;
+    border-bottom:1px solid rgba(209,213,219,0.9);
+  }
+}
+
+/* Fade-in suave do card */
+@keyframes loginFadeIn{
+  from{ opacity:0; transform:translateY(12px); }
+  to  { opacity:1; transform:translateY(0); }
+}

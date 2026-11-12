@@ -1,0 +1,153 @@
+/* =========================================================
+   Grades table column widths
+========================================================= */
+
+.grades-table {
+    --grades-col-id-width: 70px;
+    --grades-col-name-width: 180px;
+    --grades-col-description-width: 420px;
+    --grades-col-status-width: 120px;
+    --grades-col-actions-width: 110px;
+
+    /*
+   * These variables are required because the first three
+   * columns use table-freeze-left-3.
+   */
+    --table-freeze-col-1-width: var(--grades-col-id-width);
+    --table-freeze-col-2-width: var(--grades-col-name-width);
+    --table-freeze-col-3-width: var(--grades-col-description-width);
+
+    width: 100%;
+    min-width: calc(var(--grades-col-id-width) + var(--grades-col-name-width) + var(--grades-col-description-width) + var(--grades-col-status-width) + var(--grades-col-actions-width));
+
+    table-layout: fixed;
+}
+
+/* Column definitions */
+
+.grades-table .grades-col-id {
+    width: var(--grades-col-id-width);
+}
+
+.grades-table .grades-col-name {
+    width: var(--grades-col-name-width);
+}
+
+.grades-table .grades-col-description {
+    width: var(--grades-col-description-width);
+}
+
+.grades-table .grades-col-status {
+    width: var(--grades-col-status-width);
+}
+
+.grades-table .grades-col-actions {
+    width: var(--grades-col-actions-width);
+}
+
+/* Reinforce widths for frozen columns */
+
+.grades-table :is(th, td):nth-child(1) {
+    width: var(--grades-col-id-width);
+    min-width: var(--grades-col-id-width);
+    max-width: var(--grades-col-id-width);
+}
+
+.grades-table :is(th, td):nth-child(2) {
+    width: var(--grades-col-name-width);
+    min-width: var(--grades-col-name-width);
+    max-width: var(--grades-col-name-width);
+}
+
+.grades-table :is(th, td):nth-child(3) {
+    width: var(--grades-col-description-width);
+    min-width: var(--grades-col-description-width);
+    max-width: var(--grades-col-description-width);
+}
+
+.grades-table :is(th, td):nth-child(4) {
+    width: var(--grades-col-status-width);
+    min-width: var(--grades-col-status-width);
+    max-width: var(--grades-col-status-width);
+}
+
+.grades-table :is(th, td):nth-child(5) {
+    width: var(--grades-col-actions-width);
+    min-width: var(--grades-col-actions-width);
+    max-width: var(--grades-col-actions-width);
+}
+
+/* =========================================================
+   Cabeçalho integrado à tabela (título + filtros + ações)
+========================================================= */
+
+.cad-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.cad-toolbar__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 8px;
+}
+
+.cad-toolbar__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    font-size: 18px;
+}
+
+.cad-toolbar__title h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.cad-toolbar__title p {
+    margin: 0;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.cad-toolbar > .cad-toolbar__filters {
+    flex: 0 1 auto;
+    width: auto;
+    margin: 0;
+}
+
+.cad-toolbar__actions {
+    flex: 0 0 auto;
+    margin-left: auto;
+    align-items: center;
+}
+
+.grades-table .row-actions .action-icons {
+    justify-content: center;
+}
+
+.grades-header-actions {
+    align-items: center;
+    gap: 12px;
+}
+
+.grades-header-actions h2 {
+    margin: 0;
+}
+
+.filter-actions {
+    display: flex;
+    align-items: flex-end;
+    align-self: stretch;
+}

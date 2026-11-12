@@ -1,0 +1,201 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ productsFiscalBatch.html — Vínculos Fiscais de Produtos | CONSART ERP      ║
+     ║ Path: backend/public/productsFiscalBatch/productsFiscalBatch.html          ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated + sortableTable + table-footer           ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Vincular em lote: modals.css + modal.js                                 ║
+     ║ API: /api/v2/products-fiscal                                               ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VÍNCULOS FISCAIS DE PRODUTOS | CONSART ERP</title>
+
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+
+  <!-- Design system CONSART (importa modals, fields, summary, sortableTable, actionIcons...) -->
+  <link rel="stylesheet" href="/public/includes/css/style.css">
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+
+    <section class="table-layout-integrated table-max-height-700">
+
+      <!-- FILTROS + AÇÕES (div, não <header>: topGradientBar injeta o título) -->
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="pfb-search-input">Buscar</label>
+            <input id="pfb-search-input" type="search" autocomplete="off"
+              placeholder="Código, descrição, código de barras, NCM ou classificação...">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-10 fields-font-3">
+            <label for="pfb-linked-filter">Situação</label>
+            <select id="pfb-linked-filter">
+              <option value="">Todos</option>
+              <option value="linked">Vinculados</option>
+              <option value="unlinked">Sem vínculo</option>
+            </select>
+          </div>
+
+          <button id="pfb-search-btn" type="button" class="btn btn-filter btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg><span>Aplicar Filtros</span></button>
+          <button id="pfb-clear-btn" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="pfb-open-link" type="button" class="btn btn-new btn-sm" disabled>🔗 Vincular selecionados (<span id="pfb-selected-count">0</span>)</button>
+            <button id="pfb-unlink-selected" type="button" class="btn btn-danger btn-sm" disabled>Desvincular selecionados</button>
+            <button id="pfb-reload-btn" type="button" class="btn btn-load btn-sm" title="Recarregar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Recarregar</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LISTA -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="productsfiscalbatch.pfb-products-body">
+        <table id="pfb-table" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-1">
+                <input id="pfb-select-all" type="checkbox" aria-label="Selecionar todos os produtos da página">
+              </th>
+              <th class="table-col-w-2 table-sortable" data-sort-column="product_id" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>ID <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-3 table-sortable" data-sort-column="product_code" aria-sort="ascending"><button
+                  type="button" class="table-sort-button is-sorted" data-sort-button
+                  data-sort-direction="asc">SKU <span data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="description" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Descrição <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="ncm_code" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>NCM <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="cest_code" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>CEST <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="classification_name" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Classificação fiscal <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-sortable th-left" data-sort-column="profile_name" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Perfil fiscal <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="fiscal_is_linked" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Situação <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-3">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="pfb-products-body"></tbody>
+        </table>
+      </div>
+
+      <!-- RODAPÉ PADRÃO -->
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="apTableInfo">0 registros encontrados</span>
+          </div>
+
+          <div class="summary summary--center summary-gap-8">
+            <div class="summary-pill summary-pill--primary" id="pfb-sum-linked">0 vinculados</div>
+            <div class="summary-pill summary-pill--warning" id="pfb-sum-unlinked">0 sem vínculo</div>
+            <div class="summary-pill summary-pill--info" id="pfb-sum-selected" style="display:none">0 selecionados</div>
+          </div>
+        </div>
+
+        <div class="table-footer__pagination">
+          <button type="button" id="btnPrevious" class="btn btn-clean btn-sm">Anterior</button>
+          <span id="pageInfo">Página 1 de 1</span>
+          <button type="button" id="btnNext" class="btn btn-new btn-sm">Próxima</button>
+        </div>
+
+        <div class="table-footer__page-size">
+          <label for="pageSize">Mostrar</label>
+          <select id="pageSize" class="table-footer__page-size-select" name="pageSize">
+            <option value="10">10 linhas</option>
+            <option value="20">20 linhas</option>
+            <option value="50" selected>50 linhas</option>
+            <option value="100">100 linhas</option>
+          </select>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — VINCULAR CLASSIFICAÇÃO FISCAL         │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-8 modal-header-color-3 modal-footer-color-3" id="pfb-link-modal" role="dialog"
+    aria-modal="true" aria-labelledby="pfb-link-title" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="pfb-link-title">Vincular classificação fiscal</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+
+            <!-- PRODUTOS -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Produtos</h4>
+              <div class="summary-pill summary-pill--success" id="pfb-link-count">0 produtos selecionados</div>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="pfb-link-products">Selecionados</label>
+              <input id="pfb-link-products" type="text" readonly>
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- CLASSIFICAÇÃO -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Classificação fiscal</h4>
+              <button id="pfb-pick-classification" type="button" class="btn btn-toolbar btn-sm">🔍 Selecionar classificação</button>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="pfb-classification-name">Classificação *</label>
+              <input id="pfb-classification-name" type="text" readonly placeholder="Nenhuma classificação selecionada">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pfb-classification-ncm">NCM</label>
+              <input id="pfb-classification-ncm" type="text" readonly>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="pfb-classification-cest">CEST</label>
+              <input id="pfb-classification-cest" type="text" readonly>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-full">
+              <label for="pfb-classification-profile">Perfil fiscal (herdado da classificação)</label>
+              <input id="pfb-classification-profile" type="text" readonly>
+            </div>
+          </div>
+        </div>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="pfb-apply-batch" type="button" class="btn btn-new btn-sm">🔗 Aplicar vínculo</button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="./js/productsFiscalBatch.init.js?v=20261107-1"></script>
+</body>
+
+</html>
