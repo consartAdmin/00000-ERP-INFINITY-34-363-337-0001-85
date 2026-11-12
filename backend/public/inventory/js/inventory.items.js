@@ -153,27 +153,34 @@ export async function resolveProductStockIdBySku(productCode) {
 
   if (state.__productStockIdBySkuCache.has(sku)) return state.__productStockIdBySkuCache.get(sku);
 
-  const tryGetIdFromRow = (row) => {
-    const v = row?.product_stock_id ?? row?.productStockId ?? row?.id ?? row?.product_stock?.product_stock_id ?? null;
-    return (v != null && isNumericId(v)) ? Number(v) : (Number.isFinite(Number(v)) ? Number(v) : null);
+  // A API responde { ok, data: {...} } ou { rows: [...] }. Só aceita a linha
+  // do próprio SKU: a listagem geral ignora product_code e devolvia o estoque
+  // de outro produto (o lote rápido ia parar no produto errado).
+  const idFromRow = (row) => {
+    if (!row || typeof row !== 'object') return null;
+    const code = String(row.product_code ?? '').trim();
+    if (code && normalizeSku10(code) !== sku) return null;
+    const v = Number(row.product_stock_id ?? row.productStockId ?? row.product_stock?.product_stock_id);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  const rowsOf = (data) => {
+    const body = data?.data ?? data;
+    if (Array.isArray(body)) return body;
+    if (Array.isArray(body?.rows)) return body.rows;
+    return body && typeof body === 'object' ? [body] : [];
   };
 
   const candidates = [
     `${PRODUCTS_STOCK_API_BASE}/by-code?product_code=${encodeURIComponent(sku)}`,
-    `${PRODUCTS_STOCK_API_BASE}?product_code=${encodeURIComponent(sku)}&limit=1&offset=0`,
-    `${PRODUCTS_STOCK_API_BASE}?search=${encodeURIComponent(sku)}&limit=1&offset=0`,
+    `${PRODUCTS_STOCK_API_BASE}?q=${encodeURIComponent(sku)}&limit=20&offset=0`,
   ];
 
   for (const url of candidates) {
     try {
       const data = await apiGet(url);
-
-      let id = tryGetIdFromRow(data);
-      if (id) { state.__productStockIdBySkuCache.set(sku, id); return id; }
-
-      const rows = Array.isArray(data?.rows) ? data.rows : Array.isArray(data) ? data : [];
-      if (rows.length) {
-        id = tryGetIdFromRow(rows[0]);
+      for (const row of rowsOf(data)) {
+        if (!String(row?.product_code ?? '').trim() && url.includes('?q=')) continue;
+        const id = idFromRow(row);
         if (id) { state.__productStockIdBySkuCache.set(sku, id); return id; }
       }
     } catch (e) {
