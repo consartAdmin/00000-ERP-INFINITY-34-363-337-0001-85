@@ -48,6 +48,7 @@ function erpContext(req) {
     authorization: req.get('authorization') || (req.get('x-access-token') ? `Bearer ${req.get('x-access-token')}` : ''),
     company: req.get('x-erp-company') || req.query?.company || '',
     userName: req.user?.name,
+    userId: req.user?.user_id ?? req.user?.id,
   };
 }
 
