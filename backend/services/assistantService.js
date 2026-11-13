@@ -16,6 +16,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import customersApi from '../repositories/customers/customers.index.js';
 import productsApi from '../repositories/products/products.index.js';
+import { countCustomers } from './assistantCounts.js';
 
 const DEFAULT_MODEL = 'claude-sonnet-5-5';
 const MAX_TURNS = 10;
@@ -234,8 +235,27 @@ const TOOLS = [
     name: 'buscar_clientes',
     description:
       'Busca clientes por nome fantasia, razão social ou CNPJ/CPF. Devolve o customer_id, usado em outras ferramentas. ' +
-      'Se não achar, tente parte do nome, com e sem acento. Até 10 clientes.',
+      'Se não achar, tente parte do nome, com e sem acento. Até 10 clientes. Para totais ("quantos clientes"), use contar_clientes.',
     input_schema: obj({ termo: str('Texto a procurar.') }, ['termo']),
+  },
+  {
+    name: 'contar_clientes',
+    description:
+      'Conta clientes cadastrados (total exato, sem limite), com filtros opcionais, e pode agrupar. ' +
+      'Use para "quantos clientes tenho", "quantos clientes na minha carteira", "quantos por vendedor/cidade/estado", ' +
+      '"quantos inativos", "quantos sem vendedor". "Minha carteira" = minha_carteira true (clientes do vendedor ' +
+      'vinculado ao usuário; se o usuário não tiver vendedor, conta a empresa toda e avisa). Padrão: só ativos.',
+    input_schema: obj({
+      situacao: str('ATIVOS (padrão) | INATIVOS | TODOS'),
+      minha_carteira: { type: 'boolean', description: 'true = só clientes do vendedor do usuário logado' },
+      vendedor: str('Nome ou apelido do vendedor (opcional)'),
+      vendedor_id: str('id do vendedor (opcional)'),
+      sem_vendedor: { type: 'boolean', description: 'true = só clientes sem vendedor' },
+      cidade: str('Cidade exata (opcional)'),
+      uf: str('Sigla do estado, ex.: SP (opcional)'),
+      segmento: str('Segmento (opcional)'),
+      agrupar_por: str('vazio | vendedor | cidade | uf | segmento | status | ativo'),
+    }),
   },
   {
     name: 'relatorio_vendas',
@@ -421,6 +441,7 @@ Regras:
 - Converta datas relativas ("hoje", "essa semana", "mês passado") em datas reais a partir de hoje.
 - Você consulta os dados, mas não cria, altera, baixa nem exclui nada. Se pedirem, explique com gentileza e diga em qual app ou tela fazer.
 - A única ação é o e-mail de cobrança: use preparar_email_cobranca. Ele NÃO envia; o usuário confirma no app (botão Enviar ou falando "pode enviar"). Na fala, diga para quem vai, o valor total e peça a confirmação.
+- Para totais e contagens de clientes use contar_clientes (nunca conte pela busca, que traz no máximo 10).
 - Se a pergunta for ambígua, responda o mais provável e diga o que assumiu, ou faça uma pergunta curta.
 - Se uma ferramenta falhar ou não trouxer dados, diga isso com franqueza.
 - Pode conversar sobre assuntos gerais de gestão, mas o foco é a empresa.
@@ -484,6 +505,8 @@ async function runTool(ctx, name, input = {}) {
         ativo: r.is_active === false ? false : null,
       }));
     }
+    case 'contar_clientes':
+      return countCustomers(input, ctx);
     case 'relatorio_vendas':
       return erpGet(ctx, '/api/reports/sales', {
         dateStart: input.data_inicio, dateEnd: input.data_fim, customerId: input.cliente_id,
