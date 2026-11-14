@@ -79,10 +79,17 @@ function describeFilters(filters = {}) {
  * @param {boolean}  [data.showEmpty=true] imprime itens sem descrição/funções
  * @param {boolean}  [data.showPaths=true] imprime o caminho (URL) das telas
  * @param {boolean}  [data.showNotes=true] imprime as observações
+ * @param {boolean}  [data.commercial=false] catálogo comercial para vendedores:
+ *   sem status, tipo, sistemas, software, caminho, observações e KPIs
  */
 export async function generateModuleDocsConsartPdf({
-  rows = [], summary = {}, filters = {}, showEmpty = true, showPaths = true, showNotes = true,
+  rows = [], summary = {}, filters = {}, showEmpty = true, showPaths = true, showNotes = true, commercial = false,
 }) {
+  if (commercial) {
+    showEmpty = false;
+    showPaths = false;
+    showNotes = false;
+  }
   const doc = new PDFDocument({
     size: 'A4',
     margins: { top: 40, left: PAGE.margin, right: PAGE.margin, bottom: PAGE.footerH + 16 },
@@ -105,19 +112,28 @@ export async function generateModuleDocsConsartPdf({
   };
 
   // ── Cabeçalho (layout padrão) ───────────────────────────────────
-  const REPORT_TITLE = 'Documentação dos Módulos';
+  const REPORT_TITLE = commercial ? 'Catálogo de Módulos — ERP Infinity' : 'Documentação dos Módulos';
   const logo = defaultLogo();
+  const commercialScope = join([
+    clean(filters.moduleName) ? `Módulo: ${clean(filters.moduleName)}` : '',
+    clean(filters.q) ? `Busca: "${clean(filters.q)}"` : '',
+  ]) || 'Todos os módulos';
   const headerBottom = drawFullHeader(doc, {
     title: REPORT_TITLE,
-    subtitle: 'Situação da documentação por módulo',
-    info: [['Filtros', pdfText(describeFilters(filters))]],
+    subtitle: commercial ? 'O que cada módulo faz pela sua empresa' : 'Situação da documentação por módulo',
+    info: [[commercial ? 'Conteúdo' : 'Filtros', pdfText(commercial ? commercialScope : describeFilters(filters))]],
     logo: logo || undefined,
   });
-  autoCompactHeader(doc, { title: REPORT_TITLE, subtitle: 'Documentação dos Módulos (continuação)', logo: logo || undefined });
+  autoCompactHeader(doc, {
+    title: REPORT_TITLE,
+    subtitle: `${commercial ? 'Catálogo de Módulos' : 'Documentação dos Módulos'} (continuação)`,
+    logo: logo || undefined,
+  });
 
   // Resumo
   const total = Number(summary.total || rows.length);
-  doc.y = drawKpis(doc, headerBottom + 14, [
+  if (commercial) doc.y = headerBottom + 14;
+  else doc.y = drawKpis(doc, headerBottom + 14, [
     { label: 'Itens', value: String(total), hint: total === 1 ? 'item no relatório' : 'itens no relatório', color: SERIES[0] },
     { label: 'Documentados', value: String(summary.DOCUMENTADO || 0), hint: 'Status documentado', color: C.green },
     { label: 'A revisar', value: String(summary.REVISAR || 0), hint: 'Status revisar', color: C.amber },
@@ -146,7 +162,7 @@ export async function generateModuleDocsConsartPdf({
   }
 
   function measureItem(r, x, w) {
-    let h = r.software_label ? 30 : 18;
+    let h = r.software_label && !commercial ? 30 : 18;
     doc.font('Helvetica').fontSize(9);
     if (r.description) h += doc.heightOfString(r.description, { width: w, lineGap: 1.5 }) + 4;
     r.functions_list.forEach((f) => { h += doc.heightOfString(f, { width: w - 12, lineGap: 1 }) + 1; });
@@ -156,7 +172,8 @@ export async function generateModuleDocsConsartPdf({
   }
 
   function item(r) {
-    const indent = Math.min(r.level, 3) * 14;
+    // No catálogo comercial todas as telas ficam alinhadas sob a faixa do módulo
+    const indent = commercial ? 0 : Math.min(r.level, 3) * 14;
     const x = left + indent;
     const w = right - x;
 
@@ -169,15 +186,17 @@ export async function generateModuleDocsConsartPdf({
 
     const title = `${r.name}${r.is_active ? '' : ' (inativo)'}`;
     doc.font('Helvetica-Bold').fontSize(isModule ? 10.5 : 9.5).fillColor(r.is_active ? '#111' : '#94a3b8')
-      .text(title, x + (isModule ? 6 : 0), y, { width: w - 220, lineBreak: false, ellipsis: true });
-    doc.font('Helvetica').fontSize(7.5).fillColor(MUTED)
-      .text(join([r.type_label, r.systems_label]), right - 215, y + 1.5, { width: 140, align: 'right', lineBreak: false });
-    statusPill(r.doc_status, r.doc_status_label, right - 2, y - 0.5);
+      .text(title, x + (isModule ? 6 : 0), y, { width: commercial ? w : w - 220, lineBreak: false, ellipsis: true });
+    if (!commercial) {
+      doc.font('Helvetica').fontSize(7.5).fillColor(MUTED)
+        .text(join([r.type_label, r.systems_label]), right - 215, y + 1.5, { width: 140, align: 'right', lineBreak: false });
+      statusPill(r.doc_status, r.doc_status_label, right - 2, y - 0.5);
+    }
 
     doc.x = x;
     doc.y = y + (isModule ? 21 : 15);
 
-    if (r.software_label) {
+    if (r.software_label && !commercial) {
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor(GREEN)
         .text(`Software: ${r.software_label}`, x, doc.y, { width: w });
       doc.moveDown(0.2);
@@ -244,7 +263,7 @@ export async function generateModuleDocsConsartPdf({
 
   if (!printable.length) {
     doc.font('Helvetica-Oblique').fontSize(10).fillColor('#64748b')
-      .text('Nenhum módulo encontrado com os filtros escolhidos.', left, doc.y, { width, align: 'center' });
+      .text(commercial ? 'Nenhum módulo documentado para o catálogo.' : 'Nenhum módulo encontrado com os filtros escolhidos.', left, doc.y, { width, align: 'center' });
   }
 
   let currentModule = null;

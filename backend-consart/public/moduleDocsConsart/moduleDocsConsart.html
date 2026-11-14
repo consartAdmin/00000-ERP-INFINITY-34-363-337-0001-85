@@ -3,6 +3,8 @@
      ║ Controle interno: árvore própria de módulos/submenus/telas       ║
      ║ (copiada do menu; o menu do sistema não muda) com descrição,     ║
      ║ funções e observações de cada um. Gera PDF filtrado.             ║
+     ║ Lista = módulos do ERP Infinity ("Importar do ERP Infinity").    ║
+     ║ Visão "Catálogo comercial": cards para os vendedores + PDF.      ║
      ║ API: /api/module-docs-consart                                    ║
      ╚══════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
@@ -26,6 +28,14 @@
       <div class="table-layout-integrated__filter">
         <div class="fields-inline fields-inline-scroll fields-gap-3">
 
+          <div class="fields fields-h-5 fields-w-12 fields-font-3">
+            <span class="label">Visão</span>
+            <select id="viewMode">
+              <option value="table">Tabela (documentação)</option>
+              <option value="catalog">Catálogo comercial</option>
+            </select>
+          </div>
+
           <div class="fields fields-h-5 fields-w-17 fields-font-3">
             <span class="label">Buscar</span>
             <input id="q" type="text" placeholder="Nome, descrição, função..." />
@@ -38,7 +48,7 @@
             </select>
           </div>
 
-          <div class="fields fields-h-5 fields-w-8 fields-font-3">
+          <div class="fields fields-h-5 fields-w-8 fields-font-3" data-view="table">
             <span class="label">Tipo</span>
             <select id="filterType">
               <option value="">Todos</option>
@@ -49,7 +59,7 @@
             </select>
           </div>
 
-          <div class="fields fields-h-5 fields-w-8 fields-font-3">
+          <div class="fields fields-h-5 fields-w-8 fields-font-3" data-view="table">
             <span class="label">Sistema</span>
             <select id="filterSystem">
               <option value="">Todos</option>
@@ -60,14 +70,14 @@
             </select>
           </div>
 
-          <div class="fields fields-h-5 fields-w-10 fields-font-3">
+          <div class="fields fields-h-5 fields-w-10 fields-font-3" data-view="table">
             <span class="label">Software</span>
             <select id="filterSoftware">
               <option value="">Todos</option>
             </select>
           </div>
 
-          <div class="fields fields-h-5 fields-w-10 fields-font-3">
+          <div class="fields fields-h-5 fields-w-10 fields-font-3" data-view="table">
             <span class="label">Documentação</span>
             <select id="filterStatus">
               <option value="">Todas</option>
@@ -77,7 +87,7 @@
             </select>
           </div>
 
-          <div class="fields fields-h-5 fields-w-8 fields-font-3">
+          <div class="fields fields-h-5 fields-w-8 fields-font-3" data-view="table">
             <span class="label">Status</span>
             <select id="filterActive">
               <option value="true">Ativos</option>
@@ -88,10 +98,11 @@
 
           <div class="btn-inline btn-gap-4">
             <button id="btnSearch" class="btn btn-search btn-sm" type="button">Buscar</button>
-            <button id="btnNew" class="btn btn-new btn-sm" type="button">➕ Novo Módulo</button>
-            <button id="btnImport" class="btn btn-toolbar btn-sm" type="button" title="Traz do menu os itens que ainda não estão na documentação (o menu não muda)">Importar do menu</button>
-            <button id="btnSoftware" class="btn btn-toolbar btn-sm" type="button" title="Cadastro dos softwares (Consart Infinity, Logistics, ProdNex...)">Softwares</button>
-            <button id="btnPdf" class="btn btn-pdf btn-sm" type="button">Gerar PDF</button>
+            <button id="btnNew" class="btn btn-new btn-sm" type="button" data-view="table">➕ Novo Módulo</button>
+            <button id="btnImport" class="btn btn-toolbar btn-sm" type="button" data-view="table" title="Traz os módulos do ERP Infinity que ainda não estão aqui e preenche o texto comercial dos itens vazios (nenhum menu muda)">Importar do ERP Infinity</button>
+            <button id="btnSoftware" class="btn btn-toolbar btn-sm" type="button" data-view="table" title="Cadastro dos softwares (Consart Infinity, Logistics, ProdNex...)">Softwares</button>
+            <button id="btnPdf" class="btn btn-pdf btn-sm" type="button" data-view="table">Gerar PDF</button>
+            <button id="btnCatalogPdf" class="btn btn-pdf btn-sm" type="button" title="PDF limpo para enviar ao cliente: só os itens documentados, sem status nem campos técnicos">PDF Comercial</button>
             <button id="btnReload" class="btn btn-load btn-sm" type="button">Recarregar</button>
             <button id="btnBack" class="btn btn-back btn-sm" type="button">Voltar</button>
           </div>
@@ -101,7 +112,7 @@
         </div>
       </div>
 
-      <div class="table-scroll table-height-flex table-row-h-28">
+      <div class="table-scroll table-height-flex table-row-h-28" data-view="table">
         <table id="docsTable" class="table table-fixed table-zebra table-zebra-hover table-sticky-head docs-table">
           <thead>
             <tr>
@@ -155,7 +166,25 @@
         <div id="docsEmpty" class="docs-empty" hidden>Nenhum módulo encontrado com os filtros atuais.</div>
       </div>
 
-      <footer class="table-footer">
+      <!-- Catálogo comercial (para os vendedores): só itens "Documentado" e ativos -->
+      <div id="catalogView" class="table-scroll table-height-flex" data-view="catalog" hidden>
+        <div id="catalogBody" class="section section-p-4 section-gap-4 section-border-none section-transparent"></div>
+      </div>
+
+      <footer class="table-footer" data-view="catalog" hidden>
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill-success summary-left-space-3">
+            <span id="catalogInfo">0 telas no catálogo</span>
+          </div>
+          <span id="catalogReview" class="summary-pill summary-pill--warning" hidden></span>
+          <button id="btnApproveReview" class="btn btn-toolbar btn-sm" type="button" hidden title="Marca como Documentado todos os itens em Revisar">Aprovar todos a revisar</button>
+        </div>
+        <div class="table-footer__pagination">
+          Mostra só o que está "Documentado". Itens internos ficam de fora.
+        </div>
+      </footer>
+
+      <footer class="table-footer" data-view="table">
         <div class="table-footer__info docs-summary">
           <div class="summary-pill summary-pill-success summary-left-space-3">
             <span id="docsInfo">0 itens</span>
@@ -429,7 +458,7 @@
   <script>window.ERP_COMPANY = 'CONSART';</script>
   <script src="/public/includes/js/erpCompany.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/moduleDocsConsart/moduleDocsConsart.js?v=4"></script>
+  <script type="module" src="/public/moduleDocsConsart/moduleDocsConsart.js?v=5"></script>
 </body>
 
 </html>
