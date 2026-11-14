@@ -8,6 +8,7 @@ import pool from '../../config/db.js';
 import { TB_SALES, TB_SALES_ITEMS, ORIGIN, PAYMENT_CODES } from './pdvStarter.constants.js';
 import { resolveSaleIdStrategy } from './pdvStarterSchema.repository.js';
 import { debitSaleStock } from './pdvStarterStock.repository.js';
+import { isNfceEnabled, getIssuerForReceipt } from './pdvStarterNfce.repository.js';
 import { getSession } from './pdvStarterCash.repository.js';
 import { toMoney, toQty, cleanText, onlyDigits, pdvError } from './pdvStarter.utils.js';
 
@@ -119,6 +120,16 @@ async function insertSaleRow(client, sale, user) {
   return rows[0];
 }
 
+/**
+ * NFC-e em homologação (testes na SEFAZ): a venda é gravada mas não baixa estoque.
+ * Se a API fiscal não responder, o ambiente fica desconhecido e o estoque é baixado normalmente.
+ */
+async function isHomologation() {
+  if (!isNfceEnabled()) return false;
+  const issuer = await getIssuerForReceipt().catch(() => null);
+  return issuer?.environment === 'homologacao';
+}
+
 export async function createSale(payload, user) {
   const sale = normalizeSale(payload);
 
@@ -129,6 +140,8 @@ export async function createSale(payload, user) {
     const session = await getSession(sale.session_id);
     if (!session) throw pdvError('Caixa da venda não encontrado.', 'SESSION_NOT_FOUND', 404);
   }
+
+  const homologation = await isHomologation();
 
   const client = await pool.connect();
   try {
@@ -145,7 +158,9 @@ export async function createSale(payload, user) {
       );
     }
 
-    const stock = await debitSaleStock(client, { ...row, pdv_uuid: sale.pdv_uuid }, sale.items);
+    const stock = homologation
+      ? { status: 'HOMOLOGACAO', details: [{ status: 'SEM_BAIXA', reason: 'NFC-e em ambiente de homologação' }] }
+      : await debitSaleStock(client, { ...row, pdv_uuid: sale.pdv_uuid }, sale.items);
     const { rows } = await client.query(
       `UPDATE ${TB_SALES} SET stock_status = $2, stock_details = $3::jsonb WHERE sale_id = $1 RETURNING *`,
       [row.sale_id, stock.status, JSON.stringify(stock.details)],
