@@ -156,3 +156,8 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);border
 .busy b{font-size:18px}.busy span{color:#64748b;font-size:14px}
 .spin{width:44px;height:44px;border-radius:50%;border:4px solid #dcfce7;border-top-color:#16a34a;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* NFC-e na tela Vendas: série, número e ambiente */
+.nfi{font-size:11px;color:var(--mut);margin-top:4px;white-space:nowrap}
+.nfi .envh{color:#b45309;font-weight:700}.nfi .envp{color:#15803d;font-weight:700}
+.btn.warn{border-color:#f59e0b;color:#b45309}

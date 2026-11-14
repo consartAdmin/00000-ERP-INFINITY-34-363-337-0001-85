@@ -324,7 +324,7 @@ function statusChips() {
   const pending = state.queue.length;
   return `<span class="chip ${state.online ? 'ok' : 'off'}"><i></i>${state.online ? 'ERP online' : 'Sem internet'}</span>
     <span class="chip ${state.config.printer ? 'ok' : 'warn'}">${icon('printer', 14)}${state.config.printer ? 'Impressora' : 'Sem impressora'}</span>
-    <span class="chip ${nfceOn() ? 'ok' : 'warn'}" title="${nfceOn() ? 'As vendas saem com NFC-e (modelo 65)' : 'O ERP não está com a emissão de NFC-e ligada: as vendas saem com cupom não fiscal'}">${icon('cloud', 14)}${nfceOn() ? 'NFC-e ativa' : 'NFC-e desligada'}</span>
+    <span class="chip ${nfceOn() ? 'ok' : 'warn'}" title="${nfceOn() ? 'As vendas saem com NFC-e (modelo 65)' : 'O ERP não está com a emissão de NFC-e ligada: as vendas saem com cupom não fiscal'}">${icon('cloud', 14)}${nfceOn() ? `NFC-e ativa${state.config.nfce?.issuer?.environment ? ` · ${state.config.nfce.issuer.environment === 'producao' ? 'Produção' : 'Homologação'}` : ''}` : 'NFC-e desligada'}</span>
     <span class="chip ${pending ? 'warn' : 'ok'}">${icon('cloud', 14)}${pending ? `${pending} venda(s) na fila` : `Sincronizado ${hhmm(state.lastSync)}`}</span>`;
 }
 
@@ -406,13 +406,28 @@ function viewHistory() {
     if (h.status !== 'SINCRONIZADA') return '<span class="pill y">NFC-e após sincronizar</span>';
     return `<span class="pill y" title="${esc(h.nfce?.message || '')}">NFC-e pendente</span>`;
   };
-  const nfceBtn = (h) => (nfceOn() && h.status === 'SINCRONIZADA' && h.nfce?.status !== 'AUTORIZADA'
-    ? `<span class="btn" data-nfce="${esc(h.pdv_uuid)}">${icon('cloud', 14)} Emitir NFC-e</span> ` : '');
+  // Série, número e ambiente da NFC-e (o ambiente vem da nota ou, antes da 1ª tentativa, do emitente)
+  const nfceInfo = (h) => {
+    if (!nfceOn()) return '';
+    const n = h.nfce || {};
+    const env = n.environment || state.config.nfce?.issuer?.environment;
+    const parts = [];
+    if (n.series != null) parts.push(`Série ${esc(String(n.series).padStart(3, '0'))}`);
+    if (n.number != null) parts.push(`Nº ${esc(String(n.number).padStart(9, '0'))}`);
+    if (env) parts.push(env === 'producao' ? '<b class="envp">Produção</b>' : '<b class="envh">Homologação</b>');
+    return parts.length ? `<div class="nfi">${parts.join(' · ')}</div>` : '';
+  };
+  const RETRANSMIT = ['REJEITADA', 'ERRO', 'DENEGADA', 'PROCESSANDO'];
+  const nfceBtn = (h) => {
+    if (!nfceOn() || h.status !== 'SINCRONIZADA' || h.nfce?.status === 'AUTORIZADA' || h.nfce?.status === 'CANCELADA') return '';
+    const again = RETRANSMIT.includes(h.nfce?.status) || h.nfce?.number != null;
+    return `<span class="btn${again ? ' warn' : ''}" data-nfce="${esc(h.pdv_uuid)}">${icon('cloud', 14)} ${again ? 'Retransmitir' : 'Emitir NFC-e'}</span> `;
+  };
   return `<main class="fx"><div class="sec fill"><div class="sh"><b>Vendas</b><span class="sp"></span><div class="btn" data-act="sync">${icon('cloud', 16)} Sincronizar agora</div></div>
     <div class="scroll"><table class="tbl"><thead><tr><th>Nº</th><th>Hora</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th class="r">Total</th><th>ERP</th><th>${nfceOn() ? 'NFC-e' : ''}</th><th></th></tr></thead><tbody>
     ${list.map((h) => `<tr><td>${esc(h.number)}${h.sale_id ? ` <span class="mut">(#${esc(h.sale_id)})</span>` : ''}</td><td>${hhmm(h.sold_at)}</td><td>${esc(h.customer_doc || 'Consumidor final')}</td><td>${h.items.length}</td>
       <td>${h.payments.map((p) => esc(p.label)).join(', ')}</td><td class="r"><b>${money(h.total)}</b></td><td>${pill(h)}${h.stock_status === 'PARCIAL' ? ' <span class="pill y" title="Parte dos itens sem lote com saldo">Estoque parcial</span>' : ''}</td>
-      <td>${nfcePill(h)}</td>
+      <td>${nfcePill(h)}${nfceInfo(h)}</td>
       <td class="r" style="white-space:nowrap">${nfceBtn(h)}<span class="btn" data-reprint="${esc(h.pdv_uuid)}">${icon('printer', 14)} Reimprimir</span></td></tr>`).join('') || '<tr><td colspan="9" class="mut">Nenhuma venda neste caixa.</td></tr>'}
     </tbody></table></div></div></main>`;
 }
@@ -584,7 +599,7 @@ document.addEventListener('click', (e) => {
 async function retryNfce(pdvUuid) {
   const hist = state.history.find((h) => h.pdv_uuid === pdvUuid);
   if (!hist) return;
-  showBusy('Emitindo NFC-e…', 'Aguardando a autorização da SEFAZ');
+  showBusy(hist.nfce?.number != null || ['REJEITADA', 'ERRO'].includes(hist.nfce?.status) ? 'Retransmitindo NFC-e…' : 'Emitindo NFC-e…', 'Aguardando a autorização da SEFAZ');
   const res = await api('POST', `/api/pdv/vendas/${encodeURIComponent(pdvUuid)}/nfce`, undefined, 70000);
   closeModal();
   if (!res.ok) return toast(res.data?.message || 'Não foi possível emitir a NFC-e.', 'err');
