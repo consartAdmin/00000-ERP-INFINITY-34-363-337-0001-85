@@ -14,11 +14,16 @@ import https from 'node:https';
 import dns from "dns"; // (pode ser usado em checks futuros)
 import { AsyncLocalStorage } from "node:async_hooks";
 import { erpCompanyContext } from './utils/erpCompanyContext.js';
+import { auditUserContext, installPgAuditUser } from './utils/auditUserContext.js';
+import { ensureAuditTriggers } from './repositories/auditLogs/auditTriggers.ensure.js';
 import { queueErrorEmail, sendErrorEmail } from "./errorEmailReporter.js";
 
 import jwt from "jsonwebtoken";
 import { Pool } from "pg";
 import pool from "./config/db.js";
+
+// Auditoria: toda conexão do pool leva o usuário da request (quem alterou → auditLogs)
+installPgAuditUser();
 
 /* ╔══════════════════════════════════════════════════════════╗
    ║ Auth — JWT (login) OU Master Admin Token (ENV)           ║
@@ -329,6 +334,9 @@ app.use((req, res, next) => {
 
 // Empresa da tela (BH3 x CONSART): os repositórios escolhem a tabela por ela
 app.use(erpCompanyContext);
+
+// Usuário da request (JWT, sem bloquear) para a auditoria automática do banco
+app.use(auditUserContext);
 
 // Access log inteligente
 app.use((req, res, next) => {
@@ -1659,6 +1667,8 @@ async function runStartupJobs() {
       { name: "initNfeInboxController", fn: () => initNfeInboxController() },
       { name: "initEcommerceOrdersController", fn: () => ecommerceOrdersController.initEcommerceOrdersController() },
       { name: "initOrdersBillingController", fn: () => initOrdersBillingController() },
+      // Auditoria automática: trigger em todas as tabelas grava quem incluiu/alterou/excluiu em auditLogs
+      { name: "ensureAuditTriggers", fn: async () => console.log("[boot] ensureAuditTriggers:", JSON.stringify(await ensureAuditTriggers())) },
    ];
 
    for (const job of jobs) {
