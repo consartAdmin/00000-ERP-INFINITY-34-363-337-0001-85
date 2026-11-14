@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import pool from '../../config/db.js';
 import { TB_SALES, TB_SALES_ITEMS, ORIGIN, PAYMENT_CODES } from './pdvStarter.constants.js';
 import { resolveSaleIdStrategy } from './pdvStarterSchema.repository.js';
-import { debitSaleStock } from './pdvStarterStock.repository.js';
+import { debitSaleStock, recordHomologationMovements } from './pdvStarterStock.repository.js';
 import { isNfceEnabled, getIssuerForReceipt } from './pdvStarterNfce.repository.js';
 import { getSession } from './pdvStarterCash.repository.js';
 import { toMoney, toQty, cleanText, onlyDigits, pdvError } from './pdvStarter.utils.js';
@@ -158,9 +158,13 @@ export async function createSale(payload, user) {
       );
     }
 
-    const stock = homologation
-      ? { status: 'HOMOLOGACAO', details: [{ status: 'SEM_BAIXA', reason: 'NFC-e em ambiente de homologação' }] }
-      : await debitSaleStock(client, { ...row, pdv_uuid: sale.pdv_uuid }, sale.items);
+    let stock;
+    if (homologation) {
+      await recordHomologationMovements(client, { ...row, pdv_uuid: sale.pdv_uuid }, sale.items);
+      stock = { status: 'HOMOLOGACAO', details: [{ status: 'SEM_BAIXA', reason: 'NFC-e em ambiente de homologação' }] };
+    } else {
+      stock = await debitSaleStock(client, { ...row, pdv_uuid: sale.pdv_uuid }, sale.items);
+    }
     const { rows } = await client.query(
       `UPDATE ${TB_SALES} SET stock_status = $2, stock_details = $3::jsonb WHERE sale_id = $1 RETURNING *`,
       [row.sale_id, stock.status, JSON.stringify(stock.details)],
