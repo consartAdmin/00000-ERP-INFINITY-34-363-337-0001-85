@@ -324,6 +324,7 @@ function statusChips() {
   const pending = state.queue.length;
   return `<span class="chip ${state.online ? 'ok' : 'off'}"><i></i>${state.online ? 'ERP online' : 'Sem internet'}</span>
     <span class="chip ${state.config.printer ? 'ok' : 'warn'}">${icon('printer', 14)}${state.config.printer ? 'Impressora' : 'Sem impressora'}</span>
+    <span class="chip ${nfceOn() ? 'ok' : 'warn'}" title="${nfceOn() ? 'As vendas saem com NFC-e (modelo 65)' : 'O ERP não está com a emissão de NFC-e ligada: as vendas saem com cupom não fiscal'}">${icon('cloud', 14)}${nfceOn() ? 'NFC-e ativa' : 'NFC-e desligada'}</span>
     <span class="chip ${pending ? 'warn' : 'ok'}">${icon('cloud', 14)}${pending ? `${pending} venda(s) na fila` : `Sincronizado ${hhmm(state.lastSync)}`}</span>`;
 }
 
@@ -439,7 +440,7 @@ function viewClosing() {
     <div class="kpis"><div class="kp"><span>Vendas</span><b>${ind.sales}</b><small>${ind.canceled} cancelada(s)</small></div>
       <div class="kp"><span>Faturamento</span><b>${money(ind.total)}</b><small>${state.queue.length ? `<span style="color:#d97706">${state.queue.length} venda(s) ainda na fila</span>` : 'Tudo sincronizado'}</small></div>
       <div class="kp"><span>Ticket médio</span><b>${money(ind.ticket)}</b><small>${ind.cash_sales} venda(s) em dinheiro</small></div>
-      <div class="kp"><span>NFC-e</span><b>${ind.nfce_authorized} / ${ind.sales}</b><small class="warn">Emissão na próxima etapa</small></div></div>
+      <div class="kp"><span>NFC-e</span><b>${ind.nfce_authorized} / ${ind.sales}</b>${nfceOn() ? (ind.nfce_authorized < ind.sales ? `<small class="warn">${ind.sales - ind.nfce_authorized} sem NFC-e: emita pela tela Vendas</small>` : '<small>Todas as vendas com NFC-e</small>') : '<small class="warn">NFC-e desligada no ERP</small>'}</div></div>
     <div class="fxg"><div class="sec"><div class="sh"><b>Conferência por forma de pagamento</b><span class="sp"></span><span class="mut">Digite o valor contado</span></div>
       <div class="ct"><div class="ch"><span>Forma</span><span>Sistema</span><span>Contado</span><span>Diferença</span></div>${rows}
       <div class="cr tot"><span></span><span>Total</span><b>${money(totExp)}</b><b style="padding-left:12px">${money(totCnt)}</b><span class="df ${Math.abs(totCnt - totExp) < 0.005 ? 'okk' : 'neg'}">${money(totCnt - totExp)}</span></div></div></div>
