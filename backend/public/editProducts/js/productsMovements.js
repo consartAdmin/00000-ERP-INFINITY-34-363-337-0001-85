@@ -75,6 +75,7 @@ function movementLabel(type) {
     SAIDA: 'Saída',
     INVENTARIO: 'Inventário',
     AJUSTE: 'Ajuste',
+    HOMOLOGACAO: 'Homologação',
   };
 
   return map[type] || type || '—';
@@ -86,7 +87,7 @@ function movementClass(type) {
   if (t === 'SAIDA') return 'mov-badge--saida';
   if (t === 'ENTRADA') return 'mov-badge--entrada';
   if (t === 'INVENTARIO') return 'mov-badge--inventario';
-  if (t === 'AJUSTE') return 'mov-badge--ajuste';
+  if (t === 'AJUSTE' || t === 'HOMOLOGACAO') return 'mov-badge--ajuste';
 
   return '';
 }

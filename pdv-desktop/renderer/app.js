@@ -426,7 +426,7 @@ function viewHistory() {
   return `<main class="fx"><div class="sec fill"><div class="sh"><b>Vendas</b><span class="sp"></span><div class="btn" data-act="sync">${icon('cloud', 16)} Sincronizar agora</div></div>
     <div class="scroll"><table class="tbl"><thead><tr><th>Nº</th><th>Hora</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th class="r">Total</th><th>ERP</th><th>${nfceOn() ? 'NFC-e' : ''}</th><th></th></tr></thead><tbody>
     ${list.map((h) => `<tr><td>${esc(h.number)}${h.sale_id ? ` <span class="mut">(#${esc(h.sale_id)})</span>` : ''}</td><td>${hhmm(h.sold_at)}</td><td>${esc(h.customer_doc || 'Consumidor final')}</td><td>${h.items.length}</td>
-      <td>${h.payments.map((p) => esc(p.label)).join(', ')}</td><td class="r"><b>${money(h.total)}</b></td><td>${pill(h)}${h.stock_status === 'PARCIAL' ? ' <span class="pill y" title="Parte dos itens sem lote com saldo">Estoque parcial</span>' : ''}</td>
+      <td>${h.payments.map((p) => esc(p.label)).join(', ')}</td><td class="r"><b>${money(h.total)}</b></td><td>${pill(h)}${h.stock_status === 'PARCIAL' ? ' <span class="pill y" title="Parte dos itens sem lote com saldo">Estoque parcial</span>' : ''}${h.stock_status === 'HOMOLOGACAO' ? ' <span class="pill y" title="NFC-e em homologação: a venda não baixou estoque">Sem baixa de estoque</span>' : ''}</td>
       <td>${nfcePill(h)}${nfceInfo(h)}</td>
       <td class="r" style="white-space:nowrap">${nfceBtn(h)}<span class="btn" data-reprint="${esc(h.pdv_uuid)}">${icon('printer', 14)} Reimprimir</span></td></tr>`).join('') || '<tr><td colspan="9" class="mut">Nenhuma venda neste caixa.</td></tr>'}
     </tbody></table></div></div></main>`;
