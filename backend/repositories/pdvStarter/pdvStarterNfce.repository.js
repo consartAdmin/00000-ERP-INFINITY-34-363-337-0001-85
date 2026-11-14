@@ -55,6 +55,8 @@ async function loadFiscalByProductCode(codes) {
     `SELECT TRIM(p.product_code) AS product_code,
             pf.products_fiscal_id,
             fc.ncm_code, fc.cest_code,
+            fc.ibscbs_cst, fc.ibscbs_classification, fc.ibs_uf_rate, fc.ibs_municipal_rate, fc.cbs_rate,
+            fc.tax_reform_details,
             fp.icms_cst, fp.icms_rate, fp.cfop_exit, fp.origin_code,
             fp.pis_cst, fp.pis_rate, fp.cofins_cst, fp.cofins_rate
        FROM public.products p
@@ -138,6 +140,29 @@ function buildIcms(fiscal, item, netValue, retained) {
   return icms;
 }
 
+/**
+ * IBS/CBS (Reforma Tributária) da Classificação Fiscal V2 do produto (productsFiscalV2 → fiscalClassificationV2),
+ * nas mesmas regras da NF-e do orçamento (nfe.reformaTributaria.js). Sem o grupo a SEFAZ rejeita (1115).
+ */
+const IBSCBS_REDUCTION_BY_CLASS = { '200035': 60 };
+
+function buildIbsCbs(fiscal, netValue) {
+  const cst = digits(fiscal.ibscbs_cst);
+  const classCode = digits(fiscal.ibscbs_classification);
+  if (cst.length !== 3 || classCode.length !== 6 || classCode === '000000' || !classCode.startsWith(cst)) return null;
+  const details = fiscal.tax_reform_details && typeof fiscal.tax_reform_details === 'object' ? fiscal.tax_reform_details : {};
+  const reduction = Number(details.ibscbs?.uf?.reducao?.aliquota ?? details.ibscbs?.cbs?.reducao?.aliquota ?? IBSCBS_REDUCTION_BY_CLASS[classCode] ?? 0);
+  return {
+    cst,
+    classCode,
+    baseValue: toMoney(netValue),
+    ibsStateRate: round4(fiscal.ibs_uf_rate),
+    ibsMunicipalRate: round4(fiscal.ibs_municipal_rate),
+    cbsRate: round4(fiscal.cbs_rate),
+    ...(reduction > 0 && reduction <= 100 ? { reductionRate: round4(reduction) } : {}),
+  };
+}
+
 function buildPisCofins(cst, rate, netValue) {
   const code = String(cst).padStart(2, '0');
   if (['04', '05', '06', '07', '08', '09', '99'].includes(code)) return { cst: code };
@@ -163,6 +188,11 @@ export async function buildNfcePayload(sale, items) {
       missing.push(code);
       return null;
     }
+    const ibsCbsPending = !buildIbsCbs(fiscal, 0);
+    if (ibsCbsPending) {
+      missing.push(`${code} (CST/cClassTrib IBS/CBS)`);
+      return null;
+    }
 
     const quantity = Number(it.quantity);
     const unitPrice = Number(it.unit_price);
@@ -186,12 +216,13 @@ export async function buildNfcePayload(sale, items) {
       icms: buildIcms(fiscal, it, netValue, stMap[code]),
       pis: buildPisCofins(fiscal.pis_cst, fiscal.pis_rate, netValue),
       cofins: buildPisCofins(fiscal.cofins_cst, fiscal.cofins_rate, netValue),
+      ibsCbs: buildIbsCbs(fiscal, netValue),
     };
   });
 
   if (missing.length) {
     throw pdvError(
-      `Produto(s) sem dados fiscais completos (NCM, CFOP de saída e CST no Perfil Fiscal V2): ${missing.join(', ')}.`,
+      `Produto(s) sem dados fiscais completos (NCM, CFOP de saída e CST no Perfil Fiscal V2; CST e cClassTrib IBS/CBS na Classificação Fiscal V2): ${missing.join(', ')}.`,
       'NFCE_FISCAL_DATA_MISSING',
       422,
       { products: missing },
