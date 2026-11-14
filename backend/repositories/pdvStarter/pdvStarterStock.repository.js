@@ -62,7 +62,7 @@ async function recordMovement(client, { sale, item, quantity, previous, next, lo
       item.unit || 'UN',
       lotCode,
       `Venda PDV ${sale.terminal || ''} nº ${sale.sale_id}`.trim(),
-      JSON.stringify({ source: 'pdvStarter', pdv_uuid: sale.pdv_uuid, session_id: sale.session_id }),
+      JSON.stringify({ source: 'pdvStarter', pdv_uuid: sale.pdv_uuid, session_id: sale.session_id, user_name: sale.operator_name || null }),
     ],
   );
 }
@@ -123,6 +123,27 @@ export async function debitSaleStock(client, sale, items) {
   return { status: pending ? 'PARCIAL' : 'OK', details };
 }
 
+/** Lote (e grade) que a venda usaria: 1º lote FEFO com saldo; sem saldo, o lote mais recente do produto. */
+async function suggestedLot(client, productStockId) {
+  try {
+    await client.query('SAVEPOINT pdv_homolog_lot');
+    const { rows } = await client.query(
+      `SELECT l.lot_code, pg.grade_id
+         FROM public."productsStockLots" l
+         LEFT JOIN public."productsGrades" pg ON pg.product_grade_id = l.product_grade_id
+        WHERE l.product_stock_id = $1 AND (to_jsonb(l)->>'blocked_at') IS NULL
+        ORDER BY ((l.qty_on_hand - l.qty_reserved) > 0) DESC, l.expires_at NULLS LAST, l.lot_id DESC
+        LIMIT 1`,
+      [productStockId],
+    );
+    await client.query('RELEASE SAVEPOINT pdv_homolog_lot');
+    return rows[0] || null;
+  } catch {
+    await client.query('ROLLBACK TO SAVEPOINT pdv_homolog_lot').catch(() => {});
+    return null;
+  }
+}
+
 /**
  * NFC-e em homologação: não baixa estoque, mas deixa o registro na aba Registros do produto
  * (movement_type HOMOLOGACAO, saldo antes = depois). Fora das conciliações, que só leem ENTRADA/SAIDA/ajustes.
@@ -136,19 +157,24 @@ export async function recordHomologationMovements(client, sale, items) {
       await client.query('SAVEPOINT pdv_homolog_mov');
       const stock = await loadStockRow(client, saleItem.product_code);
       const qty = stock?.product_stock_id ? await currentQty(client, stock.product_stock_id) : null;
+      const lot = stock?.product_stock_id ? await suggestedLot(client, stock.product_stock_id) : null;
       await client.query(
         `INSERT INTO public."productMovements" (
            product_code, movement_type, origin_module, origin_table, origin_id,
            quantity, previous_stock, new_stock, unit, lot_code, notes, metadata
-         ) VALUES ($1, 'HOMOLOGACAO', 'pdvStarter', 'pdvSales', $2, $3, $4, $4, $5, NULL, $6, $7::jsonb)`,
+         ) VALUES ($1, 'HOMOLOGACAO', 'pdvStarter', 'pdvSales', $2, $3, $4, $4, $5, $6, $7, $8::jsonb)`,
         [
           saleItem.product_code,
           String(sale.sale_id),
           quantity,
           qty,
           factor === 1 ? (saleItem.unit || 'UN') : 'UN',
+          lot?.lot_code || null,
           `HOMOLOGAÇÃO: venda PDV ${sale.terminal || ''} nº ${sale.sale_id} (sem baixa de estoque)`.replace(/\s+/g, ' '),
-          JSON.stringify({ source: 'pdvStarter', homologation: true, pdv_uuid: sale.pdv_uuid, session_id: sale.session_id }),
+          JSON.stringify({
+            source: 'pdvStarter', homologation: true, pdv_uuid: sale.pdv_uuid, session_id: sale.session_id,
+            user_name: sale.operator_name || null, ...(lot?.grade_id ? { grade_id: lot.grade_id } : {}),
+          }),
         ],
       );
       await client.query('RELEASE SAVEPOINT pdv_homolog_mov');
