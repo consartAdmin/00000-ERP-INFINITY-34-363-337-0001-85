@@ -122,10 +122,19 @@ export async function listByProductCode(productCode) {
         )
     )
 
-    SELECT * FROM native_movements
-    UNION ALL
-    SELECT * FROM legacy_audit_movements
-    ORDER BY created_at DESC, movement_id DESC
+    , all_movements AS (
+      SELECT * FROM native_movements
+      UNION ALL
+      SELECT * FROM legacy_audit_movements
+    )
+
+    -- Nome da grade (metadata.grade_id → grades.grade) para a tela não mostrar o id
+    SELECT m.*, g.grade AS grade_name
+    FROM all_movements m
+    LEFT JOIN public."grades" g
+      ON (m.metadata->>'grade_id') ~ '^[0-9]+$'
+     AND g.grade_id = (m.metadata->>'grade_id')::int
+    ORDER BY m.created_at DESC, m.movement_id DESC
     LIMIT ${MAX_ROWS};
   `;
 
