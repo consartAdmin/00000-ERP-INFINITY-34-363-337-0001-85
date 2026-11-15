@@ -16,7 +16,7 @@ import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 import { openCustomersModalSearch } from '/public/modalsSearch/customersModalSearch.js';
 
 const API = '/api/betterDateToBuy';
-const COLSPAN = 11;
+const COLSPAN = 12;
 const SITUATION_RANK = { due: 0, upcoming: 1, contacted: 2, paused: 3 };
 
 const $ = (id) => document.getElementById(id);
@@ -87,6 +87,28 @@ function lastPurchaseText(row) {
   if (!row.last_purchase_date) return '';
   const nfe = row.last_nfe_number ? ` · NF-e ${row.last_nfe_number}` : '';
   return `${formatDateBR(row.last_purchase_date)}${nfe}`;
+}
+
+/** Dias entre duas datas AAAA-MM-DD (sem fuso: conta só a data). */
+function daysBetween(from, to) {
+  const a = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(from ?? ''));
+  const b = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(to ?? ''));
+  if (!a || !b) return null;
+  const da = Date.UTC(+a[1], +a[2] - 1, +a[3]);
+  const db = Date.UTC(+b[1], +b[2] - 1, +b[3]);
+  return Math.max(0, Math.round((db - da) / 86400000));
+}
+
+/** Dias sem comprar: em destaque quando passou do intervalo médio. */
+function daysWithoutHtml(row) {
+  const days = row.days_without_purchase;
+  if (days == null) return '';
+  const label = plural(days, 'dia', 'dias');
+  const interval = Number(row.avg_interval_days);
+  if (interval > 0 && days > interval) {
+    return `<span class="summary-pill summary-pill--warning" title="Passou do intervalo médio de ${interval} dias">${escapeHtml(label)}</span>`;
+  }
+  return escapeHtml(label);
 }
 
 function usualDayText(row) {
@@ -236,6 +258,7 @@ function renderTable() {
       <td>${escapeHtml(row.alert_day)}</td>
       <td>${situationPill(row)}</td>
       <td>${escapeHtml(lastPurchaseText(row)) || '<span class="td-muted">Sem NF-e</span>'}</td>
+      <td>${daysWithoutHtml(row)}</td>
       <td class="td-right">${escapeHtml(formatMoney(row.last_purchase_total))}</td>
       <td>${row.purchases_12m ? escapeHtml(row.purchases_12m) : ''}</td>
       <td>${escapeHtml(usualDayText(row))}</td>
@@ -262,7 +285,8 @@ async function loadAlerts() {
     state.rows = (response.data || []).map((row) => ({
       ...row,
       alert_day: Number(row.alert_day),
-      situation_rank: SITUATION_RANK[row.situation] ?? 9
+      situation_rank: SITUATION_RANK[row.situation] ?? 9,
+      days_without_purchase: daysBetween(row.last_purchase_date, row.today)
     }));
     renderSummary();
     renderTable();
@@ -749,7 +773,7 @@ function init() {
     defaultColumn: state.sortColumn,
     defaultDirection: state.sortDirection,
     allowedColumns: [
-      'trade_name', 'alert_day', 'situation_rank', 'last_purchase_date',
+      'trade_name', 'alert_day', 'situation_rank', 'last_purchase_date', 'days_without_purchase',
       'last_purchase_total', 'purchases_12m', 'usual_day', 'next_expected_date'
     ],
     onSort: ({ column, direction }) => {
