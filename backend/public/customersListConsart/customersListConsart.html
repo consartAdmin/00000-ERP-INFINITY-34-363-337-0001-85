@@ -76,6 +76,14 @@
             </select>
           </div>
 
+          <!-- Etapa no CRM -->
+          <div class="fields fields-h-5 fields-w-10 fields-font-3">
+            <span class="label">Etapa CRM</span>
+            <select id="crmStage">
+              <option value="">Todas</option>
+            </select>
+          </div>
+
           <!-- Botões -->
           <div class="btn-inline btn-gap-4">
 
@@ -239,6 +247,13 @@
               <th class="table-col-w-5 table-sortable" data-sort-column="status_name" aria-sort="none">
                 <button type="button" class="table-sort-button" data-sort-button>
                   Status
+                  <span data-sort-icon aria-hidden="true">↕</span>
+                </button>
+              </th>
+
+              <th class="table-col-w-6 table-sortable" data-sort-column="crm_stage" aria-sort="none">
+                <button type="button" class="table-sort-button" data-sort-button>
+                  Etapa CRM
                   <span data-sort-icon aria-hidden="true">↕</span>
                 </button>
               </th>

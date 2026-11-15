@@ -14,6 +14,7 @@ export const state = {
   business_segment: '',
   segment_id: '',
   seller_id: '',
+  crm_stage: '',
   limit: 10,
   offset: 0,
   total: 0,
@@ -28,6 +29,7 @@ export const lookups = {
   segmentsByKey: new Map(),
   segmentOptions: new Map(), // segment_id → rótulo (1 opção por segmento no filtro)
   statusById: new Map(),
+  crmStages: [], // [{ id, name, sort }] etapas ativas do CRM (filtro)
   sellerByCustomerId: new Map(),
 };
 
@@ -39,6 +41,7 @@ export function resetFiltersState() {
     business_segment: '',
     segment_id: '',
     seller_id: '',
+    crm_stage: '',
     page: 1,
     offset: 0,
   });

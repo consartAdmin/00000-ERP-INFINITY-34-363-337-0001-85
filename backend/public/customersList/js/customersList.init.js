@@ -44,6 +44,7 @@ const SORTABLE_COLUMNS = Object.freeze([
   'seller_name',
   'segment_name',
   'status_name',
+  'crm_stage',
   'is_active',
 ]);
 

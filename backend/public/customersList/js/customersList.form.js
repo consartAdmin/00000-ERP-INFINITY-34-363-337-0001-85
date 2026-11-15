@@ -17,6 +17,7 @@ export function readInitialForm() {
   state.status_type_id = $('#statusType')?.value || '';
   state.segment_id = $('#segmento')?.value || '';
   state.seller_id = $('#vendedor')?.value || '';
+  state.crm_stage = $('#crmStage')?.value || '';
 }
 
 export function clearFilterForm() {
@@ -26,6 +27,7 @@ export function clearFilterForm() {
     statusType: '',
     segmento: '',
     vendedor: '',
+    crmStage: '',
     perPage: String(state.limit),
   };
 
@@ -58,6 +60,9 @@ export function buildReportQuery(extra = {}) {
   }
   if (/^\d+$/.test(String(state.segment_id || ''))) {
     query.set('segment_id', String(state.segment_id));
+  }
+  if (/^(none|open|closed|\d+)$/.test(String(state.crm_stage || ''))) {
+    query.set('crm_stage', String(state.crm_stage));
   }
   if (state.orderBy) {
     query.set('orderBy', String(state.orderBy));

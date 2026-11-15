@@ -23,6 +23,7 @@ export async function preloadLookups() {
     loadSellersLookup(),
     loadSegmentsLookup(),
     loadStatusTypesLookup(),
+    loadCrmStagesLookup(),
   ]);
 
   for (const result of results) {
@@ -114,6 +115,22 @@ async function loadStatusTypesLookup() {
   }
 }
 
+async function loadCrmStagesLookup() {
+  lookups.crmStages = [];
+  const { response, json } = await fetchJson(ROUTES.crmStages);
+  if (!response.ok) return;
+
+  lookups.crmStages = normalizeArrayPayload(json)
+    .filter((stage) => stage?.is_active !== false)
+    .map((stage) => ({
+      id: String(pick(stage.id, stage.stage_id) ?? ''),
+      name: String(pick(stage.stage_name, stage.name, stage.code) ?? ''),
+      sort: Number(stage.sort_order) || 0,
+    }))
+    .filter((stage) => /^\d+$/.test(stage.id) && stage.name)
+    .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name, 'pt-BR'));
+}
+
 function setRequestFilters(query) {
   const isDigits = (value) => /^\d+$/.test(String(value ?? '').trim());
   const q = String(state.q ?? '').trim();
@@ -130,6 +147,9 @@ function setRequestFilters(query) {
   }
   if (isDigits(state.seller_id)) {
     query.set('seller_id', String(state.seller_id));
+  }
+  if (/^(none|open|closed|\d+)$/.test(String(state.crm_stage ?? ''))) {
+    query.set('crm_stage', String(state.crm_stage));
   }
   if (String(state.business_segment ?? '').trim()) {
     query.set('business_segment', String(state.business_segment).trim());

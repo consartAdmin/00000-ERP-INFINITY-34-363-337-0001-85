@@ -15,6 +15,10 @@ export async function ensureCrmCompanyColumn() {
 
       CREATE INDEX IF NOT EXISTS idx_crmDeals_crm_company
         ON public."crmDeals"(crm_company);
+
+      -- Coluna "Etapa CRM" da lista de Clientes (card mais recente por cliente)
+      CREATE INDEX IF NOT EXISTS idx_crmDeals_customer_company
+        ON public."crmDeals"(customer_id, crm_company);
     `);
     return { ok: true };
   } catch (err) {

@@ -13,7 +13,7 @@ import {
   TB_SELLER_FOR_CUSTOMER,
   TB_SELLERS,
 } from './customers.constants.js';
-import { erpTable } from '../../utils/erpCompanyContext.js';
+import { erpTable, currentErpCompany } from '../../utils/erpCompanyContext.js';
 
 // ---------------------------------------------------------------------
 // Colunas da projeção completa (mapRow)
@@ -49,7 +49,15 @@ export const CUSTOMER_FULL_COLUMNS = `
       ad.customer_ad_neighborhood,
       ad.customer_ad_city,
       ad.customer_ad_state,
-      ad.active AS customer_ad_active
+      ad.active AS customer_ad_active,
+
+      -- CRM (card mais recente do cliente no CRM da empresa)
+      crm.crm_deal_id,
+      crm.crm_stage_id,
+      crm.crm_stage_name,
+      crm.crm_stage_color,
+      crm.crm_is_closed,
+      crm.crm_outcome_name
 `;
 
 // ---------------------------------------------------------------------
@@ -93,13 +101,39 @@ export const JOIN_DELIVERY = `
       ON ad.customer_ad_id = ${ALIAS}.customer_ad_id
 `;
 
+// CRM: card do cliente no CRM da empresa da request (BH3 → /crmDeals,
+// CONSART → /crmConsartErp). Prioriza card aberto; senão o encerrado mais recente.
+export const JOIN_CRM = () => `
+    LEFT JOIN LATERAL (
+      SELECT
+        d.id                         AS crm_deal_id,
+        d.stage_id                   AS crm_stage_id,
+        st.stage_name                AS crm_stage_name,
+        st.color                     AS crm_stage_color,
+        COALESCE(st.sort_order, 0)   AS crm_stage_sort,
+        COALESCE(d.is_closed, FALSE) AS crm_is_closed,
+        o.name                       AS crm_outcome_name
+      FROM public."crmDeals" d
+      LEFT JOIN public."crmDealsStages" st ON st.id = d.stage_id
+      LEFT JOIN public."crmDealsOutcomes" o ON o.id = d.outcome_id
+      WHERE d.customer_id = ${ALIAS}.customer_id
+        AND d.crm_company = '${currentErpCompany() === 'CONSART' ? 'CONSART' : 'BH3'}'
+      ORDER BY COALESCE(d.is_closed, FALSE) ASC,
+               d.updated_at DESC NULLS LAST,
+               d.id DESC
+      LIMIT 1
+    ) crm ON TRUE
+`;
+
 // Funções: as tabelas de status/segmento/vendedor dependem da empresa da request
-export const CUSTOMER_FULL_JOINS = () => [
+// { crm: false } → sem o JOIN do CRM (COUNT sem filtro de etapa fica mais leve)
+export const CUSTOMER_FULL_JOINS = ({ crm = true } = {}) => [
   JOIN_STATUS(),
   JOIN_SEGMENT(),
   JOIN_SELLER(),
   JOIN_IBGE,
   JOIN_DELIVERY,
+  crm ? JOIN_CRM() : '',
 ].join('\n');
 
 // ---------------------------------------------------------------------
@@ -107,7 +141,7 @@ export const CUSTOMER_FULL_JOINS = () => [
 // Empilha os valores em `params` e devolve o WHERE pronto.
 // ---------------------------------------------------------------------
 export function buildCustomerFilters(
-  { q, is_active, status_type_id, seller_id, segment_id } = {},
+  { q, is_active, status_type_id, seller_id, segment_id, crm_stage } = {},
   params = []
 ) {
   const where = [];
@@ -144,6 +178,19 @@ export function buildCustomerFilters(
   if (Number.isFinite(Number(segment_id))) {
     params.push(Number(segment_id));
     where.push(`${ALIAS}.segment_id = $${params.length}`);
+  }
+
+  // Etapa CRM: 'none' (sem card), 'open' (card aberto), 'closed' (encerrado) ou id da etapa
+  const crm = String(crm_stage ?? '').trim().toLowerCase();
+  if (crm === 'none') {
+    where.push('crm.crm_deal_id IS NULL');
+  } else if (crm === 'open') {
+    where.push('crm.crm_deal_id IS NOT NULL AND crm.crm_is_closed = FALSE');
+  } else if (crm === 'closed') {
+    where.push('crm.crm_is_closed = TRUE');
+  } else if (/^\d+$/.test(crm)) {
+    params.push(Number(crm));
+    where.push(`crm.crm_is_closed = FALSE AND crm.crm_stage_id = $${params.length}`);
   }
 
   return {

@@ -13,6 +13,13 @@ export const mapRow = (r) => {
 
   return {
     customer_id: r.customer_id,
+    // CRM: etapa do card mais recente do cliente (JOIN_CRM)
+    crm_deal_id: r.crm_deal_id ?? null,
+    crm_stage_id: r.crm_stage_id ?? null,
+    crm_stage_name: r.crm_stage_name ?? null,
+    crm_stage_color: r.crm_stage_color ?? null,
+    crm_is_closed: r.crm_is_closed ?? null,
+    crm_outcome_name: r.crm_outcome_name ?? null,
     customer_type: normalizeCustomerType(r.customer_type),
     trade_name: r.trade_name ?? null,
     tax_id: r.tax_id ?? null,
