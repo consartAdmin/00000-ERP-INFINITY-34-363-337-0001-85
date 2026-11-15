@@ -142,6 +142,7 @@ export function renderRows(rows) {
       <td>${escapeHtml(safe(sellerName))}</td>
       <td>${escapeHtml(safe(segmentName))}</td>
       <td class="col-status"></td>
+      <td class="col-crm-stage"></td>
       <td>${escapeHtml(fmtBool(pick(customer.is_active, customer.ativo, customer.active)))}</td>
       <td>
         ${actionIconsHtml([
@@ -150,12 +151,28 @@ export function renderRows(rows) {
       </td>`;
 
     renderStatus(row.querySelector('.col-status'), statusLabel, statusColor);
+    renderCrmStage(row.querySelector('.col-crm-stage'), customer);
     row.querySelector('[data-edit]')?.addEventListener('click', () => {
       if (id == null || id === '') return;
       location.href = (window.erpCompanyUrl ? window.erpCompanyUrl(`/public/customersEdit/customersEdit.html?id=${encodeURIComponent(id)}`) : `/public/customersEdit/customersEdit.html?id=${encodeURIComponent(id)}`);
     });
     tbody.appendChild(row);
   }
+}
+
+/** Etapa do card do cliente no CRM (aberto), "Encerrado" ou "Sem CRM". */
+function renderCrmStage(cell, customer) {
+  if (!cell) return;
+  if (customer.crm_deal_id == null) {
+    renderStatus(cell, 'Sem CRM', null);
+    return;
+  }
+  if (customer.crm_is_closed) {
+    const outcome = customer.crm_outcome_name ? ` · ${customer.crm_outcome_name}` : '';
+    renderStatus(cell, `Encerrado${outcome}`, '#64748b');
+    return;
+  }
+  renderStatus(cell, customer.crm_stage_name || 'Em andamento', customer.crm_stage_color);
 }
 
 function renderStatus(cell, label, color) {

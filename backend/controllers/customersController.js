@@ -121,6 +121,7 @@ export async function list(req, res) {
     const business_segment = toStrOrUndefined(req.query?.business_segment);
     const seller_id = toNumOrUndefined(req.query?.seller_id);
     const segment_id = toNumOrUndefined(req.query?.segment_id);
+    const crm_stage = toStrOrUndefined(req.query?.crm_stage);
 
     const data = await customersApi.list({
       q: toStrOrUndefined(q),
@@ -129,6 +130,7 @@ export async function list(req, res) {
       business_segment,
       seller_id,
       segment_id,
+      crm_stage,
       limit: toNumOrUndefined(limit),
       offset: toNumOrUndefined(offset),
       orderBy: toStrOrUndefined(orderBy),
@@ -465,6 +467,7 @@ export async function reportPdf(req, res) {
     const business_segment = toStrOrUndefined(req.query?.business_segment);
     const seller_id = toNumOrUndefined(req.query?.seller_id);
     const segment_id = toNumOrUndefined(req.query?.segment_id);
+    const crm_stage = toStrOrUndefined(req.query?.crm_stage);
 
     const rows = await customersApi.listAllForExport({
       q,
@@ -473,6 +476,7 @@ export async function reportPdf(req, res) {
       business_segment,
       seller_id,
       segment_id,
+      crm_stage,
       orderBy,
       order,
     });
@@ -512,6 +516,7 @@ export async function reportExcel(req, res) {
     const business_segment = toStrOrUndefined(req.query?.business_segment);
     const seller_id = toNumOrUndefined(req.query?.seller_id);
     const segment_id = toNumOrUndefined(req.query?.segment_id);
+    const crm_stage = toStrOrUndefined(req.query?.crm_stage);
 
     const rows = await customersApi.listAllForExport({
       q,
@@ -520,6 +525,7 @@ export async function reportExcel(req, res) {
       business_segment,
       seller_id,
       segment_id,
+      crm_stage,
       orderBy,
       order,
     });

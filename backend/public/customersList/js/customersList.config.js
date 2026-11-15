@@ -24,6 +24,7 @@ export const ROUTES = Object.freeze({
   sellers: `${API_BASE}/api/sellers`,
   vendedores: `${API_BASE}/api/vendedores`,
   statusTypes: `${API_BASE}/api/customer-status-types`,
+  crmStages: `${API_BASE}/api/crm/stages?limit=200`,
   sellerForCustomer: `${API_BASE}/api/seller-for-customer`,
   sellerForCustomerByCustomer: (customerId) =>
     `${API_BASE}/api/seller-for-customer/by-customer/${encodeURIComponent(customerId)}`,

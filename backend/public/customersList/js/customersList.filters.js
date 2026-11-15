@@ -40,6 +40,9 @@ export function bindFilterEvents(loadAndRender) {
   bindChange('#vendedor', (value) => {
     state.seller_id = value;
   }, loadAndRender);
+  bindChange('#crmStage', (value) => {
+    state.crm_stage = value;
+  }, loadAndRender);
 }
 
 function bindChange(selector, updateState, loadAndRender) {
@@ -60,6 +63,29 @@ export function fillFiltersCombos() {
   // Uma opção por segmento (o filtro usa segment_id)
   fillSelect('#segmento', Array.from(lookups.segmentOptions.entries()));
   fillSelect('#vendedor', Array.from(lookups.sellersById.entries()));
+  fillCrmStageSelect();
+}
+
+/** Etapa CRM: opções fixas + etapas na ordem do funil. */
+function fillCrmStageSelect() {
+  const select = $('#crmStage');
+  if (!select) return;
+
+  const keep = select.value;
+  select.innerHTML = `
+    <option value="">Todas</option>
+    <option value="open">Com card aberto</option>
+    <option value="none">Sem CRM</option>
+    <option value="closed">Encerrados</option>`;
+
+  for (const stage of lookups.crmStages) {
+    const option = document.createElement('option');
+    option.value = stage.id;
+    option.textContent = stage.name;
+    select.appendChild(option);
+  }
+
+  select.value = keep;
 }
 
 function fillSelect(selector, entries) {

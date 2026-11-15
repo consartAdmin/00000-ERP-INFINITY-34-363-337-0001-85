@@ -41,6 +41,8 @@ export const CUSTOMER_ORDER_EXPRESSIONS = Object.freeze({
   segment_name: `LOWER(COALESCE(seg.segment_name, ''))`,
   status_name: `LOWER(COALESCE(cst.name_pt, cst.internal_code, ''))`,
   is_active: `${ALIAS}.is_active`,
+  // Ordem do funil (sort_order da etapa); encerrados depois; sem CRM por último
+  crm_stage: `CASE WHEN crm.crm_deal_id IS NULL THEN 999999 WHEN crm.crm_is_closed THEN 99999 ELSE crm.crm_stage_sort END`,
 });
 
 // ---------------------------------------------------------------------

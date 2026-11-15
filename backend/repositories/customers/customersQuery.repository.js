@@ -27,6 +27,7 @@ export async function list({
   business_segment, // aceito por compatibilidade; ainda não filtra
   seller_id,
   segment_id,
+  crm_stage,
   limit = 100,
   offset = 0,
   orderBy = 'trade_name',
@@ -41,6 +42,7 @@ export async function list({
     status_type_id,
     seller_id,
     segment_id,
+    crm_stage,
   });
 
   // Parâmetros do COUNT = só os filtros (antes de LIMIT/OFFSET)
@@ -75,7 +77,7 @@ export async function list({
     SELECT COUNT(*)::INT AS total
     FROM ${tb()} ${ALIAS}
 
-    ${CUSTOMER_FULL_JOINS()}
+    ${CUSTOMER_FULL_JOINS({ crm: String(crm_stage ?? '').trim() !== '' })}
 
     ${whereSql};
   `;
@@ -211,6 +213,7 @@ export async function listAllForExport({
   business_segment, // aceito por compatibilidade; ainda não filtra
   seller_id,
   segment_id,
+  crm_stage,
   orderBy = 'trade_name',
   order = 'asc',
 } = {}) {
@@ -223,6 +226,7 @@ export async function listAllForExport({
     status_type_id,
     seller_id,
     segment_id,
+    crm_stage,
   });
 
   const sql = `
