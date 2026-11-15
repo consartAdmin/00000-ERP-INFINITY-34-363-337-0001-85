@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { XML_DIR, PDF_DIR } from './painelNotasFiscais.constants.js';
-import { ensureDir, publicXmlUrl, publicPdfUrl } from './painelNotasFiscais.utils.js';
+import { ensureDir, publicXmlUrl, publicPdfUrl, log } from './painelNotasFiscais.utils.js';
 import { extrairCampos } from './painelNotasFiscais.mappers.js';
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -17,9 +17,11 @@ export function listXmlFiles() {
   return files;
 }
 
-export function readXmlItem(fileName) {
-  const abs = path.join(XML_DIR, fileName);
-  const stat = fs.statSync(abs);
+// Cache por arquivo (nome + mtime + tamanho): o painel lê ~4 mil XMLs a cada
+// busca/página; só relê do disco o XML novo ou alterado.
+const xmlCache = new Map();
+
+function buildXmlItem(fileName, abs, stat) {
   const xml = fs.readFileSync(abs, 'utf8');
   const meta = extrairCampos(xml);
 
@@ -33,9 +35,38 @@ export function readXmlItem(fileName) {
   };
 }
 
+export function readXmlItem(fileName) {
+  const abs = path.join(XML_DIR, fileName);
+  const stat = fs.statSync(abs);
+  const cached = xmlCache.get(fileName);
+
+  if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
+    return { ...cached.item };
+  }
+
+  const item = buildXmlItem(fileName, abs, stat);
+  xmlCache.set(fileName, { mtimeMs: stat.mtimeMs, size: stat.size, item });
+  return { ...item };
+}
+
 export function listAllXmlItems() {
   const files = listXmlFiles();
-  return files.map(readXmlItem);
+  const present = new Set(files);
+
+  for (const name of xmlCache.keys()) {
+    if (!present.has(name)) xmlCache.delete(name);
+  }
+
+  const items = [];
+  for (const fileName of files) {
+    try {
+      items.push(readXmlItem(fileName));
+    } catch (err) {
+      // Um arquivo removido/ilegível no meio da leitura não derruba a lista
+      log('Falha ao ler XML:', fileName, err.message);
+    }
+  }
+  return items;
 }
 
 // ───────────────────────────────────────────────────────────────────────────

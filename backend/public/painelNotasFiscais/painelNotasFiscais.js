@@ -1,425 +1,392 @@
-// ╔═════════════════════════════════════════════════════════════════════════╗
-/* ║ 📄 painelNotasFiscais.js – Painel de XMLs + Filtros + DANFE (PDF)     ║
-   ║ - Filtro: all | cliente | numero | valor                             ║
-   ║ - Coluna de Valor NF adicionada                                      ║
-   ║ - Download real de PDF (Blob)                                        ║
-   ║ - UX segura (disable botão, nome correto do arquivo)                 ║
-   ╚═════════════════════════════════════════════════════════════════════════╝ */
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ painelNotasFiscais.js — Notas Fiscais Sistema Antigo | CONSART ERP ║
+// ║  - Lista paginada no backend (busca, período, ordenação)          ║
+// ║  - Ações: ver XML, baixar XML, DANFE em PDF                       ║
+// ║  - Avisos via centerAlertModal                                    ║
+// ╚════════════════════════════════════════════════════════════════════╝
 
-document.addEventListener('DOMContentLoaded', () => {
-  // ======================================================================
-  // ELEMENTOS
-  // ======================================================================
-  const tbody = document.getElementById('tabelaXMLs');
-  const totalSpan = document.getElementById('totalArquivos');
-  const btnAnterior = document.getElementById('btnAnterior');
-  const btnProxima = document.getElementById('btnProxima');
-  const inputBusca = document.getElementById('inputBusca');
-  const btnBuscar = document.getElementById('btnBuscar');
-  const infoPagina = document.getElementById('infoPagina');
-  const filtroCampo = document.getElementById('filtroCampo');
+'use strict';
 
-  // ======================================================================
-  // ESTADO
-  // ======================================================================
-  let page = 1;
-  const pageSize = 50;
-  let filtro = '';
-  let campo = filtroCampo?.value || 'all';
-  let buscaTimer = null;
-  const base = window.location.origin;
+import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
-  // ======================================================================
-  // UTILS
-  // ======================================================================
-  const sanitize = (v) =>
-    String(v ?? '').replace(/[&<>"'`]/g, s => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-      '`': '&#96;'
-    }[s]));
+const API = '/api/painel-notas-fiscais';
+const COLSPAN = 7;
+const SEARCH_DELAY_MS = 350;
 
-  function formatarCnpjCpf(v) {
-    const d = String(v || '').replace(/\D/g, '');
-    if (d.length === 14) {
-      return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-    }
-    if (d.length === 11) {
-      return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
-    }
-    return v || '-';
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  page: 1,
+  pageSize: 50,
+  totalPages: 1,
+  sortColumn: 'emissao',
+  sortDirection: 'desc',
+  rows: [],
+  requestSeq: 0
+};
+
+// ──────────────────────────────────────────────────────────────────────
+// UTILITÁRIOS
+// ──────────────────────────────────────────────────────────────────────
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+const onlyDigits = (value) => String(value ?? '').replace(/\D/g, '');
+
+/** CNPJ/CPF sempre com máscara (completa zeros perdidos em XMLs antigos). */
+function formatDocument(value) {
+  let digits = onlyDigits(value);
+  if (!digits) return '';
+  if (digits.length > 11 && digits.length < 14) digits = digits.padStart(14, '0');
+  if (digits.length < 11) digits = digits.padStart(11, '0');
+
+  if (digits.length === 14) {
+    return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
   }
-
-  function formatarData(v) {
-    if (!v) return '-';
-
-    const s = String(v).trim();
-
-    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
-      const [d, r] = s.split('T');
-      const [y, m, da] = d.split('-');
-      return `${da}/${m}/${y} ${String(r || '').substring(0, 5)}`;
-    }
-
-    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
-      const [d, t] = s.split(' ');
-      const [y, m, da] = d.split('-');
-      return `${da}/${m}/${y}${t ? ' ' + t.substring(0, 5) : ''}`;
-    }
-
-    return s;
+  if (digits.length === 11) {
+    return digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
   }
+  return digits;
+}
 
-  function formatarMoeda(valor) {
-    const n = Number(valor);
-    if (!Number.isFinite(n)) return '-';
-    return n.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    });
-  }
+/** "2023-12-05T15:59:00-03:00" → "05/12/2023 15:59" (hora do emitente). */
+function formatDateTimeBR(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(String(value ?? '').trim());
+  if (!match) return '';
+  const [, y, m, d, hh, mi] = match;
+  // Notas sem hora no XML vêm como 00:00: mostra só a data
+  const hasTime = hh && !(hh === '00' && mi === '00');
+  return `${d}/${m}/${y}${hasTime ? ` ${hh}:${mi}` : ''}`;
+}
 
-  function normalizarNumero(valor) {
-    if (valor === null || valor === undefined || valor === '') return null;
+function formatMoney(value) {
+  const n = Number(value);
+  if (value === null || value === undefined || value === '' || !Number.isFinite(n)) return '';
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
-    if (typeof valor === 'number' && Number.isFinite(valor)) {
-      return valor;
-    }
+function plural(count, one, many) {
+  return `${Number(count).toLocaleString('pt-BR')} ${count === 1 ? one : many}`;
+}
 
-    const texto = String(valor).trim();
-    if (!texto) return null;
+function showError(title, message) {
+  return showCenterModal({ variant: 'error', title, message });
+}
 
-    const possuiVirgula = texto.includes(',');
-    const normalizado = possuiVirgula
-      ? texto.replace(/\./g, '').replace(',', '.')
-      : texto.replace(/[^\d.-]/g, '');
+// ──────────────────────────────────────────────────────────────────────
+// FILTROS
+// ──────────────────────────────────────────────────────────────────────
+const PLACEHOLDERS = {
+  all: 'Cliente, CNPJ/CPF, nº da NF, valor ou chave...',
+  cliente: 'Nome do cliente (destinatário)...',
+  cnpj: 'CNPJ ou CPF, com ou sem pontuação...',
+  numero: 'Número da NF. Ex.: 5530',
+  valor: 'Valor da NF. Ex.: 1.625,71',
+  arquivo: 'Chave de acesso ou nome do arquivo...'
+};
 
-    const n = Number(normalizado);
-    return Number.isFinite(n) ? n : null;
-  }
+function syncPlaceholder() {
+  $('fQ').placeholder = PLACEHOLDERS[$('fCampo').value] || PLACEHOLDERS.all;
+}
 
-  function extrairValorNota(arq = {}) {
-    const candidatos = [
-      arq.valorTotal,
-      arq.valor_total,
-      arq.total,
-      arq.valor,
-      arq.valor_nf,
-      arq.valorNota,
-      arq.vNF,
-      arq.total_nf,
-      arq.totalNota,
-      arq.valor_nota
-    ];
-
-    for (const item of candidatos) {
-      const numero = normalizarNumero(item);
-      if (Number.isFinite(numero)) {
-        return numero;
-      }
-    }
-
-    return null;
-  }
-
-  function syncPlaceholder() {
-    const v = filtroCampo?.value || 'all';
-
-    if (v === 'cliente') {
-      inputBusca.placeholder = 'Buscar por Cliente (Destinatário)…';
-      return;
-    }
-
-    if (v === 'numero') {
-      inputBusca.placeholder = 'Buscar por Nº NF…';
-      return;
-    }
-
-    if (v === 'valor') {
-      inputBusca.placeholder = 'Buscar por Valor NF… Ex: 1250,75';
-      return;
-    }
-
-    inputBusca.placeholder = 'Buscar por arquivo, cliente, CNPJ/CPF, Nº NF ou Valor…';
-  }
-
-  function getXmlPath(arq) {
-    if (arq.caminho) return arq.caminho;
-    if (arq.path) return arq.path;
-    if (arq.xmlPath) return arq.xmlPath;
-    return `/public/painelNotasFiscais/xmlAntigasBh3/${encodeURIComponent(arq.nome || '')}`;
-  }
-
-  function getListaResposta(j = {}) {
-    if (Array.isArray(j.arquivos)) return j.arquivos;
-    if (Array.isArray(j.itens)) return j.itens;
-    return [];
-  }
-
-  function bloquearPaginacao(anterior, proxima) {
-    if (btnAnterior) btnAnterior.disabled = !!anterior;
-    if (btnProxima) btnProxima.disabled = !!proxima;
-  }
-
-  // ======================================================================
-  // XML
-  // ======================================================================
-  window.visualizarXML = (enc) => {
-    const caminho = decodeURIComponent(enc);
-    const url = `${base}${caminho}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+function readFilters() {
+  return {
+    filtro: $('fQ').value.trim(),
+    campo: $('fCampo').value || 'all',
+    dataDe: $('fDe').value || '',
+    dataAte: $('fAte').value || ''
   };
+}
 
-  window.baixarXML = (enc) => {
-    const caminho = decodeURIComponent(enc);
+async function validateDates() {
+  const { dataDe, dataAte } = readFilters();
+  if (dataDe && dataAte && dataDe > dataAte) {
+    await showCenterModal({
+      variant: 'warning',
+      title: 'Período inválido',
+      message: 'A data inicial da emissão é maior que a data final.'
+    });
+    return false;
+  }
+  return true;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// CARREGAR LISTA
+// ──────────────────────────────────────────────────────────────────────
+function setLoading(message = 'Carregando...') {
+  $('tbody').innerHTML = `<tr><td colspan="${COLSPAN}" class="td-center">${escapeHtml(message)}</td></tr>`;
+  $('prevPage').disabled = true;
+  $('nextPage').disabled = true;
+}
+
+async function load() {
+  const seq = ++state.requestSeq;
+  const filters = readFilters();
+
+  const params = new URLSearchParams({
+    page: String(state.page),
+    pageSize: String(state.pageSize),
+    campo: filters.campo,
+    ordenarPor: state.sortColumn,
+    sentido: state.sortDirection
+  });
+  if (filters.filtro) params.set('filtro', filters.filtro);
+  if (filters.dataDe) params.set('dataDe', filters.dataDe);
+  if (filters.dataAte) params.set('dataAte', filters.dataAte);
+
+  setLoading();
+
+  try {
+    const response = await fetch(`${API}/xmls?${params}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data?.ok === false) {
+      throw new Error(data?.erro || data?.error || `HTTP ${response.status}`);
+    }
+
+    // Uma resposta antiga (busca digitada antes) não sobrescreve a atual
+    if (seq !== state.requestSeq) return;
+
+    state.rows = Array.isArray(data.arquivos) ? data.arquivos : (data.itens || []);
+    state.page = Number(data.page) || 1;
+    state.totalPages = Number(data.totalPages) || 1;
+
+    renderTable();
+    renderFooter(Number(data.total) || 0, data.valorTotalFiltrado);
+  } catch (err) {
+    if (seq !== state.requestSeq) return;
+    console.error('[painelNotasFiscais] Erro ao carregar:', err);
+    state.rows = [];
+    setLoading('Não foi possível carregar as notas fiscais.');
+    $('tableInfo').textContent = '0 notas';
+    $('pageInfo').textContent = 'Página 1 de 1';
+    $('sumCount').textContent = '0 notas';
+    $('sumTotal').textContent = formatMoney(0);
+    showError('Erro ao carregar', `Não foi possível carregar as notas fiscais: ${err.message}`);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────────────────────────────────
+function renderTable() {
+  const tbody = $('tbody');
+
+  if (!state.rows.length) {
+    tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="td-center">Nenhuma nota fiscal encontrada.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = state.rows.map((row, index) => {
+    const numero = String(row.numero ?? '').replace(/^0+/, '') || '-';
+    const cliente = row.cliente && row.cliente !== '-' ? row.cliente : '';
+    const documento = formatDocument(row.cnpj);
+    const emissao = formatDateTimeBR(row.emissao);
+    const valor = formatMoney(row.valorTotal);
+    const chave = onlyDigits(row.chave);
+
+    return `
+      <tr>
+        <td><strong>${escapeHtml(numero)}</strong></td>
+        <td>${escapeHtml(emissao || '-')}</td>
+        <td class="td-left" title="${escapeHtml(cliente)}">${escapeHtml(cliente || '-')}</td>
+        <td>${escapeHtml(documento || '-')}</td>
+        <td class="td-right"><strong>${escapeHtml(valor || '-')}</strong></td>
+        <td class="td-left" title="${escapeHtml(chave ? `Chave: ${chave}` : row.nome)}">${escapeHtml(row.nome || '-')}</td>
+        <td>${actionIconsHtml([
+          { action: 'view', title: 'Ver XML', attrs: { 'data-act': 'view', 'data-index': index } },
+          { action: 'download', title: 'Baixar XML', attrs: { 'data-act': 'download', 'data-index': index } },
+          { action: 'document', title: 'Baixar DANFE (PDF)', attrs: { 'data-act': 'danfe', 'data-index': index } }
+        ])}</td>
+      </tr>`;
+  }).join('');
+}
+
+function renderFooter(total, valorTotal) {
+  const start = total ? (state.page - 1) * state.pageSize + 1 : 0;
+  const end = Math.min(total, state.page * state.pageSize);
+
+  $('tableInfo').textContent = total
+    ? `${start.toLocaleString('pt-BR')}–${end.toLocaleString('pt-BR')} de ${plural(total, 'nota', 'notas')}`
+    : '0 notas';
+  $('pageInfo').textContent = `Página ${state.page} de ${state.totalPages}`;
+  $('prevPage').disabled = state.page <= 1;
+  $('nextPage').disabled = state.page >= state.totalPages;
+
+  $('sumCount').textContent = plural(Number(total), 'nota', 'notas');
+  $('sumTotal').textContent = formatMoney(valorTotal || 0);
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// AÇÕES
+// ──────────────────────────────────────────────────────────────────────
+function xmlPathOf(row) {
+  return row.caminho || `/public/painelNotasFiscais/xmlAntigasBh3/${encodeURIComponent(row.nome || '')}`;
+}
+
+function viewXml(row) {
+  window.open(xmlPathOf(row), '_blank', 'noopener');
+}
+
+function downloadXml(row) {
+  const a = document.createElement('a');
+  a.href = xmlPathOf(row);
+  a.download = row.nome || 'nota.xml';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function downloadDanfe(row, button) {
+  if (button) button.disabled = true;
+
+  try {
+    const chave = onlyDigits(row.chave);
+    const response = await fetch(`${API}/danfe/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...(chave.length === 44 ? { chave } : {}),
+        xmlPath: xmlPathOf(row)
+      })
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data?.erro || data?.error || `HTTP ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const fileName = disposition.match(/filename="([^"]+)"/i)?.[1]
+      || `DANFE_${chave || String(row.numero || 'nota')}.pdf`;
+
     const a = document.createElement('a');
-    a.href = `${base}${caminho}`;
-    a.download = decodeURIComponent(caminho.split('/').pop() || 'arquivo.xml');
+    a.href = url;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
-  };
-
-  // ======================================================================
-  // DANFE (PDF)
-  // ======================================================================
-  window.gerarDANFE = async ({ chave, caminho, nomeArquivo }, btn) => {
-    const textoOriginal = btn?.textContent || '📥 PDF';
-
-    try {
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = '⏳ Gerando…';
-      }
-
-      const key = String(chave || '').replace(/\D/g, '');
-      const body = key.length === 44 ? { chave: key } : { xmlPath: caminho };
-
-      const resp = await fetch('/api/painel-notas-fiscais/danfe/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      if (!resp.ok) {
-        let msg = `Erro HTTP ${resp.status}`;
-        try {
-          const j = await resp.json();
-          msg = j.erro || j.error || msg;
-        } catch { }
-        throw new Error(msg);
-      }
-
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-
-      const cd = resp.headers.get('Content-Disposition') || '';
-      const m = cd.match(/filename="([^"]+)"/i);
-      const nome = m?.[1] || `DANFE_${key || nomeArquivo || 'nota'}.pdf`;
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = nome;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      setTimeout(() => URL.revokeObjectURL(url), 500);
-    } catch (e) {
-      console.error('❌ DANFE:', e);
-      alert(`❌ ${e.message}`);
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = textoOriginal;
-      }
-    }
-  };
-
-  // ======================================================================
-  // RENDER
-  // ======================================================================
-  function renderLinhas(lista = []) {
-    tbody.innerHTML = '';
-
-    if (!lista.length) {
-      tbody.innerHTML = '<tr><td colspan="7">Nenhum resultado.</td></tr>';
-      return;
-    }
-
-    lista.forEach((arq) => {
-      const nomeOriginal = arq.nome || '-';
-      const clienteOriginal = arq.cliente || arq.destinatario || '-';
-      const cnpjOriginal = arq.cnpj || arq.cnpjCpf || arq.documento || arq.cnpj_dest || '';
-      const numeroOriginal = String(arq.numero || arq.nNF || arq.nota || '-').replace(/^0+/, '') || '-';
-      const emissaoOriginal = arq.emissao || arq.dataEmissao || arq.issueDate || arq.dtEmissao;
-      const valorOriginal = extrairValorNota(arq);
-
-      const nome = sanitize(nomeOriginal);
-      const cliente = sanitize(clienteOriginal);
-      const cnpj = formatarCnpjCpf(cnpjOriginal);
-      const numero = sanitize(numeroOriginal);
-      const emissao = sanitize(formatarData(emissaoOriginal));
-      const valorNota = sanitize(formatarMoeda(valorOriginal));
-
-      const chave = String(arq.chave || arq.chNFe || '').replace(/\D/g, '');
-      const caminho = getXmlPath(arq);
-      const enc = encodeURIComponent(caminho);
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-      <td class="col-arquivo" title="${nome}">${nome}</td>
-      <td class="col-cliente" title="${cliente}">${cliente}</td>
-      <td class="col-cnpj" title="${sanitize(cnpj)}">${sanitize(cnpj)}</td>
-      <td class="col-numero" title="${numero}">${numero}</td>
-      <td class="col-valor" title="${valorNota}">${valorNota}</td>
-      <td class="col-data" title="${emissao}">${emissao}</td>
-      <td class="td-acoes">
-        <div class="acoes-wrap"></div>
-      </td>
-    `;
-
-      tr.addEventListener('click', () => {
-        tbody.querySelectorAll('tr.is-selected').forEach(row => row.classList.remove('is-selected'));
-        tr.classList.add('is-selected');
-      });
-
-      const acoes = tr.querySelector('.acoes-wrap');
-
-      const mk = (texto, onClick) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = texto;
-        b.className = 'btn btn-pastel-primary';
-        b.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onClick(e);
-        });
-        return b;
-      };
-
-      acoes.append(
-        mk('🔍 XML', () => window.visualizarXML(enc)),
-        mk('🔽 XML', () => window.baixarXML(enc)),
-        mk('📥 PDF', (e) => window.gerarDANFE(
-          { chave, caminho, nomeArquivo: nomeOriginal || 'nota' },
-          e.currentTarget
-        ))
-      );
-
-      tbody.appendChild(tr);
-    });
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    console.error('[painelNotasFiscais] DANFE:', err);
+    showError('Erro ao gerar DANFE', `Não foi possível gerar o PDF da NF ${row.numero || ''}: ${err.message}`);
+  } finally {
+    if (button) button.disabled = false;
   }
+}
 
-  // ======================================================================
-  // LOAD
-  // ======================================================================
-  async function carregar() {
-    tbody.innerHTML = '<tr><td colspan="7">Carregando…</td></tr>';
-    bloquearPaginacao(true, true);
+// ──────────────────────────────────────────────────────────────────────
+// EVENTOS
+// ──────────────────────────────────────────────────────────────────────
+function reloadFromFirstPage() {
+  state.page = 1;
+  load();
+}
 
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize),
-        campo,
-        ordenarPor: 'mtime',
-        sentido: 'desc'
-      });
+let searchTimer = null;
 
-      if (filtro) {
-        params.set('filtro', filtro);
-      }
-
-      const r = await fetch('/api/painel-notas-fiscais/xmls?' + params.toString());
-
-      if (!r.ok) {
-        throw new Error(`Erro ao carregar notas fiscais. HTTP ${r.status}`);
-      }
-
-      const j = await r.json();
-      const lista = getListaResposta(j);
-      const total = Number(j.total || 0);
-      const paginaAtual = Number(j.page || page || 1);
-      const totalPaginas = Number(j.totalPages || Math.max(1, Math.ceil(total / pageSize)));
-
-      renderLinhas(lista);
-
-      totalSpan.textContent = `📦 Total de Arquivos: ${total}`;
-      infoPagina.textContent = `Página ${paginaAtual} de ${totalPaginas}`;
-
-      btnAnterior.disabled = paginaAtual <= 1;
-      btnProxima.disabled = paginaAtual >= totalPaginas || total === 0;
-    } catch (err) {
-      console.error('❌ Erro ao carregar painel de notas fiscais:', err);
-      tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar dados: ${sanitize(err.message)}</td></tr>`;
-      totalSpan.textContent = '📦 Total de Arquivos: 0';
-      infoPagina.textContent = 'Página 1 de 1';
-      bloquearPaginacao(true, true);
-    }
-  }
-
-  // ======================================================================
-  // EVENTS
-  // ======================================================================
-  btnBuscar?.addEventListener('click', () => {
-    page = 1;
-    filtro = inputBusca.value.trim();
-    carregar();
+function bindEvents() {
+  $('fQ').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(reloadFromFirstPage, SEARCH_DELAY_MS);
   });
 
-  btnAnterior?.addEventListener('click', () => {
-    if (page > 1) {
-      page--;
-      carregar();
-    }
+  $('fQ').addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    clearTimeout(searchTimer);
+    reloadFromFirstPage();
   });
 
-  btnProxima?.addEventListener('click', () => {
-    page++;
-    carregar();
-  });
-
-  inputBusca?.addEventListener('input', () => {
-    if (filtroCampo?.value === 'numero') {
-      inputBusca.value = inputBusca.value.replace(/\D/g, '');
-    }
-
-    clearTimeout(buscaTimer);
-    buscaTimer = setTimeout(() => {
-      page = 1;
-      filtro = inputBusca.value.trim();
-      carregar();
-    }, 250);
-  });
-
-  inputBusca?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      clearTimeout(buscaTimer);
-      page = 1;
-      filtro = inputBusca.value.trim();
-      carregar();
-    }
-  });
-
-  filtroCampo?.addEventListener('change', () => {
-    campo = filtroCampo.value;
+  $('fCampo').addEventListener('change', () => {
     syncPlaceholder();
-
-    if (campo === 'numero') {
-      inputBusca.value = inputBusca.value.replace(/\D/g, '');
-    }
-
-    page = 1;
-    filtro = inputBusca.value.trim();
-    carregar();
+    if ($('fQ').value.trim()) reloadFromFirstPage();
   });
 
-  // INIT
+  ['fDe', 'fAte'].forEach((id) => {
+    $(id).addEventListener('change', async () => {
+      if (await validateDates()) reloadFromFirstPage();
+    });
+  });
+
+  $('btnSearch').addEventListener('click', async () => {
+    clearTimeout(searchTimer);
+    if (await validateDates()) reloadFromFirstPage();
+  });
+
+  $('btnClear').addEventListener('click', () => {
+    clearTimeout(searchTimer);
+    $('fQ').value = '';
+    $('fCampo').value = 'all';
+    $('fDe').value = '';
+    $('fAte').value = '';
+    syncPlaceholder();
+    reloadFromFirstPage();
+  });
+
+  $('prevPage').addEventListener('click', () => {
+    if (state.page > 1) {
+      state.page -= 1;
+      load();
+    }
+  });
+
+  $('nextPage').addEventListener('click', () => {
+    if (state.page < state.totalPages) {
+      state.page += 1;
+      load();
+    }
+  });
+
+  $('perPage').addEventListener('change', () => {
+    state.pageSize = Number($('perPage').value) || 50;
+    reloadFromFirstPage();
+  });
+
+  $('tbody').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-act]');
+    if (!button) return;
+
+    const row = state.rows[Number(button.dataset.index)];
+    if (!row) return;
+
+    if (button.dataset.act === 'view') viewXml(row);
+    if (button.dataset.act === 'download') downloadXml(row);
+    if (button.dataset.act === 'danfe') downloadDanfe(row, button);
+  });
+
+  createSortableTable({
+    table: $('nfTable'),
+    defaultColumn: state.sortColumn,
+    defaultDirection: state.sortDirection,
+    allowedColumns: ['numero', 'emissao', 'cliente', 'cnpj', 'valor', 'nome'],
+    onSort: ({ column, direction }) => {
+      state.sortColumn = column;
+      state.sortDirection = direction;
+      reloadFromFirstPage();
+    }
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  state.pageSize = Number($('perPage').value) || 50;
   syncPlaceholder();
-  carregar();
+  bindEvents();
+  load();
 });

@@ -57,6 +57,8 @@ export async function listarNotasXML(req, res) {
       pageSize = '50',
       ordenarPor = 'mtime',
       sentido = 'desc',
+      dataDe = '',
+      dataAte = '',
     } = req.query;
 
     const startedAt = performance.now();
@@ -64,6 +66,8 @@ export async function listarNotasXML(req, res) {
     const data = painelNotasFiscaisApi.listNotasXML({
       filtro: String(filtro || '').trim(),
       campo: String(campo || 'all').trim(),
+      dataDe: String(dataDe || '').trim(),
+      dataAte: String(dataAte || '').trim(),
       page: Math.max(1, parseInt(page, 10) || 1),
       pageSize: Math.min(500, Math.max(1, parseInt(pageSize, 10) || 50)),
       ordenarPor: String(ordenarPor || 'mtime').trim(),
@@ -87,6 +91,7 @@ export async function listarNotasXML(req, res) {
       page: data.page,
       pageSize: data.pageSize,
       totalPages: data.totalPages,
+      valorTotalFiltrado: data.valorTotalFiltrado,
       arquivos: data.arquivos,
       itens: data.itens,
       elapsedMs,
