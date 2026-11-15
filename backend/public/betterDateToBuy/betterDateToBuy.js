@@ -86,7 +86,8 @@ function customerName(row) {
 function lastPurchaseText(row) {
   if (!row.last_purchase_date) return '';
   const nfe = row.last_nfe_number ? ` · NF-e ${row.last_nfe_number}` : '';
-  return `${formatDateBR(row.last_purchase_date)}${nfe}`;
+  const legacy = row.last_source === 'antigo' ? ' (sistema antigo)' : '';
+  return `${formatDateBR(row.last_purchase_date)}${nfe}${legacy}`;
 }
 
 /** Dias entre duas datas AAAA-MM-DD (sem fuso: conta só a data). */

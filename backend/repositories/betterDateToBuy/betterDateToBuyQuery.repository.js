@@ -13,6 +13,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { legacyParams } from './betterDateToBuyLegacyNfe.repository.js';
 
 // NF-e que não contam como venda (mesma regra do salesAnalytics)
 const NFE_EXCLUDED_STATUSES = [
@@ -42,6 +43,41 @@ const INV_WHERE_SQL = `
   AND UPPER(COALESCE(ii.nfe_status, '')) <> ALL($1::text[])
   AND COALESCE(o.customer_id, bu.customer_id) IS NOT NULL
 `;
+
+// Todas as vendas (NF-e) por cliente: as do ERP + as do sistema antigo
+// (XMLs da tela "Notas Fiscais Sistema Antigo", cliente pelo CNPJ/CPF).
+// NF-e antiga com o mesmo número de uma NF-e do ERP não entra de novo.
+// $1 = status excluídos; $p..$p+3 = colunas das NF-e antigas.
+function salesSourceSql(p) {
+  return `
+    SELECT
+      ${INV_CUSTOMER_SQL} AS customer_id,
+      ii.invoice_id::bigint AS invoice_id,
+      ii.nfe_number::text AS nfe_number,
+      ii.issued_date::date AS d,
+      COALESCE(ii.total_amount, 0)::numeric AS total,
+      'erp'::text AS source
+    ${INV_FROM_SQL}
+    WHERE ${INV_WHERE_SQL}
+
+    UNION ALL
+
+    SELECT
+      c.customer_id,
+      0::bigint AS invoice_id,
+      l.nfe AS nfe_number,
+      l.d,
+      l.total,
+      'antigo'::text AS source
+    FROM unnest($${p}::text[], $${p + 1}::date[], $${p + 2}::text[], $${p + 3}::numeric[])
+      AS l(doc, d, nfe, total)
+    JOIN customers c
+      ON NULLIF(regexp_replace(COALESCE(c.tax_id, ''), '[^0-9]', '', 'g'), '') = l.doc
+    WHERE NOT EXISTS (
+      SELECT 1 FROM public."invoicesIssued" x WHERE x.nfe_number::text = l.nfe
+    )
+  `;
+}
 
 const TODAY_SQL = `(NOW() AT TIME ZONE 'America/Sao_Paulo')::date`;
 
@@ -115,22 +151,16 @@ export async function getPurchaseStats(customerIds = null) {
 
   const sql = `
     WITH inv AS (
-      SELECT
-        ${INV_CUSTOMER_SQL} AS customer_id,
-        ii.invoice_id,
-        ii.nfe_number,
-        ii.issued_date::date AS d,
-        COALESCE(ii.total_amount, 0)::numeric AS total
-      ${INV_FROM_SQL}
-      WHERE ${INV_WHERE_SQL}
-        AND ($2::int[] IS NULL OR ${INV_CUSTOMER_SQL} = ANY($2::int[]))
+      SELECT * FROM (${salesSourceSql(3)}) src
+      WHERE ($2::int[] IS NULL OR src.customer_id = ANY($2::int[]))
     ),
     last_inv AS (
       SELECT DISTINCT ON (customer_id)
         customer_id,
         d AS last_purchase_date,
         nfe_number AS last_nfe_number,
-        total AS last_purchase_total
+        total AS last_purchase_total,
+        source AS last_source
       FROM inv
       ORDER BY customer_id, d DESC, invoice_id DESC
     ),
@@ -138,33 +168,48 @@ export async function getPurchaseStats(customerIds = null) {
       SELECT
         customer_id,
         COUNT(*)::int AS purchases_12m,
-        SUM(total)::numeric AS total_12m,
-        COUNT(DISTINCT d)::int AS distinct_days,
-        MIN(d) AS first_d,
-        MAX(d) AS last_d,
-        ARRAY_AGG(EXTRACT(DAY FROM d)::int) AS days_12m
+        SUM(total)::numeric AS total_12m
       FROM inv
       WHERE d >= (${TODAY_SQL} - INTERVAL '12 months')
       GROUP BY customer_id
+    ),
+    -- Ritmo de compra: 12 meses até a ÚLTIMA compra do cliente (e não
+    -- até hoje), para quem só comprou no sistema antigo também ter
+    -- intervalo médio e dia usual.
+    rhythm AS (
+      SELECT
+        inv.customer_id,
+        COUNT(DISTINCT inv.d)::int AS distinct_days,
+        MIN(inv.d) AS first_d,
+        MAX(inv.d) AS last_d,
+        ARRAY_AGG(EXTRACT(DAY FROM inv.d)::int) AS days_12m
+      FROM inv
+      JOIN last_inv li
+        ON li.customer_id = inv.customer_id
+      WHERE inv.d >= (li.last_purchase_date - INTERVAL '12 months')
+      GROUP BY inv.customer_id
     )
     SELECT
       l.customer_id,
       l.last_purchase_date,
       l.last_nfe_number,
       l.last_purchase_total,
+      l.last_source,
       COALESCE(y.purchases_12m, 0) AS purchases_12m,
       COALESCE(y.total_12m, 0) AS total_12m,
-      CASE WHEN y.distinct_days >= 2
-        THEN ROUND((y.last_d - y.first_d)::numeric / (y.distinct_days - 1))::int
+      CASE WHEN r.distinct_days >= 2
+        THEN ROUND((r.last_d - r.first_d)::numeric / (r.distinct_days - 1))::int
       END AS avg_interval_days,
-      y.days_12m
+      r.days_12m
     FROM last_inv l
     LEFT JOIN year_inv y
       ON y.customer_id = l.customer_id
+    LEFT JOIN rhythm r
+      ON r.customer_id = l.customer_id
   `;
 
   try {
-    const { rows } = await pool.query(sql, [NFE_EXCLUDED_STATUSES, ids]);
+    const { rows } = await pool.query(sql, [NFE_EXCLUDED_STATUSES, ids, ...legacyParams()]);
     const map = new Map();
 
     for (const row of rows) {
@@ -236,6 +281,7 @@ function enrichStats(row) {
     last_purchase_date: lastYmd,
     last_nfe_number: row.last_nfe_number ?? null,
     last_purchase_total: row.last_purchase_total != null ? Number(row.last_purchase_total) : null,
+    last_source: row.last_source || null,
     purchases_12m: Number(row.purchases_12m || 0),
     total_12m: Number(row.total_12m || 0),
     avg_interval_days: interval,
@@ -335,10 +381,8 @@ export async function getTodayAlerts() {
 export async function getSuggestions({ minPurchases = 3, limit = 100 } = {}) {
   const sql = `
     WITH inv AS (
-      SELECT ${INV_CUSTOMER_SQL} AS customer_id, ii.issued_date::date AS d
-      ${INV_FROM_SQL}
-      WHERE ${INV_WHERE_SQL}
-        AND ii.issued_date >= (${TODAY_SQL} - INTERVAL '12 months')
+      SELECT customer_id, d FROM (${salesSourceSql(4)}) src
+      WHERE d >= (${TODAY_SQL} - INTERVAL '12 months')
     )
     SELECT
       inv.customer_id,
@@ -362,7 +406,7 @@ export async function getSuggestions({ minPurchases = 3, limit = 100 } = {}) {
 
   let rows;
   try {
-    ({ rows } = await pool.query(sql, [NFE_EXCLUDED_STATUSES, minPurchases, limit]));
+    ({ rows } = await pool.query(sql, [NFE_EXCLUDED_STATUSES, minPurchases, limit, ...legacyParams()]));
   } catch (err) {
     console.warn('[betterDateToBuy] sugestões indisponíveis:', err.message);
     return [];
@@ -380,8 +424,8 @@ export async function getSuggestions({ minPurchases = 3, limit = 100 } = {}) {
 // período, com o dia de contato proposto e o alerta que já existe.
 //
 // Dia proposto = alguns dias antes do dia em que o cliente costuma
-// comprar (mediana das NF-e de 12 meses); se não houver compra nos
-// últimos 12 meses, usa o dia da última venda.
+// comprar (mediana das NF-e dos 12 meses até a última compra); sem
+// esse histórico, usa o dia da última venda.
 //
 // action: create  → cliente sem alerta
 //         update  → já tem alerta com outro dia
@@ -393,9 +437,7 @@ export async function getLastSaleProposals({ months = 12 } = {}) {
 
   const sql = `
     WITH inv AS (
-      SELECT ${INV_CUSTOMER_SQL} AS customer_id, ii.issued_date::date AS d
-      ${INV_FROM_SQL}
-      WHERE ${INV_WHERE_SQL}
+      SELECT customer_id, d FROM (${salesSourceSql(3)}) src
     ),
     last_sale AS (
       SELECT customer_id, MAX(d) AS last_d
@@ -422,7 +464,7 @@ export async function getLastSaleProposals({ months = 12 } = {}) {
 
   let rows;
   try {
-    ({ rows } = await pool.query(sql, [NFE_EXCLUDED_STATUSES, monthsParam]));
+    ({ rows } = await pool.query(sql, [NFE_EXCLUDED_STATUSES, monthsParam, ...legacyParams()]));
   } catch (err) {
     console.warn('[betterDateToBuy] última venda indisponível:', err.message);
     return [];
