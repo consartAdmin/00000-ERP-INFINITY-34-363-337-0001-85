@@ -7,6 +7,10 @@
 // ║   descrição, funções, observações, status, sistemas e softwares;     ║
 // ║   "Salvar e próximo" para documentar em sequência                    ║
 // ║ • PDF com os filtros da tela                                         ║
+// ║ • Lista = módulos do ERP Infinity ("Importar do ERP Infinity", que   ║
+// ║   também preenche o texto comercial dos itens vazios → "Revisar")    ║
+// ║ • Visão "Catálogo comercial": cards por módulo (só "Documentado" e   ║
+// ║   ativos) para os vendedores + "PDF Comercial"                       ║
 // ║ API: /api/module-docs-consart                                        ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
@@ -14,6 +18,7 @@ import { apiFetch, getAuthToken } from '/public/includes/js/apiFetch.js';
 import { Modal } from '/public/includes/js/modal.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { createSortableTable } from '/public/includes/js/sortableTable.js';
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 const API = '/api/module-docs-consart';
 
@@ -26,6 +31,7 @@ const state = {
   software: [],  // cadastro de softwares (Consart Infinity, Logistics...)
   sort: '',
   dir: 'asc',
+  mode: 'table', // visão: 'table' | 'catalog'
 };
 
 let sorter = null;
@@ -490,21 +496,155 @@ async function createModule() {
   }
 }
 
-/** Traz do menu os itens que ainda não estão na documentação (o menu não muda) */
+/**
+ * Traz os módulos do ERP Infinity que ainda não estão aqui e preenche o
+ * texto comercial dos itens vazios (status "Revisar"). Nenhum menu muda.
+ */
 async function importFromMenu() {
-  if (!confirm('Trazer para a documentação os itens do menu que ainda não estão aqui?\n\nO menu do sistema não muda. Itens que você excluiu da documentação não voltam.')) return;
+  const ok = await showCenterModal({
+    variant: 'warning',
+    title: 'Importar do ERP Infinity',
+    message: 'A lista passa a ter os módulos do ERP Infinity. Na primeira vez, os itens vazios que vieram do menu do CONSART ERP saem da lista (os que já têm descrição ficam). Os itens sem texto recebem descrição e funções comerciais com status "Revisar". Nenhum menu do sistema muda.',
+    okText: 'Importar',
+    closeText: 'Cancelar',
+  });
+  if (ok !== true) return;
   const btn = $('#btnImport');
   btn.disabled = true;
   try {
     const json = await apiFetch(`${API}/import`, { method: 'POST', body: '{}' });
-    const { added = 0, items = [] } = json.data || {};
+    const { added = 0, removed = 0, filled = 0 } = json.data || {};
     await loadModules();
     await loadList();
-    alert(added
-      ? `${plural(added, 'item trazido', 'itens trazidos')} do menu:\n\n${items.slice(0, 20).join('\n')}${items.length > 20 ? '\n...' : ''}`
-      : 'Nada novo: todos os itens do menu já estão na documentação.');
+    const parts = [];
+    if (added) parts.push(`${plural(added, 'item trazido', 'itens trazidos')} do ERP Infinity`);
+    if (removed) parts.push(`${plural(removed, 'item vazio do menu CONSART saiu', 'itens vazios do menu CONSART saíram')} da lista`);
+    if (filled) parts.push(`${plural(filled, 'item recebeu', 'itens receberam')} o texto comercial (status "Revisar")`);
+    await showCenterModal({
+      variant: 'success',
+      title: 'Importação concluída',
+      message: parts.length ? `${parts.join('; ')}.` : 'Nada novo: a lista já está igual ao menu do ERP Infinity.',
+    });
   } catch (error) {
-    alert(`Erro ao importar do menu: ${error.message}`);
+    await showCenterModal({ variant: 'error', title: 'Erro ao importar', message: error.message });
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Catálogo comercial (para os vendedores)
+// ─────────────────────────────────────────────────────────────────────
+
+/** Mostra/esconde sem depender de CSS para [hidden] */
+function show(el, visible) {
+  if (!el) return;
+  el.hidden = !visible;
+  el.style.display = visible ? '' : 'none';
+}
+
+function setMode(mode) {
+  state.mode = mode === 'catalog' ? 'catalog' : 'table';
+  $('#viewMode').value = state.mode;
+  document.querySelectorAll('[data-view]').forEach((el) => show(el, el.dataset.view === state.mode));
+  return state.mode === 'catalog' ? loadCatalog() : loadList();
+}
+
+function catalogParams() {
+  const params = new URLSearchParams();
+  const q = $('#q').value.trim();
+  if (q) params.set('q', q);
+  if ($('#filterModule').value) params.set('module', $('#filterModule').value);
+  return params;
+}
+
+function catalogCard(item) {
+  // Submenu entre o módulo e a tela (ex.: "Estoque"), quando houver
+  const trail = String(item.breadcrumb || '').split(' › ').slice(1, -1).join(' › ');
+  const functions = (item.functions_list || []).map((f) => `✔ ${esc(f)}`).join('\n');
+  return `
+    <div class="kanban-card">
+      <h4 class="kanban-card__title">${esc(item.name)}</h4>
+      ${trail ? `<div class="kanban-card__meta">${esc(trail)}</div>` : ''}
+      ${item.description ? `<p class="kanban-card__description">${esc(item.description)}</p>` : ''}
+      ${functions ? `<div class="kanban-card__description">${functions}</div>` : ''}
+    </div>`;
+}
+
+async function loadCatalog() {
+  try {
+    const json = await apiFetch(`${API}/catalog?${catalogParams()}`);
+    const groups = json.data || [];
+    const total = Number(json.total || 0);
+    const review = Number(json.review || 0);
+
+    $('#catalogBody').innerHTML = groups.length
+      ? groups.map((g) => `
+        <div class="section__header">
+          <h3 class="section__title">${esc(g.name)}</h3>
+          <span class="summary-pill summary-pill--info">${plural(g.items.length, 'tela', 'telas')}</span>
+        </div>
+        ${g.description ? `<p class="kanban-card__description">${esc(g.description)}</p>` : ''}
+        <div class="c-grid g-4 gap-16">${g.items.map(catalogCard).join('')}</div>`).join('')
+      : `<p class="kanban-card__description">${review
+        ? `Nenhuma tela no catálogo ainda. ${plural(review, 'item está', 'itens estão')} em "Revisar": revise na Tabela ou use "Aprovar todos a revisar".`
+        : 'Nenhuma tela documentada com os filtros atuais.'}</p>`;
+
+    $('#catalogInfo').textContent = `${plural(total, 'tela', 'telas')} no catálogo · ${plural(groups.length, 'módulo', 'módulos')}`;
+    $('#catalogReview').textContent = `${review} a revisar`;
+    show($('#catalogReview'), review > 0);
+    show($('#btnApproveReview'), review > 0);
+  } catch (error) {
+    console.error('[moduleDocsConsart] catálogo:', error);
+    await showCenterModal({ variant: 'error', title: 'Erro', message: `Erro ao carregar o catálogo: ${error.message}` });
+  }
+}
+
+async function approveReview() {
+  const ok = await showCenterModal({
+    variant: 'warning',
+    title: 'Aprovar textos',
+    message: `Marcar como "Documentado" ${$('#catalogReview').textContent.replace(' a revisar', '')} item(ns) em "Revisar"? Eles passam a aparecer no catálogo e no PDF Comercial.`,
+    okText: 'Aprovar',
+    closeText: 'Cancelar',
+  });
+  if (ok !== true) return;
+  try {
+    const json = await apiFetch(`${API}/approve-review`, { method: 'POST', body: '{}' });
+    await loadCatalog();
+    await showCenterModal({ variant: 'success', title: 'Aprovado', message: `${plural(Number(json.data?.approved || 0), 'item aprovado', 'itens aprovados')}.` });
+  } catch (error) {
+    await showCenterModal({ variant: 'error', title: 'Erro', message: error.message });
+  }
+}
+
+async function downloadCatalogPdf() {
+  const btn = $('#btnCatalogPdf');
+  btn.disabled = true;
+  try {
+    const token = getAuthToken();
+    const response = await fetch(`${API}/catalog/pdf?${catalogParams()}`, {
+      headers: token ? { Authorization: `Bearer ${token}`, Accept: 'application/pdf' } : { Accept: 'application/pdf' },
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      const json = await response.json().catch(() => null);
+      throw new Error(json?.error || `HTTP ${response.status}`);
+    }
+    const disposition = response.headers.get('content-disposition') || '';
+    const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || 'Catalogo_Modulos_ERP_Infinity.pdf';
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch (error) {
+    console.error('[moduleDocsConsart] pdf comercial:', error);
+    await showCenterModal({ variant: 'error', title: 'Erro ao gerar PDF', message: error.message });
   } finally {
     btn.disabled = false;
   }
@@ -680,13 +820,17 @@ async function downloadPdf() {
 // ─────────────────────────────────────────────────────────────────────
 
 function bindEvents() {
-  $('#btnSearch').addEventListener('click', loadList);
+  $('#btnSearch').addEventListener('click', () => (state.mode === 'catalog' ? loadCatalog() : loadList()));
+  $('#viewMode').addEventListener('change', () => setMode($('#viewMode').value));
+  $('#btnCatalogPdf').addEventListener('click', downloadCatalogPdf);
+  $('#btnApproveReview').addEventListener('click', approveReview);
   $('#btnReload').addEventListener('click', async () => {
     // Volta para a ordem do menu
     state.sort = '';
     sorter?.reset();
     await loadModules();
-    await loadList();
+    if (state.mode === 'catalog') await loadCatalog();
+    else await loadList();
   });
   $('#btnPdf').addEventListener('click', openPdf);
   $('#btnSoftware').addEventListener('click', openSoftware);
@@ -708,8 +852,11 @@ function bindEvents() {
   $('#nf-save').addEventListener('click', createModule);
   $('#new-form').addEventListener('submit', (e) => { e.preventDefault(); createModule(); });
   $('#btnBack').addEventListener('click', () => history.back());
-  $('#q').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadList(); });
-  ['#filterModule', '#filterType', '#filterSystem', '#filterSoftware', '#filterStatus', '#filterActive']
+  $('#q').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') state.mode === 'catalog' ? loadCatalog() : loadList();
+  });
+  $('#filterModule').addEventListener('change', () => (state.mode === 'catalog' ? loadCatalog() : loadList()));
+  ['#filterType', '#filterSystem', '#filterSoftware', '#filterStatus', '#filterActive']
     .forEach((sel) => $(sel).addEventListener('change', loadList));
   $('#docsBody').addEventListener('click', onListClick);
 
@@ -745,5 +892,7 @@ function currentSummary() {
 Modal.setup();
 bindEvents();
 loadModules();
-// Softwares antes da lista: as etiquetas usam os nomes do cadastro
-loadSoftware().then(loadList);
+// Softwares antes da lista: as etiquetas usam os nomes do cadastro.
+// ?view=catalog abre direto no Catálogo comercial (link para os vendedores)
+const startMode = new URLSearchParams(location.search).get('view') === 'catalog' ? 'catalog' : 'table';
+loadSoftware().then(() => setMode(startMode));

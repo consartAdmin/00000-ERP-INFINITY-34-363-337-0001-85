@@ -17,6 +17,9 @@ import {
   remove,
   create,
   importMenu,
+  approveReview,
+  catalog,
+  catalogPdf,
   softwareList,
   softwareSave,
   softwareRemove,
@@ -30,12 +33,15 @@ router.use(requireAuth);
 router.get('/', list);
 router.get('/modules', modules);
 router.get('/pdf', pdf);
+router.get('/catalog', catalog);
+router.get('/catalog/pdf', catalogPdf);
 router.get('/software', softwareList);
 router.post('/software', softwareSave);
 router.put('/software/:id', softwareSave);
 router.delete('/software/:id', softwareRemove);
 router.post('/', create);
 router.post('/import', importMenu);
+router.post('/approve-review', approveReview);
 router.get('/:id', getById);
 router.put('/:id', save);
 router.delete('/:id', remove);

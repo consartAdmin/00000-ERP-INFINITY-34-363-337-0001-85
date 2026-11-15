@@ -9,7 +9,9 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
+import { getInfinityPool, infinityDbName } from '../../config/dbInfinity.js';
 import { TABLE as MODULES_TB } from '../moduleSystem/moduleSystem.constants.js';
+import { catalogTextFor } from './moduleDocsConsart.catalog.js';
 
 export const TB = 'public."moduleDocsConsart"';
 export const SOFTWARE_TB = 'public."moduleSoftwareConsart"';
@@ -76,6 +78,8 @@ export function ensureModuleDocsConsartTable() {
       ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS is_active  BOOLEAN NOT NULL DEFAULT TRUE;
       ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS menu_id    BIGINT;
       ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+      -- id do item no menu do ERP Infinity (banco erp-infinity-00000)
+      ALTER TABLE ${TB} ADD COLUMN IF NOT EXISTS infinity_menu_id BIGINT;
       CREATE SEQUENCE IF NOT EXISTS public."moduleDocsConsart_module_id_seq";
       CREATE TABLE IF NOT EXISTS ${SOFTWARE_TB} (
         id           SERIAL PRIMARY KEY,
@@ -108,7 +112,6 @@ export function ensureModuleDocsConsartTable() {
  * Migração (uma vez): a documentação deixa de depender do menu.
  *  - tira a FK para moduleSystem (excluir no menu não apaga a documentação)
  *  - copia nome/tipo/pai/ordem/ativo do menu para as linhas que já existiam
- *  - na primeira vez, traz todos os itens do menu (mesmo id, então os pais batem)
  * Roda dentro de um lock para várias instâncias não importarem juntas.
  */
 async function separateFromMenu() {
@@ -133,12 +136,8 @@ async function separateFromMenu() {
            FROM ${MODULES_TB} m
           WHERE m.id = d.module_id AND d.name IS NULL`
       );
-      await client.query(
-        `INSERT INTO ${TB} (module_id, name, path, menu_type, parent_id, sort_order, is_active, menu_id)
-         SELECT m.id, m.name, m.path, m.menu_type, m.parent_id, m.sort_order, COALESCE(m.is_active, TRUE), m.id
-           FROM ${MODULES_TB} m
-          WHERE NOT EXISTS (SELECT 1 FROM ${TB} d WHERE d.module_id = m.id)`
-      );
+      // A lista vem do menu do ERP Infinity (botão "Importar do ERP Infinity"),
+      // não mais do menu do CONSART ERP.
     }
 
     // Novos itens da documentação ganham id do sequence (acima dos que já existem)
@@ -497,46 +496,177 @@ export async function create(body = {}, user = null) {
   return getById(row.module_id);
 }
 
-/**
- * "Importar do menu": traz os itens do menu que ainda não estão na
- * documentação (nem foram excluídos dela). O menu não muda.
- */
-export async function importFromMenu() {
-  await ensureModuleDocsConsartTable();
-  const { rows: menu } = await pool.query(
-    `SELECT m.id, m.name, m.path, m.menu_type, m.parent_id, m.sort_order, COALESCE(m.is_active, TRUE) AS is_active
-       FROM ${MODULES_TB} m
-      WHERE NOT EXISTS (SELECT 1 FROM ${TB} d WHERE d.menu_id = m.id)
-      ORDER BY m.id`
-  );
-  if (!menu.length) return { added: 0, items: [] };
-
-  // id do menu → id na documentação (pais primeiro)
-  const { rows: known } = await pool.query(`SELECT module_id, menu_id FROM ${TB} WHERE menu_id IS NOT NULL AND deleted_at IS NULL`);
-  const docIdByMenuId = new Map(known.map((r) => [String(r.menu_id), r.module_id]));
-  const pending = [...menu];
-  const added = [];
-
-  while (pending.length) {
-    const before = pending.length;
-    for (let i = 0; i < pending.length; i += 1) {
-      const m = pending[i];
-      const parentWaiting = m.parent_id != null && pending.some((p) => String(p.id) === String(m.parent_id));
-      if (parentWaiting) continue;
-      const parentId = m.parent_id != null ? docIdByMenuId.get(String(m.parent_id)) ?? null : null;
-      const { rows: [row] } = await pool.query(
-        `INSERT INTO ${TB} (name, path, menu_type, parent_id, sort_order, is_active, menu_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING module_id`,
-        [m.name, m.path, m.menu_type, parentId, m.sort_order, m.is_active, m.id]
-      );
-      docIdByMenuId.set(String(m.id), row.module_id);
-      added.push(m.name);
-      pending.splice(i, 1);
-      i -= 1;
-    }
-    if (pending.length === before) break; // ciclo no menu: não trava
+/** Menu do ERP Infinity (banco erp-infinity-00000), só leitura */
+async function loadInfinityMenu() {
+  try {
+    const { rows } = await getInfinityPool().query(
+      `SELECT id, name, path, menu_type, parent_id, sort_order, COALESCE(is_active, TRUE) AS is_active
+         FROM ${MODULES_TB}
+        ORDER BY sort_order ASC NULLS LAST, id ASC`
+    );
+    return rows;
+  } catch (error) {
+    throw validationError(
+      `Não foi possível ler o menu do ERP Infinity (banco "${infinityDbName()}"): ${error.message}`,
+      502
+    );
   }
-  return { added: added.length, items: added };
+}
+
+const isEmptyText = (v) => !String(v ?? '').trim();
+
+/**
+ * "Importar do ERP Infinity": a documentação passa a listar só os módulos
+ * do ERP Infinity (o produto vendido), lidos do menu do Infinity.
+ *  1) Na primeira vez, tira da lista (deleted_at) os itens que vieram do
+ *     menu do CONSART ERP e ainda estão vazios. Itens com descrição,
+ *     funções ou observações ficam.
+ *  2) Traz os itens do menu do Infinity que ainda não estão aqui (itens
+ *     excluídos da documentação não voltam).
+ *  3) Preenche descrição e funções dos itens vazios com o texto comercial
+ *     de moduleDocsConsart.catalog.js, com status "Revisar".
+ * Nenhum menu muda (nem o do Infinity, nem o do CONSART ERP).
+ */
+export async function importFromInfinity(user = null) {
+  await ensureModuleDocsConsartTable();
+  const menu = await loadInfinityMenu();
+  if (!menu.length) throw validationError('O menu do ERP Infinity está vazio.', 409);
+
+  const updatedBy = text(user, 150);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`SELECT pg_advisory_xact_lock(hashtext('moduleDocsConsart.importFromInfinity'))`);
+
+    // 1) Primeira vez: sai o que veio do menu do CONSART ERP e está vazio
+    let removed = 0;
+    const { rows: [{ imported }] } = await client.query(
+      `SELECT COUNT(*)::int AS imported FROM ${TB} WHERE infinity_menu_id IS NOT NULL`
+    );
+    if (!imported) {
+      const result = await client.query(
+        `UPDATE ${TB} SET deleted_at = NOW(), updated_at = NOW()
+          WHERE deleted_at IS NULL AND infinity_menu_id IS NULL
+            AND COALESCE(TRIM(description), '') = ''
+            AND COALESCE(TRIM(functions), '') = ''
+            AND COALESCE(TRIM(notes), '') = ''`
+      );
+      removed = result.rowCount;
+    }
+
+    // 2) Itens novos do Infinity (pais primeiro)
+    const { rows: known } = await client.query(
+      `SELECT module_id, infinity_menu_id, deleted_at FROM ${TB} WHERE infinity_menu_id IS NOT NULL`
+    );
+    const docIdByMenuId = new Map(
+      known.filter((r) => !r.deleted_at).map((r) => [String(r.infinity_menu_id), r.module_id])
+    );
+    const everImported = new Set(known.map((r) => String(r.infinity_menu_id)));
+    const pending = menu.filter((m) => !everImported.has(String(m.id)));
+    const added = [];
+
+    while (pending.length) {
+      const before = pending.length;
+      for (let i = 0; i < pending.length; i += 1) {
+        const m = pending[i];
+        const parentWaiting = m.parent_id != null && pending.some((p) => String(p.id) === String(m.parent_id));
+        if (parentWaiting) continue;
+        const parentId = m.parent_id != null ? docIdByMenuId.get(String(m.parent_id)) ?? null : null;
+        const { rows: [row] } = await client.query(
+          `INSERT INTO ${TB} (name, path, menu_type, parent_id, sort_order, is_active, infinity_menu_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING module_id`,
+          [m.name, m.path, m.menu_type, parentId, m.sort_order, m.is_active, m.id]
+        );
+        docIdByMenuId.set(String(m.id), row.module_id);
+        added.push(m.name);
+        pending.splice(i, 1);
+        i -= 1;
+      }
+      if (pending.length === before) break; // ciclo no menu: não trava
+    }
+
+    // 3) Texto comercial nos itens vazios
+    const { rows: empty } = await client.query(
+      `SELECT module_id, name, path, menu_type FROM ${TB}
+        WHERE deleted_at IS NULL AND name IS NOT NULL
+          AND COALESCE(TRIM(description), '') = '' AND COALESCE(TRIM(functions), '') = ''`
+    );
+    let filled = 0;
+    for (const row of empty) {
+      const catalog = catalogTextFor(row);
+      if (!catalog || isEmptyText(catalog.description)) continue;
+      await client.query(
+        `UPDATE ${TB} SET description = $2, functions = $3, status = 'REVISAR',
+                updated_by = COALESCE($4, updated_by), updated_at = NOW()
+          WHERE module_id = $1`,
+        [row.module_id, catalog.description, (catalog.functions || []).join('\n') || null, updatedBy]
+      );
+      filled += 1;
+    }
+
+    await client.query('COMMIT');
+    return { added: added.length, removed, filled, items: added };
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/** Marca como "Documentado" todos os itens em "Revisar" (aprovação em lote) */
+export async function approveReview(user = null) {
+  await ensureModuleDocsConsartTable();
+  const result = await pool.query(
+    `UPDATE ${TB} SET status = 'DOCUMENTADO', updated_by = COALESCE($1, updated_by), updated_at = NOW()
+      WHERE deleted_at IS NULL AND name IS NOT NULL AND status = 'REVISAR'`,
+    [text(user, 150)]
+  );
+  return { approved: result.rowCount };
+}
+
+/**
+ * Catálogo comercial: só itens "Documentado" e ativos (com o módulo ativo),
+ * agrupados pelo módulo raiz. Itens internos ficam de fora sozinhos.
+ */
+export async function listCatalog({ q, module } = {}) {
+  const tree = await loadTree();
+  const byId = new Map(tree.map((r) => [r.id, r]));
+  const activeChain = (r) => {
+    for (let cur = r; cur; cur = cur.parent_id != null ? byId.get(cur.parent_id) : null) {
+      if (!cur.is_active) return false;
+    }
+    return true;
+  };
+  const moduleId = positiveId(module);
+  const search = text(q)?.toLowerCase();
+
+  const items = tree.filter((r) => {
+    if (r.level === 0 || r.type === 'dropdown' || r.type === 'submenu') return false;
+    if (r.doc_status !== 'DOCUMENTADO' || !activeChain(r)) return false;
+    if (moduleId && r.module_id !== moduleId) return false;
+    if (search && ![r.name, r.breadcrumb, r.description, r.functions].join('\n').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const groups = [];
+  const byModule = new Map();
+  items.forEach((r) => {
+    if (!byModule.has(r.module_id)) {
+      const root = byId.get(r.module_id);
+      const group = {
+        id: r.module_id,
+        name: root?.name || r.module_name,
+        description: root?.doc_status === 'DOCUMENTADO' ? root.description : '',
+        items: [],
+      };
+      byModule.set(r.module_id, group);
+      groups.push(group);
+    }
+    byModule.get(r.module_id).items.push(r);
+  });
+
+  return { groups, total: items.length, rows: items };
 }
 
 /**

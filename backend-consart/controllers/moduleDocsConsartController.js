@@ -63,12 +63,57 @@ export async function create(req, res) {
   }
 }
 
-/** POST /import — traz do menu os itens que ainda não estão na documentação */
+/** POST /import — traz os módulos do ERP Infinity e preenche os textos comerciais vazios */
 export async function importMenu(req, res) {
   try {
-    return res.json({ ok: true, data: await repo.importFromMenu() });
+    const user = req.user?.name || req.user?.email || null;
+    return res.json({ ok: true, data: await repo.importFromInfinity(user) });
   } catch (error) {
     return fail(res, 'importMenu', error);
+  }
+}
+
+/** POST /approve-review — todos os itens "Revisar" viram "Documentado" */
+export async function approveReview(req, res) {
+  try {
+    const user = req.user?.name || req.user?.email || null;
+    return res.json({ ok: true, data: await repo.approveReview(user) });
+  } catch (error) {
+    return fail(res, 'approveReview', error);
+  }
+}
+
+/** GET /catalog?q=&module= — catálogo comercial (só "Documentado" e ativos) */
+export async function catalog(req, res) {
+  try {
+    const { groups, total } = await repo.listCatalog(req.query);
+    const { summary } = await repo.list({ active: 'true' });
+    return res.json({ ok: true, data: groups, total, review: summary.REVISAR || 0 });
+  } catch (error) {
+    return fail(res, 'catalog', error);
+  }
+}
+
+/** GET /catalog/pdf?q=&module= — PDF comercial (sem status, caminho ou campos técnicos) */
+export async function catalogPdf(req, res) {
+  try {
+    const { rows } = await repo.listCatalog(req.query);
+    const modules = await repo.listModules();
+    const moduleName = modules.find((m) => String(m.id) === String(req.query.module))?.name || '';
+    const buffer = await generateModuleDocsConsartPdf({
+      rows,
+      summary: { total: rows.length },
+      filters: { moduleName, q: req.query.q },
+      commercial: true,
+    });
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Catalogo_Modulos_ERP_Infinity_${stamp}.pdf"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.end(buffer);
+  } catch (error) {
+    return fail(res, 'catalogPdf', error);
   }
 }
 
