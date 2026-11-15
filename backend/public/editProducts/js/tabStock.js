@@ -85,12 +85,6 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     btnDeleteModal: '#lot-modal-delete',
 
     // Alerta local exclusivo da aba Estoque/Lotes
-    lotAlertDialog: '#dlgLotAlert',
-    lotAlertIcon: '#dlgLotAlertIcon',
-    lotAlertTitle: '#dlgLotAlertTitle',
-    lotAlertMessage: '#dlgLotAlertMessage',
-    lotAlertOk: '#btnLotAlertOk',
-    lotAlertCancel: '#btnLotAlertCancel',
 
     mLotId: '#mLotId',
     mProductGradeId: '#mProductGradeId',
@@ -349,18 +343,18 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
   }
 
   /* =====================================================================
-     TAB STOCK — LOCAL NATIVE ALERT
-     Mantém os alertas desta aba acima do <dialog id="dlgLot"> sem alterar
-     centerAlertModal.js ou modals.css globais.
+     TAB STOCK — AVISOS DO MODAL DE LOTE
+     Usa o centerAlertModal padrão do sistema. Ele abre num <dialog> com
+     showModal(), então entra no top-layer e aparece acima do #dlgLot.
      ===================================================================== */
-  const LOT_ALERT_VARIANTS = Object.freeze({
-    info: { icon: 'ℹ️', title: 'Informação' },
-    success: { icon: '✅', title: 'Concluído' },
-    warning: { icon: '⚠️', title: 'Atenção' },
-    error: { icon: '⛔', title: 'Ocorreu um erro' },
-  });
+  const lotAlertText = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, '<br>');
 
-  function showLotAlert({
+  async function showLotAlert({
     variant = 'warning',
     title = '',
     message = '',
@@ -368,91 +362,21 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
     cancelText = 'Cancelar',
     showCancel = false,
   } = {}) {
-    return new Promise((resolve) => {
-      const dialog = $(LOT_FIELDS.lotAlertDialog);
-      const icon = $(LOT_FIELDS.lotAlertIcon);
-      const titleEl = $(LOT_FIELDS.lotAlertTitle);
-      const messageEl = $(LOT_FIELDS.lotAlertMessage);
-      const btnOk = $(LOT_FIELDS.lotAlertOk);
-      const btnCancel = $(LOT_FIELDS.lotAlertCancel);
-
-      // Fallback seguro caso o HTML local ainda não tenha sido publicado.
-      if (!dialog) {
-        const text = `${title ? `${title}\n\n` : ''}${message}`;
-        if (showCancel) {
-          resolve(window.confirm(text));
-        } else {
-          window.alert(text);
-          resolve(true);
-        }
-        return;
-      }
-
-      // Não permite duas instâncias do mesmo alerta abertas ao mesmo tempo.
-      if (dialog.open) {
-        try { dialog.close(); } catch (_) { /* noop */ }
-      }
-
-      const config = LOT_ALERT_VARIANTS[variant] ?? LOT_ALERT_VARIANTS.warning;
-      dialog.dataset.variant = variant;
-
-      if (icon) icon.textContent = config.icon;
-      if (titleEl) titleEl.textContent = title || config.title;
-      if (messageEl) messageEl.textContent = String(message ?? '');
-      if (btnOk) btnOk.textContent = okText || 'OK';
-
-      if (btnCancel) {
-        btnCancel.textContent = cancelText || 'Cancelar';
-        btnCancel.classList.toggle('hidden', !showCancel);
-      }
-
-      let finished = false;
-
-      const cleanup = () => {
-        btnOk?.removeEventListener('click', handleOk);
-        btnCancel?.removeEventListener('click', handleCancel);
-        dialog.removeEventListener('cancel', handleCancelEvent);
-        dialog.removeEventListener('close', handleDialogClose);
-      };
-
-      const finish = (result) => {
-        if (finished) return;
-        finished = true;
-        cleanup();
-        if (dialog.open) {
-          try { dialog.close(); } catch (_) { /* noop */ }
-        }
-        resolve(result);
-      };
-
-      const handleOk = () => finish(true);
-      const handleCancel = () => finish(false);
-      const handleCancelEvent = (event) => {
-        event.preventDefault();
-        finish(false);
-      };
-      const handleDialogClose = () => {
-        if (!finished) finish(false);
-      };
-
-      if (!dialog.dataset.escIsolated) {
-        dialog.dataset.escIsolated = '1';
-        // Esc no alerta não pode chegar ao modal.js (fecharia o modal de lote atrás)
-        dialog.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') event.stopPropagation();
-        });
-      }
-
-      btnOk?.addEventListener('click', handleOk);
-      btnCancel?.addEventListener('click', handleCancel);
-      dialog.addEventListener('cancel', handleCancelEvent);
-      dialog.addEventListener('close', handleDialogClose);
-
-      // Como este showModal() ocorre depois do dlgLot, entra por último no
-      // top-layer do navegador e aparece corretamente acima do lote.
-      dialog.showModal();
-      window.setTimeout(() => btnOk?.focus(), 20);
+    const result = await showCenterModal({
+      variant,
+      title: lotAlertText(title),
+      message: lotAlertText(message),
+      buttons: showCancel
+        ? [
+          { label: cancelText || 'Cancelar', variant: 'cancel', action: () => false },
+          { label: okText || 'OK', variant: 'ok', action: () => true },
+        ]
+        : [
+          { label: okText || 'OK', variant: 'ok', action: () => true },
+        ],
     });
+
+    return showCancel ? result === true : true;
   }
 
   function fmtMoney(value) {
@@ -2800,12 +2724,52 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
       await refreshSafe();
     }
 
-    function pickQtyPrompt(def = 1) {
-      const raw = prompt('Quantidade:', String(def));
-      if (raw === null) return null;
-      const q = toNum(raw, 0);
-      if (!(q > 0)) return null;
-      return q;
+    async function pickQtyPrompt(def = 1, act = '') {
+      const titles = {
+        reserve: 'Reservar quantidade',
+        unreserve: 'Desreservar quantidade',
+        consume: 'Baixar quantidade',
+      };
+      const inputId = 'lotQtyPromptInput';
+      const readQty = (modalRef) => {
+        const input = modalRef.card.querySelector(`#${inputId}`);
+        const q = toNum(input?.value, 0);
+        if (!(q > 0)) {
+          input?.focus();
+          input?.select?.();
+          throw new Error('Quantidade inválida.');
+        }
+        return q;
+      };
+
+      const pending = showCenterModal({
+        variant: 'info',
+        title: titles[act] || 'Quantidade',
+        message: `
+          <div class="fields fields-h-6 fields-value-bold">
+            <span>Quantidade</span>
+            <input id="${inputId}" type="number" step="0.001" min="0" value="${escapeHtml(def)}">
+          </div>`,
+        buttons: [
+          { label: 'Cancelar', variant: 'cancel', action: () => null },
+          { label: 'Confirmar', variant: 'ok', action: readQty },
+        ],
+      });
+
+      window.setTimeout(() => {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.focus();
+        input.select();
+        input.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter') return;
+          event.preventDefault();
+          input.closest('.center-modal')?.querySelector('.cm-footer .cm-ok')?.click();
+        });
+      }, 60);
+
+      const q = await pending;
+      return typeof q === 'number' && q > 0 ? q : null;
     }
 
     function attachHandlers() {
@@ -2861,7 +2825,7 @@ export async function initStockTab(ctx, { productId, productCode, initialProduct
             return;
           }
 
-          const qty = pickQtyPrompt(1);
+          const qty = await pickQtyPrompt(1, act);
           if (!qty) return;
 
           if (act === 'reserve') await LotsApi.reserve(id, qty);

@@ -291,7 +291,7 @@ export function showCenterModal(opt = {}) {
 
       finished = true;
 
-      document.removeEventListener('keydown', handleKeydown);
+      document.removeEventListener('keydown', handleKeydown, true);
 
       if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
@@ -312,17 +312,18 @@ export function showCenterModal(opt = {}) {
        TECLA ESC
     ================================================================= */
 
+    // captura: o aviso fica por cima de modais (modal.js), então o ESC é
+    // dele e não deve fechar também o modal que está embaixo
     function handleKeydown(event) {
       if (event.key !== 'Escape') return;
-      if (!closeOnEscape) return;
 
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
 
-      finish(null);
+      if (closeOnEscape) finish(null);
     }
 
-    document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('keydown', handleKeydown, true);
 
     /* =================================================================
        BACKDROP
