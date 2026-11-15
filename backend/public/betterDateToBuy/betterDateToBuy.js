@@ -24,6 +24,7 @@ const $ = (id) => document.getElementById(id);
 const state = {
   rows: [],
   suggestions: [],
+  lastSale: [],
   leadDays: 3,
   sortColumn: 'alert_day',
   sortDirection: 'asc',
@@ -518,6 +519,161 @@ async function createSuggested() {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// GERAR PELA ÚLTIMA VENDA (todos os clientes com NF-e no período)
+// ──────────────────────────────────────────────────────────────────────
+const LS_ACTION = {
+  create: '<span class="summary-pill summary-pill--success">Novo</span>',
+  update: '<span class="summary-pill summary-pill--warning">Atualizar</span>',
+  same: '<span class="summary-pill">Igual</span>'
+};
+
+function lsSelectable(row) {
+  if (row.action === 'create') return true;
+  if (row.action === 'update') return $('lsUpdate').checked;
+  return false;
+}
+
+function lsVisible() {
+  const show = $('lsShow').value;
+  return state.lastSale
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => !show || row.action === show);
+}
+
+function renderLsSummary() {
+  const count = (action) => state.lastSale.filter((r) => r.action === action).length;
+  $('lsSummary').innerHTML = state.lastSale.length ? `
+    <span class="summary-pill summary-pill--success">${count('create')}&nbsp;sem alerta</span>
+    <span class="summary-pill summary-pill--warning">${count('update')}&nbsp;com dia diferente</span>
+    <span class="summary-pill">${count('same')}&nbsp;já certos</span>` : '';
+}
+
+function renderLastSale() {
+  const tbody = $('lsTbody');
+  const list = lsVisible();
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="td-center">${state.lastSale.length
+      ? 'Nenhum cliente neste filtro.'
+      : 'Nenhum cliente com venda (NF-e) no período.'}</td></tr>`;
+  } else {
+    tbody.innerHTML = list.map(({ row, index }) => {
+      const can = lsSelectable(row);
+      const baseTitle = row.base_source === 'usual'
+        ? `Costuma comprar no dia ${row.base_day}`
+        : `Dia da última venda: ${row.base_day}`;
+      return `
+      <tr>
+        <td><input type="checkbox" data-index="${index}" ${can ? 'checked' : 'disabled'} aria-label="Selecionar ${escapeHtml(customerName(row))}" /></td>
+        <td class="td-left">${escapeHtml(customerName(row))}</td>
+        <td>${contactHtml(row)}</td>
+        <td>${escapeHtml(lastPurchaseText(row))}</td>
+        <td>${escapeHtml(row.purchases_12m)}</td>
+        <td>${escapeHtml(usualDayText(row))}</td>
+        <td>${row.existing_alert_day ? escapeHtml(row.existing_alert_day) : '<span class="td-muted">—</span>'}</td>
+        <td title="${escapeHtml(baseTitle)}"><div class="fields fields-h-5 fields-w-full fields-font-3"><input type="number" min="1" max="31" step="1" data-day="${index}" value="${escapeHtml(row.proposed_day)}" ${row.action === 'same' ? 'disabled' : ''} aria-label="Dia do contato" /></div></td>
+        <td>${LS_ACTION[row.action] || ''}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  $('lsAll').checked = list.some(({ row }) => lsSelectable(row));
+  renderLsSummary();
+  updateLsCount();
+}
+
+function selectedLastSale() {
+  return [...$('lsTbody').querySelectorAll('input[data-index]:checked')].map((box) => {
+    const index = Number(box.dataset.index);
+    const row = state.lastSale[index];
+    const dayInput = $('lsTbody').querySelector(`input[data-day="${index}"]`);
+    const nfe = row.last_nfe_number ? ` (NF-e ${row.last_nfe_number})` : '';
+    return {
+      customer_id: row.customer_id,
+      alert_day: Number(dayInput?.value),
+      action: row.action,
+      notes: `Gerado pela última venda em ${formatDateBR(row.last_purchase_date)}${nfe}`
+    };
+  });
+}
+
+function updateLsCount() {
+  const items = selectedLastSale();
+  const creates = items.filter((i) => i.action === 'create').length;
+  const updates = items.length - creates;
+  const parts = [];
+  if (creates) parts.push(`criar ${creates}`);
+  if (updates) parts.push(`atualizar ${updates}`);
+
+  $('lsInfo').textContent = state.lastSale.length
+    ? `${plural(state.lastSale.length, 'cliente', 'clientes')} com venda no período · ${items.length} selecionados`
+    : '';
+  $('btnLsGenerate').disabled = items.length === 0;
+  $('btnLsGenerateText').textContent = parts.length
+    ? `${parts.join(' e ').replace(/^./, (c) => c.toUpperCase())} ${items.length === 1 ? 'alerta' : 'alertas'}`
+    : 'Gerar alertas';
+}
+
+async function loadLastSale() {
+  $('lsTbody').innerHTML = '<tr><td colspan="9" class="td-center">Analisando a última venda de cada cliente...</td></tr>';
+  $('lsInfo').textContent = '';
+  $('lsSummary').innerHTML = '';
+  $('btnLsGenerate').disabled = true;
+
+  try {
+    const response = await requestJSON(`${API}/last-sale?months=${encodeURIComponent($('lsMonths').value)}`);
+    state.leadDays = Number(response.lead_days) || state.leadDays;
+    state.lastSale = response.data || [];
+    renderLastSale();
+  } catch (err) {
+    state.lastSale = [];
+    $('lsTbody').innerHTML = `<tr><td colspan="9" class="td-center">Não foi possível ler as vendas: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function openLastSale() {
+  Modal.open($('modalLastSale'));
+  loadLastSale();
+}
+
+async function generateFromLastSale() {
+  const items = selectedLastSale();
+  if (items.some((item) => !Number.isInteger(item.alert_day) || item.alert_day < 1 || item.alert_day > 31)) {
+    return notify('Confira o dia do contato: deve ser entre 1 e 31.', 'warning');
+  }
+
+  const creates = items.filter((i) => i.action === 'create').length;
+  const updates = items.length - creates;
+  const lines = [];
+  if (creates) lines.push(`${plural(creates, 'alerta novo', 'alertas novos')}`);
+  if (updates) lines.push(`${plural(updates, 'alerta com o dia atualizado', 'alertas com o dia atualizado')}`);
+
+  const ok = await confirmCenter(`Confirmar ${lines.join(' e ')}?`, {
+    title: 'Gerar pela última venda',
+    confirmLabel: 'Gerar'
+  });
+  if (!ok) return;
+
+  try {
+    const result = await requestJSON(`${API}/last-sale`, {
+      method: 'POST',
+      body: JSON.stringify({
+        update_existing: $('lsUpdate').checked,
+        items: items.map(({ action, ...item }) => item)
+      })
+    });
+    Modal.close($('modalLastSale'));
+    const done = [];
+    if (result.created) done.push(plural(result.created, 'alerta criado', 'alertas criados'));
+    if (result.updated) done.push(plural(result.updated, 'alerta atualizado', 'alertas atualizados'));
+    notify(done.length ? `${done.join(' e ')}.` : 'Nada a alterar.');
+    await loadAlerts();
+  } catch (err) {
+    notify(err.message, 'error');
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // INIT
 // ──────────────────────────────────────────────────────────────────────
 function bindEvents() {
@@ -563,6 +719,19 @@ function bindEvents() {
   });
   $('suggestTbody').addEventListener('change', updateSuggestCount);
   $('btnCreateSuggested').addEventListener('click', createSuggested);
+
+  $('btnLastSale').addEventListener('click', openLastSale);
+  $('lsMonths').addEventListener('change', loadLastSale);
+  $('lsShow').addEventListener('change', renderLastSale);
+  $('lsUpdate').addEventListener('change', renderLastSale);
+  $('lsAll').addEventListener('change', (event) => {
+    $('lsTbody').querySelectorAll('input[data-index]:not(:disabled)').forEach((box) => {
+      box.checked = event.target.checked;
+    });
+    updateLsCount();
+  });
+  $('lsTbody').addEventListener('change', updateLsCount);
+  $('btnLsGenerate').addEventListener('click', generateFromLastSale);
 }
 
 function init() {

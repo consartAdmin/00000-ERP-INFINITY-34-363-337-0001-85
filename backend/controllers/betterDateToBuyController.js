@@ -90,6 +90,47 @@ export async function suggestions(req, res) {
 
 
 // ──────────────────────────────────────────────────────────────────────
+// GERAR PELA ÚLTIMA VENDA (todos os clientes com NF-e no período)
+// GET  ?months=12 (0 = todo o histórico) → prévia com o dia proposto
+// POST { items: [{customer_id, alert_day, notes}], update_existing }
+// ──────────────────────────────────────────────────────────────────────
+export async function lastSaleProposals(req, res) {
+  try {
+    const raw = req.query.months;
+    const months = raw === undefined || raw === '' ? 12 : Number(raw);
+    const data = await api.getLastSaleProposals({ months });
+    res.json({ ok: true, lead_days: api.SUGGESTION_LEAD_DAYS, months, data });
+  } catch (err) {
+    fail(res, 'LAST SALE', err);
+  }
+}
+
+export async function generateFromLastSale(req, res) {
+  try {
+    const items = (Array.isArray(req.body?.items) ? req.body.items : [])
+      .map((item) => ({
+        customer_id: parseId(item?.customer_id),
+        alert_day: parseDay(item?.alert_day),
+        notes: typeof item?.notes === 'string' ? item.notes.slice(0, 500) : null
+      }))
+      .filter((item) => item.customer_id && item.alert_day);
+
+    if (!items.length) {
+      return res.status(400).json({ ok: false, error: 'Selecione ao menos um cliente.' });
+    }
+
+    const result = await api.upsertBetterDatesFromLastSale(items, {
+      updateExisting: req.body?.update_existing === true
+    });
+
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    fail(res, 'GENERATE LAST SALE', err);
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
 // CREATE
 // ──────────────────────────────────────────────────────────────────────
 export async function create(req, res) {

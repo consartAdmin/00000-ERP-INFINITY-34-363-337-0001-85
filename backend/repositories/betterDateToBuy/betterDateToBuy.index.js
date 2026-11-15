@@ -8,10 +8,15 @@ export {
   getTodayAlerts,
   getPurchaseStats,
   getSuggestions,
+  getLastSaleProposals,
   findByCustomer,
   SUGGESTION_LEAD_DAYS,
 } from './betterDateToBuyQuery.repository.js';
-export { createBetterDate, createBetterDatesBulk } from './betterDateToBuyCreate.repository.js';
+export {
+  createBetterDate,
+  createBetterDatesBulk,
+  upsertBetterDatesFromLastSale,
+} from './betterDateToBuyCreate.repository.js';
 export {
   updateBetterDate,
   markAlertSent,

@@ -14,6 +14,8 @@ router.get('/today-alerts', controller.todayAlerts);
 router.get('/suggestions', controller.suggestions);
 router.get('/purchase-profile/:customerId', controller.purchaseProfile);
 router.post('/bulk', controller.createBulk);
+router.get('/last-sale', controller.lastSaleProposals);
+router.post('/last-sale', controller.generateFromLastSale);
 
 router.get('/:id', controller.getById);
 router.post('/', controller.create);

@@ -23,6 +23,26 @@ const NFE_EXCLUDED_STATUSES = [
 // Avisar alguns dias antes do dia em que o cliente costuma comprar
 export const SUGGESTION_LEAD_DAYS = 3;
 
+// NF-e de saída → cliente. A NF-e pode vir de um pedido (orders) ou
+// direto de um orçamento (budget_id), igual ao Relatório de Vendas:
+// sem o orçamento, as notas emitidas pelo orçamento apareciam "Sem NF-e".
+const INV_CUSTOMER_SQL = `COALESCE(o.customer_id, bu.customer_id)`;
+
+const INV_FROM_SQL = `
+  FROM public."invoicesIssued" ii
+  LEFT JOIN public."orders" o
+    ON o.order_id = ii.order_id
+  LEFT JOIN public."budgets" bu
+    ON bu.budget_id = COALESCE(ii.budget_id, o.budget_id)
+`;
+
+const INV_WHERE_SQL = `
+  ii.issued_date IS NOT NULL
+  AND ii.cancelled_at IS NULL
+  AND UPPER(COALESCE(ii.nfe_status, '')) <> ALL($1::text[])
+  AND COALESCE(o.customer_id, bu.customer_id) IS NOT NULL
+`;
+
 const TODAY_SQL = `(NOW() AT TIME ZONE 'America/Sao_Paulo')::date`;
 
 // Campos calculados da situação do alerta (b = "betterDateToBuy")
@@ -96,19 +116,14 @@ export async function getPurchaseStats(customerIds = null) {
   const sql = `
     WITH inv AS (
       SELECT
-        o.customer_id,
+        ${INV_CUSTOMER_SQL} AS customer_id,
         ii.invoice_id,
         ii.nfe_number,
         ii.issued_date::date AS d,
         COALESCE(ii.total_amount, 0)::numeric AS total
-      FROM public."invoicesIssued" ii
-      JOIN public."orders" o
-        ON o.order_id = ii.order_id
-      WHERE ii.issued_date IS NOT NULL
-        AND ii.cancelled_at IS NULL
-        AND UPPER(COALESCE(ii.nfe_status, '')) <> ALL($1::text[])
-        AND o.customer_id IS NOT NULL
-        AND ($2::int[] IS NULL OR o.customer_id = ANY($2::int[]))
+      ${INV_FROM_SQL}
+      WHERE ${INV_WHERE_SQL}
+        AND ($2::int[] IS NULL OR ${INV_CUSTOMER_SQL} = ANY($2::int[]))
     ),
     last_inv AS (
       SELECT DISTINCT ON (customer_id)
@@ -320,14 +335,9 @@ export async function getTodayAlerts() {
 export async function getSuggestions({ minPurchases = 3, limit = 100 } = {}) {
   const sql = `
     WITH inv AS (
-      SELECT o.customer_id, ii.issued_date::date AS d
-      FROM public."invoicesIssued" ii
-      JOIN public."orders" o
-        ON o.order_id = ii.order_id
-      WHERE ii.issued_date IS NOT NULL
-        AND ii.cancelled_at IS NULL
-        AND UPPER(COALESCE(ii.nfe_status, '')) <> ALL($1::text[])
-        AND o.customer_id IS NOT NULL
+      SELECT ${INV_CUSTOMER_SQL} AS customer_id, ii.issued_date::date AS d
+      ${INV_FROM_SQL}
+      WHERE ${INV_WHERE_SQL}
         AND ii.issued_date >= (${TODAY_SQL} - INTERVAL '12 months')
     )
     SELECT
@@ -362,4 +372,82 @@ export async function getSuggestions({ minPurchases = 3, limit = 100 } = {}) {
   return rows
     .map(({ n, ...row }) => ({ ...row, ...(stats.get(Number(row.customer_id)) || {}) }))
     .filter((row) => row.suggested_day);
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// GERAR PELA ÚLTIMA VENDA: todos os clientes com NF-e de saída no
+// período, com o dia de contato proposto e o alerta que já existe.
+//
+// Dia proposto = alguns dias antes do dia em que o cliente costuma
+// comprar (mediana das NF-e de 12 meses); se não houver compra nos
+// últimos 12 meses, usa o dia da última venda.
+//
+// action: create  → cliente sem alerta
+//         update  → já tem alerta com outro dia
+//         same    → já tem alerta neste dia
+// ──────────────────────────────────────────────────────────────────────
+export async function getLastSaleProposals({ months = 12 } = {}) {
+  const m = Number(months);
+  const monthsParam = Number.isInteger(m) && m > 0 ? m : null;
+
+  const sql = `
+    WITH inv AS (
+      SELECT ${INV_CUSTOMER_SQL} AS customer_id, ii.issued_date::date AS d
+      ${INV_FROM_SQL}
+      WHERE ${INV_WHERE_SQL}
+    ),
+    last_sale AS (
+      SELECT customer_id, MAX(d) AS last_d
+      FROM inv
+      GROUP BY customer_id
+    )
+    SELECT
+      ls.customer_id,
+      c.trade_name,
+      c.legal_name,
+      c.mobile_number,
+      c.phone_number,
+      b.better_date_to_buy_id AS existing_alert_id,
+      b.alert_day AS existing_alert_day,
+      COALESCE(b.status, 'active') AS existing_status
+    FROM last_sale ls
+    JOIN customers c
+      ON c.customer_id = ls.customer_id
+    LEFT JOIN "betterDateToBuy" b
+      ON b.customer_id = ls.customer_id
+    WHERE ($2::int IS NULL OR ls.last_d >= (${TODAY_SQL} - make_interval(months => $2::int)))
+    ORDER BY ls.last_d DESC, c.trade_name ASC
+  `;
+
+  let rows;
+  try {
+    ({ rows } = await pool.query(sql, [NFE_EXCLUDED_STATUSES, monthsParam]));
+  } catch (err) {
+    console.warn('[betterDateToBuy] última venda indisponível:', err.message);
+    return [];
+  }
+
+  const stats = await getPurchaseStats(rows.map((r) => r.customer_id));
+
+  return rows
+    .map((row) => {
+      const st = stats.get(Number(row.customer_id)) || {};
+      const lastDay = st.last_purchase_date ? Number(st.last_purchase_date.slice(8, 10)) : null;
+      const baseDay = st.usual_day || lastDay;
+      const proposedDay = baseDay ? suggestedDayOf(baseDay) : null;
+      const hasAlert = row.existing_alert_id != null;
+      const existingDay = hasAlert ? Number(row.existing_alert_day) : null;
+
+      return {
+        ...row,
+        existing_alert_day: existingDay,
+        ...st,
+        base_day: baseDay,
+        base_source: st.usual_day ? 'usual' : 'last_sale',
+        proposed_day: proposedDay,
+        action: !hasAlert ? 'create' : (existingDay === proposedDay ? 'same' : 'update'),
+      };
+    })
+    .filter((row) => row.proposed_day);
 }
