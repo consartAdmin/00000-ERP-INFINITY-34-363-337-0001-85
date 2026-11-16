@@ -500,6 +500,10 @@ app.use(
    usersDashboardAccessRoutes
 );
 
+// Meus atalhos de teclado (Home) — cada usuário cadastra os seus
+import userShortcutsRoutes from './routes/userShortcutsRoutes.js';
+app.use('/api/user-shortcuts', userShortcutsRoutes);
+
 import salesAnalyticsRoutes
    from './routes/salesAnalyticsRoutes.js';
 

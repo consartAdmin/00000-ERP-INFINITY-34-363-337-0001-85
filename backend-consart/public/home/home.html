@@ -16,17 +16,18 @@
 <body>
   <div id="menuConsartMount"></div>
 
-  <!-- Atalhos de teclado da Home (lista aparece ao passar o mouse) -->
-  <span id="homeShortcutsHelp"
+  <!-- Atalhos de teclado do usuário: lista no hover (montada pelo home.js) e,
+       no clique, abre a tela "Meus Atalhos de Teclado" -->
+  <a id="homeShortcutsHelp" href="/public/userShortcuts/userShortcuts.html"
     class="hover-mouse-shows hover-mouse-shows-trigger hover-shows-bottom-end hover-shows-multiline hover-shows-width-md"
-    tabindex="0" role="img" aria-label="Atalhos de teclado"
-    data-hover-text="Atalhos de teclado&#10;&#10;Ctrl + Z · Buscar produto&#10;Ctrl + C · Buscar cliente&#10;Ctrl + B · Abrir Orçamentos&#10;Ctrl + I · Abrir Inventário&#10;Ctrl + K · Buscar no menu">
+    aria-label="Meus atalhos de teclado"
+    data-hover-text="Meus atalhos de teclado&#10;&#10;Ctrl + Z · Buscar produto&#10;Ctrl + C · Buscar cliente&#10;Ctrl + B · Abrir Orçamentos&#10;Ctrl + I · Abrir Inventário&#10;Ctrl + K · Buscar no menu&#10;&#10;Clique para criar ou alterar">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <rect x="2" y="6" width="20" height="12" rx="2" />
       <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" />
     </svg>
-  </span>
+  </a>
 
   <main id="includeDashBoard" class="dashboard-is-loading" tabindex="-1" aria-label="Dashboard CONSART"
     aria-busy="true">
@@ -80,7 +81,7 @@
     </div>
   </div>
 
-  <script type="module" src="./home.js"></script>
+  <script type="module" src="./home.js?v=20261116-2"></script>
   <script type="module" src="/public/includes/js/menuConsart.js"></script>
   <script type="module" src="/public/includes/js/core.js"></script>
   <script type="module" src="/public/includes/js/dashBoards/includeDashboard.js"></script>

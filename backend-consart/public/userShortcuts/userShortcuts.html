@@ -1,0 +1,149 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ userShortcuts.html — Meus Atalhos de Teclado | CONSART ERP                 ║
+     ║ Path: backend/public/userShortcuts/userShortcuts.html                      ║
+     ║                                                                            ║
+     ║ Cada usuário cadastra os próprios atalhos (Ctrl + letra) usados na Home.   ║
+     ║ Abre pelo clique no ícone ⌨ do canto superior direito da Home.             ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated · ações: actionIcons.js                  ║
+     ║  - Cadastro/edição: modals.css + modal.js · avisos: centerAlertModal.js    ║
+     ║ API: /api/user-shortcuts                                                   ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MEUS ATALHOS DE TECLADO | CONSART ERP</title>
+  <link rel="icon" href="/public/imagens/brasaoConsartInfinity.png">
+  <link rel="stylesheet" href="/public/includes/css/style.css">
+</head>
+
+<body class="consart-theme p-page pw-page--full ph-page--xr">
+  <div id="menuConsartMount"></div>
+
+  <main class="consart-container consart-container--full consart-container--ultraslim">
+    <section class="table-layout-integrated table-max-height-700" aria-label="Meus atalhos de teclado">
+      <div class="table-layout-integrated__filter">
+        <div class="summary summary--between summary-gap-8">
+          <h4 class="table-layout-integrated__filter-title">Meus Atalhos de Teclado</h4>
+          <small>Valem na Home só para você · aparecem no ícone ⌨ do canto superior direito</small>
+        </div>
+
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+          <div class="fields fields-h-6 fields-w-14 fields-font-3">
+            <label for="shortcutsSearch">Buscar</label>
+            <input id="shortcutsSearch" type="search" placeholder="Tecla, módulo ou texto..." autocomplete="off">
+          </div>
+
+          <div class="fields fields-h-6 fields-w-6 fields-font-3">
+            <label for="shortcutsStatus">Status</label>
+            <select id="shortcutsStatus">
+              <option value="all" selected>Todos</option>
+              <option value="active">Ativos</option>
+              <option value="inactive">Inativos</option>
+            </select>
+          </div>
+
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <a href="/public/home/home.html" class="btn btn-toolbar btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Voltar à Home</span></a>
+            <button id="btnNewShortcut" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo atalho</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-scroll table-height-flex table-row-h-20">
+        <table id="shortcutsTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-col-w-2">Atalho</th>
+              <th class="table-col-w-4">Ação</th>
+              <th class="th-left">Destino</th>
+              <th class="th-left">Texto no ícone ⌨</th>
+              <th class="table-col-w-2">Status</th>
+              <th class="table-col-w-3">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="shortcutsTableBody"></tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-left-space-3">
+            <span id="shortcutsInfo">Carregando...</span>
+          </div>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- MODAL — NOVO / EDITAR ATALHO -->
+  <div class="modal modal-width-4 modal-header-color-3 modal-footer-color-3" id="shortcutModal" role="dialog"
+    aria-modal="true" aria-labelledby="shortcutModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="shortcutModalTitle">Novo atalho</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="shortcutForm" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="shortcutId">
+
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="shortcutKey">Tecla *</label>
+              <select id="shortcutKey" required></select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="shortcutAction">Ação *</label>
+              <select id="shortcutAction" required>
+                <option value="open_module">Abrir módulo</option>
+                <option value="product_search">Buscar produto (janela)</option>
+                <option value="customer_search">Buscar cliente (janela)</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-6" id="shortcutModuleField">
+              <label for="shortcutModule">Módulo *</label>
+              <select id="shortcutModule"></select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="shortcutLabel">Texto no ícone ⌨ *</label>
+              <input id="shortcutLabel" type="text" maxlength="40" required placeholder="Ex.: Abrir Inventário">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="shortcutStatus">Status</label>
+              <select id="shortcutStatus">
+                <option value="true" selected>Ativo</option>
+                <option value="false">Inativo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="summary summary-gap-8" style="margin-top:12px">
+            <div class="summary-pill summary-pill--info" id="shortcutPreview">Prévia: Ctrl + ?</div>
+            <small id="shortcutBlockedHint"></small>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button type="submit" form="shortcutForm" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/public/includes/js/menuConsart.js"></script>
+  <script type="module" src="/public/includes/js/core.js"></script>
+  <script type="module" src="/public/userShortcuts/userShortcuts.js?v=20261116-1"></script>
+</body>
+
+</html>

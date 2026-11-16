@@ -2,10 +2,9 @@
 // 📁 home.js – Home CONSART ERP                                            //
 // ✅ Permissões por módulo                                                  //
 // ✅ Tema Claro / Escuro                                                    //
-// ✅ Atalho Ctrl + Z → Buscar Produto                                       //
-// ✅ Atalho Ctrl + B → Abrir Orçamentos                                     //
-// ✅ Atalho Ctrl + C → Buscar Cliente                                       //
-// ✅ Atalho Ctrl + I → Abrir Inventário                                     //
+// ✅ Atalhos Ctrl + letra de cada usuário (/api/user-shortcuts)             //
+//    padrão: Z produto · C cliente · B orçamentos · I inventário            //
+// ✅ Ícone ⌨ lista os atalhos no hover e abre "Meus atalhos" no clique      //
 // ✅ Reaproveita productsModalSearch.js                                     //
 // ✅ Reaproveita customersModalSearch.js                                    //
 // ✅ Card Posição de Estoque                                                //
@@ -287,22 +286,6 @@ function openShortcutCustomerSearch() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// 🧾 Abrir Orçamentos
-////////////////////////////////////////////////////////////////////////////////
-
-function openBudgetsPage() {
-  window.location.href = BUDGETS_PAGE;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 📦 Abrir Inventário
-////////////////////////////////////////////////////////////////////////////////
-
-function openInventoryPage() {
-  window.location.href = INVENTORY_PAGE;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // 📊 POSIÇÃO DE ESTOQUE — CARD HOME
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -477,8 +460,73 @@ function configurarCliquePedidosEcommerce() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ⌨️ Atalho Global
+// ⌨️ Atalhos de teclado do usuário (tela "Meus Atalhos de Teclado")
 ////////////////////////////////////////////////////////////////////////////////
+
+const USER_SHORTCUTS_API = '/api/user-shortcuts?active=true';
+
+// Usados enquanto a API não responde (ou se falhar): os atalhos de sempre
+const DEFAULT_HOME_SHORTCUTS = [
+  { key_char: 'Z', action: 'product_search', label: 'Buscar produto' },
+  { key_char: 'C', action: 'customer_search', label: 'Buscar cliente' },
+  { key_char: 'B', action: 'open_module', module_href: BUDGETS_PAGE, label: 'Abrir Orçamentos' },
+  { key_char: 'I', action: 'open_module', module_href: INVENTORY_PAGE, label: 'Abrir Inventário' },
+];
+
+let homeShortcuts = new Map();
+
+function setHomeShortcuts(list) {
+  homeShortcuts = new Map(
+    (list || [])
+      .filter((s) => s && /^[A-Z]$/.test(String(s.key_char || '').toUpperCase()))
+      .map((s) => [String(s.key_char).toLowerCase(), s])
+  );
+  renderShortcutsHelp();
+}
+
+// Monta o texto do ícone ⌨ (canto superior direito)
+function renderShortcutsHelp() {
+  const el = document.getElementById('homeShortcutsHelp');
+  if (!el) return;
+
+  const lines = [...homeShortcuts.values()]
+    .sort((a, b) => String(a.key_char).localeCompare(String(b.key_char)))
+    .map((s) => `Ctrl + ${String(s.key_char).toUpperCase()} · ${s.label}`);
+
+  lines.push('Ctrl + K · Buscar no menu');
+
+  el.setAttribute(
+    'data-hover-text',
+    `Meus atalhos de teclado\n\n${lines.join('\n')}\n\nClique para criar ou alterar`
+  );
+}
+
+async function loadHomeShortcuts() {
+  try {
+    const res = await fetch(USER_SHORTCUTS_API, {
+      headers: { ...authHeaders(), Accept: 'application/json' },
+    });
+    const payload = await res.json().catch(() => null);
+    if (!res.ok || !Array.isArray(payload?.data)) throw new Error(payload?.error || `HTTP ${res.status}`);
+    setHomeShortcuts(payload.data);
+  } catch (err) {
+    console.warn('[HOME][SHORTCUTS] Usando os atalhos padrão:', err?.message || err);
+  }
+}
+
+function runHomeShortcut(shortcut) {
+  if (shortcut.action === 'product_search') return openShortcutProductSearch();
+  if (shortcut.action === 'customer_search') return openShortcutCustomerSearch();
+  if (shortcut.action === 'open_module' && String(shortcut.module_href || '').startsWith('/')) {
+    window.location.href = shortcut.module_href;
+  }
+}
+
+setHomeShortcuts(DEFAULT_HOME_SHORTCUTS);
+document.addEventListener('DOMContentLoaded', () => {
+  renderShortcutsHelp();
+  loadHomeShortcuts();
+});
 
 document.addEventListener('keydown', (event) => {
   try {
@@ -496,44 +544,15 @@ document.addEventListener('keydown', (event) => {
       return;
     }
 
-    if (key === 'z') {
-      console.log('[HOME][CTRL_Z_TRIGGERED]');
+    const shortcut = homeShortcuts.get(key);
+    if (!shortcut) return;
 
-      event.preventDefault();
-      event.stopPropagation();
+    console.log(`[HOME][CTRL_${key.toUpperCase()}_TRIGGERED]`, shortcut.action);
 
-      openShortcutProductSearch();
-      return;
-    }
+    event.preventDefault();
+    event.stopPropagation();
 
-    if (key === 'b') {
-      console.log('[HOME][CTRL_B_TRIGGERED]');
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      openBudgetsPage();
-      return;
-    }
-
-    if (key === 'c') {
-      console.log('[HOME][CTRL_C_TRIGGERED]');
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      openShortcutCustomerSearch();
-      return;
-    }
-
-    if (key === 'i') {
-      console.log('[HOME][CTRL_I_TRIGGERED]');
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      openInventoryPage();
-    }
+    runHomeShortcut(shortcut);
 
   } catch (err) {
     console.error('[HOME][SHORTCUT_ERROR]', err);
