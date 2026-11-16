@@ -118,6 +118,13 @@ export function enhanceBrDateTime(native) {
         native.required = false;
     }
 
+    // Campo somente leitura (ex.: Emissão/Vencimento no modal Receber)
+    const locked = native.readOnly || native.disabled;
+    if (locked) {
+        text.readOnly = true;
+        text.tabIndex = -1;
+    }
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'br-dt-btn';
@@ -127,7 +134,8 @@ export function enhanceBrDateTime(native) {
     const wrap = document.createElement('span');
     wrap.className = 'br-dt-wrap';
     native.parentNode.insertBefore(wrap, native);
-    wrap.append(text, native, btn);
+    wrap.append(text, native);
+    if (!locked) wrap.append(btn);
 
     native.classList.add('br-dt-native');
     native.tabIndex = -1;
