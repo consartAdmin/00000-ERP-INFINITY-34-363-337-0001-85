@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="/public/includes/css/style.css" />
 
   <!-- CSS específico desta página -->
-  <link rel="stylesheet" href="./groupsAndSubgroupsBatch.css?v=3" />
+  <link rel="stylesheet" href="./groupsAndSubgroupsBatch.css?v=4" />
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
@@ -185,8 +185,32 @@
 
   </main>
 
+  <!-- ✅ Modal de confirmação — padrão global modals.css + modal.js -->
+  <div id="gsbConfirmModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <div class="modal__panel modal__panel--sm modal-header-color-3 modal-footer-color-1" role="dialog"
+        aria-modal="true" aria-labelledby="gsbConfirmTitle">
+        <header class="modal__header">
+          <h3 id="gsbConfirmTitle" class="modal__title">Confirmar ação</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar modal"
+            title="Fechar">×</button>
+        </header>
+
+        <div id="gsbConfirmBody" class="modal__body"></div>
+
+        <footer class="modal__footer">
+          <div class="modal-spacer"></div>
+          <button id="gsbConfirmCancel" type="button" class="btn btn-cancel btn-sm" data-modal-close>Cancelar</button>
+          <button id="gsbConfirmOk" type="button" class="btn btn-save btn-sm">Confirmar</button>
+        </footer>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="./groupsAndSubgroupsBatch.js?v=5"></script>
+  <script type="module" src="./groupsAndSubgroupsBatch.js?v=6"></script>
 </body>
 
 </html>

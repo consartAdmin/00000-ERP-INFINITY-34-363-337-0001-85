@@ -14,6 +14,7 @@
 'use strict';
 
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { Modal } from '/public/includes/js/modal.js';
 
 /* ──────────────────────────────────────────────────────────────
    API BASE (padrão CONSART) + ROUTES
@@ -48,7 +49,8 @@ const PRODUCTS_LIST_CANDIDATES = [
 ];
 
 /* ──────────────────────────────────────────────────────────────
-   Confirm modal (CONSART Standard) — substitui window.confirm
+   Confirm modal — padrão global modals.css + modal.js (#gsbConfirmModal)
+   Fecha com Cancelar, X, clique fora ou Esc (modal.js) → resolve false
 ───────────────────────────────────────────────────────────── */
 function confirmCenterModal({
   title = 'Confirmar ação',
@@ -56,41 +58,33 @@ function confirmCenterModal({
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
 } = {}) {
+  const modal = document.getElementById('gsbConfirmModal');
+  if (!modal) return Promise.resolve(window.confirm(String(title)));
+
+  Modal.setup();
+
+  modal.querySelector('#gsbConfirmTitle').textContent = title;
+  modal.querySelector('#gsbConfirmBody').innerHTML = message;
+  modal.querySelector('#gsbConfirmCancel').textContent = cancelText;
+  const okBtn = modal.querySelector('#gsbConfirmOk');
+  okBtn.textContent = confirmText;
+
   return new Promise((resolve) => {
-    const overlay = document.createElement('div');
-    overlay.className = 'gsb-confirm-overlay';
-    overlay.innerHTML = `
-      <div class="gsb-confirm-card" role="dialog" aria-modal="true" aria-label="${title}">
-        <div class="btn btn-toolbar btn-sm">
-          <div class="btn btn-toolbar btn-sm">${title}</div>
-        </div>
-        <div class="gsb-confirm-body">${message}</div>
-        <div class="gsb-confirm-foot">
-          <button type="button" class="btn btn-toolbar btn-sm" data-act="cancel">${cancelText}</button>
-          <button type="button" class="btn btn-toolbar btn-sm" data-act="ok">${confirmText}</button>
-        </div>
-      </div>
-    `;
+    let result = false;
 
-    const cleanup = (val) => {
-      document.removeEventListener('keydown', onEsc);
-      overlay.remove();
-      resolve(val);
+    const onOk = () => {
+      result = true;
+      Modal.close(modal);
+    };
+    const onClose = () => {
+      okBtn.removeEventListener('click', onOk);
+      modal.removeEventListener('modal:close', onClose);
+      resolve(result);
     };
 
-    const onEsc = (e) => {
-      if (e.key === 'Escape') cleanup(false);
-    };
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) cleanup(false);
-    });
-
-    overlay.querySelector('[data-act="cancel"]').addEventListener('click', () => cleanup(false));
-    overlay.querySelector('[data-act="ok"]').addEventListener('click', () => cleanup(true));
-
-    document.addEventListener('keydown', onEsc);
-    document.body.appendChild(overlay);
+    okBtn.addEventListener('click', onOk);
+    modal.addEventListener('modal:close', onClose);
+    Modal.open(modal, { focusSelector: '#gsbConfirmOk' });
   });
 }
 
