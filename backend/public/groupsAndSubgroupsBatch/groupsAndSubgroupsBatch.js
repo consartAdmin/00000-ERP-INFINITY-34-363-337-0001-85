@@ -5,6 +5,7 @@
 // ║ - Filtro: todos / com grupo / sem grupo                               ║
 // ║ - Seleção de Grupo (combo /api/products-groups)                       ║
 // ║ - Subgrupo (best-effort /api/products-subgroups)                      ║
+// ║ - Família (3º nível, /api/products-families?subgroup_id=)             ║
 // ║ - POST em lote para /api/products-groups/batch/assign                 ║
 // ║ - POST limpar para /api/products-groups/batch/clear                   ║
 // ║ ✅ Padrão CONSART: API_BASE + ROUTES                                  ║
@@ -32,6 +33,7 @@ const ROUTES = Object.freeze({
   PRODUCTS_LIST: '/api/products',              // ✅ rota principal do seu ERP
   GROUPS_LIST: '/api/products-groups',
   SUBGROUPS_LIST: '/api/products-subgroups',
+  FAMILIES_LIST: '/api/products-families',
 
   BATCH_ASSIGN: '/api/products-groups/batch/assign',
   BATCH_CLEAR: '/api/products-groups/batch/clear',
@@ -108,9 +110,12 @@ const state = {
   groupsMap: new Map(),     // id -> name
   subgroupsMap: new Map(),  // id -> name (do grupo selecionado)
   allSubgroupsMap: new Map(), // id -> name (todos, para a coluna Subgrupo da tabela)
+  familiesMap: new Map(),     // id -> name (do subgrupo selecionado)
+  allFamiliesMap: new Map(),  // id -> name (todas, para a coluna Família da tabela)
 
   newGroupId: '',
   newSubgroupId: '',
+  newFamilyId: '',
 };
 
 // helpers DOM
@@ -136,10 +141,12 @@ const els = {
 
   groupSelect: $('#gsb-group-select'),
   subgroupSelect: $('#gsb-subgroup-select'),
+  familySelect: $('#gsb-family-select'),
   subgroupHelp: $('#gsb-subgroup-help'),
 
   summaryGroup: $('#gsb-summary-group'),
   summarySubgroup: $('#gsb-summary-subgroup'),
+  summaryFamily: $('#gsb-summary-family'),
 
   applyBtn: $('#gsb-apply-batch'),
   clearBtn: $('#gsb-clear-batch'),
@@ -261,6 +268,7 @@ function normalizeProduct(row) {
 
   const product_group_id = row.product_group_id ?? row.group_id ?? row.products_group_id ?? row.groupId ?? null;
   const product_subgroup_id = row.product_subgroup_id ?? row.subgroup_id ?? row.group_sub_id ?? row.subgroupId ?? null;
+  const product_family_id = row.product_family_id ?? row.family_id ?? row.familyId ?? null;
 
   const is_active = row.is_active ?? row.active ?? true;
 
@@ -270,6 +278,7 @@ function normalizeProduct(row) {
     description,
     product_group_id,
     product_subgroup_id,
+    product_family_id,
     is_active,
   };
 }
@@ -284,6 +293,73 @@ function subgroupLabel(subgroupId) {
   if (!subgroupId) return '-';
   const name = state.allSubgroupsMap.get(Number(subgroupId)) ?? state.subgroupsMap.get(Number(subgroupId));
   return name ? String(name) : String(subgroupId);
+}
+
+function familyLabel(familyId) {
+  if (!familyId) return '-';
+  const name = state.allFamiliesMap.get(Number(familyId)) ?? state.familiesMap.get(Number(familyId));
+  return name ? String(name) : String(familyId);
+}
+
+/** Carrega todas as famílias só para exibir o nome na tabela (falha não bloqueia a tela) */
+async function loadAllFamilyNames() {
+  try {
+    const data = await safeJson(`${API_BASE}${ROUTES.FAMILIES_LIST}?limit=2000`);
+    state.allFamiliesMap.clear();
+    extractList(data).forEach((f) => {
+      const id = Number(f.product_family_id ?? f.id);
+      const name = f.name ?? f.family_name ?? f.description;
+      if (Number.isInteger(id) && name) state.allFamiliesMap.set(id, String(name));
+    });
+  } catch (err) {
+    console.warn('[GSB] Nomes de famílias indisponíveis', err?.message || err);
+  }
+}
+
+function resetFamilySelect(text = 'Selecione um subgrupo para carregar famílias...') {
+  if (!els.familySelect) return;
+  state.familiesMap.clear();
+  state.newFamilyId = '';
+  els.familySelect.innerHTML = `<option value="">${text}</option>`;
+  els.familySelect.disabled = true;
+  if (els.summaryFamily) els.summaryFamily.textContent = '-';
+}
+
+async function loadFamiliesBySubgroupId(subgroupId) {
+  if (!els.familySelect) return;
+  if (!subgroupId) {
+    resetFamilySelect();
+    return;
+  }
+
+  resetFamilySelect('Carregando famílias...');
+
+  try {
+    const url = `${API_BASE}${ROUTES.FAMILIES_LIST}?subgroup_id=${encodeURIComponent(subgroupId)}&limit=2000&is_active=true`;
+    const list = extractList(await safeJson(url));
+
+    if (!list.length) {
+      resetFamilySelect('(Nenhuma família neste subgrupo)');
+      return;
+    }
+
+    els.familySelect.innerHTML = '<option value="">(Opcional) selecione uma família...</option>';
+    list.forEach((f) => {
+      const id = f.product_family_id ?? f.id;
+      const name = f.name ?? f.family_name ?? `Família #${id}`;
+      if (!Number.isInteger(Number(id))) return;
+      state.familiesMap.set(Number(id), String(name));
+
+      const opt = document.createElement('option');
+      opt.value = String(id);
+      opt.textContent = String(name);
+      els.familySelect.appendChild(opt);
+    });
+    els.familySelect.disabled = false;
+  } catch (err) {
+    console.warn('[GSB] Famílias indisponíveis', err?.message || err);
+    resetFamilySelect('(Famílias indisponíveis)');
+  }
 }
 
 /** Carrega todos os subgrupos só para exibir o nome na tabela (falha não bloqueia a tela) */
@@ -468,10 +544,10 @@ async function fetchProducts() {
 ───────────────────────────────────────────────────────────── */
 async function clearOneProduct(productId, sku) {
   const ok = await confirmCenterModal({
-    title: 'Limpar Grupo/Subgrupo',
+    title: 'Limpar Grupo/Subgrupo/Família',
     message: `
       <div>
-        Deseja realmente <strong>LIMPAR</strong> Grupo/Subgrupo deste produto?
+        Deseja realmente <strong>LIMPAR</strong> Grupo/Subgrupo/Família deste produto?
         <br><br>
         <strong>Produto ID:</strong> ${productId}<br>
         <strong>SKU:</strong> ${sku || '-'}
@@ -491,7 +567,7 @@ async function clearOneProduct(productId, sku) {
     showCenterModal({
       variant: 'success',
       title: 'Limpo',
-      message: `Grupo/Subgrupo removido do produto ${sku || ''}`.trim(),
+      message: `Grupo/Subgrupo/Família removidos do produto ${sku || ''}`.trim(),
       timeoutMs: 4000,
     });
 
@@ -515,7 +591,7 @@ function renderProductsTable() {
   if (!state.products.length) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 8;
+    td.colSpan = 9;
     td.textContent =
       state.q && state.q.length >= 3
         ? 'Nenhum produto encontrado para a busca.'
@@ -536,6 +612,7 @@ function renderProductsTable() {
     const description = p.description;
     const groupId = p.product_group_id;
     const subgroupId = p.product_subgroup_id;
+    const familyId = p.product_family_id;
     const isLinked = !!groupId;
 
     // ☑️ checkbox
@@ -567,6 +644,10 @@ function renderProductsTable() {
     const tdSub = document.createElement('td');
     tdSub.textContent = subgroupLabel(subgroupId);
 
+    // Família
+    const tdFamily = document.createElement('td');
+    tdFamily.textContent = familyLabel(familyId);
+
     // Vinculado?
     const tdStatus = document.createElement('td');
     const badge = document.createElement('span');
@@ -587,7 +668,7 @@ function renderProductsTable() {
     btnClear.addEventListener('click', () => clearOneProduct(productId, sku));
     tdClear.appendChild(btnClear);
 
-    tr.append(tdCheck, tdProductId, tdSku, tdDesc, tdGroup, tdSub, tdStatus, tdClear);
+    tr.append(tdCheck, tdProductId, tdSku, tdDesc, tdGroup, tdSub, tdFamily, tdStatus, tdClear);
     els.tbody.appendChild(tr);
   });
 
@@ -640,12 +721,17 @@ function updateSelectionInfo() {
 function updateSummary() {
   const gid = els.groupSelect.value;
   const sgid = els.subgroupSelect.value;
+  const fid = els.familySelect && !els.familySelect.disabled ? els.familySelect.value : '';
 
   state.newGroupId = gid || '';
   state.newSubgroupId = sgid || '';
+  state.newFamilyId = fid || '';
 
   els.summaryGroup.textContent = gid ? (state.groupsMap.get(Number(gid)) || `#${gid}`) : '-';
   els.summarySubgroup.textContent = sgid ? (state.subgroupsMap.get(Number(sgid)) || `#${sgid}`) : '-';
+  if (els.summaryFamily) {
+    els.summaryFamily.textContent = fid ? (state.familiesMap.get(Number(fid)) || `#${fid}`) : '-';
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -656,7 +742,7 @@ async function applyBatchAssign() {
     showCenterModal({
       variant: 'warning',
       title: 'Nenhum produto selecionado',
-      message: 'Selecione ao menos um produto para aplicar Grupo/Subgrupo.',
+      message: 'Selecione ao menos um produto para aplicar Grupo/Subgrupo/Família.',
       timeoutMs: 5000,
     });
     return;
@@ -674,15 +760,21 @@ async function applyBatchAssign() {
   }
 
   const subgroupId = els.subgroupSelect.disabled ? '' : (els.subgroupSelect.value || '');
+  const familyId = !subgroupId || !els.familySelect || els.familySelect.disabled ? '' : (els.familySelect.value || '');
+  const familyNote = subgroupId && !familyId
+    ? '<br><small>Sem família escolhida: a família dos produtos fica vazia.</small>'
+    : '';
 
   const proceed = await confirmCenterModal({
-    title: 'Aplicar Grupo/Subgrupo em lote',
+    title: 'Aplicar Grupo/Subgrupo/Família em lote',
     message: `
       <div>
         Você está prestes a aplicar:
         <br><br>
         <strong>Grupo:</strong> ${els.summaryGroup.textContent || '-'}<br>
-        <strong>Subgrupo:</strong> ${els.summarySubgroup.textContent || '-'}
+        <strong>Subgrupo:</strong> ${els.summarySubgroup.textContent || '-'}<br>
+        <strong>Família:</strong> ${els.summaryFamily?.textContent || '-'}
+        ${familyNote}
         <br><br>
         Para <strong>${state.selected.size}</strong> produto(s).
         <br><br>
@@ -702,6 +794,7 @@ async function applyBatchAssign() {
       only_active_products: state.onlyActive,
     };
     if (payload.product_subgroup_id === undefined) delete payload.product_subgroup_id;
+    if (familyId) payload.product_family_id = Number(familyId);
 
     await safeJson(`${API_BASE}${ROUTES.BATCH_ASSIGN}`, {
       method: 'POST',
@@ -711,7 +804,7 @@ async function applyBatchAssign() {
     showCenterModal({
       variant: 'success',
       title: 'Aplicado com sucesso',
-      message: `Grupo/Subgrupo aplicado para ${state.selected.size} produto(s).`,
+      message: `Grupo/Subgrupo/Família aplicados para ${state.selected.size} produto(s).`,
       timeoutMs: 5000,
     });
 
@@ -732,17 +825,17 @@ async function clearBatchSelected() {
     showCenterModal({
       variant: 'warning',
       title: 'Nenhum produto selecionado',
-      message: 'Selecione ao menos um produto para limpar Grupo/Subgrupo.',
+      message: 'Selecione ao menos um produto para limpar Grupo/Subgrupo/Família.',
       timeoutMs: 5000,
     });
     return;
   }
 
   const proceed = await confirmCenterModal({
-    title: 'Limpar Grupo/Subgrupo em lote',
+    title: 'Limpar Grupo/Subgrupo/Família em lote',
     message: `
       <div>
-        Você está prestes a <strong>LIMPAR</strong> Grupo/Subgrupo de
+        Você está prestes a <strong>LIMPAR</strong> Grupo/Subgrupo/Família de
         <strong>${state.selected.size}</strong> produto(s).
         <br><br>
         Deseja continuar?
@@ -767,7 +860,7 @@ async function clearBatchSelected() {
     showCenterModal({
       variant: 'success',
       title: 'Limpeza concluída',
-      message: `Grupo/Subgrupo removido de ${state.selected.size} produto(s).`,
+      message: `Grupo/Subgrupo/Família removidos de ${state.selected.size} produto(s).`,
       timeoutMs: 5000,
     });
 
@@ -896,6 +989,7 @@ function initEvents() {
           els.subgroupSelect.value = '';
           els.subgroupSelect.innerHTML = '<option value="">Selecione um subgrupo...</option>';
         }
+        resetFamilySelect();
 
         // se não tiver grupo selecionado, não carrega subgrupos
         if (!groupId) {
@@ -918,7 +1012,14 @@ function initEvents() {
   }
 
   if (els.subgroupSelect) {
-    els.subgroupSelect.addEventListener('change', () => updateSummary());
+    els.subgroupSelect.addEventListener('change', async () => {
+      await loadFamiliesBySubgroupId((els.subgroupSelect.value || '').trim());
+      updateSummary();
+    });
+  }
+
+  if (els.familySelect) {
+    els.familySelect.addEventListener('change', () => updateSummary());
   }
 
   // ── Ações principais (aplicar / limpar)
@@ -943,8 +1044,8 @@ async function bootstrap() {
   try {
     initEvents();
 
-    // carrega grupos (+ nomes de todos os subgrupos para a tabela)
-    await Promise.all([loadGroups(), loadAllSubgroupNames()]);
+    // carrega grupos (+ nomes de todos os subgrupos/famílias para a tabela)
+    await Promise.all([loadGroups(), loadAllSubgroupNames(), loadAllFamilyNames()]);
     updateSummary();
 
     // abre a lista inicial

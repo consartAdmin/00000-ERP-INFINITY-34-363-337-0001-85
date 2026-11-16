@@ -7,7 +7,7 @@ import { TB_PRODUCTS, TB_GROUPS } from './groupsAndSubgroupsBatch.constants.js';
 import { toInt, notEmptyStr } from './groupsAndSubgroupsBatch.sanitizers.js';
 import { columnExists, getColumnUdtName, detectSearchColumns } from './groupsAndSubgroupsBatchIntrospection.repository.js';
 import { buildProductsWhere } from './groupsAndSubgroupsBatch.sql.js';
-import { validateSubgroupBelongsToGroup } from './groupsAndSubgroupsBatchValidate.repository.js';
+import { validateSubgroupBelongsToGroup, validateFamilyBelongsToSubgroup } from './groupsAndSubgroupsBatchValidate.repository.js';
 
 // -----------------------------------------------------------------------------
 // POST /api/products-groups/batch/assign
@@ -18,6 +18,8 @@ export async function batchAssignGroups(req, res) {
   const product_group_id = toInt(body.product_group_id);
   const product_subgroup_id =
     body.product_subgroup_id !== undefined ? toInt(body.product_subgroup_id) : undefined;
+  const product_family_id =
+    body.product_family_id !== undefined ? toInt(body.product_family_id) : undefined;
 
   if (!Number.isInteger(product_group_id)) {
     return res.status(400).json({ ok: false, error: 'product_group_id must be an integer.' });
@@ -26,13 +28,15 @@ export async function batchAssignGroups(req, res) {
   // Detect columns / types from schema
   let hasActiveCol = false;
   let hasSubgroupCol = false;
+  let hasFamilyCol = false;
   let searchCols = [];
   let productIdUdtName = null;
 
   try {
-    [hasActiveCol, hasSubgroupCol, searchCols, productIdUdtName] = await Promise.all([
+    [hasActiveCol, hasSubgroupCol, hasFamilyCol, searchCols, productIdUdtName] = await Promise.all([
       columnExists(TB_PRODUCTS, 'is_active').catch(() => false),
       columnExists(TB_PRODUCTS, 'product_subgroup_id').catch(() => false),
+      columnExists(TB_PRODUCTS, 'product_family_id').catch(() => false),
       detectSearchColumns().catch(() => []),
       getColumnUdtName(TB_PRODUCTS, 'product_id').catch(() => null),
     ]);
@@ -84,6 +88,29 @@ export async function batchAssignGroups(req, res) {
     }
   }
 
+  // valida família (exige subgrupo: Grupo → Subgrupo → Família)
+  if (product_family_id !== undefined) {
+    if (!Number.isInteger(product_family_id)) {
+      return res
+        .status(400)
+        .json({ ok: false, error: 'product_family_id must be an integer (or omit it).' });
+    }
+    if (!hasFamilyCol) {
+      return res.status(409).json({ ok: false, error: 'products.product_family_id column not found.' });
+    }
+    if (!Number.isInteger(product_subgroup_id)) {
+      return res.status(400).json({ ok: false, error: 'product_family_id requires product_subgroup_id.' });
+    }
+
+    try {
+      await validateFamilyBelongsToSubgroup({ product_subgroup_id, product_family_id });
+    } catch (err) {
+      const status = err?.status || 500;
+      console.error('[groupsAndSubgroupsBatchApi:validateFamily] error:', err);
+      return res.status(status).json({ ok: false, error: err?.message || 'Failed to validate family.' });
+    }
+  }
+
   const { whereSql, values, meta: whereMeta } = buildProductsWhere({
     product_ids: body.product_ids,
     q: body.q,
@@ -127,6 +154,13 @@ export async function batchAssignGroups(req, res) {
       }
     }
 
+    // Família acompanha o subgrupo: ao definir o subgrupo grava a família
+    // escolhida ou NULL, para não sobrar família de outro subgrupo no produto.
+    if (hasFamilyCol && hasSubgroupCol && product_subgroup_id !== undefined) {
+      params.push(product_family_id !== undefined ? product_family_id : null);
+      setParts.push(`product_family_id = $${i++}`);
+    }
+
     const hasUpdatedAt = await columnExists(TB_PRODUCTS, 'updated_at').catch(() => false);
     if (hasUpdatedAt) setParts.push(`updated_at = now()`);
 
@@ -138,6 +172,7 @@ export async function batchAssignGroups(req, res) {
         p.product_id,
         p.product_group_id
         ${hasSubgroupCol ? ', p.product_subgroup_id' : ''}
+        ${hasFamilyCol ? ', p.product_family_id' : ''}
         ${hasUpdatedAt ? ', p.updated_at' : ''};
     `;
 
@@ -151,6 +186,7 @@ export async function batchAssignGroups(req, res) {
       data: rows,
       meta: {
         hasSubgroupCol,
+        hasFamilyCol,
         hasActiveCol,
         searchCols,
         whereMeta,

@@ -63,6 +63,7 @@ export async function listBatchProducts(req, res) {
      {
        product_group_id,
        product_subgroup_id?,
+       product_family_id? (exige product_subgroup_id),
        product_ids? (array ou csv),
        q?,
        only_active_products?,
@@ -77,6 +78,8 @@ export async function assignBatchGroups(req, res) {
     const product_group_id = toInt(body.product_group_id);
     const product_subgroup_id =
       body.product_subgroup_id != null ? toInt(body.product_subgroup_id) : undefined;
+    const product_family_id =
+      body.product_family_id != null ? toInt(body.product_family_id) : undefined;
 
     if (!Number.isInteger(product_group_id) || product_group_id <= 0) {
       return res.status(400).json({ ok: false, error: 'product_group_id must be an integer.' });
@@ -86,10 +89,15 @@ export async function assignBatchGroups(req, res) {
       return res.status(400).json({ ok: false, error: 'product_subgroup_id must be an integer (or omit).' });
     }
 
+    if (body.product_family_id != null && (!Number.isInteger(product_family_id) || product_family_id <= 0)) {
+      return res.status(400).json({ ok: false, error: 'product_family_id must be an integer (or omit).' });
+    }
+
     // ✅ normaliza e injeta em req.body
     req.body = {
       product_group_id,
       ...(product_subgroup_id !== undefined ? { product_subgroup_id } : {}),
+      ...(product_family_id !== undefined ? { product_family_id } : {}),
 
       product_ids: toStrArray(body.product_ids),
       q: toStr(body.q) || undefined,
