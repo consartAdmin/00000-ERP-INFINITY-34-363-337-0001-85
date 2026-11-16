@@ -23,9 +23,26 @@ import { initCashCategorySelects } from './accountsReceivable.categories.js';
 import { initCashDocumentTypeSelects } from './accountsReceivable.documentTypes.js';
 import { bindChartAccountPickers } from './accountsReceivable.chartAccountPicker.js';
 import { initBankAccountSelects } from './accountsReceivable.bankAccounts.js';
+import { enhanceBrDateTime } from '/public/includes/js/brDateTimeInput.js';
+
+// Datas em dd/mm/aaaa (o input nativo segue o idioma do navegador)
+const BR_DATE_FIELDS = [
+  'arIssueDate',
+  'arDueDate',
+  'arPaymentDate',
+  'receive_emissao',
+  'receive_vencimento',
+  'receive_data_hora',
+  'arBatchDueDate',
+];
 
 async function initializeAccountsReceivable() {
   Modal.setup();
+
+  BR_DATE_FIELDS.forEach((id) => {
+    const input = document.getElementById(id);
+    if (input) enhanceBrDateTime(input);
+  });
 
   try {
     await Promise.all([
