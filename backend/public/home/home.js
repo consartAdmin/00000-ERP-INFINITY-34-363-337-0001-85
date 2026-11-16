@@ -5,6 +5,7 @@
 // ✅ Atalho Ctrl + Z → Buscar Produto                                       //
 // ✅ Atalho Ctrl + B → Abrir Orçamentos                                     //
 // ✅ Atalho Ctrl + C → Buscar Cliente                                       //
+// ✅ Atalho Ctrl + I → Abrir Inventário                                     //
 // ✅ Reaproveita productsModalSearch.js                                     //
 // ✅ Reaproveita customersModalSearch.js                                    //
 // ✅ Card Posição de Estoque                                                //
@@ -47,6 +48,8 @@ const PRODUCT_EDIT_BASE = '/public/editProducts/editProducts.html';
 const CUSTOMER_EDIT_BASE = '/public/customersEdit/customersEdit.html';
 
 const BUDGETS_PAGE = '/public/budgets/budgets.html';
+
+const INVENTORY_PAGE = '/public/inventory/inventory.html';
 
 const STOCK_POSITION_URLS = [
   '/api/products-stock/position',
@@ -292,6 +295,14 @@ function openBudgetsPage() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 📦 Abrir Inventário
+////////////////////////////////////////////////////////////////////////////////
+
+function openInventoryPage() {
+  window.location.href = INVENTORY_PAGE;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 📊 POSIÇÃO DE ESTOQUE — CARD HOME
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -512,6 +523,16 @@ document.addEventListener('keydown', (event) => {
       event.stopPropagation();
 
       openShortcutCustomerSearch();
+      return;
+    }
+
+    if (key === 'i') {
+      console.log('[HOME][CTRL_I_TRIGGERED]');
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      openInventoryPage();
     }
 
   } catch (err) {
