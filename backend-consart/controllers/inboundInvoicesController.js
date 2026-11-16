@@ -35,6 +35,8 @@ import {
 
 import { parseStringPromise } from 'xml2js';
 import pool from '../config/db.js';
+import { resolveProductsStockMode } from '../repositories/productsStock/productsStock.manager.js';
+import { ensureInboundItemLot } from '../repositories/inboundInvoices/ensureInboundItemLots.repository.js';
 import { createFromSource as createAccountsPayableFromSource } from '../repositories/accountsPayable/accountsPayable.index.js';
 import fs from 'fs';
 import path from 'path';
@@ -251,6 +253,25 @@ function getInboundProductStockMode() {
 
 function isInboundSimpleStockMode() {
   return getInboundProductStockMode() === 'STOCK_SIMPLE';
+}
+
+// --------------------------------------------------------------------
+// Fonte de verdade: appFeatures PRODUCT_STOCK_MODE (a mesma usada pela
+// baixa de estoque das NF-e emitidas/orçamentos). Antes a entrada lia só
+// a variável de ambiente (padrão STOCK_SIMPLE) e somava em
+// productsStock.stock_qty enquanto o resto do sistema trabalhava por lote:
+// na primeira movimentação de lote o trigger trg_psl_recalc_stock
+// recalculava stock_qty = soma dos lotes e a entrada "sumia".
+// A variável de ambiente fica só como reserva se a feature falhar.
+// --------------------------------------------------------------------
+async function resolveInboundStockModeForPosting() {
+  try {
+    const cfg = await resolveProductsStockMode();
+    return cfg.isSimple ? 'STOCK_SIMPLE' : 'WITH_LOT';
+  } catch (err) {
+    console.warn('[INBOUND][STOCK_MODE][FEATURE_FALLBACK_ENV]', err?.message || err);
+    return getInboundProductStockMode();
+  }
 }
 
 // ====================================================================
@@ -1519,8 +1540,8 @@ async function postInvoiceInternal(
   req = null
 ) {
   const debug = [];
-  const stockMode = getInboundProductStockMode();
-  const isSimpleStock = isInboundSimpleStockMode();
+  const stockMode = await resolveInboundStockModeForPosting();
+  const isSimpleStock = stockMode === 'STOCK_SIMPLE';
 
   logInbound('INFO', '[INBOUND][POST_INTERNAL][STOCK_MODE]', {
     traceId,
@@ -1551,8 +1572,13 @@ async function postInvoiceInternal(
   }
 
   const itemsRes = await client.query(
-    `SELECT inbound_item_id, product_id, product_code, lot_id, quantity, unit, unit_price
-       FROM public."inboundInvoiceItems"
+    `SELECT i.inbound_item_id, i.product_id, i.product_code, i.lot_id,
+            i.quantity, i.unit, i.unit_price,
+            to_jsonb(i)->>'product_grade_id' AS product_grade_id,
+            to_jsonb(i)->>'nfe_key' AS nfe_key,
+            to_jsonb(i)->>'nfe_item_seq' AS nfe_item_seq,
+            to_jsonb(i)->'raw_product_payload' AS raw_product_payload
+       FROM public."inboundInvoiceItems" i
       WHERE inbound_id = $1
       ORDER BY inbound_item_id`,
     [invoiceId]
@@ -1779,12 +1805,6 @@ async function postInvoiceInternal(
       stockMode,
     });
 
-    if (!isSimpleStock && !it.lot_id) {
-      const err = new Error('LOT_REQUIRED');
-      err.details = { invoiceId, item_id: it.inbound_item_id };
-      throw err;
-    }
-
     const prod = await getProductRow(it.product_id, it.product_code);
     if (!prod) {
       const e = new Error('PRODUCT_NOT_FOUND');
@@ -1829,6 +1849,25 @@ async function postInvoiceInternal(
 
     let previousStock = null;
     let newStock = null;
+    let lotCode = null;
+
+    if (!isSimpleStock && !it.lot_id) {
+      // Estoque por lote: sem lote escolhido, usa o lote do XML (nLote) ou
+      // o LOTE PADRÃO do produto/grade (cria se não existir) e grava o
+      // lot_id no item antes de movimentar.
+      const resolved = await ensureInboundItemLot(client, {
+        ...it,
+        product_code: String(prod.product_code || it.product_code || '').trim(),
+        nfe_key: it.nfe_key || invoice.access_key || null,
+      });
+      if (!resolved?.lot_id) {
+        const err = new Error('LOT_REQUIRED');
+        err.details = { invoiceId, item_id: it.inbound_item_id };
+        throw err;
+      }
+      it.lot_id = resolved.lot_id;
+      lotCode = resolved.lot_code || null;
+    }
 
     if (isSimpleStock) {
       const stockResult = await applySimpleStockIn(
@@ -1856,12 +1895,32 @@ async function postInvoiceInternal(
         Number(prod.product_stock_id)
       );
 
+      const before = await client.query(
+        `SELECT stock_qty
+           FROM public."productsStock"
+          WHERE product_stock_id = $1
+          FOR UPDATE`,
+        [Number(prod.product_stock_id)]
+      );
+      previousStock = Number(before.rows[0]?.stock_qty || 0);
+
       const upd = await applyLotIn(Number(it.lot_id), qtyBase, costUnit);
       if (!upd.rowCount) {
         const e = new Error('LOT_UPDATE_FAILED');
         e.details = { invoiceId, item_id: it.inbound_item_id, lot_id: it.lot_id };
         throw e;
       }
+
+      // O trigger trg_psl_recalc_stock já recalculou stock_qty pela soma dos lotes.
+      const after = await client.query(
+        `SELECT ps.stock_qty, l.lot_code
+           FROM public."productsStock" ps
+           LEFT JOIN public."productsStockLots" l ON l.lot_id = $2
+          WHERE ps.product_stock_id = $1`,
+        [Number(prod.product_stock_id), Number(it.lot_id)]
+      );
+      newStock = Number(after.rows[0]?.stock_qty || 0);
+      lotCode = after.rows[0]?.lot_code || lotCode;
 
       logInbound('INFO', '[INBOUND][POST_INTERNAL][LOT_APPLIED]', {
         traceId,
@@ -1884,7 +1943,7 @@ async function postInvoiceInternal(
         previous_stock: previousStock,
         new_stock: newStock,
         unit: it.unit || 'UN.',
-        lot_code: isSimpleStock ? null : String(it.lot_id || ''),
+        lot_code: isSimpleStock ? null : (lotCode || String(it.lot_id || '')),
         nfe_key: invoice.access_key || null,
         nfe_number: invoice.invoice_number || null,
         notes: `Entrada por NF-e de compra #${invoice.invoice_number || invoiceId}`,
@@ -2011,8 +2070,8 @@ async function createInvoiceWithChildren({
       accessKey: header.accessKey,
     });
 
-    const stockMode = getInboundProductStockMode();
-    const isSimpleStock = isInboundSimpleStockMode();
+    const stockMode = await resolveInboundStockModeForPosting();
+    const isSimpleStock = stockMode === 'STOCK_SIMPLE';
     const lotSchema = isSimpleStock
       ? null
       : await getProductsStockLotsSchema(client);
@@ -2919,8 +2978,8 @@ export async function deleteInvoiceCtrl(req, res) {
       .map((r) => Number(r.inbound_installment_id))
       .filter(Boolean);
 
-    const stockMode = getInboundProductStockMode();
-    const isSimpleStock = isInboundSimpleStockMode();
+    const stockMode = await resolveInboundStockModeForPosting();
+    const isSimpleStock = stockMode === 'STOCK_SIMPLE';
 
     logInbound('INFO', '[INBOUND][DELETE][STOCK_MODE]', {
       invoiceId,
@@ -3099,7 +3158,9 @@ export async function deleteInvoiceCtrl(req, res) {
 
         const qtyBase = qty * factor;
 
-        if (isSimpleStock) {
+        // Nota postada antes da correção (somou direto em stock_qty, sem lote):
+        // estorna do mesmo jeito que entrou.
+        if (isSimpleStock || !it.lot_id) {
           const locked = await client.query(
             `SELECT product_stock_id, stock_qty
                FROM public."productsStock"
@@ -3746,7 +3807,7 @@ export async function postInvoiceCtrl(req, res) {
 
     return ok(res, {
       ok: true,
-      message: result.alreadyPosted ? 'Invoice already posted' : `Invoice posted (${result.stockMode || getInboundProductStockMode()})`,
+      message: result.alreadyPosted ? 'Invoice already posted' : `Invoice posted (${result.stockMode || 'N/D'})`,
       invoiceId,
       debug: result.debug || [],
       traceId,
