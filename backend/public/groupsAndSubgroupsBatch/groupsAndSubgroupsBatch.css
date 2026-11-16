@@ -216,41 +216,6 @@
   color: rgba(0,0,0,.75);
 }
 
-/* Confirm modal overlay (igual referência) */
-.gsb-confirm-overlay{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.35);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index: 9999;
-  padding: 18px;
-}
-
-.gsb-confirm-card{
-  width: min(520px, 96vw);
-  background: #fff;
-  border-radius: 14px;
-  border: 1px solid rgba(0,0,0,.12);
-  overflow:hidden;
-  box-shadow: 0 18px 48px rgba(0,0,0,.25);
-}
-
-.gsb-confirm-body{
-  padding: 12px;
-  font-size: 13px;
-  color: rgba(0,0,0,.80);
-}
-
-.gsb-confirm-foot{
-  padding: 10px 12px 12px;
-  display:flex;
-  gap: 8px;
-  justify-content:flex-end;
-  border-top: 1px solid rgba(0,0,0,.08);
-}
-
 /* Configuração de Grupo/Subgrupo — faixa abaixo dos filtros de Produtos */
 .gsb-config{
   margin-top: 10px;
