@@ -113,6 +113,20 @@ function downloadInventoryReportPdf(inventoryId) {
 }
 
 window.downloadInventoryReportPdf = downloadInventoryReportPdf;
+
+const fmtMoney = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+/** Coluna "Custo total": Σ Total × Custo unit. dos itens (vem do backend em cost_total) */
+function costTotalCell(inv) {
+  const raw = inv.cost_total;
+  const total = raw != null && raw !== '' ? Number(raw) : null;
+  const semCusto = Number(inv.items_without_cost || 0);
+  const title = semCusto > 0
+    ? ` title="${semCusto} ${semCusto === 1 ? 'item sem custo' : 'itens sem custo'} no cadastro (fora da soma)"`
+    : '';
+  const text = total != null && Number.isFinite(total) ? fmtMoney(total) : '—';
+  return `<td class="col-number"${title}>${escapeHtml(text)}${semCusto > 0 ? ' *' : ''}</td>`;
+}
 export function renderInventoryTable(els, inventories, onPick) {
   const tbody = els.inventoryTableBody;
   if (!tbody) return;
@@ -122,7 +136,7 @@ export function renderInventoryTable(els, inventories, onPick) {
   state.inventoryKeyboardIndex = -1;
 
   if (!inventories.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="table-empty-state">Nenhum inventário encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="table-empty-state">Nenhum inventário encontrado.</td></tr>';
     return;
   }
 
@@ -150,6 +164,7 @@ export function renderInventoryTable(els, inventories, onPick) {
 
     tr.innerHTML = `
       <td class="td-left">${escapeHtml(inv.code)}</td>
+      ${costTotalCell(inv)}
       <td class="td-left">${escapeHtml(notesText)}</td>
       <td>${escapeHtml(inventoryTypeLabel(inv.type))}</td>
       <td>${inventoryStatusPill(status)}</td>

@@ -4,7 +4,7 @@
 // ╚════════════════════════════════════════════════════════════════════╝
 
 import pool from '../../config/db.js';
-import { TB_INV } from './inventory.constants.js';
+import { TB_INV, TB_ITEMS } from './inventory.constants.js';
 import { q } from './inventory.utils.js';
 import { rowToInventory } from './inventory.mappers.js';
 
@@ -44,8 +44,29 @@ export async function list({ search, status, limit = 50, offset = 0 }) {
       inv.created_by,
       inv.finalized_by,
       inv.created_at,
-      inv.updated_at
+      inv.updated_at,
+      cost.cost_total,
+      cost.items_without_cost
     FROM ${TB_INV} inv
+    -- Custo total do inventário: Σ (contado × fator da unidade × custo do cadastro do produto),
+    -- mesma conta da coluna "Custo total" dos itens (listItems)
+    LEFT JOIN LATERAL (
+      SELECT
+        SUM(COALESCE(it.counted_qty, 0) * COALESCE(pu.fator, 1) * prod.cost_price) AS cost_total,
+        COUNT(*) FILTER (WHERE prod.cost_price IS NULL)::int AS items_without_cost
+      FROM ${TB_ITEMS} it
+      LEFT JOIN public."productsBarCode" pu
+        ON pu.product_unit_id = it.product_unit_id
+       AND pu.product_code = it.product_code
+       AND COALESCE(pu.is_active, TRUE) IS TRUE
+      LEFT JOIN LATERAL (
+        SELECT p.cost_price
+          FROM public.products p
+         WHERE p.product_code = it.product_code
+         LIMIT 1
+      ) prod ON TRUE
+      WHERE it.inventory_id = inv.inventory_id
+    ) cost ON TRUE
     ${whereSql}
     ORDER BY inv.created_at DESC
     LIMIT $${limitIdx}
