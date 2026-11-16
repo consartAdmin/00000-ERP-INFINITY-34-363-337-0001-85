@@ -3,6 +3,7 @@
 /* ╚══════════════════════════════════════════════════════════════════════╝ */
 import './config/loadEnv.js';
 import express from "express";
+import { runMenuMeusAtalhos20261116 } from './services/oneTime/menuMeusAtalhos20261116.js';
 import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1663,6 +1664,8 @@ async function runStartupJobs() {
       { name: "initNfeInboxController", fn: () => initNfeInboxController() },
       { name: "initEcommerceOrdersController", fn: () => ecommerceOrdersController.initEcommerceOrdersController() },
       { name: "initOrdersBillingController", fn: () => initOrdersBillingController() },
+      // Menu: Configurações › Sistema › Meus Atalhos de Teclado (item público)
+      { name: "menuMeusAtalhos20261116", fn: async () => console.log("[boot] menuMeusAtalhos20261116:", JSON.stringify(await runMenuMeusAtalhos20261116())) },
    ];
 
    for (const job of jobs) {

@@ -18,6 +18,7 @@ import { runZeroStockLots20261025 } from './services/oneTime/zeroStockLots202610
 import { runMenuVendasCompras20261109 } from './services/oneTime/menuVendasCompras20261109.js';
 import { runMenuConfiguracoes20261110 } from './services/oneTime/menuConfiguracoes20261110.js';
 import { runMenuRelatorios20261112 } from './services/oneTime/menuRelatorios20261112.js';
+import { runMenuMeusAtalhos20261116 } from './services/oneTime/menuMeusAtalhos20261116.js';
 import { ensureProductsFamiliesTable } from './repositories/productsFamilies/productsFamilies.index.js';
 import { ensureSessionTimeOutConfigTable } from './controllers/sessionTimeOutConfigController.js';
 import { queueErrorEmail, sendErrorEmail } from "./errorEmailReporter.js";
@@ -1716,6 +1717,8 @@ async function runStartupJobs() {
       { name: "menuConfiguracoes20261110", fn: async () => console.log("[boot] menuConfiguracoes20261110:", JSON.stringify(await runMenuConfiguracoes20261110())) },
       // Menu: Relatórios em 4 colunas (Vendas · Estoque e Compras · Financeiro · Contábil)
       { name: "menuRelatorios20261112", fn: async () => console.log("[boot] menuRelatorios20261112:", JSON.stringify(await runMenuRelatorios20261112())) },
+      // Menu: Configurações › Sistema › Meus Atalhos de Teclado (item público)
+      { name: "menuMeusAtalhos20261116", fn: async () => console.log("[boot] menuMeusAtalhos20261116:", JSON.stringify(await runMenuMeusAtalhos20261116())) },
    ];
 
    for (const job of jobs) {
