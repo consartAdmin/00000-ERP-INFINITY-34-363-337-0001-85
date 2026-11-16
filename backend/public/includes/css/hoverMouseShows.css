@@ -222,3 +222,30 @@
     outline: 2px solid #2563eb;
     outline-offset: 2px;
 }
+/* ====================================================================
+   MULTILINE — respects line breaks (&#10;) in data-hover-text
+==================================================================== */
+
+.hover-shows-multiline::after {
+    white-space: pre-line;
+}
+
+/* ====================================================================
+   BELOW, RIGHT-ALIGNED — for triggers near the right edge
+==================================================================== */
+
+.hover-shows-bottom-end::after {
+    top: calc(100% + var(--hover-shows-distance));
+    right: 0;
+    bottom: auto;
+    left: auto;
+
+    transform: translateY(-4px);
+}
+
+.hover-shows-bottom-end:hover::after,
+.hover-shows-bottom-end:focus::after,
+.hover-shows-bottom-end:focus-visible::after,
+.hover-shows-bottom-end:focus-within::after {
+    transform: translateY(0);
+}

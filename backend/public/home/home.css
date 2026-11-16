@@ -5,6 +5,7 @@
    ║ ✅ Rodapé versão                                                    ║
    ║ ✅ FAB / Modal base                                                 ║
    ║ ✅ Card Posição de Estoque                                          ║
+   ║ ✅ Ícone de atalhos de teclado (canto superior direito)             ║
    ╚══════════════════════════════════════════════════════════════════════╝ */
 
 
@@ -382,4 +383,18 @@ body.dark-mode .stock-position-card .dashboard-alert-status {
   .consart-modal__dialog {
     width: 94vw;
   }
+}
+
+/* ╭──────────────────────────────────────────────────────────────╮
+   │ ⌨️ ATALHOS DE TECLADO — ícone no canto superior direito      │
+   │ Visual e tooltip vêm do hoverMouseShows.css (style.css)      │
+   ╰──────────────────────────────────────────────────────────────╯ */
+
+/* fixed + acima do #menuConsartMount (sticky, z-index 99999): fica alinhado
+   ao dock mesmo com a página rolada e não é coberto pela faixa do menu */
+#homeShortcutsHelp {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 100000;
 }
