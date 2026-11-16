@@ -16,13 +16,15 @@ export async function batchClearGroups(req, res) {
 
   let hasActiveCol = false;
   let hasSubgroupCol = false;
+  let hasFamilyCol = false;
   let searchCols = [];
   let productIdUdtName = null;
 
   try {
-    [hasActiveCol, hasSubgroupCol, searchCols, productIdUdtName] = await Promise.all([
+    [hasActiveCol, hasSubgroupCol, hasFamilyCol, searchCols, productIdUdtName] = await Promise.all([
       columnExists(TB_PRODUCTS, 'is_active').catch(() => false),
       columnExists(TB_PRODUCTS, 'product_subgroup_id').catch(() => false),
+      columnExists(TB_PRODUCTS, 'product_family_id').catch(() => false),
       detectSearchColumns().catch(() => []),
       getColumnUdtName(TB_PRODUCTS, 'product_id').catch(() => null),
     ]);
@@ -66,12 +68,14 @@ export async function batchClearGroups(req, res) {
       SET
         product_group_id = NULL
         ${hasSubgroupCol ? ', product_subgroup_id = NULL' : ''}
+        ${hasFamilyCol ? ', product_family_id = NULL' : ''}
         ${hasUpdatedAt ? ', updated_at = now()' : ''}
       ${whereSql}
       RETURNING
         p.product_id,
         p.product_group_id
         ${hasSubgroupCol ? ', p.product_subgroup_id' : ''}
+        ${hasFamilyCol ? ', p.product_family_id' : ''}
         ${hasUpdatedAt ? ', p.updated_at' : ''};
     `;
 
@@ -85,6 +89,7 @@ export async function batchClearGroups(req, res) {
       data: rows,
       meta: {
         hasSubgroupCol,
+        hasFamilyCol,
         hasActiveCol,
         searchCols,
         whereMeta,
