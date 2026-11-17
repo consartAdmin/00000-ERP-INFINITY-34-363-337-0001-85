@@ -6,6 +6,12 @@ export const state = {
   activeTab: 'day',
   page: 1,
   pageSize: 50,
+  // Ordenação por aba: { column, direction } (salesReport.sort.js)
+  sort: {
+    day: null,
+    customer: null,
+    product: null,
+  },
   reportData: {
     byDay: [],
     byCustomer: [],
@@ -39,7 +45,8 @@ export function cacheDom() {
     tbodyDay: document.querySelector('#tbody-by-day'),
     tbodyCustomer: document.querySelector('#tbody-by-customer'),
     tbodyProduct: document.querySelector('#tbody-by-product'),
-    averageCostHeader: document.querySelector('#th-avg-cost'),
+    averageCostHeader: document.querySelector('#th-avg-cost [data-sort-label]')
+      || document.querySelector('#th-avg-cost'),
     tableInfo: document.querySelector('#apTableInfo'),
     pageInfo: document.querySelector('#apPageInfo'),
     btnPreviousPage: document.querySelector('#btnPreviousPage'),

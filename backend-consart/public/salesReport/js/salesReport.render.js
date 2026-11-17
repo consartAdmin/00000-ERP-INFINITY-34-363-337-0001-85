@@ -2,6 +2,7 @@
 
 import { COST_MODES } from './salesReport.config.js';
 import { getCostMode } from './salesReport.form.js';
+import { sortAllTabs } from './salesReport.sort.js';
 import { dom, state } from './salesReport.state.js';
 import { appendCell, moneyBR } from './salesReport.utils.js';
 
@@ -115,6 +116,7 @@ export function renderReport(data = {}) {
     byCustomer: Array.isArray(data.byCustomer) ? data.byCustomer : [],
     byProduct: Array.isArray(data.byProduct) ? data.byProduct : [],
   };
+  sortAllTabs();
   state.page = 1;
   renderActiveTable();
 }

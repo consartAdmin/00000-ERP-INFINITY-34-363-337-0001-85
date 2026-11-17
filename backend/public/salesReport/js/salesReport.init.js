@@ -18,7 +18,8 @@ import {
   setupAlertModal,
   setupSearchModals,
 } from './salesReport.modal.js';
-import { updateCostModeUI } from './salesReport.render.js';
+import { renderActiveTable, updateCostModeUI } from './salesReport.render.js';
+import { setupSortableTables } from './salesReport.sort.js';
 import { cacheDom } from './salesReport.state.js';
 
 export async function initSalesReport() {
@@ -29,6 +30,7 @@ export async function initSalesReport() {
   setupYearSelect(YEAR_SELECT_OPTIONS);
   setupDateRangeFilter();
   setupSearchModals();
+  setupSortableTables(renderActiveTable);
   setupTabs();
   updateCostModeUI();
   bindActions();
