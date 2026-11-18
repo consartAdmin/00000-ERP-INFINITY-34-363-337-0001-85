@@ -9,6 +9,7 @@
 
 import createSortableTable from '/public/includes/js/sortableTable.js';
 import { state } from './salesReport.state.js';
+import { grossMarginPct } from './salesReport.utils.js';
 
 const num = (value) => {
   const n = Number(value);
@@ -52,6 +53,7 @@ const SORT_ACCESSORS = Object.freeze({
     'total-vendido': (item) => num(item.total_amount),
     'custo-total': (item) => num(item.total_cost),
     'lucro-bruto': productProfit,
+    'lucro-bruto-pct': (item) => grossMarginPct(productProfit(item), item.total_amount),
   },
 });
 
