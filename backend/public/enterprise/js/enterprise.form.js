@@ -12,6 +12,7 @@ import {
   applyPhoneMask,
   normalizeDateInput,
 } from './enterprise.utils.js';
+import { bindEnterpriseCnpjLookup, resetEnterpriseCnpjLookup } from './enterprise.cnpj.js';
 
 const FIELD_NAMES = [
   'enterpriseId',
@@ -138,6 +139,7 @@ export function fillEnterpriseForm(data = {}) {
   f.accountant_email.value = data.accountant_email ?? '';
   f.accountant_phone.value = applyPhoneMask(data.accountant_phone ?? '');
   f.is_active.value = String(data.is_active !== false);
+  resetEnterpriseCnpjLookup(data.cnpj ?? '');
 }
 
 export function setEnterpriseLogoAvailability(enabled) {
@@ -273,6 +275,8 @@ export function bindEnterpriseFormMasks() {
   f.cnpj?.addEventListener('input', () => {
     f.cnpj.value = applyCnpjMask(f.cnpj.value);
   });
+
+  bindEnterpriseCnpjLookup();
 
   f.zip_code?.addEventListener('input', () => {
     f.zip_code.value = applyCepMask(f.zip_code.value);
