@@ -115,11 +115,8 @@ function renderEmpty(message = 'Nenhum registro carregado.') {
 function getGrade(row) {
   const meta = getMetadata(row);
 
-  return (
-    meta.grade_id ||
-    row?.grade_id ||
-    '—'
-  );
+  // Nome da grade resolvido no backend (item da NF-e, lote ou metadata)
+  return row?.grade_name || meta.grade_name || '—';
 }
 
 function getUser(row) {

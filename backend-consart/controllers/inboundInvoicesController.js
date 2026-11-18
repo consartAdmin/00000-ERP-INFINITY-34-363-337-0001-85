@@ -1955,6 +1955,7 @@ async function postInvoiceInternal(
           inbound_item_id: it.inbound_item_id,
           product_id: prod.product_id,
           product_stock_id: prod.product_stock_id,
+          product_grade_id: it.product_grade_id || null,
           lot_id: isSimpleStock ? null : it.lot_id,
           stock_mode: stockMode,
           factor,

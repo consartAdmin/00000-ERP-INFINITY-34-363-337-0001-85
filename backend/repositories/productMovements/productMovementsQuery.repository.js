@@ -151,13 +151,57 @@ export async function listByProductCode(productCode) {
        AND oa.attempt_id = (m.metadata->>'attempt_id')::bigint
     )
 
-    -- Nome da grade (metadata.grade_id → grades.grade) para a tela não mostrar o id
-    -- Nome do usuário (users.name) para a coluna Usuário
+    -- Grade: metadata.grade_id; senão a grade (product_grade_id) do item da
+    -- NF-e de entrada, do lote (lot_id) ou do lote pelo código dentro do
+    -- estoque do produto (só quando o código aponta para uma única grade).
+    , with_grade AS (
+      SELECT
+        m.*,
+        COALESCE(
+          CASE WHEN (m.metadata->>'grade_id') ~ '^[0-9]+$'
+               THEN (m.metadata->>'grade_id')::int END,
+          pg.grade_id
+        ) AS resolved_grade_id
+      FROM with_user m
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(
+          CASE WHEN (m.metadata->>'product_grade_id') ~ '^[0-9]+$'
+               THEN (m.metadata->>'product_grade_id')::int END,
+          (
+            SELECT NULLIF(to_jsonb(iii)->>'product_grade_id', '')::int
+              FROM public."inboundInvoiceItems" iii
+             WHERE m.origin_table = 'inboundInvoiceItems'
+               AND m.origin_id ~ '^[0-9]+$'
+               AND iii.inbound_item_id = m.origin_id::bigint
+          ),
+          (
+            SELECT l.product_grade_id
+              FROM public."productsStockLots" l
+             WHERE (m.metadata->>'lot_id') ~ '^[0-9]+$'
+               AND l.lot_id = (m.metadata->>'lot_id')::bigint
+          ),
+          (
+            SELECT MIN(l.product_grade_id)
+              FROM public.products p
+              JOIN public."productsStockLots" l
+                ON l.product_stock_id = p.product_stock_id
+             WHERE NULLIF(BTRIM(m.lot_code), '') IS NOT NULL
+               AND BTRIM(p.product_code) = BTRIM(m.product_code)
+               AND UPPER(BTRIM(l.lot_code)) = UPPER(BTRIM(m.lot_code))
+               AND l.product_grade_id IS NOT NULL
+            HAVING COUNT(DISTINCT l.product_grade_id) = 1
+          )
+        ) AS product_grade_id
+      ) pgid ON TRUE
+      LEFT JOIN public."productsGrades" pg
+        ON pg.product_grade_id = pgid.product_grade_id
+    )
+
+    -- Nome da grade (grades.grade) e do usuário (users.name) para a tela
     SELECT m.*, g.grade AS grade_name, u.name AS user_name
-    FROM with_user m
+    FROM with_grade m
     LEFT JOIN public."grades" g
-      ON (m.metadata->>'grade_id') ~ '^[0-9]+$'
-     AND g.grade_id = (m.metadata->>'grade_id')::int
+      ON g.grade_id = m.resolved_grade_id
     LEFT JOIN public.users u
       ON m.resolved_user_id ~ '^[0-9]+$'
      AND u.user_id = m.resolved_user_id::bigint
