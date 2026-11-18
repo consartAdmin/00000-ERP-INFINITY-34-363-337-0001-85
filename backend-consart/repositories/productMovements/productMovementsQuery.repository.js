@@ -197,11 +197,17 @@ export async function listByProductCode(productCode) {
         ON pg.product_grade_id = pgid.product_grade_id
     )
 
-    -- Nome da grade (grades.grade) e do usuário (users.name) para a tela
-    SELECT m.*, g.grade AS grade_name, u.name AS user_name
+    -- Nome da grade (grades.grade) e do usuário (users.name) para a tela;
+    -- lote pelo lot_id quando a movimentação não gravou o código (inventário)
+    SELECT m.*, g.grade AS grade_name, u.name AS user_name,
+           COALESCE(NULLIF(BTRIM(m.lot_code), ''), ll.lot_code) AS lot_code_resolved
     FROM with_grade m
     LEFT JOIN public."grades" g
       ON g.grade_id = m.resolved_grade_id
+    LEFT JOIN public."productsStockLots" ll
+      ON NULLIF(BTRIM(m.lot_code), '') IS NULL
+     AND (m.metadata->>'lot_id') ~ '^[0-9]+$'
+     AND ll.lot_id = (m.metadata->>'lot_id')::bigint
     LEFT JOIN public.users u
       ON m.resolved_user_id ~ '^[0-9]+$'
      AND u.user_id = m.resolved_user_id::bigint

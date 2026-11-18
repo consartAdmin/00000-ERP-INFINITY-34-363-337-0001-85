@@ -133,6 +133,7 @@ function getLot(row) {
 
   return (
     row?.lot_code ||
+    row?.lot_code_resolved ||
     meta.lot_code ||
     '—'
   );
