@@ -122,6 +122,13 @@ function getGrade(row) {
   );
 }
 
+function getUser(row) {
+  const meta = getMetadata(row);
+  const id = row?.resolved_user_id || row?.user_id;
+
+  return row?.user_name || meta.user_name || (id ? `ID ${id}` : '—');
+}
+
 function getLot(row) {
   const meta = getMetadata(row);
 
@@ -235,7 +242,7 @@ function renderRows(rows = []) {
           <span class="pill" title="${escapeHtml(lote)}">${escapeHtml(lote)}</span>
         </td>
 
-        <td>${escapeHtml(r.user_id || '—')}</td>
+        <td>${escapeHtml(getUser(r))}</td>
 
         <td>
           <span class="notes-text">${escapeHtml(r.notes || '—')}</span>

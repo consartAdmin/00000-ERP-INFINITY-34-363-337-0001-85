@@ -122,10 +122,42 @@ export async function listByProductCode(productCode) {
         )
     )
 
-    SELECT * FROM native_movements
-    UNION ALL
-    SELECT * FROM legacy_audit_movements
-    ORDER BY created_at DESC, movement_id DESC
+    , all_movements AS (
+      SELECT * FROM native_movements
+      UNION ALL
+      SELECT * FROM legacy_audit_movements
+    )
+
+    -- Usuário: o gravado na movimentação; nas baixas antigas de NF-e emitida
+    -- (sem user_id), quem pediu a emissão (requested_by da tentativa de NF-e).
+    , with_user AS (
+      SELECT
+        m.*,
+        COALESCE(
+          NULLIF(BTRIM(m.user_id::text), ''),
+          ba.requested_by::text,
+          oa.requested_by::text
+        ) AS resolved_user_id
+      FROM all_movements m
+      LEFT JOIN public."budgetsNfeAttempts" ba
+        ON NULLIF(BTRIM(m.user_id::text), '') IS NULL
+       AND m.metadata->>'source' = 'budgetsNfeAttempts'
+       AND (m.metadata->>'attempt_id') ~ '^[0-9]+$'
+       AND ba.attempt_id = (m.metadata->>'attempt_id')::bigint
+      LEFT JOIN public."ordersNfeAttempts" oa
+        ON NULLIF(BTRIM(m.user_id::text), '') IS NULL
+       AND m.metadata->>'source' = 'ordersNfeAttempts'
+       AND (m.metadata->>'attempt_id') ~ '^[0-9]+$'
+       AND oa.attempt_id = (m.metadata->>'attempt_id')::bigint
+    )
+
+    -- Nome do usuário (users.name) para a coluna Usuário
+    SELECT m.*, u.name AS user_name
+    FROM with_user m
+    LEFT JOIN public.users u
+      ON m.resolved_user_id ~ '^[0-9]+$'
+     AND u.user_id = m.resolved_user_id::bigint
+    ORDER BY m.created_at DESC, m.movement_id DESC
     LIMIT ${MAX_ROWS};
   `;
 

@@ -193,3 +193,38 @@ export function requireAuth(req, res, next) {
     });
   }
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// attachUserIfPresent — NÃO bloqueia a rota.
+// Se vier um token válido, preenche req.user (mesmo formato do requireAuth);
+// sem token ou com token inválido, segue sem usuário. Usado em rotas que
+// ainda não exigem login, mas precisam saber quem fez a ação (ex.: dar
+// entrada de NF-e de compra → coluna Usuário nos Registros do Produto).
+// ──────────────────────────────────────────────────────────────────────
+export function attachUserIfPresent(req, res, next) {
+  if (req.user) return next();
+
+  const token = getTokenFromReq(req);
+  if (!token || !process.env.JWT_SECRET) return next();
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = normalizeUserId(
+      payload.user_id ?? payload.id ?? payload.userId ?? payload.sub
+    );
+
+    if (userId) {
+      req.user = {
+        user_id: userId,
+        id: userId,
+        name: extractUserName(payload),
+        role: extractRole(payload),
+        payload,
+      };
+    }
+  } catch {
+    // token inválido/expirado: a rota continua funcionando sem usuário
+  }
+
+  return next();
+}

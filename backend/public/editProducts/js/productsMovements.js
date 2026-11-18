@@ -128,7 +128,9 @@ function getGrade(row) {
 function getUser(row) {
   const meta = getMetadata(row);
 
-  return row?.user_name || meta.user_name || row?.user_id || '—';
+  const id = row?.resolved_user_id || row?.user_id;
+
+  return row?.user_name || meta.user_name || (id ? `ID ${id}` : '—');
 }
 
 function getLot(row) {

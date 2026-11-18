@@ -294,8 +294,19 @@ export function initSave({ core, ROUTES, state, refs, switchTab }) {
     }
   }
 
+  // Envia o token do login para o backend saber quem deu a entrada
+  // (coluna Usuário em Edição de Produtos > Registros).
+  function withAuthHeaders(options = {}) {
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+    if (!token) return options;
+
+    const headers = new Headers(options.headers || {});
+    if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
+    return { ...options, headers };
+  }
+
   async function fetchJsonSafe(url, options = {}) {
-    const resp = await fetch(url, options);
+    const resp = await fetch(url, withAuthHeaders(options));
     const text = await readResponseAsText(resp);
     const json = safeJsonParse(text);
     return { resp, text, json };
