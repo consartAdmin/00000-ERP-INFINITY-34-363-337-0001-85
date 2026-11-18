@@ -333,11 +333,15 @@ async function recordBudgetProductMovement(client, {
     `INSERT INTO public."productMovements" (
        product_code, movement_type, origin_module, origin_table,
        origin_id, quantity, previous_stock, new_stock, unit,
-       lot_code, nfe_key, nfe_number, notes, metadata
+       lot_code, nfe_key, nfe_number, notes, metadata, user_id
      )
      SELECT
        $1, $2, 'invoicesIssued', 'invoicesIssued', $3,
-       $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb
+       $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb,
+       -- Usuário que emitiu a NF-e (coluna Usuário nos Registros do Produto)
+       (SELECT a.requested_by::text
+          FROM public."budgetsNfeAttempts" a
+         WHERE a.attempt_id = ($12::jsonb->>'attempt_id')::bigint)
      WHERE NOT EXISTS (
        SELECT 1
          FROM public."productMovements" pm

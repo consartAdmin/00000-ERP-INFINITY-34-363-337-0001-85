@@ -15,6 +15,7 @@
 'use strict';
 
 import { Router } from 'express';
+import { attachUserIfPresent } from '../middleware/authMiddleware.js';
 import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -36,6 +37,9 @@ import {
 } from '../controllers/inventoryController.js';
 
 const router = Router();
+
+// Quem está logado (sem bloquear): grava o usuário no inventário e nas movimentações.
+router.use(attachUserIfPresent);
 
 /* ========================================================================== */
 /* Upload config                                                              */

@@ -128,12 +128,89 @@ export async function listByProductCode(productCode) {
       SELECT * FROM legacy_audit_movements
     )
 
-    -- Nome da grade (metadata.grade_id → grades.grade) para a tela não mostrar o id
-    SELECT m.*, g.grade AS grade_name
-    FROM all_movements m
+    -- Usuário: o gravado na movimentação; nas baixas antigas de NF-e emitida
+    -- (sem user_id), quem pediu a emissão (requested_by da tentativa de NF-e).
+    , with_user AS (
+      SELECT
+        m.*,
+        COALESCE(
+          NULLIF(BTRIM(m.user_id::text), ''),
+          ba.requested_by::text,
+          oa.requested_by::text
+        ) AS resolved_user_id
+      FROM all_movements m
+      LEFT JOIN public."budgetsNfeAttempts" ba
+        ON NULLIF(BTRIM(m.user_id::text), '') IS NULL
+       AND m.metadata->>'source' = 'budgetsNfeAttempts'
+       AND (m.metadata->>'attempt_id') ~ '^[0-9]+$'
+       AND ba.attempt_id = (m.metadata->>'attempt_id')::bigint
+      LEFT JOIN public."ordersNfeAttempts" oa
+        ON NULLIF(BTRIM(m.user_id::text), '') IS NULL
+       AND m.metadata->>'source' = 'ordersNfeAttempts'
+       AND (m.metadata->>'attempt_id') ~ '^[0-9]+$'
+       AND oa.attempt_id = (m.metadata->>'attempt_id')::bigint
+    )
+
+    -- Grade: metadata.grade_id; senão a grade (product_grade_id) do item da
+    -- NF-e de entrada, do lote (lot_id) ou do lote pelo código dentro do
+    -- estoque do produto (só quando o código aponta para uma única grade).
+    , with_grade AS (
+      SELECT
+        m.*,
+        COALESCE(
+          CASE WHEN (m.metadata->>'grade_id') ~ '^[0-9]+$'
+               THEN (m.metadata->>'grade_id')::int END,
+          pg.grade_id
+        ) AS resolved_grade_id
+      FROM with_user m
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(
+          CASE WHEN (m.metadata->>'product_grade_id') ~ '^[0-9]+$'
+               THEN (m.metadata->>'product_grade_id')::int END,
+          (
+            SELECT NULLIF(to_jsonb(iii)->>'product_grade_id', '')::int
+              FROM public."inboundInvoiceItems" iii
+             WHERE m.origin_table = 'inboundInvoiceItems'
+               AND m.origin_id ~ '^[0-9]+$'
+               AND iii.inbound_item_id = m.origin_id::bigint
+          ),
+          (
+            SELECT l.product_grade_id
+              FROM public."productsStockLots" l
+             WHERE (m.metadata->>'lot_id') ~ '^[0-9]+$'
+               AND l.lot_id = (m.metadata->>'lot_id')::bigint
+          ),
+          (
+            SELECT MIN(l.product_grade_id)
+              FROM public.products p
+              JOIN public."productsStockLots" l
+                ON l.product_stock_id = p.product_stock_id
+             WHERE NULLIF(BTRIM(m.lot_code), '') IS NOT NULL
+               AND BTRIM(p.product_code) = BTRIM(m.product_code)
+               AND UPPER(BTRIM(l.lot_code)) = UPPER(BTRIM(m.lot_code))
+               AND l.product_grade_id IS NOT NULL
+            HAVING COUNT(DISTINCT l.product_grade_id) = 1
+          )
+        ) AS product_grade_id
+      ) pgid ON TRUE
+      LEFT JOIN public."productsGrades" pg
+        ON pg.product_grade_id = pgid.product_grade_id
+    )
+
+    -- Nome da grade (grades.grade) e do usuário (users.name) para a tela;
+    -- lote pelo lot_id quando a movimentação não gravou o código (inventário)
+    SELECT m.*, g.grade AS grade_name, u.name AS user_name,
+           COALESCE(NULLIF(BTRIM(m.lot_code), ''), ll.lot_code) AS lot_code_resolved
+    FROM with_grade m
     LEFT JOIN public."grades" g
-      ON (m.metadata->>'grade_id') ~ '^[0-9]+$'
-     AND g.grade_id = (m.metadata->>'grade_id')::int
+      ON g.grade_id = m.resolved_grade_id
+    LEFT JOIN public."productsStockLots" ll
+      ON NULLIF(BTRIM(m.lot_code), '') IS NULL
+     AND (m.metadata->>'lot_id') ~ '^[0-9]+$'
+     AND ll.lot_id = (m.metadata->>'lot_id')::bigint
+    LEFT JOIN public.users u
+      ON m.resolved_user_id ~ '^[0-9]+$'
+     AND u.user_id = m.resolved_user_id::bigint
     ORDER BY m.created_at DESC, m.movement_id DESC
     LIMIT ${MAX_ROWS};
   `;

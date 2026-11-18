@@ -349,11 +349,16 @@ async function recordProductMovement(
         nfe_key,
         nfe_number,
         notes,
-        metadata
+        metadata,
+        user_id
       )
       SELECT
         $1, $2, 'invoicesIssued', 'invoicesIssued', $3,
-        $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb
+        $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb,
+        -- Usuário que emitiu a NF-e (coluna Usuário nos Registros do Produto)
+        (SELECT a.requested_by::text
+           FROM public."ordersNfeAttempts" a
+          WHERE a.attempt_id = ($12::jsonb->>'attempt_id')::bigint)
       WHERE NOT EXISTS (
         SELECT 1
           FROM public."productMovements" pm

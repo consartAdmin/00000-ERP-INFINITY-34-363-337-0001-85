@@ -1955,6 +1955,7 @@ async function postInvoiceInternal(
           inbound_item_id: it.inbound_item_id,
           product_id: prod.product_id,
           product_stock_id: prod.product_stock_id,
+          product_grade_id: it.product_grade_id || null,
           lot_id: isSimpleStock ? null : it.lot_id,
           stock_mode: stockMode,
           factor,
@@ -2025,6 +2026,7 @@ async function createInvoiceWithChildren({
   danfeUrl,
   autoPost = true,
   traceId = null,
+  userCtx = null,
 }) {
   const existing = await getInvoiceByAccessKey(header.accessKey);
   if (existing) {
@@ -2360,7 +2362,12 @@ async function createInvoiceWithChildren({
           stockMode,
         });
 
-        postResult = await postInvoiceInternal(client, invoiceRow.inbound_id, traceId, null);
+        postResult = await postInvoiceInternal(
+          client,
+          invoiceRow.inbound_id,
+          traceId,
+          userCtx ? { user: userCtx } : null
+        );
 
         logInbound('INFO', '[INBOUND][CREATE_WITH_CHILDREN][AUTO_POST_DONE]', {
           traceId,
@@ -2660,6 +2667,7 @@ export async function autoImportFromDfeCtrl(req, res) {
       danfeUrl,
       autoPost: true,
       traceId,
+      userCtx: req.user || null,
     });
 
     logInbound('INFO', '[AUTO_IMPORT][DONE]', {

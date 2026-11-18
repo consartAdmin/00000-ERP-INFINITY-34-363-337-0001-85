@@ -12,6 +12,7 @@ import { Router } from 'express';
 import multer from 'multer';
 
 import { queueErrorEmail } from '../errorEmailReporter.js';
+import { attachUserIfPresent } from '../middleware/authMiddleware.js';
 
 import {
   importXmlInvoiceCtrl,
@@ -33,6 +34,9 @@ import {
 } from '../controllers/inboundInvoicesController.js';
 
 const router = Router();
+
+// Quem está logado (sem bloquear): grava o usuário nas movimentações de estoque.
+router.use(attachUserIfPresent);
 
 const upload = multer({
   storage: multer.memoryStorage(),

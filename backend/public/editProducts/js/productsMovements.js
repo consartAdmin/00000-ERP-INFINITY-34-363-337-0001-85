@@ -116,19 +116,16 @@ function renderEmpty(message = 'Nenhum registro carregado.') {
 function getGrade(row) {
   const meta = getMetadata(row);
 
-  return (
-    row?.grade_name ||
-    meta.grade_name ||
-    meta.grade_id ||
-    row?.grade_id ||
-    '—'
-  );
+  // Nome da grade resolvido no backend (item da NF-e, lote ou metadata)
+  return row?.grade_name || meta.grade_name || '—';
 }
 
 function getUser(row) {
   const meta = getMetadata(row);
 
-  return row?.user_name || meta.user_name || row?.user_id || '—';
+  const id = row?.resolved_user_id || row?.user_id;
+
+  return row?.user_name || meta.user_name || (id ? `ID ${id}` : '—');
 }
 
 function getLot(row) {
@@ -136,6 +133,7 @@ function getLot(row) {
 
   return (
     row?.lot_code ||
+    row?.lot_code_resolved ||
     meta.lot_code ||
     '—'
   );
