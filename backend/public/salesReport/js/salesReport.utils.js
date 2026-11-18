@@ -12,6 +12,19 @@ export function moneyBR(value) {
   return number.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+/** Margem bruta em % sobre o total vendido (null quando não há venda). */
+export function grossMarginPct(profit, total) {
+  const t = Number(total);
+  const p = Number(profit);
+  if (!Number.isFinite(t) || !Number.isFinite(p) || t === 0) return null;
+  return (p / t) * 100;
+}
+
+export function percentBR(value) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-';
+  return `${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+}
+
 export function normalizeIdLike(inputValue, datasetValue) {
   const datasetId = safeTrim(datasetValue);
   if (datasetId) return datasetId;

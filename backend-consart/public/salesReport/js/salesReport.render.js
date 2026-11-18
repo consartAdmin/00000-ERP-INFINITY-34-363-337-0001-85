@@ -4,7 +4,7 @@ import { COST_MODES } from './salesReport.config.js';
 import { getCostMode } from './salesReport.form.js';
 import { sortAllTabs } from './salesReport.sort.js';
 import { dom, state } from './salesReport.state.js';
-import { appendCell, moneyBR } from './salesReport.utils.js';
+import { appendCell, grossMarginPct, moneyBR, percentBR } from './salesReport.utils.js';
 
 function renderEmpty(tbody, colspan) {
   tbody.innerHTML = `<tr><td colspan="${colspan}" class="sr-table-empty">Nenhum registro encontrado.</td></tr>`;
@@ -58,7 +58,7 @@ export function renderByCustomer(rows = []) {
 export function renderByProduct(rows = []) {
   if (!dom.tbodyProduct) return;
   dom.tbodyProduct.replaceChildren();
-  if (!rows.length) return renderEmpty(dom.tbodyProduct, 9);
+  if (!rows.length) return renderEmpty(dom.tbodyProduct, 10);
 
   rows.forEach((item) => {
     const total = Number(item.total_amount || 0);
@@ -77,6 +77,7 @@ export function renderByProduct(rows = []) {
       moneyBR(total),
       moneyBR(cost),
       moneyBR(profit),
+      percentBR(grossMarginPct(profit, total)),
     ].forEach((value) => appendCell(row, value));
     dom.tbodyProduct.appendChild(row);
   });
