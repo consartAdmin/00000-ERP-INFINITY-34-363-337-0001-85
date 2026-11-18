@@ -235,13 +235,17 @@
         <div class="tab-panel is-active" id="tab-panel-day" role="tabpanel" data-panel="day" aria-labelledby="tab-day"
           tabindex="0">
           <div class="table-scroll table-height-300 table-row-h-28" data-table-settings="salesreport.tbody-by-day">
-            <table class="table table-zebra table-zebra-hover table-sticky-head">
+            <table id="table-by-day" class="table table-zebra table-zebra-hover table-sticky-head">
               <thead>
                 <tr>
-                  <th>Data</th>
-                  <th>Pedidos</th>
-                  <th>Itens</th>
-                  <th>Total vendido</th>
+                  <th class="table-sortable" data-sort-column="data" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Data <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="pedidos" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Pedidos <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="itens" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Itens <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="total-vendido" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Total vendido <span data-sort-icon aria-hidden="true">↕</span></button></th>
                 </tr>
               </thead>
 
@@ -260,13 +264,17 @@
         <div class="tab-panel" id="tab-panel-customer" role="tabpanel" data-panel="customer"
           aria-labelledby="tab-customer" tabindex="0" hidden>
           <div class="table-scroll table-height-300 table-row-h-28" data-table-settings="salesreport.tbody-by-customer">
-            <table class="table table-zebra table-zebra-hover table-sticky-head">
+            <table id="table-by-customer" class="table table-zebra table-zebra-hover table-sticky-head">
               <thead>
                 <tr>
-                  <th>Cliente</th>
-                  <th>ID</th>
-                  <th>Pedidos</th>
-                  <th>Total vendido</th>
+                  <th class="table-sortable" data-sort-column="cliente" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Cliente <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="id" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>ID <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="pedidos" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Pedidos <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="total-vendido" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Total vendido <span data-sort-icon aria-hidden="true">↕</span></button></th>
                 </tr>
               </thead>
 
@@ -285,18 +293,27 @@
         <div class="tab-panel" id="tab-panel-product" role="tabpanel" data-panel="product" aria-labelledby="tab-product"
           tabindex="0" hidden>
           <div class="table-scroll table-height-300 table-row-h-28" data-table-settings="salesreport.tbody-by-product">
-            <table class="table table-zebra table-zebra-hover table-sticky-head">
+            <table id="table-by-product" class="table table-zebra table-zebra-hover table-sticky-head">
               <thead>
                 <tr>
-                  <th>Código</th>
-                  <th>Descrição</th>
-                  <th>U.M.</th>
-                  <th>Qtde. vendida</th>
-                  <th>Preço méd. venda</th>
-                  <th id="th-avg-cost">Custo méd. unit. (Atual)</th>
-                  <th>Total vendido</th>
-                  <th>Custo total</th>
-                  <th>Lucro bruto</th>
+                  <th class="table-sortable" data-sort-column="codigo" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Código <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="descricao" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Descrição <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="u-m" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>U.M. <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="qtde-vendida" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Qtde. vendida <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="preco-med-venda" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Preço méd. venda <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th id="th-avg-cost" class="table-sortable" data-sort-column="custo-med-unit" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button><span data-sort-label>Custo méd. unit. (Atual)</span> <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="total-vendido" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Total vendido <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="custo-total" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Custo total <span data-sort-icon aria-hidden="true">↕</span></button></th>
+                  <th class="table-sortable" data-sort-column="lucro-bruto" aria-sort="none"><button type="button"
+                      class="table-sort-button" data-sort-button>Lucro bruto <span data-sort-icon aria-hidden="true">↕</span></button></th>
                 </tr>
               </thead>
 
