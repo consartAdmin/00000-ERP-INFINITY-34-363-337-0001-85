@@ -10,6 +10,7 @@
      ║ ✅ Queda de venda abre modal com crmLossReasons                   ║
      ║ ✅ Clique nos indicadores do topo abre modal de operações         ║
      ║ ✅ Ícone ✎ no card edita o cliente (customersConsart) num modal   ║
+     ║ ✅ Ícone de observações e alertas no card (crmDealNotes)          ║
      ╚════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -515,6 +516,59 @@
     </div>
   </div>
 
+  <!-- Observações e alertas do card (crmConsartErp.notes.js) -->
+  <div id="crm-modal-notes" class="modal crm-deal-modal crm-contacts-modal" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__dialog">
+      <section class="modal__panel modal-width-6" role="dialog" aria-modal="true" aria-labelledby="crmNotesTitle">
+
+        <header class="modal__header modal-header-color-3">
+          <h2 id="crmNotesTitle" class="modal__title">Observações e alertas</h2>
+          <button class="modal__close" type="button" data-modal-close aria-label="Fechar" title="Fechar">&times;</button>
+        </header>
+
+        <div class="modal__body">
+          <form id="crm-notes-form" novalidate>
+            <div class="modal-section">
+              <h3 class="crm-ct-section-title">Novo registro</h3>
+
+              <div id="crm-nt-types" class="crm-ct-types" role="group" aria-label="Tipo de registro">
+                <button type="button" class="crm-ct-type crm-contact-btn--notes" data-type="OBSERVACAO">Observação</button>
+                <button type="button" class="crm-ct-type crm-contact-btn--alert" data-type="ALERTA">Alerta</button>
+              </div>
+
+              <div class="modal-form-grid modal-form-grid--4">
+                <div class="fields fields-w-full fields-h-6" id="crm-nt-alert-field">
+                  <label for="crm-nt-alert-at">Alertar em *</label>
+                  <input id="crm-nt-alert-at" type="datetime-local" />
+                </div>
+                <div class="fields fields-w-full modal-field--span-full" id="crm-nt-note-field">
+                  <label for="crm-nt-note">Texto *</label>
+                  <textarea id="crm-nt-note" rows="2" maxlength="2000"></textarea>
+                </div>
+              </div>
+
+              <div class="crm-ct-actions">
+                <button id="crm-nt-save" class="btn btn-save btn-sm" type="submit">Salvar observação</button>
+              </div>
+            </div>
+
+            <div class="modal-section">
+              <h3 class="crm-ct-section-title">Registros do card <span id="crm-nt-count"></span></h3>
+              <ul id="crm-nt-list" class="crm-ct-history"></ul>
+            </div>
+          </form>
+        </div>
+
+        <footer class="modal__footer modal-footer-color-3">
+          <button class="btn btn-cancel btn-sm" type="button" data-modal-close>Fechar</button>
+        </footer>
+
+      </section>
+    </div>
+  </div>
+
   <!-- Separa os cards deste CRM (enviado no header X-CRM-Company) -->
   <script>window.CRM_COMPANY = 'CONSART'; window.ERP_COMPANY = 'CONSART';</script>
   <!-- Busca de clientes usa a tabela customersConsart -->
@@ -526,5 +580,7 @@
   <script type="module" src="crmConsartErp.customerEdit.js"></script>
   <!-- WhatsApp / Ligação / E-mail feitos com o lead -->
   <script type="module" src="crmConsartErp.contacts.js"></script>
+  <!-- Observações e alertas do card -->
+  <script type="module" src="crmConsartErp.notes.js"></script>
 </body>
 </html>

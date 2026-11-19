@@ -8,6 +8,11 @@
 .crm-contact-btn--whatsapp { --ct-color: #16a34a; --ct-bg: #dcfce7; }
 .crm-contact-btn--ligacao  { --ct-color: #2563eb; --ct-bg: #dbeafe; }
 .crm-contact-btn--email    { --ct-color: #ea580c; --ct-bg: #ffedd5; }
+/* Observações e alertas (crmConsartErp.notes.js) */
+.crm-contact-btn--notes    { --ct-color: #7c3aed; --ct-bg: #ede9fe; }
+.crm-contact-btn--alert    { --ct-color: #d97706; --ct-bg: #fef3c7; }
+.crm-contact-btn--overdue  { --ct-color: #dc2626; --ct-bg: #fee2e2; }
+.crm-notes-btn__icon { display: inline-flex; }
 
 /* Linha de ícones no card (acima da "Última atividade") */
 .crm-card__contacts {

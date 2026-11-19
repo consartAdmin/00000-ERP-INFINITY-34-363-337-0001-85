@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import crmDealsController from '../controllers/crmDealsController.js';
 import * as crmDealContacts from '../controllers/crmDealContactsController.js';
+import * as crmDealNotes from '../controllers/crmDealNotesController.js';
 import { erpCompanyContext } from '../utils/erpCompanyContext.js';
 
 const router = Router();
@@ -50,6 +51,16 @@ router.get('/deal-contacts/summary', crmDealContacts.summary);
 router.get('/deals/:id/contacts', crmDealContacts.list);
 router.post('/deals/:id/contacts', crmDealContacts.create);
 router.delete('/deals/:id/contacts/:contactId', crmDealContacts.remove);
+
+/* =========================================================================
+ * OBSERVAÇÕES E ALERTAS DO CARD
+ * ========================================================================= */
+
+router.get('/deal-notes/summary', crmDealNotes.summary);
+router.get('/deals/:id/notes', crmDealNotes.list);
+router.post('/deals/:id/notes', crmDealNotes.create);
+router.patch('/deals/:id/notes/:noteId/done', crmDealNotes.setDone);
+router.delete('/deals/:id/notes/:noteId', crmDealNotes.remove);
 
 /* =========================================================================
  * CONCLUSÃO DO LEAD
