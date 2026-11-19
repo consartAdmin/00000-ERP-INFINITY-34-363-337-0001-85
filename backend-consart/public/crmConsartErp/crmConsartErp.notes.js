@@ -3,7 +3,7 @@
 // ║ ✅ Ícone "Observações e alertas" em cada card, ao lado dos ícones    ║
 // ║    WhatsApp / Ligação / E-mail                                       ║
 // ║ ✅ Cinza = nada; roxo = observações; âmbar = alerta pendente;        ║
-// ║    vermelho = alerta vencido                                         ║
+// ║    vermelho = alerta vencido (e o card fica oscilando de cor)        ║
 // ║ ✅ Clique abre o modal: nova observação ou alerta (com data/hora),   ║
 // ║    lista do card, concluir/reabrir alerta e excluir                  ║
 // ║    (tabela crmDealNotes)                                             ║
@@ -132,8 +132,11 @@ function paintButton(btn, info) {
 }
 
 function paintCard(card) {
+  const info = summaryByDeal.get(String(card.dataset.id));
+  // alerta vencido: o card fica oscilando de cor até o alerta ser concluído
+  card.classList.toggle('crm-card--alert-overdue', (info?.overdue_alerts || 0) > 0);
   const btn = card.querySelector('.crm-notes-btn');
-  if (btn) paintButton(btn, summaryByDeal.get(String(card.dataset.id)));
+  if (btn) paintButton(btn, info);
 }
 
 function decorateCard(card) {
