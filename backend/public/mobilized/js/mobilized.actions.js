@@ -3,8 +3,10 @@
 import { API_BASE, MOBILIZED_API } from './mobilized.config.js';
 import { mobilizedApi } from './mobilized.api.js';
 import { collectItem, collectMobilized, fillEditor, prepareNew, recalcItemTotal, resetEditor } from './mobilized.form.js';
-import { closeDetailsModal, closeItemModal, openDetailsModal, openItemModal } from './mobilized.modal.js';
-import { configureRender, renderItems, renderList, renderTotals } from './mobilized.render.js';
+import {
+  closeDetailsModal, closeImageModal, closeItemModal, openDetailsModal, openImageModal, openItemModal,
+} from './mobilized.modal.js';
+import { applyViewMode, configureRender, renderImageGallery, renderItems, renderList, renderTotals } from './mobilized.render.js';
 import { dom, fields, itemFields, itemImageFile, state } from './mobilized.state.js';
 import { confirmCenter, imageCandidates, notify, setImageWithFallback } from './mobilized.utils.js';
 import { validateItem, validateMobilized } from './mobilized.validation.js';
@@ -199,6 +201,48 @@ function downloadAll() {
 }
 
 /* ──────────────────────────────────────────────────────────────
+   Miniatura da lista → modal com as imagens dos itens
+────────────────────────────────────────────────────────────── */
+let imageModalRowId = null;
+
+async function openRowImages(row) {
+  imageModalRowId = row.mobilized_id;
+  const fallback = [{
+    index: 0,
+    urls: row.image_url ? [row.image_url] : imageCandidates(row.first_sku),
+    caption: row.title || '',
+  }];
+  let entries = [];
+  try {
+    const [itemsOut, attachmentsOut] = await Promise.all([
+      mobilizedApi.listItems(row.mobilized_id),
+      mobilizedApi.listAttachments(row.mobilized_id),
+    ]);
+    const items = itemsOut.data || [];
+    const images = (attachmentsOut.data || []).filter((entry) =>
+      entry.status === 'ACTIVE' && String(entry.attachment_type || '').toUpperCase() === 'IMAGE' && entry.public_url);
+    items.forEach((item) => {
+      const own = images.filter((entry) => Number(entry.mobilized_item_id) === Number(item.mobilized_item_id));
+      const photo = own.find((entry) => entry.is_primary) || own[0];
+      const urls = photo ? [photo.public_url] : imageCandidates(item.sku);
+      if (!urls.length) return;
+      const extra = [item.model, item.serial_number ? `S/N ${item.serial_number}` : ''].filter(Boolean).join(' · ');
+      entries.push({ uploaded: Boolean(photo), urls, caption: [item.description || item.sku || 'Item', extra].filter(Boolean).join(' — ') });
+    });
+    images.filter((entry) => entry.mobilized_item_id == null).forEach((entry) => {
+      entries.push({ uploaded: true, urls: [entry.public_url], caption: row.title || '' });
+    });
+  } catch (error) {
+    console.warn('[mobilized] Não foi possível carregar as imagens:', error);
+  }
+  // itens só com SKU podem não ter foto no produto: a foto enviada vem primeiro
+  entries.sort((a, b) => Number(b.uploaded) - Number(a.uploaded));
+  entries = entries.map((entry, index) => ({ ...entry, index }));
+  renderImageGallery(row, entries.length ? entries : fallback);
+  openImageModal();
+}
+
+/* ──────────────────────────────────────────────────────────────
    Eventos
 ────────────────────────────────────────────────────────────── */
 export function setSort({ column, direction }) {
@@ -212,12 +256,23 @@ export function bindActions() {
     select: selectMobilized,
     pdf: openGeneratedPdf,
     remove: removeMobilized,
+    image: openRowImages,
     editItem: (item) => openItemModal(item),
     copyItem: (item) => openItemModal(item, { copy: true }),
     deleteItem,
   });
 
   dom.btnNew?.addEventListener('click', newMobilized);
+  dom.btnViewMode?.addEventListener('click', () => {
+    state.viewMode = state.viewMode === 'list' ? 'cards' : 'list';
+    try { localStorage.setItem('mobilized.viewMode', state.viewMode); } catch { /* sem storage */ }
+    applyViewMode();
+  });
+  dom.btnImageOpenMobilized?.addEventListener('click', () => {
+    const id = imageModalRowId;
+    closeImageModal();
+    if (id) selectMobilized(id);
+  });
   dom.btnRefresh?.addEventListener('click', () => loadList(false));
   dom.btnSearch?.addEventListener('click', () => loadList(true));
   dom.btnClearFilters?.addEventListener('click', () => {

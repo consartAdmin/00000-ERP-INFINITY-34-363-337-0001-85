@@ -42,3 +42,11 @@ export function isDetailsOpen() {
 export function exposeDetailsApi() {
   window.mobilizedDetailsModal = Object.freeze({ open: openDetailsModal, close: closeDetailsModal, isOpen: isDetailsOpen });
 }
+
+export function openImageModal() {
+  Modal.open(dom.imageModal, { focusSelector: '.modal__panel' });
+}
+
+export function closeImageModal() {
+  Modal.close(dom.imageModal);
+}

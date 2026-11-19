@@ -56,6 +56,7 @@
           <button id="btnClearFilters" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
 
           <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnViewMode" type="button" class="btn btn-toolbar btn-sm" title="Alternar entre cards e lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Ver em lista</span></button>
             <button id="btnNew" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo Mobilizado</span></button>
             <button id="btnRefresh" type="button" class="btn btn-load btn-sm" title="Recarregar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Recarregar</span></button>
             <button id="btnPdfAll" type="button" class="btn btn-toolbar btn-sm"
@@ -67,11 +68,19 @@
         </div>
       </div>
 
+      <!-- CARDS (visão padrão: um quadrado por mobilizado, com a foto) -->
+      <div id="mobilizedCardsWrap" class="table-scroll table-height-flex" data-table-settings="off">
+        <div class="kanban-column">
+          <div id="mobilizedCards" class="c-grid g-auto-sm gap-12"></div>
+        </div>
+      </div>
+
       <!-- LISTA -->
-      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="mobilized.tablebody">
+      <div id="mobilizedTableWrap" class="table-scroll table-height-flex table-row-h-20" data-table-settings="mobilized.tablebody">
         <table id="mobilizedTable" class="table table-zebra table-zebra-hover table-sticky-head">
           <thead>
             <tr>
+              <th class="table-col-w-2">Imagem</th>
               <th class="table-col-w-5 table-sortable" data-sort-column="acquired_at" aria-sort="descending"><button
                   type="button" class="table-sort-button is-sorted" data-sort-button data-sort-direction="desc">Data
                   aquisição <span data-sort-icon aria-hidden="true">↓</span></button></th>
@@ -255,6 +264,38 @@
   </div>
 
   <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — IMAGENS DO MOBILIZADO (clique na miniatura)
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-6 modal-header-color-3 modal-footer-color-3" id="imageModal" role="dialog"
+    aria-modal="true" aria-labelledby="imageModalTitle" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="imageModalTitle">Imagem do mobilizado</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <div class="summary summary--center">
+            <img id="imageModalMain" class="img" alt="Imagem do mobilizado" width="560" height="420" />
+          </div>
+          <div class="summary summary--center">
+            <small id="imageModalCaption"></small>
+          </div>
+          <div class="modal-divider modal-divider--soft" id="imageModalDivider"></div>
+          <div class="summary summary--center summary-gap-8" id="imageModalThumbs"></div>
+        </div>
+
+        <footer class="modal__footer">
+          <button id="btnImageOpenMobilized" type="button" class="btn btn-toolbar btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Abrir mobilizado</span></button>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Fechar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
+  <!-- ╭──────────────────────────────────────────────╮
        │ MODAL — ITEM DO MOBILIZADO                    │
        ╰──────────────────────────────────────────────╯ -->
   <div class="modal modal-width-8 modal-header-color-3 modal-footer-color-3" id="itemModal" role="dialog"
@@ -349,7 +390,7 @@
   </div>
 
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/mobilized/js/mobilized.init.js?v=4"></script>
+  <script type="module" src="/public/mobilized/js/mobilized.init.js?v=5"></script>
 </body>
 
 </html>

@@ -74,7 +74,8 @@ export const imageCandidates = (sku) => {
   const code = String(sku || '').trim();
   return code ? IMAGE_EXTENSIONS.map((ext) => `${API_BASE}/public/imagens/${encodeURIComponent(code)}.${ext}`) : [];
 };
-export function setImageWithFallback(image, urls = [], placeholder = '/public/imagens/brasaoConsartInfinity.png') {
+export const PLACEHOLDER_IMAGE = '/public/imagens/brasaoConsartInfinity.png';
+export function setImageWithFallback(image, urls = [], placeholder = PLACEHOLDER_IMAGE) {
   if (!image) return;
   const list = urls.filter(Boolean); let index = 0;
   const next = () => {
