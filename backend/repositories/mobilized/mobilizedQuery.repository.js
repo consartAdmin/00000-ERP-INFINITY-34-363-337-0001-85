@@ -3,7 +3,7 @@
 // ║ Tabelas: public.mobilized, public."mobilizedItems"                 ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import { TB_M, TB_I } from './mobilized.constants.js';
+import { TB_M, TB_I, TB_A } from './mobilized.constants.js';
 import { asInt, safeStr, parseLimit, parseOffset } from './mobilized.sanitizers.js';
 import { parseOrder } from './mobilized.sql.js';
 import { q } from './mobilized.utils.js';
@@ -66,7 +66,10 @@ export async function listMobilized(filters = {}) {
     SELECT m.*,
       COALESCE(agg.items_count, 0)::int AS items_count,
       COALESCE(agg.items_total, 0)::numeric(15,2) AS items_total,
-      COALESCE(agg.items_missing_price, 0)::int AS items_missing_price
+      COALESCE(agg.items_missing_price, 0)::int AS items_missing_price,
+      img.image_url,
+      COALESCE(img.images_count, 0)::int AS images_count,
+      sku.first_sku
     FROM ${TB_M} m
     LEFT JOIN LATERAL (
       SELECT COUNT(*) AS items_count,
@@ -75,6 +78,27 @@ export async function listMobilized(filters = {}) {
         FROM ${TB_I} i
        WHERE i.mobilized_id = m.mobilized_id
     ) agg ON TRUE
+    -- ✅ miniatura da lista: imagem principal do primeiro item que tiver foto
+    LEFT JOIN LATERAL (
+      SELECT (ARRAY_AGG(a.public_url ORDER BY a.is_primary DESC,
+                        a.mobilized_item_id ASC NULLS LAST,
+                        a.mobilized_attachment_id ASC))[1] AS image_url,
+             COUNT(*) AS images_count
+        FROM ${TB_A} a
+       WHERE a.mobilized_id = m.mobilized_id
+         AND a.status = 'ACTIVE'
+         AND a.attachment_type = 'IMAGE'
+         AND COALESCE(a.public_url, '') <> ''
+    ) img ON TRUE
+    -- ✅ sem foto enviada: tenta a imagem do produto pelo SKU do primeiro item
+    LEFT JOIN LATERAL (
+      SELECT i.sku AS first_sku
+        FROM ${TB_I} i
+       WHERE i.mobilized_id = m.mobilized_id
+         AND COALESCE(TRIM(i.sku), '') <> ''
+       ORDER BY i.mobilized_item_id ASC
+       LIMIT 1
+    ) sku ON TRUE
     ${whereSql}
     ${orderSql}
     LIMIT ${limit} OFFSET ${offset};

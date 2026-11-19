@@ -5,6 +5,7 @@ import { DEFAULT_LIMIT } from './mobilized.config.js';
 export const state = {
   rows: [], total: 0, limit: DEFAULT_LIMIT, offset: 0,
   summary: { items_count: 0, items_total: 0, items_missing_price: 0 },
+  viewMode: (() => { try { return localStorage.getItem('mobilized.viewMode') === 'list' ? 'list' : 'cards'; } catch { return 'cards'; } })(),
   sortColumn: 'acquired_at', sortDirection: 'desc',
   selectedId: null, selectedRow: null, items: [], attachments: [], selectedItemsTotal: 0,
 };
@@ -12,7 +13,9 @@ export const state = {
 const $ = (selector, root = document) => root.querySelector(selector);
 
 export const dom = {
-  table: $('#mobilizedTable'), list: $('#tableBody'), form: $('#formMobilized'), itemsBody: $('#itemsBody'),
+  table: $('#mobilizedTable'), list: $('#tableBody'),
+  cards: $('#mobilizedCards'), cardsWrap: $('#mobilizedCardsWrap'), tableWrap: $('#mobilizedTableWrap'),
+  btnViewMode: $('#btnViewMode'), form: $('#formMobilized'), itemsBody: $('#itemsBody'),
   q: $('#q'), statusFilter: $('#statusFilter'), periodFilter: $('#periodFilter'),
   btnNew: $('#btnNew'), btnRefresh: $('#btnRefresh'), btnSearch: $('#btnSearch'), btnClearFilters: $('#btnClearFilters'),
   // rodapé padrão
@@ -31,6 +34,10 @@ export const dom = {
   itemModal: $('#itemModal'), itemModalTitle: $('#itemModalTitle'), btnItemSave: $('#btnItemSave'),
   btnItemSetImageUrl: $('#btnItemSetImageUrl'), btnItemClearImageUrl: $('#btnItemClearImageUrl'),
   itemImgPreview: $('#item_img_preview'),
+  // modal imagens (miniatura da lista)
+  imageModal: $('#imageModal'), imageModalTitle: $('#imageModalTitle'), imageModalMain: $('#imageModalMain'),
+  imageModalCaption: $('#imageModalCaption'), imageModalThumbs: $('#imageModalThumbs'),
+  imageModalDivider: $('#imageModalDivider'), btnImageOpenMobilized: $('#btnImageOpenMobilized'),
 };
 
 export const fields = {
