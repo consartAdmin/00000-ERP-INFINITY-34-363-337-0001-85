@@ -129,7 +129,7 @@ function paintCard(card) {
   const box = card.querySelector('.crm-card__contacts');
   if (!box) return;
   const s = summaryByDeal.get(String(card.dataset.id)) || {};
-  box.querySelectorAll('.crm-contact-btn').forEach((btn) => {
+  box.querySelectorAll('.crm-contact-btn[data-type]').forEach((btn) => {
     const type = TYPE_BY_CODE[btn.dataset.type];
     paintButton(btn, s[type.code], type);
   });
