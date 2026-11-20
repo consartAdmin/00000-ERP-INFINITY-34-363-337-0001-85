@@ -21,6 +21,7 @@ import { apiBase } from './expenseEntries.config.js';
 import { setupExpenseEntriesModal } from './expenseEntries.modal.js';
 import { loadVehicleOptions } from './expenseEntries.form.js';
 import { setupAttachments } from './expenseEntries.attachments.js';
+import { setupClassification } from './expenseEntries.classification.js';
 import { state } from './expenseEntries.state.js';
 import { $, toast } from './expenseEntries.utils.js';
 import { createSortableTable } from '/public/includes/js/sortableTable.js';
@@ -137,6 +138,7 @@ export function initExpenseEntries() {
   setupExpenseEntriesModal();
   bindEvents();
   setupAttachments();
+  setupClassification();
   setupSorting();
   setupImportFromDfe();
   loadVehicleOptions();

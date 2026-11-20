@@ -14,6 +14,7 @@ import {
 } from './expenseEntries.form.js';
 import { setExpenseEntriesModalOpen } from './expenseEntries.modal.js';
 import { addPendingFiles, loadSavedAttachments, uploadPendingAttachments } from './expenseEntries.attachments.js';
+import { fillClassification } from './expenseEntries.classification.js';
 import { renderList } from './expenseEntries.render.js';
 import { state } from './expenseEntries.state.js';
 import { $, toISODate, toast } from './expenseEntries.utils.js';
@@ -94,7 +95,7 @@ export async function openEdit(id) {
     fillForm(row);
     setModalTitle(`Editar Entrada #${id}`, 'Atualize os dados e salve');
     setExpenseEntriesModalOpen(true);
-    loadSavedAttachments(id);
+    loadSavedAttachments(id).then(() => fillClassification(state.cashMovement || {}));
   } catch (error) {
     toast(`Erro ao abrir: ${error.message}`, 'error');
   }
