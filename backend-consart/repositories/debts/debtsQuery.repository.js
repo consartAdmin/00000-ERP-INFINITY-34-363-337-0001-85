@@ -13,11 +13,9 @@ const cashColumnsSql = ({ columns } = {}) => (columns
 import { TB_DEBTS, TB_PAYMENTS } from './debts.constants.js';
 import { normalizeDate, normalizePaging } from './debts.utils.js';
 
-export async function list(filters = {}) {
-  const cashColumns = cashColumnsSql(await ensureCashCategoryColumns(TB_DEBTS));
+// Filtros da tela (lista e totais do rodapé usam o mesmo WHERE)
+function buildDebtsWhere(filters = {}) {
   const {
-    page = 1,
-    limit = 20,
     q,
     status,
     debt_type,
@@ -27,8 +25,6 @@ export async function list(filters = {}) {
     only_overdue,
     only_open
   } = filters;
-
-  const { safePage, safeLimit, offset } = normalizePaging(page, limit);
 
   const where = [];
   const params = [];
@@ -87,6 +83,20 @@ export async function list(filters = {}) {
   }
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  return { whereSql, params, nextParam: p };
+}
+
+export async function list(filters = {}) {
+  const cashColumns = cashColumnsSql(await ensureCashCategoryColumns(TB_DEBTS));
+  const {
+    page = 1,
+    limit = 20
+  } = filters;
+
+  const { safePage, safeLimit, offset } = normalizePaging(page, limit);
+
+  const { whereSql, params, nextParam: p } = buildDebtsWhere(filters);
 
   const countRes = await pool.query(
     `
@@ -206,25 +216,8 @@ export async function getById(id) {
 }
 
 export async function getSummary(filters = {}) {
-  const { due_date_from, due_date_to } = filters;
-
-  const where = [];
-  const params = [];
-  let p = 1;
-
-  if (due_date_from) {
-    where.push(`d.due_date >= $${p}`);
-    params.push(normalizeDate(due_date_from));
-    p++;
-  }
-
-  if (due_date_to) {
-    where.push(`d.due_date <= $${p}`);
-    params.push(normalizeDate(due_date_to));
-    p++;
-  }
-
-  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  // Mesmos filtros da lista (pesquisa, status, tipo, credor, vencimento, só abertos/vencidos)
+  const { whereSql, params } = buildDebtsWhere(filters);
 
   const res = await pool.query(
     `
