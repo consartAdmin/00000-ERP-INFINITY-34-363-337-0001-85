@@ -25,6 +25,8 @@
   <link rel="stylesheet" href="./expenseEntries.css" />
   <!-- Modal "Importar do DF-e" compartilhado com Entradas Fiscais -->
   <link rel="stylesheet" href="/public/inboundInvoices/inboundInvoicesDfeModal.css" />
+  <!-- Modal de busca de Fornecedores compartilhado -->
+  <link rel="stylesheet" href="/public/modalsSearch/suppliersModalSearch.css" />
 
 
 </head>
@@ -246,7 +248,18 @@
             <div class="modal-form-grid modal-form-grid--6">
               <div class="fields fields-w-full fields-h-6 fields-font-3 modal-field--span-4">
                 <label for="supplierName">Razão social / Nome</label>
-                <input id="supplierName" type="text" placeholder="Posto / Fornecedor..." />
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <input id="supplierName" type="text" placeholder="Digite ou clique na lupa para buscar no cadastro..."
+                    title="Duplo clique ou lupa para buscar o fornecedor no cadastro" style="flex:1 1 auto; min-width:0;" />
+                  <button type="button" id="btnSearchSupplier" class="action-icon action-icon--search"
+                    title="Buscar fornecedor no cadastro" aria-label="Buscar fornecedor no cadastro"><svg viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg></button>
+                  <button type="button" id="btnClearSupplier" class="action-icon action-icon--cancel"
+                    title="Limpar fornecedor" aria-label="Limpar fornecedor"><svg viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+                </div>
               </div>
               <div class="fields fields-w-full fields-h-6 fields-font-3 modal-field--span-2">
                 <label for="supplierDocument">CNPJ / CPF</label>
@@ -449,7 +462,7 @@
 
     <script type="module" src="/public/includes/js/core.js"></script>
 
-    <script type="module" src="/public/expenseEntries/js/expenseEntries.init.js?v=20260924-dfe"></script>
+    <script type="module" src="/public/expenseEntries/js/expenseEntries.init.js?v=20261121-fornecedor"></script>
 
 </body>
 
