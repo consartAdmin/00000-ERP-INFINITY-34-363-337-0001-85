@@ -64,6 +64,7 @@ router.delete('/stops/:stopId', c.deleteStop);
 // Rotas
 router.get('/', c.listTrips);
 router.post('/', c.createTrip);
+router.get('/:id/rentability', c.getTripRentability);
 router.get('/:id', c.getTrip);
 router.put('/:id', c.updateTrip);
 router.patch('/:id/status', c.setTripStatus);
