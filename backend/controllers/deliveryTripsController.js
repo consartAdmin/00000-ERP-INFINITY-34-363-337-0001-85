@@ -74,6 +74,7 @@ export const listSources = handle('listSources', (req) => tripsApi.listSources(r
 // ======================================================================
 export const listTrips = handle('listTrips', (req) => tripsApi.listTrips(req.query));
 export const getTrip = handle('getTrip', (req) => tripsApi.getTrip(req.params.id));
+export const getTripRentability = handle('getTripRentability', (req) => tripsApi.getTripRentability(req.params.id));
 export const createTrip = handle('createTrip', (req) => tripsApi.createTrip(req.body, req.user?.user_id), 201);
 export const updateTrip = handle('updateTrip', (req) => tripsApi.updateTrip(req.params.id, req.body));
 export const setTripStatus = handle('setTripStatus', (req) => tripsApi.setTripStatus(req.params.id, req.body));

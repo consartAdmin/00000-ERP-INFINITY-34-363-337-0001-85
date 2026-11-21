@@ -12,6 +12,7 @@
 import { getAuthToken } from '/public/includes/js/apiFetch.js';
 import { openSuppliersModalSearch } from '/public/modalsSearch/suppliersModalSearch.js';
 import { Modal } from '/public/includes/js/modal.js';
+import { openTripRentabilityModal } from './deliveryTripsRentabilityModal.js';
 
 const API = '/api/delivery-trips';
 
@@ -414,7 +415,9 @@ function renderTripActions() {
 
   box.innerHTML = btns.map(([st, label, cls]) =>
     `<button type="button" class="btn ${cls} btn-sm" data-status="${st}">${label}</button>`
-  ).join('') + '<button type="button" class="btn btn-toolbar btn-sm" data-print="1">🖨️ Romaneio</button>';
+  ).join('')
+    + '<button type="button" class="btn btn-toolbar btn-sm" data-rentability="1" title="Lucro, custo e impostos de todas as vendas da rota">📊 Rentabilidade</button>'
+    + '<button type="button" class="btn btn-toolbar btn-sm" data-print="1">🖨️ Romaneio</button>';
 }
 
 $('tripActions').addEventListener('click', async (ev) => {
@@ -423,6 +426,7 @@ $('tripActions').addEventListener('click', async (ev) => {
   const t = state.currentTrip;
 
   if (btn.dataset.print) { printTrip(t); return; }
+  if (btn.dataset.rentability) { openTripRentabilityModal(t); return; }
 
   const next = btn.dataset.status;
   const body = { status: next };
