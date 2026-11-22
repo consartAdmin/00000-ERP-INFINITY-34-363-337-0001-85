@@ -16,6 +16,7 @@ import { clearItemProduct, clearUnitSelect, clearLocationField, clearLotSelect }
 import { fmtDatePt, escapeHtml, inventoryStatusPill, inventoryTypeLabel } from './inventory.utils.js';
 import { actionIconsHtml } from '/public/includes/js/actionIcons.js';
 import { logError } from './inventory.config.js';
+import { selectCellHtml, refreshSelectionUi } from './inventory.batchFinalize.js';
 
 function getInventoryNotes(inv) {
   return inv?.notes ?? inv?.observacoes ?? inv?.observacao ?? inv?.observation ?? '';
@@ -136,7 +137,8 @@ export function renderInventoryTable(els, inventories, onPick) {
   state.inventoryKeyboardIndex = -1;
 
   if (!inventories.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="table-empty-state">Nenhum inventário encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="table-empty-state">Nenhum inventário encontrado.</td></tr>';
+    refreshSelectionUi();
     return;
   }
 
@@ -163,6 +165,7 @@ export function renderInventoryTable(els, inventories, onPick) {
     }
 
     tr.innerHTML = `
+      ${selectCellHtml(inv)}
       <td class="td-left">${escapeHtml(inv.code)}</td>
       ${costTotalCell(inv)}
       <td class="td-left">${escapeHtml(notesText)}</td>
@@ -181,6 +184,9 @@ export function renderInventoryTable(els, inventories, onPick) {
     tbody.appendChild(tr);
     state.inventoryRowsCache.push({ element: tr, data: inv });
   });
+
+  // Checkbox do cabeçalho + contador do botão "Finalizar selecionados"
+  refreshSelectionUi();
 }
 
 export function updateInventoryKeyboardSelection() {

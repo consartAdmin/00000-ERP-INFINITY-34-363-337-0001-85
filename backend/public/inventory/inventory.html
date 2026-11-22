@@ -57,6 +57,7 @@
             <button id="btnClearInventoryFilters" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
 
             <div class="btn-inline btn-gap-2 btn-position-right">
+              <button id="btnFinalizeSelected" type="button" class="btn btn-toolbar btn-sm" title="Finaliza e aplica no estoque os inventários marcados (pede senha)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 12 4 4L17 6"/><path d="m11 16 2 2 8-8"/></svg><span id="btnFinalizeSelectedLabel">Finalizar selecionados</span></button>
               <button id="btnImportInventoryXls" type="button" class="btn btn-toolbar btn-sm" title="Importar contagem de uma planilha .xls/.xlsx"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg><span>Importar XLS</span></button>
               <input id="inputImportInventoryXls" type="file" accept=".xls,.xlsx" hidden>
               <button id="btnDownloadInventoryTemplate" type="button" class="btn btn-toolbar btn-sm" title="Baixar o modelo CSV da importação"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg><span>Modelo CSV</span></button>
@@ -69,6 +70,7 @@
           <table class="table table-zebra table-zebra-hover table-sticky-head">
             <thead>
               <tr>
+                <th class="table-col-select"><input id="inventorySelectPage" type="checkbox" title="Marcar todos os abertos da página"></th>
                 <th class="th-left">Descrição</th>
                 <th class="table-col-w-5 col-number" title="Soma de Total × Custo unitário dos itens (custo atual do cadastro do produto)">Custo total</th>
                 <th class="th-left">Observações</th>
@@ -553,8 +555,46 @@
     </div>
   </div>
 
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — FINALIZAR SELECIONADOS (progresso)    │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-5 modal-header-color-3 modal-footer-color-3" id="batchFinalizeModal" role="dialog"
+    aria-modal="true" aria-labelledby="batchFinalizeTitle" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="batchFinalizeTitle">Finalizar selecionados</h3>
+          <button type="button" class="modal__close" id="batchFinalizeClose" aria-label="Fechar">✕</button>
+        </header>
+
+        <div class="modal__body modal-section">
+          <div class="modal-field--span-full">
+            <span id="batchFinalizeSummary" class="summary-pill summary-pill--info">Preparando...</span>
+          </div>
+          <div class="table-scroll table-max-height-400">
+            <table class="table table-zebra table-sticky-head">
+              <thead>
+                <tr>
+                  <th class="th-left">Inventário</th>
+                  <th class="table-col-w-5">Status</th>
+                  <th class="th-left">Mensagem</th>
+                </tr>
+              </thead>
+              <tbody id="batchFinalizeTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <footer class="modal__footer">
+          <button type="button" class="btn btn-new btn-sm" id="batchFinalizeOk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Fechar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
   <script type="module" src="/public/includes/js/core.js"></script>
-  <script type="module" src="/public/inventory/js/inventory.index.js?v=dock-06"></script>
+  <script type="module" src="/public/inventory/js/inventory.index.js?v=dock-07"></script>
   <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → oculta [data-feature="PRODUCT_LOCATIONS"] -->
   <script type="module">import { initProductLocationsFeature } from "/public/includes/js/productLocationsFeature.js"; initProductLocationsFeature();</script>
   <!-- Importador XLS + download do modelo CSV -->
