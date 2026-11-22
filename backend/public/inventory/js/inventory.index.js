@@ -40,6 +40,7 @@ import {
 import { loadLogs, renderLogsTable, clearLogFilters } from './inventory.logs.js';
 import { focusProductField } from './inventory.utils.js';
 import { bindQuickCreate } from './inventory.quickCreate.js';
+import { bindBatchFinalize } from './inventory.batchFinalize.js';
 
 /* ──────────────────────────────────────────────────────────────
    Helpers
@@ -215,6 +216,7 @@ function bindEvents(els) {
           'a',
           '[data-act="report"]',
           '[data-act="reopen"]',
+          '.table-cell-select',
         ].join(',')
       );
 
@@ -441,6 +443,11 @@ function bindEvents(els) {
   });
   els.statusFilter?.addEventListener('change', async () => { await loadInventories(els); });
   window.addEventListener('inventory:xls-imported', async () => { await loadInventories(els); });
+
+  /* ────────────────────────────────────────────────────────────
+     Finalizar selecionados (checkbox por linha) — inventory.batchFinalize.js
+  ──────────────────────────────────────────────────────────── */
+  bindBatchFinalize({ afterReload: async () => { await loadInventories(els); } });
 
   /* ────────────────────────────────────────────────────────────
      Observações do inventário (modal)
