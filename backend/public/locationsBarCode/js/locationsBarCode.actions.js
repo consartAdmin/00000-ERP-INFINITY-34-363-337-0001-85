@@ -166,6 +166,14 @@ export function printSelectedLabels() {
 }
 
 export function printCurrentLabel() {
+  if (!state.currentRecord) {
+    showFeedback('warning', 'Etiqueta', 'Nenhuma localização selecionada.');
+    return;
+  }
+  printLabels([state.currentRecord]);
+}
+
+export function downloadCurrentLabelPdf() {
   downloadLabelPdf(state.currentRecord);
 }
 
@@ -217,7 +225,8 @@ export function handleTableClick(event) {
   if (!button) return;
   if (button.dataset.action === 'view') openDetails(button.dataset.id);
   if (button.dataset.action === 'print') {
-    downloadLabelPdf(findRowById(button.dataset.id));
+    const row = findRowById(button.dataset.id);
+    if (row) printLabels([row]);
   }
 }
 

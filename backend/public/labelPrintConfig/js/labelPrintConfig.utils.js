@@ -1,40 +1,56 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ FILE: labelPrintConfig.utils.js                                     ║
-// ║ MODULE: Label Print Config — Utilities                              ║
-// ║ CONSART ERP | ESM                                                   ║
+// ║ MODULE: Parâmetros Etiqueta Localização — Utilitários e avisos      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
-export function toNumber(value, fallback = 0) {
-  if (value === null || value === undefined || value === '') return fallback;
+import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
-  const number = Number(String(value).replace(',', '.'));
-  return Number.isFinite(number) ? number : fallback;
+export const $ = (selector, root = document) => root.querySelector(selector);
+
+export const state = {
+  models: [],
+  search: '',
+  status: 'true',
+  sortColumn: 'name',
+  sortDirection: 'asc',
+  editing: null,
+};
+
+export function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-export function toBoolean(value, fallback = false) {
-  if (value === null || value === undefined || value === '') return fallback;
-  if (typeof value === 'boolean') return value;
-
-  return ['true', '1', 'yes', 'y', 'sim', 's'].includes(
-    String(value).toLowerCase()
-  );
+/** 60 → "60" · 62.5 → "62,5" */
+export function formatMm(value) {
+  return Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 }
 
-export function mmToPx(mm) {
-  return Number(mm) * 3.7795275591;
+/** Avisos no centerAlertModal (padrão CONSART). */
+export function notify(message, type = 'success') {
+  const variant = ['error', 'warning', 'info'].includes(type) ? type : 'success';
+  showCenterModal({
+    variant,
+    title: variant === 'error' ? 'Erro' : (variant === 'warning' ? 'Atenção' : 'Etiqueta de Localização'),
+    message: String(message ?? ''),
+    timeoutMs: variant === 'success' ? 2500 : undefined,
+  });
 }
 
-export function getBarcodeMock(type) {
-  const barcodeMocks = {
-    QR: '▦ ▦ ▦ ▦ ▦',
-    EAN13: '7891234567890',
-    EAN8: '78912345',
-    UPC: '012345678905',
-    CODE39: 'CODE-39-123',
-    CODE128: '████████████████████████',
-  };
-
-  return barcodeMocks[type] || barcodeMocks.CODE128;
+/** Confirmação no centerAlertModal. Resolve true/false. */
+export async function confirmCenter(message, { title = 'Confirmar', confirmLabel = 'Confirmar' } = {}) {
+  const button = await showCenterModal({
+    variant: 'warning',
+    title,
+    message: String(message ?? ''),
+    timeoutMs: null,
+    buttons: [
+      { label: 'Cancelar', variant: 'cancel' },
+      { label: confirmLabel, variant: 'confirm' },
+    ],
+  });
+  return String(button?.variant || '').toLowerCase() === 'confirm';
 }

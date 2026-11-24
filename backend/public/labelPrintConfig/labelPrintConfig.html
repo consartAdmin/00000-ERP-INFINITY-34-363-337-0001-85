@@ -1,210 +1,322 @@
+<!-- ╔════════════════════════════════════════════════════════════════════════════╗
+     ║ labelPrintConfig.html — Parâmetros Etiqueta Localização | CONSART ERP     ║
+     ║ Path: backend/public/labelPrintConfig/labelPrintConfig.html               ║
+     ║                                                                            ║
+     ║ Vários modelos de etiqueta nomeados para os códigos de barras de           ║
+     ║ Localização (public."labelPrintModels"). O modelo padrão é o sugerido      ║
+     ║ em Código de Barras por Localização; lá o usuário escolhe qual usar.       ║
+     ║                                                                            ║
+     ║ Padrão CONSART: só /public/includes/css/style.css (design system).         ║
+     ║  - Lista: table-layout-integrated + sortableTable + table-footer           ║
+     ║  - Ações: actionIcons.js · Avisos/confirmações: centerAlertModal.js        ║
+     ║  - Cadastro/edição: modals.css + modal.js, pré-visualização real          ║
+     ║    (/public/includes/js/locationLabelPrint.js)                             ║
+     ║ API: /api/label-print-config/models                                        ║
+     ╚════════════════════════════════════════════════════════════════════════════╝ -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="/public/imagens/brasaoConsartInfinity.png">
 
-  <title>Label Print Configuration</title>
+  <title>PARÂMETROS ETIQUETA LOCALIZAÇÃO | CONSART ERP</title>
 
-  <link rel="stylesheet" href="/public/includes/css/style.css" />
-  <link rel="stylesheet" href="./labelPrintConfig.css">
+  <link rel="stylesheet" href="/public/includes/css/style.css">
 </head>
 
 <body class="consart-theme p-page pw-page--full ph-page--xr">
   <main class="consart-container consart-container--full consart-container--ultraslim">
 
-    <header class="header header-h-5">
-      <!-- Container for all vertical lines -->
-      <div class="fields-lines fields-gap-3">
+    <section class="table-layout-integrated table-max-height-700">
 
-        <!-- Line 1: fields side by side -->
-        <div class="fields-inline">
-          <div>
-            <h1 class="font-bold">🏷 Parâmetros Etiqueta Localização</h1>
-            <p class="font-normal">
-              Configurar os parâmetros usados nas etiquetas de Localização.</p>
+      <!-- FILTROS + AÇÕES (div, não <header>: topGradientBar injeta o título) -->
+      <div class="table-layout-integrated__filter">
+        <div class="fields-inline fields-inline-wrap fields-gap-3">
+
+          <div class="fields fields-h-6 fields-w-20 fields-font-3">
+            <label for="busca">Buscar</label>
+            <input id="busca" type="search" placeholder="Nome ou descrição do modelo..." autocomplete="off">
           </div>
 
-          <div class="btn btn-inline btn-position-right">
-            <button id="btnSave" class="btn btn-new btn-sm">
-              💾 Save
-            </button>
-
-            <button id="btnReset" class="btn btn-new btn-sm">
-              ↺ Reset
-            </button>
+          <div class="fields fields-h-6 fields-w-8 fields-font-3">
+            <label for="filtroAtivo">Status</label>
+            <select id="filtroAtivo">
+              <option value="true" selected>Ativos</option>
+              <option value="false">Inativos</option>
+              <option value="all">Todos</option>
+            </select>
           </div>
-        </div>
-    </header>
 
-    <!-- ========================================================= -->
-    <!-- CONTENT                                                   -->
-    <!-- ========================================================= -->
+          <button id="btnLimparFiltros" type="button" class="btn btn-clean btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6l6 6-9 9Z"/><path d="M11 21h10"/></svg><span>Limpar</span></button>
 
-    <header class="header">
-      <!-- LABEL SIZE -->
-      <div class="fields">
-        <h2>Label Size</h2>
-      </div>
-
-      <div class="fields-inline fields-gap-3">
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Width (mm)</label>
-          <input type="number" id="width_mm" min="1">
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Height (mm)</label>
-          <input type="number" id="height_mm" min="1">
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Margin (mm)</label>
-          <input type="number" id="margin_mm" min="0">
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Orientation</label>
-          <select id="orientation">
-            <option value="portrait">Portrait</option>
-            <option value="landscape">Landscape</option>
-          </select>
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Paper</label>
-          <select id="paper">
-            <option value="custom">Custom</option>
-            <option value="a4">A4</option>
-            <option value="letter">Letter</option>
-            <option value="thermal">Thermal</option>
-          </select>
-        </div>
-    </header>
-
-    <!-- BARCODE -->
-    <header class="header">
-      <div class="fields">
-        <h2>Barcode</h2>
-      </div>
-
-      <div class="fields-inline fields-gap-3">
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Barcode Type</label>
-
-          <select id="barcode_type">
-            <option value="CODE128">CODE128</option>
-            <option value="CODE39">CODE39</option>
-            <option value="EAN13">EAN13</option>
-            <option value="EAN8">EAN8</option>
-            <option value="UPC">UPC</option>
-            <option value="QR">QR</option>
-          </select>
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Barcode Height</label>
-          <input type="number" id="barcode_height" min="1">
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Font Size (pt)</label>
-          <input type="number" id="font_size_pt" min="1">
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Copies</label>
-          <input type="number" id="copies" min="1">
-        </div>
-
-      </div>
-    </header>
-
-    <!-- DISPLAY -->
-    <header class="header">
-      <div class="fields">
-        <h2>Display Options</h2>
-      </div>
-
-      <div class="fields-inline fields-gap-3">
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <input type="checkbox" id="show_label_text">
-          <label for="show_label_text">
-            Show Product Name
-          </label>
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <input type="checkbox" id="show_location">
-          <label for="show_location">
-            Show Location
-          </label>
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <input type="checkbox" id="show_id">
-          <label for="show_id">
-            Show Internal ID
-          </label>
-        </div>
-
-        <div class="fields fields-h-6 fields-w-10 fields-font-3">
-          <label>Location Font Size</label>
-          <input type="number" id="location_font_size" min="1">
-        </div>
-
-      </div>
-
-    </header>
-
-    <!-- ===================================================== -->
-    <!-- RIGHT COLUMN                                           -->
-    <!-- ===================================================== -->
-
-    <div class="preview-column">
-
-      <div class="card sticky">
-
-        <div class="card-header">
-          <h2>Live Preview</h2>
-        </div>
-
-        <div class="card-body">
-
-          <div id="labelPreview">
-
-            <div id="previewBarcode">
-              ████████████████████████████
-            </div>
-
-            <div id="previewName">
-              PRODUCT DESCRIPTION
-            </div>
-
-            <div id="previewLocation">
-              Location A-01-B-03
-            </div>
-
-            <div id="previewId">
-              ID: 12345
-            </div>
+          <div class="btn-inline btn-gap-2 btn-position-right">
+            <button id="btnNovo" type="button" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Novo modelo</span></button>
+            <button id="btnRecarregar" type="button" class="btn btn-load btn-sm" title="Recarregar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Recarregar</span></button>
           </div>
         </div>
       </div>
-    </div>
 
+      <!-- LISTA DE MODELOS -->
+      <div class="table-scroll table-height-flex table-row-h-20" data-table-settings="labelprintconfig.models">
+        <table id="modelsTable" class="table table-zebra table-zebra-hover table-sticky-head">
+          <thead>
+            <tr>
+              <th class="table-sortable th-left" data-sort-column="name" aria-sort="ascending"><button type="button"
+                  class="table-sort-button is-sorted" data-sort-button data-sort-direction="asc">Modelo <span
+                    data-sort-icon aria-hidden="true">↑</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="size" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Tamanho (mm) <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-8 table-sortable" data-sort-column="paper" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Papel <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-6 table-sortable" data-sort-column="barcode_type" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Código <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-3 table-sortable" data-sort-column="copies" aria-sort="none"><button type="button"
+                  class="table-sort-button" data-sort-button>Cópias <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-4 table-sortable" data-sort-column="is_active" aria-sort="none"><button
+                  type="button" class="table-sort-button" data-sort-button>Status <span data-sort-icon
+                    aria-hidden="true">↕</span></button></th>
+              <th class="table-col-w-5">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="bodyTable"></tbody>
+        </table>
+      </div>
+
+      <!-- RODAPÉ PADRÃO -->
+      <footer class="table-footer">
+        <div class="table-footer__info">
+          <div class="summary-pill summary-pill--success summary-width-4 summary-left-space-3">
+            <span id="apTableInfo">0 registros encontrados</span>
+          </div>
+
+          <div class="summary summary--center summary-gap-8">
+            <div class="summary-pill summary-pill--primary" id="sumDefault">Padrão: —</div>
+            <div class="summary-pill summary-pill--info" id="sumActive">0 ativos</div>
+          </div>
+        </div>
+      </footer>
+    </section>
   </main>
-  <!-- ============================================================= -->
-  <!-- SCRIPTS                                                       -->
-  <!-- ============================================================= -->
+
+  <!-- ╭──────────────────────────────────────────────╮
+       │ MODAL — NOVO / EDITAR MODELO                  │
+       ╰──────────────────────────────────────────────╯ -->
+  <div class="modal modal-width-10 modal-header-color-3 modal-footer-color-3" id="modelModal" role="dialog"
+    aria-modal="true" aria-labelledby="formTitulo" aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close="backdrop"></div>
+    <div class="modal__dialog">
+      <section class="modal__panel" role="document">
+        <header class="modal__header">
+          <h3 class="modal__title" id="formTitulo">Novo modelo de etiqueta</h3>
+          <button type="button" class="modal__close" data-modal-close aria-label="Fechar">✕</button>
+        </header>
+
+        <form id="formModel" class="modal__body modal-section" autocomplete="off" novalidate>
+          <input type="hidden" id="model_id">
+
+          <div class="modal-form-grid modal-form-grid--6 fields-value-bold">
+
+            <!-- IDENTIFICAÇÃO -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Identificação</h4>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="name">Nome do modelo *</label>
+              <input id="name" type="text" maxlength="80" required placeholder="Ex.: Prateleira 60 × 40 mm">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="description">Descrição</label>
+              <input id="description" type="text" maxlength="200" placeholder="Onde usar este modelo (opcional)">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="is_default">Modelo padrão</label>
+              <select id="is_default">
+                <option value="false" selected>Não</option>
+                <option value="true">Sim</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="is_active">Status</label>
+              <select id="is_active">
+                <option value="true" selected>Ativo</option>
+                <option value="false">Inativo</option>
+              </select>
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- TAMANHO E PAPEL -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Tamanho e papel</h4>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="width_mm">Largura (mm)</label>
+              <input id="width_mm" type="number" min="10" max="300" step="0.5">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="height_mm">Altura (mm)</label>
+              <input id="height_mm" type="number" min="10" max="300" step="0.5">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="margin_mm">Margem interna (mm)</label>
+              <input id="margin_mm" type="number" min="0" max="20" step="0.5">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="paper">Papel</label>
+              <select id="paper"></select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="copies">Cópias por etiqueta</label>
+              <input id="copies" type="number" min="1" max="50" step="1">
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- CÓDIGO DE BARRAS -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Código de barras</h4>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="barcode_type">Tipo de código</label>
+              <select id="barcode_type"></select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="barcode_height_mm">Altura do código (mm)</label>
+              <input id="barcode_height_mm" type="number" min="3" max="200" step="0.5">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="barcode_width_pct">Largura do código (%)</label>
+              <input id="barcode_width_pct" type="number" min="30" max="100" step="1">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="show_barcode_text">Número do código</label>
+              <select id="show_barcode_text">
+                <option value="true">Mostrar</option>
+                <option value="false">Ocultar</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="barcode_text_font_pt">Fonte do número (pt)</label>
+              <input id="barcode_text_font_pt" type="number" min="4" max="72" step="0.5">
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- TEXTOS -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Textos da etiqueta</h4>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="show_title">Título</label>
+              <select id="show_title">
+                <option value="true">Mostrar</option>
+                <option value="false">Ocultar</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="title_text">Texto do título</label>
+              <input id="title_text" type="text" maxlength="60" placeholder="LOCALIZAÇÃO">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="title_font_pt">Fonte do título (pt)</label>
+              <input id="title_font_pt" type="number" min="4" max="72" step="0.5">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="show_location">Caminho da localização</label>
+              <select id="show_location">
+                <option value="true">Mostrar</option>
+                <option value="false">Ocultar</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="location_font_pt">Fonte da localização (pt)</label>
+              <input id="location_font_pt" type="number" min="4" max="72" step="0.5">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="show_footer">Rodapé</label>
+              <select id="show_footer">
+                <option value="true">Mostrar</option>
+                <option value="false">Ocultar</option>
+              </select>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="footer_text">Texto do rodapé</label>
+              <input id="footer_text" type="text" maxlength="60" placeholder="CONSART ERP">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3">
+              <label for="show_border">Borda</label>
+              <select id="show_border">
+                <option value="true">Com borda</option>
+                <option value="false">Sem borda</option>
+              </select>
+            </div>
+
+            <div class="modal-divider modal-divider--soft modal-field--span-full"></div>
+
+            <!-- PRÉ-VISUALIZAÇÃO -->
+            <div class="summary summary--between summary-gap-8 modal-field--span-full">
+              <h4>Pré-visualização (tamanho real)</h4>
+              <div class="summary-pill summary-pill--info" id="previewInfo">60 × 40 mm · CODE128</div>
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="sampleBarcode">Código de exemplo</label>
+              <input id="sampleBarcode" type="text" maxlength="60" value="LOC-0001-0002-0003">
+            </div>
+
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-4">
+              <label for="sampleLocation">Localização de exemplo</label>
+              <input id="sampleLocation" type="text" maxlength="120" value="Depósito / Corredor A / Prateleira 01 / Bandeja 03">
+            </div>
+
+            <div class="modal-field--span-full section section-gray section-border-thin section-column section-align-center section-justify-center section-p-4"
+              id="labelPreview" aria-live="polite"></div>
+          </div>
+        </form>
+
+        <footer class="modal__footer">
+          <button id="btnExcluir" type="button" class="btn btn-danger btn-sm btn-position-left" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg><span>Excluir</span></button>
+          <button id="btnImprimirTeste" type="button" class="btn btn-toolbar btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg><span>Imprimir teste</span></button>
+          <button type="button" class="btn btn-toolbar btn-sm" data-modal-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancelar</span></button>
+          <button id="btnSalvar" type="submit" form="formModel" class="btn btn-new btn-sm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3"/><path d="M8 21v-7h8v7"/></svg><span>Salvar</span></button>
+        </footer>
+      </section>
+    </div>
+  </div>
+
   <script type="module" src="/public/includes/js/core.js"></script>
   <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → página bloqueada com aviso -->
   <script type="module">import { guardProductLocationsPage } from "/public/includes/js/productLocationsFeature.js"; guardProductLocationsPage();</script>
 
-  <script type="module" src="./js/labelPrintConfig.init.js"></script>
-
+  <script type="module" src="./js/labelPrintConfig.init.js?v=2"></script>
 </body>
 
 </html>
