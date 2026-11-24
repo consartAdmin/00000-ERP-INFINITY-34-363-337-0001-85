@@ -8,6 +8,8 @@
 // ║ ✅ Exibe Qtde do pedido + Estoque Atual                                    ║
 // ║ ✅ Importa número e observação do orçamento vinculado                      ║
 // ║ ✅ Compatível com output: response | file | buffer                         ║
+// ║ ✅ Também usado pelo Orçamento (documentLabel + sortByLocation)            ║
+// ║ ✅ Mostra a grade do item abaixo da descrição                              ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
 import PDFDocument from 'pdfkit';
@@ -296,6 +298,29 @@ function chooseBestLot(lots = [], item = {}) {
   }
 
   return lots[0];
+}
+
+const LOCATION_COLLATOR = new Intl.Collator('pt-BR', {
+  numeric: true,
+  sensitivity: 'base',
+});
+
+// Itens com localização primeiro, na ordem corredor → endereço;
+// sem localização vão para o fim, por descrição.
+function compareItemsByLocation(a, b) {
+  const la = String(a?.location || '').trim();
+  const lb = String(b?.location || '').trim();
+
+  if (la && !lb) return -1;
+  if (!la && lb) return 1;
+
+  const byLocation = LOCATION_COLLATOR.compare(la, lb);
+  if (byLocation !== 0) return byLocation;
+
+  return LOCATION_COLLATOR.compare(
+    String(a?.description || ''),
+    String(b?.description || ''),
+  );
 }
 
 function formatStock(value) {
@@ -1764,7 +1789,7 @@ function drawHeader(
     .font('Helvetica')
     .fontSize(8)
     .text(
-      `Pedido: ${textOr(
+      `${order?.document_label || 'Pedido'}: ${textOr(
         order?.number ||
         order?.order_number ||
         order?.order_id,
@@ -1806,6 +1831,7 @@ function drawHeader(
     );
 
   if (
+    !order?.document_label &&
     budgetDisplayNumber !== null &&
     String(
       budgetDisplayNumber,
@@ -2038,6 +2064,11 @@ export async function generateOrderSeparationPdf(
     hydrateItems = true,
     hydrateBudget = true,
 
+    // Orçamento: rótulo "Orçamento" no cabeçalho/resumo e itens
+    // ordenados pela localização (rota do separador no estoque)
+    documentLabel = null,
+    sortByLocation = false,
+
     stockScopeType = 'GLOBAL',
     stockScopeId = 1,
   } = options;
@@ -2114,7 +2145,7 @@ export async function generateOrderSeparationPdf(
       ? COLS
       : COLS_NO_LOCATION;
 
-  const hydratedOrder =
+  const hydratedOrderBase =
     hydrateBudget
       ? await hydrateOrderWithBudget(
         order || {},
@@ -2122,6 +2153,13 @@ export async function generateOrderSeparationPdf(
       : {
         ...(order || {}),
       };
+
+  const hydratedOrder = documentLabel
+    ? { ...hydratedOrderBase, document_label: documentLabel }
+    : hydratedOrderBase;
+
+  const docWord =
+    String(documentLabel || 'Pedido').toLowerCase();
 
   const rawItems =
     Array.isArray(
@@ -2143,6 +2181,10 @@ export async function generateOrderSeparationPdf(
         },
       )
       : rawItems;
+
+  if (sortByLocation) {
+    items.sort(compareItemsByLocation);
+  }
 
   drawHeader(
     doc,
@@ -2319,16 +2361,41 @@ export async function generateOrderSeparationPdf(
       },
     );
 
+    const grade = String(
+      firstNonEmpty(
+        item?.grade,
+        item?.grade_name,
+        item?.grade_description,
+      ) || '',
+    ).trim();
+
     doc.text(
       description,
       cols.x[2] + 3,
       y + 9,
       {
         width: cols.w[2] - 6,
-        height: 30,
+        height: grade ? 24 : 30,
         align: 'left',
       },
     );
+
+    // Grade (variação: cor, tamanho...) em destaque abaixo da descrição
+    if (grade) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(8)
+        .text(
+          trunc(`Grade: ${grade}`, 60),
+          cols.x[2] + 3,
+          y + 34,
+          {
+            width: cols.w[2] - 6,
+            lineBreak: false,
+          },
+        )
+        .font('Helvetica');
+    }
 
     if (
       showLocations &&
@@ -2543,7 +2610,7 @@ export async function generateOrderSeparationPdf(
       },
     )
     .text(
-      `Quantidade do pedido: ${formatStock(
+      `Quantidade do ${docWord}: ${formatStock(
         totalQuantity,
       )}`,
       170,
@@ -2553,7 +2620,7 @@ export async function generateOrderSeparationPdf(
       },
     )
     .text(
-      `Valor do pedido: R$ ${money(
+      `Valor do ${docWord}: R$ ${money(
         hydratedOrder?.total_amount ||
         hydratedOrder?.total ||
         0,
