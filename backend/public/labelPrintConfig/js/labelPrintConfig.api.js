@@ -1,54 +1,36 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ FILE: labelPrintConfig.api.js                                       ║
-// ║ MODULE: Label Print Config — API                                    ║
-// ║ CONSART ERP | ESM                                                   ║
+// ║ MODULE: Parâmetros Etiqueta Localização — API dos modelos           ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
-import { ROUTES } from './labelPrintConfig.config.js';
+import { LABEL_MODELS_URL } from '/public/includes/js/locationLabelPrint.js';
 
-async function apiRequest(url, options = {}) {
+async function request(url, options = {}) {
   const response = await fetch(url, {
     method: options.method || 'GET',
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(options.headers || {}),
     },
     body: options.body,
   });
-
-  const contentType = response.headers.get('content-type') || '';
-  const data = contentType.includes('application/json')
-    ? await response.json()
-    : await response.text();
-
-  if (!response.ok) {
-    const message =
-      typeof data === 'object'
-        ? data.error || data.message || `HTTP ${response.status}`
-        : data || `HTTP ${response.status}`;
-
-    throw new Error(message);
-  }
-
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || data.message || `Erro ${response.status} na API.`);
   return data;
 }
 
-export function getLabelPrintConfig() {
-  return apiRequest(ROUTES.base);
-}
+export const listModels = () => request(`${LABEL_MODELS_URL}?includeInactive=true`);
 
-export function updateLabelPrintConfig(payload) {
-  return apiRequest(ROUTES.base, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  });
-}
+export const createModel = (payload) =>
+  request(LABEL_MODELS_URL, { method: 'POST', body: JSON.stringify(payload) });
 
-export function restoreLabelPrintConfig() {
-  return apiRequest(ROUTES.reset, {
-    method: 'POST',
-  });
-}
+export const updateModel = (id, payload) =>
+  request(`${LABEL_MODELS_URL}/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) });
+
+export const setDefaultModel = (id) =>
+  request(`${LABEL_MODELS_URL}/${encodeURIComponent(id)}/default`, { method: 'POST' });
+
+export const deleteModel = (id) =>
+  request(`${LABEL_MODELS_URL}/${encodeURIComponent(id)}`, { method: 'DELETE' });

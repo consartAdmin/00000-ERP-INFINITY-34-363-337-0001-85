@@ -1,47 +1,66 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ FILE: labelPrintConfig.init.js                                      ║
-// ║ MODULE: Label Print Config — Initialization                         ║
-// ║ CONSART ERP | ESM                                                   ║
+// ║ MODULE: Parâmetros Etiqueta Localização — Inicialização             ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
+import { Modal } from '/public/includes/js/modal.js';
+import { createSortableTable } from '/public/includes/js/sortableTable.js';
 import {
-  loadConfig,
-  resetConfig,
-  saveConfig,
+  loadModels, openModel, printTest, refreshTable, removeModel, saveModel,
 } from './labelPrintConfig.actions.js';
-import {
-  DEFAULT_CONFIG,
-  FIELD_IDS,
-} from './labelPrintConfig.config.js';
-import { fillForm } from './labelPrintConfig.form.js';
-import { renderPreview } from './labelPrintConfig.render.js';
-import { cacheDom, dom } from './labelPrintConfig.state.js';
+import { FORM_FIELDS, fillSelectOptions, renderPreview } from './labelPrintConfig.form.js';
+import { $, state } from './labelPrintConfig.utils.js';
 
 function bindEvents() {
-  FIELD_IDS.forEach((id) => {
-    const element = dom[id];
-    if (!element) return;
-
-    element.addEventListener('input', renderPreview);
-    element.addEventListener('change', renderPreview);
+  $('#btnNovo')?.addEventListener('click', () => openModel());
+  $('#btnRecarregar')?.addEventListener('click', loadModels);
+  $('#btnLimparFiltros')?.addEventListener('click', () => {
+    $('#busca').value = '';
+    $('#filtroAtivo').value = 'true';
+    state.search = '';
+    state.status = 'true';
+    refreshTable();
   });
+  $('#busca')?.addEventListener('input', (event) => { state.search = event.target.value; refreshTable(); });
+  $('#filtroAtivo')?.addEventListener('change', (event) => { state.status = event.target.value; refreshTable(); });
 
-  dom.btnSave?.addEventListener('click', saveConfig);
-  dom.btnReset?.addEventListener('click', resetConfig);
+  $('#formModel')?.addEventListener('submit', saveModel);
+  $('#btnExcluir')?.addEventListener('click', () => removeModel());
+  $('#btnImprimirTeste')?.addEventListener('click', printTest);
+
+  [...FORM_FIELDS, 'sampleBarcode', 'sampleLocation'].forEach((id) => {
+    const el = document.getElementById(id);
+    el?.addEventListener('input', renderPreview);
+    el?.addEventListener('change', renderPreview);
+  });
 }
 
-async function init() {
-  cacheDom();
-  bindEvents();
-  fillForm(DEFAULT_CONFIG);
-  renderPreview();
-  await loadConfig();
+async function boot() {
+  try {
+    Modal.setup();
+    fillSelectOptions();
+    bindEvents();
+    createSortableTable({
+      table: '#modelsTable',
+      defaultColumn: state.sortColumn,
+      defaultDirection: state.sortDirection,
+      allowedColumns: ['name', 'size', 'paper', 'barcode_type', 'copies', 'is_active'],
+      onSort: ({ column, direction }) => {
+        state.sortColumn = column;
+        state.sortDirection = direction;
+        refreshTable();
+      },
+    });
+    await loadModels();
+  } catch (error) {
+    console.error('[labelPrintConfig] Falha na inicialização:', error);
+  }
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init, { once: true });
+  document.addEventListener('DOMContentLoaded', boot, { once: true });
 } else {
-  init();
+  boot();
 }

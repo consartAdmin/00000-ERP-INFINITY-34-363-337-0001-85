@@ -1,91 +1,102 @@
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ FILE: labelPrintConfig.form.js                                      ║
-// ║ MODULE: Label Print Config — Form                                   ║
-// ║ CONSART ERP | ESM                                                   ║
+// ║ MODULE: Parâmetros Etiqueta Localização — Formulário + preview      ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 'use strict';
 
 import {
-  DEFAULT_CONFIG,
-  FIELD_IDS,
-} from './labelPrintConfig.config.js';
-import { dom } from './labelPrintConfig.state.js';
-import { toBoolean, toNumber } from './labelPrintConfig.utils.js';
+  BARCODE_TYPE_LABELS,
+  FALLBACK_MODEL,
+  PAPER_LABELS,
+  labelHtml,
+  loadBarcodeLibs,
+  normalizeModel,
+} from '/public/includes/js/locationLabelPrint.js';
+import { $, escapeHtml, formatMm } from './labelPrintConfig.utils.js';
 
-export function readForm() {
-  return {
-    width_mm: toNumber(dom.width_mm?.value, DEFAULT_CONFIG.width_mm),
-    height_mm: toNumber(dom.height_mm?.value, DEFAULT_CONFIG.height_mm),
-    margin_mm: toNumber(dom.margin_mm?.value, DEFAULT_CONFIG.margin_mm),
-    orientation: dom.orientation?.value || DEFAULT_CONFIG.orientation,
-    barcode_height: toNumber(
-      dom.barcode_height?.value,
-      DEFAULT_CONFIG.barcode_height
-    ),
-    font_size_pt: toNumber(
-      dom.font_size_pt?.value,
-      DEFAULT_CONFIG.font_size_pt
-    ),
-    barcode_type: dom.barcode_type?.value || DEFAULT_CONFIG.barcode_type,
-    copies: toNumber(dom.copies?.value, DEFAULT_CONFIG.copies),
-    paper: dom.paper?.value || DEFAULT_CONFIG.paper,
-    show_label_text: Boolean(dom.show_label_text?.checked),
-    show_location: Boolean(dom.show_location?.checked),
-    location_font_size: toNumber(
-      dom.location_font_size?.value,
-      DEFAULT_CONFIG.location_font_size
-    ),
-    show_id: Boolean(dom.show_id?.checked),
-  };
+const NUMBER_FIELDS = [
+  'width_mm', 'height_mm', 'margin_mm', 'copies', 'barcode_height_mm', 'barcode_width_pct',
+  'barcode_text_font_pt', 'title_font_pt', 'location_font_pt',
+];
+const BOOL_FIELDS = [
+  'is_default', 'is_active', 'show_barcode_text', 'show_title', 'show_location', 'show_footer', 'show_border',
+];
+const TEXT_FIELDS = ['name', 'description', 'paper', 'barcode_type', 'title_text', 'footer_text'];
+
+export const FORM_FIELDS = [...TEXT_FIELDS, ...NUMBER_FIELDS, ...BOOL_FIELDS];
+
+export function fillSelectOptions() {
+  $('#paper').innerHTML = Object.entries(PAPER_LABELS)
+    .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join('');
+  $('#barcode_type').innerHTML = Object.entries(BARCODE_TYPE_LABELS)
+    .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join('');
 }
 
-export function fillForm(config = {}) {
-  FIELD_IDS.forEach((id) => {
-    const element = dom[id];
-    if (!element) return;
+export function readForm() {
+  const data = {};
+  TEXT_FIELDS.forEach((id) => { data[id] = $(`#${id}`).value.trim(); });
+  NUMBER_FIELDS.forEach((id) => {
+    const raw = String($(`#${id}`).value).replace(',', '.');
+    data[id] = raw === '' ? null : Number(raw);
+  });
+  BOOL_FIELDS.forEach((id) => { data[id] = $(`#${id}`).value === 'true'; });
+  return data;
+}
 
-    const value = config[id];
-
-    if (element.type === 'checkbox') {
-      element.checked = Boolean(value);
-      return;
-    }
-
-    if (value !== undefined && value !== null) {
-      element.value = value;
-    }
+export function fillForm(raw = {}) {
+  const model = { ...normalizeModel({ ...FALLBACK_MODEL, ...raw }) };
+  $('#model_id').value = raw.id ?? '';
+  TEXT_FIELDS.forEach((id) => { $(`#${id}`).value = model[id] ?? ''; });
+  $('#name').value = raw.name ?? '';
+  $('#description').value = raw.description ?? '';
+  NUMBER_FIELDS.forEach((id) => { $(`#${id}`).value = model[id] ?? ''; });
+  BOOL_FIELDS.forEach((id) => {
+    const value = id === 'is_default' ? Boolean(raw.is_default)
+      : id === 'is_active' ? raw.is_active !== false : Boolean(model[id]);
+    $(`#${id}`).value = value ? 'true' : 'false';
   });
 }
 
-export function normalizeConfig(raw = {}) {
-  const data = raw?.data && typeof raw.data === 'object' ? raw.data : raw;
+/** Campos dependentes ficam desabilitados quando o item está oculto. */
+export function syncDependentFields() {
+  const pairs = [
+    ['show_title', ['title_text', 'title_font_pt']],
+    ['show_location', ['location_font_pt']],
+    ['show_footer', ['footer_text']],
+    ['show_barcode_text', ['barcode_text_font_pt']],
+  ];
+  pairs.forEach(([toggle, deps]) => {
+    const off = $(`#${toggle}`).value !== 'true';
+    deps.forEach((id) => { $(`#${id}`).disabled = off; });
+  });
+  $('#barcode_width_pct').disabled = $('#barcode_type').value === 'QR';
+}
 
-  return {
-    width_mm: toNumber(data.width_mm, DEFAULT_CONFIG.width_mm),
-    height_mm: toNumber(data.height_mm, DEFAULT_CONFIG.height_mm),
-    margin_mm: toNumber(data.margin_mm, DEFAULT_CONFIG.margin_mm),
-    orientation: String(data.orientation || DEFAULT_CONFIG.orientation),
-    barcode_height: toNumber(
-      data.barcode_height,
-      DEFAULT_CONFIG.barcode_height
-    ),
-    font_size_pt: toNumber(data.font_size_pt, DEFAULT_CONFIG.font_size_pt),
-    barcode_type: String(data.barcode_type || DEFAULT_CONFIG.barcode_type),
-    copies: toNumber(data.copies, DEFAULT_CONFIG.copies),
-    paper: String(data.paper || DEFAULT_CONFIG.paper),
-    show_label_text: toBoolean(
-      data.show_label_text,
-      DEFAULT_CONFIG.show_label_text
-    ),
-    show_location: toBoolean(
-      data.show_location,
-      DEFAULT_CONFIG.show_location
-    ),
-    location_font_size: toNumber(
-      data.location_font_size,
-      DEFAULT_CONFIG.location_font_size
-    ),
-    show_id: toBoolean(data.show_id, DEFAULT_CONFIG.show_id),
+let previewSeq = 0;
+
+export async function renderPreview() {
+  const box = $('#labelPreview');
+  if (!box) return;
+  syncDependentFields();
+
+  const model = normalizeModel(readForm());
+  const seq = ++previewSeq;
+  $('#previewInfo').textContent =
+    `${formatMm(model.width_mm)} × ${formatMm(model.height_mm)} mm · ${model.barcode_type}` +
+    `${model.paper === 'a4' ? ' · Folha A4' : ' · Térmica'}`;
+
+  const row = {
+    barcode: $('#sampleBarcode').value.trim() || 'LOC-0001',
+    label: $('#sampleLocation').value.trim(),
   };
+
+  try {
+    await loadBarcodeLibs(model);
+    if (seq !== previewSeq) return;
+    box.innerHTML = labelHtml(row, model);
+  } catch (error) {
+    if (seq !== previewSeq) return;
+    box.innerHTML = `<div class="summary-pill summary-pill--danger">${escapeHtml(error.message)}</div>`;
+  }
 }

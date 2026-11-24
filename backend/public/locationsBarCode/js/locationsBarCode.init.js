@@ -11,10 +11,11 @@ import {
   applyFilters, changePageSize, clearFilters, closeDetailsModal,
   deactivateCurrentBarcode, generateBarcodes, handleCheckAll,
   handleTableChange, handleTableClick, loadBarcodes, nextPage,
-  openDetails, previousPage, printCurrentLabel, printSelectedLabels,
+  downloadCurrentLabelPdf, openDetails, previousPage, printCurrentLabel, printSelectedLabels,
   readScannerBarcode,
 } from './locationsBarCode.actions.js';
 import { forceCloseModalOnLoad } from './locationsBarCode.modal.js';
+import { loadLabelModels } from './locationsBarCode.print.js';
 import { $, debounce, focusScanner } from './locationsBarCode.utils.js';
 
 /* =====================================================================
@@ -29,6 +30,7 @@ function bindEvents() {
   $('#btnReadBarcode')?.addEventListener('click', readScannerBarcode);
   $('#btnPrintSelected')?.addEventListener('click', printSelectedLabels);
   $('#btnPrint')?.addEventListener('click', printCurrentLabel);
+  $('#btnPdf')?.addEventListener('click', downloadCurrentLabelPdf);
   $('#btnDeactivate')?.addEventListener('click', deactivateCurrentBarcode);
   $('#btnCloseModal')?.addEventListener('click', closeDetailsModal);
   $('#btnPrev')?.addEventListener('click', previousPage);
@@ -77,6 +79,7 @@ function init() {
   bindEvents();
   focusScanner();
   loadBarcodes();
+  loadLabelModels();
 }
 
 document.readyState === 'loading'
