@@ -271,6 +271,11 @@
               <input id="footer_text" type="text" maxlength="60" placeholder="CONSART ERP">
             </div>
 
+            <div class="fields fields-h-6 fields-w-full fields-font-3 modal-field--span-2">
+              <label for="location_wrap">Quebra do caminho</label>
+              <select id="location_wrap"></select>
+            </div>
+
             <div class="fields fields-h-6 fields-w-full fields-font-3">
               <label for="show_border">Borda</label>
               <select id="show_border">
@@ -316,7 +321,7 @@
   <!-- appFeature PRODUCT_LOCATIONS: LOCATIONS_DISABLED → página bloqueada com aviso -->
   <script type="module">import { guardProductLocationsPage } from "/public/includes/js/productLocationsFeature.js"; guardProductLocationsPage();</script>
 
-  <script type="module" src="./js/labelPrintConfig.init.js?v=2"></script>
+  <script type="module" src="./js/labelPrintConfig.init.js?v=3"></script>
 </body>
 
 </html>

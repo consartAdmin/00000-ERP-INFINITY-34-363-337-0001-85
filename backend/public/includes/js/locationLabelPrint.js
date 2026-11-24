@@ -52,6 +52,7 @@ export const FALLBACK_MODEL = Object.freeze({
   title_font_pt: 11,
   show_location: true,
   location_font_pt: 9,
+  location_wrap: 'single',
   show_barcode_text: true,
   barcode_text_font_pt: 10,
   show_footer: true,
@@ -98,6 +99,7 @@ export function normalizeModel(raw = {}) {
     title_font_pt: num(raw.title_font_pt, f.title_font_pt),
     show_location: bool(raw.show_location, f.show_location),
     location_font_pt: num(raw.location_font_pt, f.location_font_pt),
+    location_wrap: ['single', 'wrap', 'levels'].includes(raw.location_wrap) ? raw.location_wrap : f.location_wrap,
     show_barcode_text: bool(raw.show_barcode_text, f.show_barcode_text),
     barcode_text_font_pt: num(raw.barcode_text_font_pt, f.barcode_text_font_pt),
     show_footer: bool(raw.show_footer, f.show_footer),
@@ -107,9 +109,22 @@ export function normalizeModel(raw = {}) {
   };
 }
 
+export const LOCATION_WRAP_LABELS = Object.freeze({
+  single: 'Uma linha (corta com …)',
+  wrap: 'Quebrar quando não couber',
+  levels: 'Um nível por linha',
+});
+
 export function locationText(row = {}) {
-  return row.label || [row.local, row.corredor, row.prateleira, row.bandeja, row.position]
-    .filter(Boolean).join(' / ');
+  return row.label || locationLevels(row).join(' / ');
+}
+
+/** Níveis do caminho: Local, Corredor, Prateleira, Bandeja, Posição. */
+export function locationLevels(row = {}) {
+  const levels = [row.local, row.corredor, row.prateleira, row.bandeja, row.position]
+    .map((v) => String(v ?? '').trim()).filter(Boolean);
+  if (levels.length) return levels;
+  return String(row.label || '').split('/').map((v) => v.trim()).filter(Boolean);
 }
 
 /* ───────────────────────── API ───────────────────────── */
@@ -210,7 +225,15 @@ export function labelHtml(row, rawModel) {
     parts.push(`<div style="${line};font-size:${m.title_font_pt}pt;font-weight:900">${esc(m.title_text)}</div>`);
   }
   if (m.show_location) {
-    parts.push(`<div style="${line};font-size:${m.location_font_pt}pt;font-weight:700">${esc(locationText(row))}</div>`);
+    const loc = `font-size:${m.location_font_pt}pt;font-weight:700`;
+    if (m.location_wrap === 'levels') {
+      const lines = locationLevels(row).map((level) => `<div style="${line}">${esc(level)}</div>`).join('');
+      parts.push(`<div style="${loc}">${lines}</div>`);
+    } else if (m.location_wrap === 'wrap') {
+      parts.push(`<div style="margin:0;line-height:1.15;white-space:normal;overflow-wrap:anywhere;${loc}">${esc(locationText(row))}</div>`);
+    } else {
+      parts.push(`<div style="${line};${loc}">${esc(locationText(row))}</div>`);
+    }
   }
   parts.push(`<div>${barcodeSvg(code, m)}</div>`);
   if (m.show_barcode_text) {

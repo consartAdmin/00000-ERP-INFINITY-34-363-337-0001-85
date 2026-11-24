@@ -8,6 +8,7 @@
 import {
   BARCODE_TYPE_LABELS,
   FALLBACK_MODEL,
+  LOCATION_WRAP_LABELS,
   PAPER_LABELS,
   labelHtml,
   loadBarcodeLibs,
@@ -22,12 +23,14 @@ const NUMBER_FIELDS = [
 const BOOL_FIELDS = [
   'is_default', 'is_active', 'show_barcode_text', 'show_title', 'show_location', 'show_footer', 'show_border',
 ];
-const TEXT_FIELDS = ['name', 'description', 'paper', 'barcode_type', 'title_text', 'footer_text'];
+const TEXT_FIELDS = ['name', 'description', 'paper', 'barcode_type', 'location_wrap', 'title_text', 'footer_text'];
 
 export const FORM_FIELDS = [...TEXT_FIELDS, ...NUMBER_FIELDS, ...BOOL_FIELDS];
 
 export function fillSelectOptions() {
   $('#paper').innerHTML = Object.entries(PAPER_LABELS)
+    .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join('');
+  $('#location_wrap').innerHTML = Object.entries(LOCATION_WRAP_LABELS)
     .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join('');
   $('#barcode_type').innerHTML = Object.entries(BARCODE_TYPE_LABELS)
     .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join('');
@@ -62,7 +65,7 @@ export function fillForm(raw = {}) {
 export function syncDependentFields() {
   const pairs = [
     ['show_title', ['title_text', 'title_font_pt']],
-    ['show_location', ['location_font_pt']],
+    ['show_location', ['location_font_pt', 'location_wrap']],
     ['show_footer', ['footer_text']],
     ['show_barcode_text', ['barcode_text_font_pt']],
   ];
