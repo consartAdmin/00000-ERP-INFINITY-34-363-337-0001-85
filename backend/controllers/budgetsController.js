@@ -24,6 +24,8 @@ import {
 } from '../generationPdf/generationBudgetsPdf/generationBudgetsPdf.manager.js';
 
 import orderDeliveryApi from '../repositories/ordersDelivery/ordersDelivery.index.js';
+import sellersApi from '../repositories/sellers/sellers.index.js';
+import { generateOrderSeparationPdf } from '../generationPdf/generationOrdersSeparationPdf.js';
 import {
   getBudgetSettings,
 } from '../repositories/budgetSettings/budgetSettings.index.js';
@@ -1632,6 +1634,107 @@ export async function getBudgetPdf(req, res) {
         error: 'Erro ao gerar PDF',
       });
     }
+  }
+}
+
+// ======================================================================
+// PDF DE SEPARAÇÃO DO ORÇAMENTO (picking: localização, lote, estoque)
+// Reaproveita o romaneio de separação do Pedido, com os itens ordenados
+// pela localização para o separador percorrer o estoque em sequência.
+// ======================================================================
+function separationFilename(budget) {
+  const customer = String(budget?.customer_name || '')
+    .replace(/[^\p{L}\p{N}\s_-]+/gu, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 60)
+    .toLowerCase();
+
+  const number = budget?.budget_id ?? budget?.id ?? 'orcamento';
+
+  return customer
+    ? `orcamento-separacao-${number}-${customer}.pdf`
+    : `orcamento-separacao-${number}.pdf`;
+}
+
+async function resolveSellerName(sellerId) {
+  if (!sellerId) return '';
+
+  try {
+    const seller = await sellersApi.getById(sellerId);
+    return seller?.nickname || seller?.name || String(sellerId);
+  } catch (err) {
+    console.error('[budgets][separation-pdf] vendedor:', err?.message || err);
+    return String(sellerId);
+  }
+}
+
+export async function getBudgetSeparationPdf(req, res) {
+  setNoCache(res);
+
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ ok: false, error: 'ID de orçamento inválido.' });
+  }
+
+  try {
+    const budget = await fetchBudgetByIdData(id);
+    const enterprise = await enterpriseApi.findActive();
+    const company = mapEnterpriseToPdfCompany(enterprise);
+
+    const items = (Array.isArray(budget.items) ? budget.items : []).map((item) => ({
+      ...item,
+      sku: item.sku || item.product_code || '',
+      unit: item.unit || item.unit_code || '',
+      quantity: Number(item.quantity || 0),
+      status_separacao: 'PENDENTE',
+    }));
+
+    if (!items.length) {
+      return res.status(422).json({
+        ok: false,
+        error: 'O orçamento não tem itens para separar.',
+      });
+    }
+
+    const document = {
+      order_id: budget.budget_id ?? id,
+      number: budget.budget_id ?? id,
+      issue_date: budget.issue_date || budget.created_at,
+      created_at: budget.created_at,
+      total_amount: Number(budget.total_amount || 0),
+      status: budget.status || '',
+      notes: budget.notes || '',
+      notes_combined: budget.notes || '',
+      customer_name: budget.customer_name || '',
+      customer_tax_id: budget.customer_tax_id || '',
+      seller_name: await resolveSellerName(budget.seller_id),
+      items,
+    };
+
+    await generateOrderSeparationPdf(document, {
+      output: 'response',
+      res,
+      company,
+      filename: separationFilename(budget),
+      hydrateBudget: false,
+      documentLabel: 'Orçamento',
+      sortByLocation: true,
+    });
+  } catch (err) {
+    console.error('[budgets][separation-pdf] erro:', err);
+
+    if (res.headersSent) {
+      return res.destroy(err);
+    }
+
+    const status = err?.status || 500;
+    return res.status(status).json({
+      ok: false,
+      error: status === 404
+        ? 'Orçamento não encontrado.'
+        : 'Erro ao gerar o PDF de separação.',
+    });
   }
 }
 

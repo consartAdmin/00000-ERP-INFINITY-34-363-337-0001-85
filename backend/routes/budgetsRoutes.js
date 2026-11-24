@@ -18,6 +18,7 @@ import {
   deleteBudget,
   transformBudgetToOrder,
   getBudgetPdf,
+  getBudgetSeparationPdf,
   copyBudget,
   getBudgetCopyOptions,
   validateStockOverride,
@@ -62,6 +63,7 @@ router.get('/api/customers/:customer_id/status', requireAuth, noCache(getCustome
 router.get('/api/budgets/:id/copy-options', requireAuth, noCache(getBudgetCopyOptions));
 router.get('/api/budgets/:id', requireAuth, noCache(getBudgetById));
 router.get('/api/budgets/:id/pdf', requireAuth, noCache(getBudgetPdf));
+router.get('/api/budgets/:id/separation-pdf', requireAuth, noCache(getBudgetSeparationPdf));
 
 router.get('/api/me/seller', requireAuth, getMySeller);
 router.post('/api/budgets/validate-stock-override', requireAuth, noCache(validateStockOverride));

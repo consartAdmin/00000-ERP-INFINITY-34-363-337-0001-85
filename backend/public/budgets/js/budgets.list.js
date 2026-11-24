@@ -9,7 +9,7 @@
 import { $, fmtMoney, ROUTES, safeUpper, state } from './budgets.core.js';
 import { authHeaders, fetchSafe, handleAuthFail, toast } from './budgets.infra.js';
 import { openEditor, closeEditor, activateTab } from './budgets.editor.js';
-import { openPdf, transformToOrder, copyBudget } from './budgets.actions.js';
+import { openPdf, openSeparationPdf, transformToOrder, copyBudget } from './budgets.actions.js';
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
 
 import {
@@ -383,6 +383,18 @@ export function renderList() {
 <button
   type="button"
   class="btn-icon-clean img-action"
+  data-act="separation"
+  data-id="${escapeHtml(id)}"
+  data-status="${escapeHtml(status)}"
+  title="PDF de separação (localização dos produtos)"
+  aria-label="Baixar PDF de separação com a localização dos produtos"
+>
+  <span aria-hidden="true" style="font-size:16px;line-height:1;">📦</span>
+</button>
+
+<button
+  type="button"
+  class="btn-icon-clean img-action"
   data-act="copy"
   data-id="${escapeHtml(id)}"
   data-status="${escapeHtml(status)}"
@@ -417,6 +429,18 @@ export function renderList() {
     } else {
       actionsHtml = `
     <div class="btn-icon-group">
+<button
+  type="button"
+  class="btn-icon-clean img-action"
+  data-act="separation"
+  data-id="${escapeHtml(id)}"
+  data-status="${escapeHtml(status)}"
+  title="PDF de separação (localização dos produtos)"
+  aria-label="Baixar PDF de separação com a localização dos produtos"
+>
+  <span aria-hidden="true" style="font-size:16px;line-height:1;">📦</span>
+</button>
+
 <button
   type="button"
   class="btn-icon-clean img-action"
@@ -620,6 +644,11 @@ async function onListAction(e) {
   try {
     if (act === 'copy') {
       return await copyBudgetFromList(id);
+    }
+
+    // Separação vale também para orçamento faturado/convertido
+    if (act === 'separation') {
+      return await openSeparationPdf(id);
     }
 
     if (isLockedBudgetStatus(status)) {

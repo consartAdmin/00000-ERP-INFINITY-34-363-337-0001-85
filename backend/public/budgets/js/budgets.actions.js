@@ -1082,7 +1082,7 @@ function filenameFromContentDisposition(header, fallback) {
   return plain ? plain[1].trim() : fallback;
 }
 
-export async function openPdf(id) {
+async function downloadBudgetPdf(id, { url, fallbackName, errorTitle, errorText }) {
   const budgetId = Number(id);
 
   if (!Number.isFinite(budgetId) || budgetId <= 0) {
@@ -1090,7 +1090,7 @@ export async function openPdf(id) {
   }
 
   try {
-    const response = await fetch(ROUTES.printPdf(budgetId), {
+    const response = await fetch(url(budgetId), {
       method: 'GET',
       headers: authHeaders({ Accept: 'application/pdf' }),
       credentials: 'include',
@@ -1098,24 +1098,26 @@ export async function openPdf(id) {
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
+      const raw = await response.text().catch(() => '');
 
-      if (handleAuthFail(response.status, errorText)) return;
+      if (handleAuthFail(response.status, raw)) return;
 
-      throw new Error(
-        errorText || `Não foi possível gerar o PDF do orçamento #${budgetId}.`
-      );
+      // Respostas JSON ({ ok:false, error }) mostram só a mensagem
+      let message = raw;
+      try { message = JSON.parse(raw)?.error || raw; } catch { /* texto puro */ }
+
+      throw new Error(message || errorText(budgetId));
     }
 
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.toLowerCase().includes('application/pdf')) {
-      const errorText = await response.text().catch(() => '');
-      throw new Error(errorText || 'O servidor não retornou um arquivo PDF.');
+      const raw = await response.text().catch(() => '');
+      throw new Error(raw || 'O servidor não retornou um arquivo PDF.');
     }
 
     const filename = filenameFromContentDisposition(
       response.headers.get('content-disposition'),
-      `${budgetId}.pdf`
+      fallbackName(budgetId)
     );
 
     const pdfBlob = await response.blob();
@@ -1132,11 +1134,28 @@ export async function openPdf(id) {
     window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60_000);
   } catch (error) {
     console.error('[budgets][pdf] Falha ao gerar PDF:', error);
-    toast.error(
-      'Erro ao gerar PDF',
-      error?.message || `Não foi possível gerar o PDF do orçamento #${budgetId}.`
-    );
+    toast.error(errorTitle, error?.message || errorText(budgetId));
   }
+}
+
+export async function openPdf(id) {
+  return downloadBudgetPdf(id, {
+    url: ROUTES.printPdf,
+    fallbackName: (budgetId) => `${budgetId}.pdf`,
+    errorTitle: 'Erro ao gerar PDF',
+    errorText: (budgetId) => `Não foi possível gerar o PDF do orçamento #${budgetId}.`,
+  });
+}
+
+// PDF de separação: itens com localização, lote e estoque, na ordem do estoque
+export async function openSeparationPdf(id) {
+  return downloadBudgetPdf(id, {
+    url: ROUTES.separationPdf,
+    fallbackName: (budgetId) => `orcamento-separacao-${budgetId}.pdf`,
+    errorTitle: 'Erro ao gerar PDF de separação',
+    errorText: (budgetId) =>
+      `Não foi possível gerar o PDF de separação do orçamento #${budgetId}.`,
+  });
 }
 
 export async function transformToOrder(id) {
