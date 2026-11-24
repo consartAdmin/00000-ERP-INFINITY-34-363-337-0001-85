@@ -52,6 +52,7 @@ export const FALLBACK_MODEL = Object.freeze({
   title_font_pt: 11,
   show_location: true,
   location_font_pt: 9,
+  location_wrap: 'single',
   show_barcode_text: true,
   barcode_text_font_pt: 10,
   show_footer: true,
@@ -98,6 +99,7 @@ export function normalizeModel(raw = {}) {
     title_font_pt: num(raw.title_font_pt, f.title_font_pt),
     show_location: bool(raw.show_location, f.show_location),
     location_font_pt: num(raw.location_font_pt, f.location_font_pt),
+    location_wrap: ['single', 'wrap', 'levels'].includes(raw.location_wrap) ? raw.location_wrap : f.location_wrap,
     show_barcode_text: bool(raw.show_barcode_text, f.show_barcode_text),
     barcode_text_font_pt: num(raw.barcode_text_font_pt, f.barcode_text_font_pt),
     show_footer: bool(raw.show_footer, f.show_footer),
@@ -107,9 +109,22 @@ export function normalizeModel(raw = {}) {
   };
 }
 
+export const LOCATION_WRAP_LABELS = Object.freeze({
+  single: 'Uma linha (corta com …)',
+  wrap: 'Quebrar quando não couber',
+  levels: 'Um nível por linha',
+});
+
 export function locationText(row = {}) {
-  return row.label || [row.local, row.corredor, row.prateleira, row.bandeja, row.position]
-    .filter(Boolean).join(' / ');
+  return row.label || locationLevels(row).join(' / ');
+}
+
+/** Níveis do caminho: Local, Corredor, Prateleira, Bandeja, Posição. */
+export function locationLevels(row = {}) {
+  const levels = [row.local, row.corredor, row.prateleira, row.bandeja, row.position]
+    .map((v) => String(v ?? '').trim()).filter(Boolean);
+  if (levels.length) return levels;
+  return String(row.label || '').split('/').map((v) => v.trim()).filter(Boolean);
 }
 
 /* ───────────────────────── API ───────────────────────── */
@@ -190,10 +205,40 @@ export function barcodeSvg(value, rawModel) {
   return svg.outerHTML;
 }
 
+/**
+ * Mesmo código como <img> (PNG). Usado no PDF: o html2canvas não desenha
+ * direito SVG esticado (preserveAspectRatio="none").
+ */
+export function barcodeImg(value, rawModel) {
+  const model = normalizeModel(rawModel);
+  const text = String(value ?? '').trim() || 'SEM-CODIGO';
+  const heightMm = model.barcode_height_mm;
+  const innerWidth = Math.max(5, model.width_mm - 2 * model.margin_mm);
+
+  if (model.barcode_type === 'QR') {
+    const qr = window.qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    const side = Math.min(heightMm, innerWidth);
+    return `<img alt="" src="${qr.createDataURL(10, 0)}" style="width:${side}mm;height:${side}mm;display:block;margin:0 auto;image-rendering:pixelated">`;
+  }
+
+  const canvas = document.createElement('canvas');
+  try {
+    window.JsBarcode(canvas, text, {
+      format: model.barcode_type, width: 4, height: 200, displayValue: false, margin: 0,
+    });
+  } catch (err) {
+    throw new Error(`O código "${text}" não é válido para ${model.barcode_type}.`);
+  }
+  const widthMm = (innerWidth * model.barcode_width_pct) / 100;
+  return `<img alt="" src="${canvas.toDataURL('image/png')}" style="width:${widthMm}mm;height:${heightMm}mm;display:block;margin:0 auto;image-rendering:pixelated">`;
+}
+
 /* ───────────────────────── etiqueta ───────────────────────── */
 
 /** HTML de uma etiqueta (medidas em mm). Chame loadBarcodeLibs(model) antes. */
-export function labelHtml(row, rawModel) {
+export function labelHtml(row, rawModel, { asImage = false } = {}) {
   const m = normalizeModel(rawModel);
   const code = String(row?.barcode ?? '').trim();
   const box = [
@@ -210,9 +255,17 @@ export function labelHtml(row, rawModel) {
     parts.push(`<div style="${line};font-size:${m.title_font_pt}pt;font-weight:900">${esc(m.title_text)}</div>`);
   }
   if (m.show_location) {
-    parts.push(`<div style="${line};font-size:${m.location_font_pt}pt;font-weight:700">${esc(locationText(row))}</div>`);
+    const loc = `font-size:${m.location_font_pt}pt;font-weight:700`;
+    if (m.location_wrap === 'levels') {
+      const lines = locationLevels(row).map((level) => `<div style="${line}">${esc(level)}</div>`).join('');
+      parts.push(`<div style="${loc}">${lines}</div>`);
+    } else if (m.location_wrap === 'wrap') {
+      parts.push(`<div style="margin:0;line-height:1.15;white-space:normal;overflow-wrap:anywhere;${loc}">${esc(locationText(row))}</div>`);
+    } else {
+      parts.push(`<div style="${line};${loc}">${esc(locationText(row))}</div>`);
+    }
   }
-  parts.push(`<div>${barcodeSvg(code, m)}</div>`);
+  parts.push(`<div>${asImage ? barcodeImg(code, m) : barcodeSvg(code, m)}</div>`);
   if (m.show_barcode_text) {
     parts.push(`<div style="${line};font-size:${m.barcode_text_font_pt}pt;font-weight:900;letter-spacing:0.3pt">${esc(code)}</div>`);
   }
@@ -271,31 +324,83 @@ export async function printLocationLabels(rows, rawModel) {
   }
 }
 
-/** Gera o PDF de uma etiqueta (usa html2pdf já carregado na página). */
-export async function downloadLocationLabelPdf(row, rawModel) {
+function pdfFileName(rows) {
+  if (rows.length === 1) {
+    return `etiqueta-${String(rows[0]?.barcode || 'localizacao').replace(/[^\w.-]+/g, '_')}.pdf`;
+  }
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `etiquetas-localizacao-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.pdf`;
+}
+
+/**
+ * Baixa um PDF com as etiquetas (usa html2pdf já carregado na página).
+ * Térmica: 1 etiqueta por página, página do tamanho da etiqueta.
+ * Folha A4: etiquetas em grade, margem de 8 mm.
+ * onProgress(feitas, total) é chamado a cada etiqueta (térmica).
+ */
+export async function downloadLocationLabelsPdf(rows, rawModel, { onProgress } = {}) {
   const model = normalizeModel(rawModel);
+  if (!rows?.length) throw new Error('Selecione pelo menos uma localização.');
   if (typeof window.html2pdf !== 'function') throw new Error('A biblioteca html2pdf não está carregada.');
   await loadBarcodeLibs(model);
 
+  const labels = [];
+  rows.forEach((row) => {
+    for (let i = 0; i < model.copies; i += 1) labels.push(labelHtml(row, model, { asImage: true }));
+  });
+
   const holder = document.createElement('div');
   holder.style.cssText = 'position:fixed;left:-10000px;top:0;background:#fff';
-  holder.innerHTML = labelHtml(row, model);
   document.body.appendChild(holder);
+  const filename = pdfFileName(rows);
 
-  const code = String(row?.barcode || 'etiqueta').replace(/[^\w.-]+/g, '_');
   try {
-    await window.html2pdf().set({
+    if (model.paper === 'a4') {
+      holder.innerHTML = `<div style="width:194mm;display:flex;flex-wrap:wrap;gap:2mm;align-content:flex-start;background:#fff">${labels.join('')}</div>`;
+      await window.html2pdf().set({
+        margin: 8,
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 3, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css'], avoid: '.lbl' },
+      }).from(holder.firstElementChild).save();
+      return;
+    }
+
+    const w = model.width_mm;
+    const h = model.height_mm;
+    const orientation = w >= h ? 'landscape' : 'portrait';
+    const opt = {
       margin: 0,
-      filename: `etiqueta-${code}.pdf`,
       image: { type: 'jpeg', quality: 1 },
       html2canvas: { scale: 4, backgroundColor: '#ffffff' },
-      jsPDF: {
-        unit: 'mm',
-        format: [model.width_mm, model.height_mm],
-        orientation: model.width_mm >= model.height_mm ? 'landscape' : 'portrait',
-      },
-    }).from(holder.firstElementChild).save();
+      jsPDF: { unit: 'mm', format: [w, h], orientation },
+    };
+
+    holder.innerHTML = labels[0];
+    const pdf = await window.html2pdf().set(opt).from(holder.firstElementChild).toPdf().get('pdf');
+    // Arredondamento de px pode gerar uma 2ª página em branco: fica só a 1ª.
+    while (pdf.getNumberOfPages() > 1) pdf.deletePage(pdf.getNumberOfPages());
+    onProgress?.(1, labels.length);
+
+    for (let i = 1; i < labels.length; i += 1) {
+      holder.innerHTML = labels[i];
+      // eslint-disable-next-line no-await-in-loop
+      const canvas = await window.html2pdf().set(opt).from(holder.firstElementChild).toCanvas().get('canvas');
+      pdf.addPage([w, h], orientation);
+      pdf.addImage(canvas.toDataURL('image/jpeg', 1), 'JPEG', 0, 0, w, h);
+      onProgress?.(i + 1, labels.length);
+    }
+    pdf.save(filename);
   } finally {
     holder.remove();
   }
+}
+
+/** PDF de uma etiqueta só. */
+export function downloadLocationLabelPdf(row, rawModel) {
+  if (!row) return Promise.reject(new Error('Nenhuma localização selecionada.'));
+  return downloadLocationLabelsPdf([row], rawModel);
 }

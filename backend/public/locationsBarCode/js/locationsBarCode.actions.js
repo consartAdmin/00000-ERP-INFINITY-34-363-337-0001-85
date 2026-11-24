@@ -18,7 +18,7 @@ import {
 import {
   closeDetailsModal, openDetailsModal, showFeedback,
 } from './locationsBarCode.modal.js';
-import { downloadLabelPdf, printLabels } from './locationsBarCode.print.js';
+import { downloadLabelPdf, downloadLabelsPdf } from './locationsBarCode.print.js';
 import {
   findRowById, getTotalPages, highlightRow, renderTable,
   setTableError, setTableLoading,
@@ -162,19 +162,12 @@ export function printSelectedLabels() {
     showFeedback('warning', 'Impressão', 'Selecione pelo menos um barcode para imprimir.');
     return;
   }
-  printLabels(rows);
+  // Baixa o PDF com as etiquetas no modelo escolhido (não abre aba nova).
+  downloadLabelsPdf(rows, { button: document.getElementById('btnPrintSelected') });
 }
 
 export function printCurrentLabel() {
-  if (!state.currentRecord) {
-    showFeedback('warning', 'Etiqueta', 'Nenhuma localização selecionada.');
-    return;
-  }
-  printLabels([state.currentRecord]);
-}
-
-export function downloadCurrentLabelPdf() {
-  downloadLabelPdf(state.currentRecord);
+  downloadLabelPdf(state.currentRecord, { button: document.getElementById('btnPrint') });
 }
 
 /* =====================================================================
@@ -225,8 +218,7 @@ export function handleTableClick(event) {
   if (!button) return;
   if (button.dataset.action === 'view') openDetails(button.dataset.id);
   if (button.dataset.action === 'print') {
-    const row = findRowById(button.dataset.id);
-    if (row) printLabels([row]);
+    downloadLabelPdf(findRowById(button.dataset.id), { button });
   }
 }
 

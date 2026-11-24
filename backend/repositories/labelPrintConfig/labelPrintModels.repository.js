@@ -10,6 +10,8 @@ export const LABEL_PRINT_MODELS_TABLE = 'public."labelPrintModels"';
 
 const BARCODE_TYPES = ['CODE128', 'CODE39', 'QR'];
 const PAPERS = ['thermal', 'a4'];
+/* Caminho da localização: single = 1 linha (corta com …), wrap = quebra quando não cabe, levels = 1 nível por linha */
+const LOCATION_WRAPS = ['single', 'wrap', 'levels'];
 
 /* Campos graváveis: [coluna, tipo, padrão, min, max] */
 const FIELDS = [
@@ -27,6 +29,7 @@ const FIELDS = [
   ['title_font_pt', 'number', 11, 4, 72],
   ['show_location', 'bool', true],
   ['location_font_pt', 'number', 9, 4, 72],
+  ['location_wrap', 'wrap', 'single'],
   ['show_barcode_text', 'bool', true],
   ['barcode_text_font_pt', 'number', 10, 4, 72],
   ['show_footer', 'bool', true],
@@ -60,6 +63,7 @@ export function ensureLabelPrintModelsTable() {
           title_font_pt        NUMERIC(5,2) NOT NULL DEFAULT 11,
           show_location        BOOLEAN      NOT NULL DEFAULT TRUE,
           location_font_pt     NUMERIC(5,2) NOT NULL DEFAULT 9,
+          location_wrap        VARCHAR(10)  NOT NULL DEFAULT 'single',
           show_barcode_text    BOOLEAN      NOT NULL DEFAULT TRUE,
           barcode_text_font_pt NUMERIC(5,2) NOT NULL DEFAULT 10,
           show_footer          BOOLEAN      NOT NULL DEFAULT TRUE,
@@ -71,6 +75,11 @@ export function ensureLabelPrintModelsTable() {
           created_at           TIMESTAMP    NOT NULL DEFAULT NOW(),
           updated_at           TIMESTAMP    NOT NULL DEFAULT NOW()
         );
+      `);
+      // Colunas adicionadas depois da 1ª versão da tabela
+      await pool.query(`
+        ALTER TABLE ${LABEL_PRINT_MODELS_TABLE}
+          ADD COLUMN IF NOT EXISTS location_wrap VARCHAR(10) NOT NULL DEFAULT 'single';
       `);
       await pool.query(`
         CREATE UNIQUE INDEX IF NOT EXISTS "labelPrintModels_name_uq"
@@ -132,6 +141,8 @@ function sanitize(payload = {}, { partial = false } = {}) {
       out[col] = toBool(raw, def);
     } else if (type === 'paper') {
       out[col] = PAPERS.includes(raw) ? raw : def;
+    } else if (type === 'wrap') {
+      out[col] = LOCATION_WRAPS.includes(raw) ? raw : def;
     } else if (type === 'barcode') {
       const v = String(raw || '').toUpperCase();
       out[col] = BARCODE_TYPES.includes(v) ? v : def;
