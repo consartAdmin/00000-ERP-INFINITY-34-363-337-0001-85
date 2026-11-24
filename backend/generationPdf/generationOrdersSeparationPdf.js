@@ -9,6 +9,7 @@
 // ║ ✅ Importa número e observação do orçamento vinculado                      ║
 // ║ ✅ Compatível com output: response | file | buffer                         ║
 // ║ ✅ Também usado pelo Orçamento (documentLabel + sortByLocation)            ║
+// ║ ✅ Mostra a grade do item abaixo da descrição                              ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
 import PDFDocument from 'pdfkit';
@@ -2360,16 +2361,41 @@ export async function generateOrderSeparationPdf(
       },
     );
 
+    const grade = String(
+      firstNonEmpty(
+        item?.grade,
+        item?.grade_name,
+        item?.grade_description,
+      ) || '',
+    ).trim();
+
     doc.text(
       description,
       cols.x[2] + 3,
       y + 9,
       {
         width: cols.w[2] - 6,
-        height: 30,
+        height: grade ? 24 : 30,
         align: 'left',
       },
     );
+
+    // Grade (variação: cor, tamanho...) em destaque abaixo da descrição
+    if (grade) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(8)
+        .text(
+          trunc(`Grade: ${grade}`, 60),
+          cols.x[2] + 3,
+          y + 34,
+          {
+            width: cols.w[2] - 6,
+            lineBreak: false,
+          },
+        )
+        .font('Helvetica');
+    }
 
     if (
       showLocations &&
