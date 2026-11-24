@@ -11,7 +11,7 @@ import {
   applyFilters, changePageSize, clearFilters, closeDetailsModal,
   deactivateCurrentBarcode, generateBarcodes, handleCheckAll,
   handleTableChange, handleTableClick, loadBarcodes, nextPage,
-  downloadCurrentLabelPdf, openDetails, previousPage, printCurrentLabel, printSelectedLabels,
+  openDetails, previousPage, printCurrentLabel, printSelectedLabels,
   readScannerBarcode,
 } from './locationsBarCode.actions.js';
 import { forceCloseModalOnLoad } from './locationsBarCode.modal.js';
@@ -30,7 +30,6 @@ function bindEvents() {
   $('#btnReadBarcode')?.addEventListener('click', readScannerBarcode);
   $('#btnPrintSelected')?.addEventListener('click', printSelectedLabels);
   $('#btnPrint')?.addEventListener('click', printCurrentLabel);
-  $('#btnPdf')?.addEventListener('click', downloadCurrentLabelPdf);
   $('#btnDeactivate')?.addEventListener('click', deactivateCurrentBarcode);
   $('#btnCloseModal')?.addEventListener('click', closeDetailsModal);
   $('#btnPrev')?.addEventListener('click', previousPage);
