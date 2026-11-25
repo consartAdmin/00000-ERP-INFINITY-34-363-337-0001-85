@@ -246,6 +246,8 @@ export async function buildNfcePayload(sale, items) {
 
   return {
     issuerCnpj: getIssuerCnpj(),
+    // "Sem valor fiscal": NFC-e de teste em homologação (tpAmb 2), mesmo com a empresa em produção
+    ...(sale.nfce_homologation ? { environment: 'homologation' } : {}),
     externalId: externalIdOf(sale),
     operationNature: 'VENDA AO CONSUMIDOR',
     presence: 1,
@@ -319,7 +321,7 @@ async function saveError(saleId, status, message) {
 async function findPreviousRecord(sale) {
   const res = await apiRequest(
     'GET',
-    `/v1/companies/${getIssuerCnpj()}/invoices?document=nfce&search=${encodeURIComponent(externalIdOf(sale))}&limit=5`,
+    `/v1/companies/${getIssuerCnpj()}/invoices?document=nfce${sale.nfce_homologation ? '&environment=homologation' : ''}&search=${encodeURIComponent(externalIdOf(sale))}&limit=5`,
   );
   if (res.status !== 200) return null;
   return (res.data?.invoices ?? []).find((r) => r.externalId === externalIdOf(sale)) ?? null;
@@ -412,6 +414,7 @@ export function nfceView(sale) {
     series: sale.nfce_series || null,
     protocol: sale.nfce_protocol || null,
     environment: sale.nfce_environment || null,
+    sem_valor_fiscal: Boolean(sale.nfce_homologation),
     issued_at: sale.nfce_issued_at || null,
     authorized_at: sale.nfce_authorized_at || null,
     message: sale.nfce_message || null,

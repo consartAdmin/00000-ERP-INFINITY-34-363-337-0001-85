@@ -68,6 +68,8 @@ function normalizeSale(payload) {
     customer_name: cleanText(payload?.customer_name, 200) || 'CONSUMIDOR FINAL',
     customer_doc: onlyDigits(payload?.customer_doc),
     sold_at: payload?.sold_at ? new Date(payload.sold_at) : new Date(),
+    // Botão "Sem valor fiscal" do caixa: NFC-e de teste em homologação
+    sem_valor_fiscal: payload?.sem_valor_fiscal === true,
     subtotal,
     discount: toMoney(itemDiscounts + saleDiscount),
     total,
@@ -92,12 +94,12 @@ async function insertSaleRow(client, sale, user) {
   const cols = [
     'created_at', 'sold_at', 'synced_at', 'customer_name', 'customer_doc', 'recebido', 'troco', 'status',
     'nfce_status', 'pdv_uuid', 'pdv_origin', 'session_id', 'terminal', 'operator_id', 'operator_name',
-    'subtotal', 'discount', 'total', 'payments',
+    'subtotal', 'discount', 'total', 'payments', 'nfce_homologation',
   ];
   const values = [
     sale.sold_at, sale.sold_at, new Date(), sale.customer_name, sale.customer_doc, sale.recebido, sale.troco,
     'FECHADA', 'PENDENTE', sale.pdv_uuid, ORIGIN, sale.session_id, sale.terminal, user.pdv_user_id,
-    user.full_name, sale.subtotal, sale.discount, sale.total, JSON.stringify(sale.payments),
+    user.full_name, sale.subtotal, sale.discount, sale.total, JSON.stringify(sale.payments), sale.sem_valor_fiscal,
   ];
 
   if (strategy === 'MAX_PLUS_ONE') {
@@ -141,7 +143,7 @@ export async function createSale(payload, user) {
     if (!session) throw pdvError('Caixa da venda não encontrado.', 'SESSION_NOT_FOUND', 404);
   }
 
-  const homologation = await isHomologation();
+  const homologation = sale.sem_valor_fiscal || await isHomologation();
 
   const client = await pool.connect();
   try {
@@ -161,7 +163,8 @@ export async function createSale(payload, user) {
     let stock;
     if (homologation) {
       await recordHomologationMovements(client, { ...row, pdv_uuid: sale.pdv_uuid }, sale.items);
-      stock = { status: 'HOMOLOGACAO', details: [{ status: 'SEM_BAIXA', reason: 'NFC-e em ambiente de homologação' }] };
+      const reason = sale.sem_valor_fiscal ? 'NFC-e sem valor fiscal (teste em homologação)' : 'NFC-e em ambiente de homologação';
+      stock = { status: 'HOMOLOGACAO', details: [{ status: 'SEM_BAIXA', reason }] };
     } else {
       stock = await debitSaleStock(client, { ...row, pdv_uuid: sale.pdv_uuid }, sale.items);
     }
@@ -194,7 +197,7 @@ export async function listSales({ sessionId, limit = 50 } = {}) {
   params.push(Math.min(Number(limit) || 50, 500));
   const { rows } = await pool.query(
     `SELECT sale_id, pdv_uuid, sold_at, created_at, customer_name, total, recebido, troco, status,
-            nfce_status, nfce_number, nfce_message, stock_status, operator_name, terminal
+            nfce_status, nfce_number, nfce_message, nfce_environment, nfce_homologation, stock_status, operator_name, terminal
        FROM ${TB_SALES}
       WHERE ${where.join(' AND ')}
       ORDER BY created_at DESC

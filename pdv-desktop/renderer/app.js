@@ -410,7 +410,7 @@ function viewHistory() {
   const nfceInfo = (h) => {
     if (!nfceOn()) return '';
     const n = h.nfce || {};
-    const env = n.environment || state.config.nfce?.issuer?.environment;
+    const env = n.environment || (h.sem_valor_fiscal ? 'homologacao' : state.config.nfce?.issuer?.environment);
     const parts = [];
     if (n.series != null) parts.push(`Série ${esc(String(n.series).padStart(3, '0'))}`);
     if (n.number != null) parts.push(`Nº ${esc(String(n.number).padStart(9, '0'))}`);
@@ -427,7 +427,7 @@ function viewHistory() {
     <div class="scroll"><table class="tbl"><thead><tr><th>Nº</th><th>Hora</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th class="r">Total</th><th>ERP</th><th>${nfceOn() ? 'NFC-e' : ''}</th><th></th></tr></thead><tbody>
     ${list.map((h) => `<tr><td>${esc(h.number)}${h.sale_id ? ` <span class="mut">(#${esc(h.sale_id)})</span>` : ''}</td><td>${hhmm(h.sold_at)}</td><td>${esc(h.customer_doc || 'Consumidor final')}</td><td>${h.items.length}</td>
       <td>${h.payments.map((p) => esc(p.label)).join(', ')}</td><td class="r"><b>${money(h.total)}</b></td><td>${pill(h)}${h.stock_status === 'PARCIAL' ? ' <span class="pill y" title="Parte dos itens sem lote com saldo">Estoque parcial</span>' : ''}${h.stock_status === 'HOMOLOGACAO' ? ' <span class="pill y" title="NFC-e em homologação: a venda não baixou estoque">Sem baixa de estoque</span>' : ''}</td>
-      <td>${nfcePill(h)}${nfceInfo(h)}</td>
+      <td>${nfcePill(h)}${h.sem_valor_fiscal ? ' <span class="pill y" title="NFC-e de teste em homologação">Sem valor fiscal</span>' : ''}${nfceInfo(h)}</td>
       <td class="r" style="white-space:nowrap">${nfceBtn(h)}<span class="btn" data-reprint="${esc(h.pdv_uuid)}">${icon('printer', 14)} Reimprimir</span></td></tr>`).join('') || '<tr><td colspan="9" class="mut">Nenhuma venda neste caixa.</td></tr>'}
     </tbody></table></div></div></main>`;
 }
@@ -814,7 +814,7 @@ function showPayment(method) {
   if (!state.session) return showOpenCash();
   const t = cartTotals();
   if (t.total < 0) return toast('Desconto maior que o total.', 'err');
-  if (!state.pay) state.pay = { method: method || 'DINHEIRO', entry: '', payments: [], print: true };
+  if (!state.pay) state.pay = { method: method || 'DINHEIRO', entry: '', payments: [], print: true, test: false };
   if (method) state.pay.method = method;
   renderPayment();
   return null;
@@ -837,6 +837,10 @@ function renderPayment() {
     ? [...new Set([remaining, Math.ceil(remaining / 10) * 10, Math.ceil(remaining / 50) * 50, Math.ceil(remaining / 100) * 100])].filter((v) => v > 0).slice(0, 4)
     : [remaining];
   const done = remaining <= 0 && p.payments.length;
+  // Botão "Sem valor fiscal": NFC-e de teste em homologação (só quando o emitente está em produção)
+  const testBtn = canIssueTest()
+    ? `<span class="tvf ${p.test ? 'on' : ''}" data-test title="Emite a NFC-e em homologação (EMITIDA EM AMBIENTE DE HOMOLOGAÇÃO – SEM VALOR FISCAL). A venda não baixa estoque.">${icon('cloud', 14, p.test ? '#fff' : '#b45309')} ${p.test ? 'Sem valor fiscal: ligado' : 'Sem valor fiscal'} <kbd>F8</kbd></span>`
+    : '';
   openModal(`${modalHead('Pagamento', `${state.cart.length} produto(s) · ${esc(state.customer.name || 'Consumidor final')}${state.customer.doc ? ` · CPF ${esc(state.customer.doc)}` : ''}`)}
     <div class="pmb"><div class="pml">${PAYMENT_METHODS.map((m) => `<div class="pt ${p.method === m.code ? 'on' : ''}" data-m="${m.code}">${icon(m.icon, 22)}<div><b>${m.label}</b><span>${m.sub}</span></div></div>`).join('')}
       <span class="mut" style="font-size:11.5px;text-align:center;margin-top:4px"><kbd>↑</kbd> <kbd>↓</kbd> trocam a forma · números digitam o valor</span></div>
@@ -850,9 +854,10 @@ function renderPayment() {
       <div class="tl"><span>Total pago</span><b>${money(paid)}</b></div><div class="tl"><span>Restante</span><b>${money(remaining)}</b></div>
       <div class="troco"><span>TROCO</span><b>${money(change)}</b></div>
       <div class="opt"><span class="cb ${p.print ? 'on' : 'off'}" data-print>${p.print ? icon('check', 14, '#fff') : ''}</span>Imprimir cupom
-        <span class="dis" style="margin-left:14px">NFC-e: próxima etapa</span></div></div></div>
+        <span style="margin-left:auto">${testBtn}</span></div>
+      ${p.test ? '<div class="tvfmsg">NFC-e de teste em homologação, sem valor fiscal e sem baixa de estoque.</div>' : ''}</div></div>
     <div class="mf"><div class="btn" data-close>Voltar <kbd>Esc</kbd></div><div class="sp"></div>
-      ${done ? `<div class="btn pri big" id="conclude">${icon('check', 18, '#fff')} Concluir venda <kbd>Enter</kbd></div>` : `<div class="btn pri big" id="addpay">${icon('plus', 18, '#fff')} Lançar ${money(entryValue)} <kbd>Enter</kbd></div>`}</div>`, { width: 1080 });
+      ${done ? `<div class="btn pri big${p.test ? ' tst' : ''}" id="conclude">${icon('check', 18, '#fff')} ${p.test ? 'Concluir sem valor fiscal' : 'Concluir venda'} <kbd>Enter</kbd></div>` : `<div class="btn pri big" id="addpay">${icon('plus', 18, '#fff')} Lançar ${money(entryValue)} <kbd>Enter</kbd></div>`}</div>`, { width: 1080 });
 
   const m = $('#modal');
   m.querySelectorAll('[data-m]').forEach((el) => el.addEventListener('click', () => { p.method = el.dataset.m; p.entry = ''; renderPayment(); }));
@@ -860,8 +865,20 @@ function renderPayment() {
   m.querySelectorAll('[data-q]').forEach((el) => el.addEventListener('click', () => { addPayment(Number(el.dataset.q)); }));
   m.querySelectorAll('[data-del]').forEach((el) => el.addEventListener('click', () => { p.payments.splice(Number(el.dataset.del), 1); renderPayment(); }));
   m.querySelector('[data-print]').addEventListener('click', () => { p.print = !p.print; renderPayment(); });
+  m.querySelector('[data-test]')?.addEventListener('click', toggleTest);
   $('#addpay')?.addEventListener('click', () => addPayment(entryValue));
   $('#conclude')?.addEventListener('click', concludeSale);
+}
+
+/** NFC-e sem valor fiscal só faz sentido com a NFC-e ligada e o emitente em produção (em homologação todas já são). */
+function canIssueTest() {
+  return nfceOn() && state.config.nfce?.issuer?.environment === 'producao';
+}
+
+function toggleTest() {
+  if (!state.pay || !canIssueTest()) return;
+  state.pay.test = !state.pay.test;
+  renderPayment();
 }
 
 function keyEntry(k) {
@@ -887,6 +904,7 @@ document.addEventListener('keydown', (e) => {
   if (!state.pay || !$('#modal').innerHTML) return;
   if (/^\d$/.test(e.key)) { e.preventDefault(); return keyEntry(e.key); }
   if (e.key === 'Backspace') { e.preventDefault(); return keyEntry('⌫'); }
+  if (e.key === 'F8') { e.preventDefault(); return toggleTest(); }
   if (['ArrowDown', 'ArrowUp'].includes(e.key)) {
     e.preventDefault();
     const idx = PAYMENT_METHODS.findIndex((m) => m.code === state.pay.method);
@@ -925,6 +943,7 @@ async function concludeSale() {
         unit_factor: it.unit_factor, quantity: it.quantity, unit_price: it.unit_price, discount: it.discount,
       })),
       payments: state.pay.payments.map((p) => ({ method: p.method, amount: p.amount })),
+      ...(state.pay.test && canIssueTest() ? { sem_valor_fiscal: true } : {}),
     };
     const record = {
       pdv_uuid: pdvUuid,
@@ -941,6 +960,7 @@ async function concludeSale() {
       paid,
       change,
       status: 'NA_FILA',
+      sem_valor_fiscal: Boolean(payload.sem_valor_fiscal),
     };
 
     state.queue.push({ payload, at: soldAt });
@@ -958,12 +978,12 @@ async function concludeSale() {
 
     // NFC-e: com o ERP no ar, envia a venda agora e imprime o DANFE NFC-e autorizado
     if (nfceOn() && state.token && state.online !== false) {
-      showBusy('Emitindo NFC-e…', change > 0 ? `TROCO ${money(change)}` : 'Aguardando a autorização da SEFAZ');
+      showBusy(record.sem_valor_fiscal ? 'Emitindo NFC-e sem valor fiscal…' : 'Emitindo NFC-e…', change > 0 ? `TROCO ${money(change)}` : 'Aguardando a autorização da SEFAZ');
       await syncQueue();
       closeModal();
       render();
       const st = record.nfce?.status;
-      if (st === 'AUTORIZADA') toast(`NFC-e ${record.nfce.number} autorizada${trocoMsg}`, 'ok');
+      if (st === 'AUTORIZADA') toast(`NFC-e ${record.nfce.number} autorizada${record.sem_valor_fiscal ? ' (homologação, sem valor fiscal)' : ''}${trocoMsg}`, 'ok');
       else if (record.status !== 'SINCRONIZADA') toast(`Sem conexão: venda na fila, NFC-e sai ao sincronizar${trocoMsg}`, 'err');
       else toast(`Venda gravada, NFC-e não autorizada: ${record.nfce?.message || st}${trocoMsg}`, 'err');
       if (shouldPrint) printReceipt(record);

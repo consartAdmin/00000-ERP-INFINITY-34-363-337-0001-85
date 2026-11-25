@@ -53,6 +53,8 @@ const SALES_COLUMNS = [
   ['nfce_qrcode', 'TEXT'],
   ['nfce_url_chave', 'TEXT'],
   ['nfce_attempts', 'INTEGER DEFAULT 0'],
+  // Venda emitida "sem valor fiscal" pelo caixa: NFC-e de teste em homologação (tpAmb 2), sem baixa de estoque
+  ['nfce_homologation', 'BOOLEAN DEFAULT FALSE'],
 ];
 
 const ITEMS_COLUMNS = [
