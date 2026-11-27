@@ -5,10 +5,17 @@
 // ║ CONSART ERP                                                             ║
 // ║                                                                          ║
 // ║ EXPORTS:                                                                ║
-// ║ - openFiscalClassificationModal({ apiBase, onPick })                    ║
+// ║ - openFiscalClassificationModal({ apiBase, onPick, onClose })           ║
+// ║   Botão "＋ Nova" abre o cadastro rápido (fiscalClassificationQuickCreate)║
+// ║   e já devolve a classificação criada em onPick.                        ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 'use strict';
+
+import {
+  QUICK_CREATE_MODAL_ID,
+  openFiscalClassificationQuickCreate,
+} from './fiscalClassificationQuickCreate.js';
 
 const MODAL_ID = 'fiscalClassificationSearchModal';
 
@@ -159,6 +166,15 @@ function createModalMarkup() {
                   <button id="fcm-btn" class="btn btn-footer btn-sm" type="button">
                     Buscar
                   </button>
+
+                  <button
+                    id="fcm-new"
+                    class="btn btn-new btn-sm"
+                    type="button"
+                    title="Cadastrar nova classificação fiscal e já selecionar"
+                  >
+                    ＋ Nova
+                  </button>
                 </div>
               </div>
             </div>
@@ -211,6 +227,7 @@ function createModalMarkup() {
 export function openFiscalClassificationModal({
   apiBase = '',
   onPick,
+  onClose,
 } = {}) {
   apiBase = normalizeApiBase(apiBase);
 
@@ -236,6 +253,7 @@ export function openFiscalClassificationModal({
 
   const q = modal.querySelector('#fcm-q');
   const btn = modal.querySelector('#fcm-btn');
+  const btnNew = modal.querySelector('#fcm-new');
   const tbody = modal.querySelector('#fcm-tbody');
   const status = modal.querySelector('#fcm-status');
   const closeButtons = modal.querySelectorAll(
@@ -243,6 +261,7 @@ export function openFiscalClassificationModal({
   );
 
   let isSearching = false;
+  let picked = false;
 
   /* ----------------------------------------------------------------------
      CLOSE
@@ -250,14 +269,19 @@ export function openFiscalClassificationModal({
 
   function close() {
     document.removeEventListener('keydown', onDocumentKeydown);
+    document.getElementById(QUICK_CREATE_MODAL_ID)?.remove();
 
     modal.classList.remove('is-open');
     modal.setAttribute('aria-hidden', 'true');
     modal.remove();
+
+    if (!picked && typeof onClose === 'function') onClose();
   }
 
   function onDocumentKeydown(event) {
     if (event.key !== 'Escape' && event.key !== 'Esc') return;
+    // Com o cadastro rápido aberto, o ESC fecha só ele.
+    if (document.getElementById(QUICK_CREATE_MODAL_ID)) return;
 
     event.preventDefault();
     close();
@@ -285,7 +309,7 @@ export function openFiscalClassificationModal({
 
   function renderRows(rows) {
     if (!rows.length) {
-      renderMessage('Nenhum resultado encontrado.');
+      renderMessage('Nenhum resultado encontrado. Use “＋ Nova” para cadastrar.');
       return;
     }
 
@@ -362,7 +386,7 @@ export function openFiscalClassificationModal({
 
       status.textContent = rows.length
         ? `${rows.length} classificação(ões) encontrada(s). Clique em uma linha para selecionar.`
-        : 'Nenhuma classificação encontrada.';
+        : 'Nenhuma classificação encontrada. Clique em “＋ Nova” para cadastrar.';
     } catch (error) {
       console.error('[fiscalClassificationModal] search error:', error);
 
@@ -396,9 +420,14 @@ export function openFiscalClassificationModal({
 
     if (!selectedRow) return;
 
+    pickClassification(selectedRow);
+  }
+
+  function pickClassification(row) {
+    picked = true;
     try {
       if (typeof onPick === 'function') {
-        onPick(selectedRow);
+        onPick(row);
       }
     } finally {
       close();
@@ -406,10 +435,26 @@ export function openFiscalClassificationModal({
   }
 
   /* ----------------------------------------------------------------------
+     NOVA CLASSIFICAÇÃO (cadastro rápido)
+  ---------------------------------------------------------------------- */
+
+  function openQuickCreate() {
+    openFiscalClassificationQuickCreate({
+      apiBase,
+      initialTerm: q.value,
+      onSaved: (row) => {
+        const normalized = normalizeClassification(row);
+        if (normalized) pickClassification(normalized);
+      },
+    });
+  }
+
+  /* ----------------------------------------------------------------------
      EVENTS
   ---------------------------------------------------------------------- */
 
   btn.addEventListener('click', search);
+  btnNew.addEventListener('click', openQuickCreate);
 
   q.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;
