@@ -3,7 +3,8 @@
 // ║ Idempotente.                                                       ║
 // ╚════════════════════════════════════════════════════════════════════╝
 
-import { TB } from './modulePasswords.constants.js';
+import bcrypt from 'bcryptjs';
+import { TB, BCRYPT_ROUNDS } from './modulePasswords.constants.js';
 import { MODULE_PASSWORDS_CATALOG } from './modulePasswords.catalog.js';
 
 /**
@@ -30,13 +31,31 @@ export async function ensureModulePasswordsTable(client) {
       ON ${TB} (module_code, action_code);
   `);
 
-  // Linhas do catálogo (sem senha → usa o fallback do .env até ser definida)
+  // Linhas do catálogo (sem senha → usa o fallback do .env até ser definida).
+  // Itens com `seed_from_env` nascem com a senha atual do .env, para não
+  // mudar o comportamento de quem já usava a chave fixa.
   for (const item of MODULE_PASSWORDS_CATALOG) {
+    const { rows } = await client.query(
+      `SELECT 1 FROM ${TB} WHERE module_code = $1 AND action_code = $2`,
+      [item.module_code, item.action_code]
+    );
+    if (rows.length) continue;
+
+    let passwordHash = null;
+    let isActive = true;
+    if (item.seed_from_env) {
+      const envValue = String(process.env[item.seed_from_env] ?? '').trim();
+      if (envValue) passwordHash = await bcrypt.hash(envValue, BCRYPT_ROUNDS);
+    }
+    if (item.seed_enabled_env) {
+      isActive = String(process.env[item.seed_enabled_env] ?? 'true').trim().toLowerCase() !== 'false';
+    }
+
     await client.query(
-      `INSERT INTO ${TB} (module_code, action_code, description)
-       VALUES ($1, $2, $3)
+      `INSERT INTO ${TB} (module_code, action_code, description, password_hash, is_active)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (module_code, action_code) DO NOTHING`,
-      [item.module_code, item.action_code, item.description]
+      [item.module_code, item.action_code, item.description, passwordHash, isActive]
     );
   }
 }

@@ -95,6 +95,7 @@ export const ROUTES = Object.freeze({
 
   printPdf: (id) => `${API_BASE}/api/budgets/${encodeURIComponent(id)}/pdf`,
   toOrder: (id) => `${API_BASE}/api/budgets/${encodeURIComponent(id)}/to-order`,
+  toOrderKeyStatus: `${API_BASE}/api/module-passwords/status?module=BUDGETS&action=TO_ORDER`,
   copyBudget: (id) => `${API_BASE}/api/budgets/${encodeURIComponent(id)}/copy`,
   copyBudgetOptions: (id) => `${API_BASE}/api/budgets/${encodeURIComponent(id)}/copy-options`,
 
