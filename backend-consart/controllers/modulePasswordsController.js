@@ -15,6 +15,7 @@ function sendError(res, err, scope) {
 // Fallback do .env por módulo/ação (usado só quando não há linha na tabela)
 const ENV_FALLBACKS = {
   'CUSTOMERS:EXPORT': 'EXPORT_DOWNLOAD_KEY',
+  'BUDGETS:TO_ORDER': 'BUDGET_TO_ORDER_KEY',
 };
 
 /** GET /status?module=X&action=Y → { required } (qualquer usuário logado) */

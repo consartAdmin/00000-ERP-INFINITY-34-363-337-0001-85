@@ -1158,6 +1158,20 @@ export async function openSeparationPdf(id) {
   });
 }
 
+async function isToOrderKeyRequired() {
+  try {
+    const out = await fetchSafe(ROUTES.toOrderKeyStatus, {
+      method: 'GET',
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    if (!out.ok) return true;
+    return out.json?.data?.required !== false;
+  } catch {
+    return true;
+  }
+}
+
 export async function transformToOrder(id) {
   if (!canTransformBudgetToOrder()) {
     return toast.warn(
@@ -1166,12 +1180,17 @@ export async function transformToOrder(id) {
     );
   }
 
-  const key = await resolveBudgetActionKey(
-    'transformar o orçamento em pedido'
-  );
+  // Senha configurada em Senhas de Módulos (BUDGETS / TO_ORDER).
+  // Inativa ou sem senha → não pergunta nada.
+  let key = '';
+  if (await isToOrderKeyRequired()) {
+    key = await resolveBudgetActionKey(
+      'transformar o orçamento em pedido'
+    );
 
-  if (!key) {
-    return toast.warn('Atenção', 'Transformação cancelada. Chave não informada.');
+    if (!key) {
+      return toast.warn('Atenção', 'Transformação cancelada. Senha não informada.');
+    }
   }
 
   const out = await fetchSafe(ROUTES.toOrder(id), {

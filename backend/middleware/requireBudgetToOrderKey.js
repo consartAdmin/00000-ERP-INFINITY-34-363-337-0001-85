@@ -2,32 +2,31 @@
 // ║ requireBudgetToOrderKey.js — Middleware chave Orçamento → Pedido     ║
 // ║ CONSART ERP | ESM                                                   ║
 // ║ - Protege POST /api/budgets/:id/to-order                             ║
+// ║ - Senha em Senhas de Módulos (public."modulePasswords"),             ║
+// ║   módulo BUDGETS / ação TO_ORDER. Inativa ou sem senha → não pede.   ║
+// ║ - A linha nasce com a senha do BUDGET_TO_ORDER_KEY (.env);           ║
+// ║   sem linha na tabela → usa BUDGET_TO_ORDER_KEY direto               ║
 // ║ - Header: x-budget-to-order-key  (preferido)                         ║
 // ║ - Body:   { key } (fallback)                                         ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-export function requireBudgetToOrderKey(req, res, next) {
+import { verifyModulePassword } from '../repositories/modulePasswords/modulePasswords.index.js';
+
+export async function requireBudgetToOrderKey(req, res, next) {
   try {
-    const enabled = String(process.env.BUDGET_TO_ORDER_KEY_ENABLED ?? 'true') === 'true';
-    if (!enabled) return next();
-
-    const expected = String(process.env.BUDGET_TO_ORDER_KEY ?? '').trim();
-    if (!expected) {
-      return res.status(500).json({
-        ok: false,
-        error: 'SERVER_MISCONFIG: missing BUDGET_TO_ORDER_KEY',
-      });
-    }
-
     const provided =
       String(req.headers['x-budget-to-order-key'] ?? '').trim() ||
       String(req.body?.key ?? '').trim();
 
-    if (!provided || provided !== expected) {
+    const allowed = await verifyModulePassword('BUDGETS', 'TO_ORDER', provided, {
+      fallback: process.env.BUDGET_TO_ORDER_KEY,
+    });
+
+    if (!allowed) {
       return res.status(403).json({
         ok: false,
-        error: 'KEY_REQUIRED',
-        message: 'Chave obrigatória para transformar orçamento em pedido.',
+        error: provided ? 'INVALID_KEY' : 'KEY_REQUIRED',
+        message: 'Senha obrigatória para transformar orçamento em pedido.',
       });
     }
 
