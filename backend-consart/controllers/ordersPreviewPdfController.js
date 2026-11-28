@@ -676,10 +676,10 @@ export async function previewOrderPdf(req, res) {
       });
     }
 
-    let nfeJson = await tecnospeedNfeApi.buildNFeFromOrder({
-      header,
-      items,
-    });
+    let nfeJson = await tecnospeedNfeApi.buildNFeFromOrder(
+      { header, items },
+      { preview: true },
+    );
 
     // ✅ Injeta pagamentos reais no JSON da NF-e antes de gerar o XML preview
     nfeJson = normalizePaymentsIntoNfeJson(nfeJson, paymentPayload);
