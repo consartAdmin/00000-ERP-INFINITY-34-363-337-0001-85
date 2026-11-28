@@ -1148,20 +1148,60 @@ export async function buildNFeFromOrder(
   return nfe;
 }
 
+// Cache: a tabela orders nem sempre tem nfe_issue_date / nfe_issue_datetime
+// (a data de emissão oficial fica em invoicesIssued.issued_date / issued_at).
+let ordersIssueDateColumnsPromise = null;
+
+async function getOrdersIssueDateColumns() {
+  if (!ordersIssueDateColumnsPromise) {
+    ordersIssueDateColumnsPromise = pool
+      .query(
+        `
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'orders'
+            AND column_name IN ('nfe_issue_date', 'nfe_issue_datetime', 'updated_at')
+        `,
+      )
+      .then((r) => new Set(r.rows.map((row) => row.column_name)))
+      .catch((err) => {
+        ordersIssueDateColumnsPromise = null;
+        throw err;
+      });
+  }
+  return ordersIssueDateColumnsPromise;
+}
+
 export async function persistOrderIssueDate(orderId, issueDateObj) {
   const id = Number(orderId);
   if (!Number.isFinite(id) || id <= 0) return;
 
-  const issueDateISO = formatLocalISODate(issueDateObj);
+  try {
+    const cols = await getOrdersIssueDateColumns();
+    const sets = [];
+    const params = [];
 
-  await pool.query(
-    `
-      UPDATE public."orders"
-      SET nfe_issue_date = $1,
-          nfe_issue_datetime = $2,
-          updated_at = NOW()
-      WHERE order_id = $3
-    `,
-    [issueDateISO, issueDateObj, id],
-  );
+    if (cols.has('nfe_issue_date')) {
+      params.push(formatLocalISODate(issueDateObj));
+      sets.push(`nfe_issue_date = $${params.length}`);
+    }
+    if (cols.has('nfe_issue_datetime')) {
+      params.push(issueDateObj);
+      sets.push(`nfe_issue_datetime = $${params.length}`);
+    }
+
+    // Sem as colunas na tabela orders: nada a gravar (não pode travar a NF-e)
+    if (!sets.length) return;
+
+    if (cols.has('updated_at')) sets.push('updated_at = NOW()');
+
+    params.push(id);
+    await pool.query(
+      `UPDATE public."orders" SET ${sets.join(', ')} WHERE order_id = $${params.length}`,
+      params,
+    );
+  } catch (err) {
+    console.warn('[NFE][persistOrderIssueDate] ignorado:', err?.message || err);
+  }
 }
