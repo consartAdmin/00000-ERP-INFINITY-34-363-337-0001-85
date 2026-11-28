@@ -7,6 +7,7 @@ import { $, fmtMoney, normalizeStatus, toast } from './orders.utils.js';
 import { openOrderDetailsModal } from './orders.modal.js';
 import { closeEditorPedido } from './orders.form.js';
 import { showCenterModal } from '/public/includes/js/centerAlertModal.js';
+import { openOrderNfePreview } from './orders.nfePreview.js';
 
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║ FILE: orders.tabs.js                                                 ║
@@ -398,8 +399,15 @@ function handleTableClick(event) {
     const orderId = previewBtn.dataset.previewNfe;
     if (!orderId) return;
 
-    const url = `${window.location.origin}/api/orders/${encodeURIComponent(orderId)}/preview-pdf`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    // Mesmo modal do "Emitir NF-e": se o pedido pode ser emitido, o botão aparece no modal
+    const rowEmitBtn = previewBtn
+      .closest('tr')
+      ?.querySelector('[data-emit-nfe]');
+
+    openOrderNfePreview(orderId, {
+      canIssue: !!rowEmitBtn && !rowEmitBtn.disabled,
+      onIssue: (id) => emitirNFeEIrParaTela(id, rowEmitBtn),
+    });
     return;
   }
 
@@ -417,7 +425,11 @@ function handleTableClick(event) {
     const orderId = emitBtn.dataset.emitNfe;
     if (!orderId) return;
 
-    emitirNFeEIrParaTela(orderId, emitBtn);
+    // Abre o DANFE de pré-visualização; a emissão sai pelo botão do modal
+    openOrderNfePreview(orderId, {
+      canIssue: true,
+      onIssue: (id) => emitirNFeEIrParaTela(id, emitBtn),
+    });
     return;
   }
 
@@ -436,11 +448,11 @@ async function emitirNFeEIrParaTela(orderId, buttonEl) {
 
   const confirmar = await showCenterModal({
     variant: 'warning',
-    title: 'Emitir NF-e',
+    title: 'Confirmar emissão da NF-e',
     message: `
-      Deseja realmente emitir a NF-e deste pedido?
+      Confirma a emissão fiscal da NF-e do pedido <strong>#${orderId}</strong>?
       <br><br>
-      <strong>Pedido:</strong> #${orderId}
+      Esta operação transmitirá o documento ao provedor fiscal.
     `,
     buttons: [
       { label: 'Cancelar', variant: 'close', action: () => false },
