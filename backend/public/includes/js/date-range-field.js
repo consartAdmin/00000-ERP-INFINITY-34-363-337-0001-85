@@ -3,8 +3,28 @@
 'use strict';
 
 // ======================================================================
-// TEMPLATE
+// <date-range-field> — seletor de período (De / Até)
+// ----------------------------------------------------------------------
+// - Abre como popover logo abaixo do campo (ou acima, se faltar espaço);
+//   em telas pequenas fica centralizado.
+// - Atalhos: Hoje, Ontem, Últimos 7/30 dias, Este mês, Mês passado,
+//   Este ano.
+// - Dois meses lado a lado (um só em telas estreitas).
+// - Intervalo destacado entre De e Até, com prévia ao passar o mouse.
+// - De / Até digitáveis em dd/mm/aaaa.
+// API pública: value {startDate, endDate} (ISO), open(), close(), clear(),
+// eventos 'range-change' e 'change'. Estilos em includes/css/date-range-field.css.
 // ======================================================================
+
+const SHORTCUTS = [
+    { key: 'today', label: 'Hoje' },
+    { key: 'yesterday', label: 'Ontem' },
+    { key: 'last7', label: 'Últimos 7 dias' },
+    { key: 'last30', label: 'Últimos 30 dias' },
+    { key: 'thisMonth', label: 'Este mês' },
+    { key: 'lastMonth', label: 'Mês passado' },
+    { key: 'thisYear', label: 'Este ano' },
+];
 
 const template = document.createElement('template');
 
@@ -30,67 +50,59 @@ template.innerHTML = `
 
         <dialog class="date-range-field-panel">
 
-            <div class="date-range-field-calendar-header">
-                <button
-                    type="button"
-                    class="date-range-field-nav date-range-field-prev"
-                >
-                    ‹
-                </button>
+            <div class="date-range-field-body">
 
-                <strong class="date-range-field-month"></strong>
+                <nav class="date-range-field-shortcuts" aria-label="Atalhos de período">
+                    ${SHORTCUTS.map((s) => `
+                        <button type="button" class="date-range-field-shortcut" data-shortcut="${s.key}">${s.label}</button>
+                    `).join('')}
+                </nav>
 
-                <button
-                    type="button"
-                    class="date-range-field-nav date-range-field-next"
-                >
-                    ›
-                </button>
-            </div>
+                <div class="date-range-field-main">
 
-            <div class="date-range-field-weekdays">
-                <span>Seg</span>
-                <span>Ter</span>
-                <span>Qua</span>
-                <span>Qui</span>
-                <span>Sex</span>
-                <span>Sáb</span>
-                <span>Dom</span>
-            </div>
+                    <div class="date-range-field-inputs">
+                        <label class="date-range-field-input">
+                            <span>De</span>
+                            <input class="date-range-field-input-start" type="text" inputmode="numeric"
+                                placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off">
+                        </label>
+                        <span class="date-range-field-input-sep" aria-hidden="true">→</span>
+                        <label class="date-range-field-input">
+                            <span>Até</span>
+                            <input class="date-range-field-input-end" type="text" inputmode="numeric"
+                                placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off">
+                        </label>
+                    </div>
 
-            <div class="date-range-field-days"></div>
+                    <div class="date-range-field-months">
+                        <button type="button" class="date-range-field-nav date-range-field-prev" aria-label="Mês anterior">‹</button>
+                        <button type="button" class="date-range-field-nav date-range-field-next" aria-label="Próximo mês">›</button>
+                        <div class="date-range-field-month-block" data-offset="0">
+                            <strong class="date-range-field-month"></strong>
+                            <div class="date-range-field-weekdays">
+                                <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+                            </div>
+                            <div class="date-range-field-days"></div>
+                        </div>
+                        <div class="date-range-field-month-block date-range-field-month-block--second" data-offset="1">
+                            <strong class="date-range-field-month"></strong>
+                            <div class="date-range-field-weekdays">
+                                <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+                            </div>
+                            <div class="date-range-field-days"></div>
+                        </div>
+                    </div>
 
-            <div class="date-range-field-selected">
-                <div>
-                    <span>De</span>
-                    <strong class="date-range-field-selected-start">—</strong>
                 </div>
-
-                <div>
-                    <span>Até</span>
-                    <strong class="date-range-field-selected-end">—</strong>
-                </div>
             </div>
 
-            <p
-                class="date-range-field-error"
-                role="alert"
-            ></p>
-
-            <div class="date-range-field-actions">
-                <button
-                    class="date-range-field-action date-range-field-clear"
-                    type="button"
-                >
-                    Limpar
-                </button>
-
-                <button
-                    class="date-range-field-action date-range-field-apply"
-                    type="button"
-                >
-                    Aplicar
-                </button>
+            <div class="date-range-field-footer">
+                <span class="date-range-field-summary"></span>
+                <p class="date-range-field-error" role="alert"></p>
+                <div class="date-range-field-actions">
+                    <button class="date-range-field-action date-range-field-clear" type="button">Limpar</button>
+                    <button class="date-range-field-action date-range-field-apply" type="button">Aplicar</button>
+                </div>
             </div>
 
         </dialog>
@@ -110,51 +122,26 @@ export class DateRangeField extends HTMLElement {
     static componentCounter = 0;
 
     static get observedAttributes() {
-        return [
-            'label',
-            'locale',
-            'start-date',
-            'end-date',
-            'min',
-            'max',
-            'disabled',
-            'required',
-        ];
+        return ['label', 'locale', 'start-date', 'end-date', 'min', 'max', 'disabled', 'required'];
     }
-
-
-    // ==================================================================
-    // CONSTRUCTOR
-    // ==================================================================
 
     constructor() {
         super();
 
         this.append(template.content.cloneNode(true));
 
-        this._internals =
-            typeof this.attachInternals === 'function'
-                ? this.attachInternals()
-                : null;
+        this._internals = typeof this.attachInternals === 'function' ? this.attachInternals() : null;
 
-        this._committed = {
-            startDate: '',
-            endDate: '',
-        };
-
-        this._draft = {
-            startDate: '',
-            endDate: '',
-        };
-
+        this._committed = { startDate: '', endDate: '' };
+        this._draft = { startDate: '', endDate: '' };
+        this._hoverDate = '';
         this._viewDate = new Date();
-
         this._eventsBound = false;
 
         DateRangeField.componentCounter += 1;
+        this._componentId = `date-range-field-${DateRangeField.componentCounter}`;
 
-        this._componentId =
-            `date-range-field-${DateRangeField.componentCounter}`;
+        this._onViewportChange = () => this._position();
     }
 
 
@@ -170,137 +157,96 @@ export class DateRangeField extends HTMLElement {
         this._render();
     }
 
+    disconnectedCallback() {
+        this._unbindViewport();
+    }
 
     attributeChangedCallback() {
-        if (!this.isConnected || !this._trigger) {
-            return;
-        }
-
+        if (!this.isConnected || !this._trigger) return;
         this._syncFromAttributes();
         this._render();
     }
 
+    formResetCallback() {
+        this.value = {
+            startDate: this.getAttribute('start-date') || '',
+            endDate: this.getAttribute('end-date') || '',
+        };
+    }
+
 
     // ==================================================================
-    // CACHE
+    // CACHE / ACCESSIBILITY
     // ==================================================================
 
     _cacheElements() {
         const $ = (selector) => this.querySelector(selector);
 
         this._label = $('.date-range-field-label');
-
         this._trigger = $('.date-range-field-trigger');
-
         this._display = $('.date-range-field-display');
-
         this._panel = $('.date-range-field-panel');
-
-        this._month = $('.date-range-field-month');
-
-        this._days = $('.date-range-field-days');
-
+        this._monthBlocks = [...this.querySelectorAll('.date-range-field-month-block')];
+        this._monthsWrap = $('.date-range-field-months');
         this._prev = $('.date-range-field-prev');
-
         this._next = $('.date-range-field-next');
-
-        this._selectedStart =
-            $('.date-range-field-selected-start');
-
-        this._selectedEnd =
-            $('.date-range-field-selected-end');
-
-        this._error =
-            $('.date-range-field-error');
-
-        this._clear =
-            $('.date-range-field-clear');
-
-        this._apply =
-            $('.date-range-field-apply');
+        this._shortcuts = $('.date-range-field-shortcuts');
+        this._inputStart = $('.date-range-field-input-start');
+        this._inputEnd = $('.date-range-field-input-end');
+        this._summary = $('.date-range-field-summary');
+        this._error = $('.date-range-field-error');
+        this._clear = $('.date-range-field-clear');
+        this._apply = $('.date-range-field-apply');
     }
-
-
-    // ==================================================================
-    // ACCESSIBILITY
-    // ==================================================================
 
     _configureAccessibility() {
-        const labelId =
-            `${this._componentId}-label`;
-
-        const panelId =
-            `${this._componentId}-panel`;
+        const labelId = `${this._componentId}-label`;
+        const panelId = `${this._componentId}-panel`;
 
         this._label.id = labelId;
-
         this._panel.id = panelId;
+        this._panel.setAttribute('aria-labelledby', labelId);
 
-        this._trigger.setAttribute(
-            'aria-labelledby',
-            labelId
-        );
-
-        this._trigger.setAttribute(
-            'aria-controls',
-            panelId
-        );
+        this._trigger.setAttribute('aria-labelledby', labelId);
+        this._trigger.setAttribute('aria-controls', panelId);
     }
 
 
     // ==================================================================
-    // ATTRIBUTES
+    // ATTRIBUTES / VALUE
     // ==================================================================
 
     _syncFromAttributes() {
-        this._label.textContent =
-            this.getAttribute('label') || 'Intervalo';
+        this._label.textContent = this.getAttribute('label') || 'Intervalo';
 
-        const startDate =
-            this.getAttribute('start-date') || '';
-
-        const endDate =
-            this.getAttribute('end-date') || '';
+        const startDate = this.getAttribute('start-date') || '';
+        const endDate = this.getAttribute('end-date') || '';
 
         if (startDate || endDate) {
-            this._committed = {
-                startDate,
-                endDate,
-            };
-
-            this._draft = {
-                startDate,
-                endDate,
-            };
+            this._committed = { startDate, endDate };
+            this._draft = { startDate, endDate };
         }
 
-        this._trigger.disabled =
-            this.hasAttribute('disabled');
+        this._trigger.disabled = this.hasAttribute('disabled');
     }
-
-
-    // ==================================================================
-    // PUBLIC VALUE
-    // ==================================================================
 
     get value() {
-        return {
-            ...this._committed,
-        };
+        return { ...this._committed };
     }
-
 
     set value(range = {}) {
         this._committed = {
             startDate: range.startDate || '',
             endDate: range.endDate || '',
         };
+        this._draft = { ...this._committed };
+        if (this._trigger) this._render();
+    }
 
-        this._draft = {
-            ...this._committed,
-        };
-
-        this._render();
+    /** Limpa o período sem disparar eventos (quem chama recarrega a lista). */
+    clear() {
+        this.value = { startDate: '', endDate: '' };
+        if (this._error) this._error.textContent = '';
     }
 
 
@@ -309,221 +255,251 @@ export class DateRangeField extends HTMLElement {
     // ==================================================================
 
     _bindEvents() {
-        if (this._eventsBound) {
-            return;
-        }
-
+        if (this._eventsBound) return;
         this._eventsBound = true;
 
+        this._trigger.addEventListener('click', () => (this._panel.open ? this.close() : this.open()));
 
-        this._trigger.addEventListener(
-            'click',
-            () => this.open()
-        );
+        this._prev.addEventListener('click', () => this._shiftMonth(-1));
+        this._next.addEventListener('click', () => this._shiftMonth(1));
 
+        this._monthsWrap.addEventListener('click', (event) => {
+            const button = event.target.closest('.date-range-field-day');
+            if (button?.dataset.date && !button.disabled) this._selectDate(button.dataset.date);
+        });
 
-        this._prev.addEventListener(
-            'click',
-            () => {
-                this._viewDate =
-                    new Date(
-                        this._viewDate.getFullYear(),
-                        this._viewDate.getMonth() - 1,
-                        1
-                    );
-
+        // Prévia do intervalo enquanto escolhe a data final
+        this._monthsWrap.addEventListener('mouseover', (event) => {
+            if (!this._draft.startDate || this._draft.endDate) return;
+            const button = event.target.closest('.date-range-field-day');
+            const date = button?.dataset.date || '';
+            if (date !== this._hoverDate) {
+                this._hoverDate = date;
                 this._renderCalendar();
             }
-        );
+        });
 
+        this._monthsWrap.addEventListener('mouseleave', () => {
+            if (!this._hoverDate) return;
+            this._hoverDate = '';
+            this._renderCalendar();
+        });
 
-        this._next.addEventListener(
-            'click',
-            () => {
-                this._viewDate =
-                    new Date(
-                        this._viewDate.getFullYear(),
-                        this._viewDate.getMonth() + 1,
-                        1
-                    );
+        this._shortcuts.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-shortcut]');
+            if (button) this._applyShortcut(button.dataset.shortcut);
+        });
 
-                this._renderCalendar();
-            }
-        );
-
-
-        this._days.addEventListener(
-            'click',
-            (event) => {
-                const button =
-                    event.target.closest(
-                        '.date-range-field-day'
-                    );
-
-                if (!button) {
-                    return;
+        for (const [input, key] of [[this._inputStart, 'startDate'], [this._inputEnd, 'endDate']]) {
+            input.addEventListener('input', () => this._onTypedDate(input, key));
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this._applyDraft();
                 }
+            });
+            input.addEventListener('blur', () => this._renderInputs());
+        }
 
-                const isoDate =
-                    button.dataset.date;
+        this._clear.addEventListener('click', () => {
+            this._draft = { startDate: '', endDate: '' };
+            this._hoverDate = '';
+            this._error.textContent = '';
+            this._renderPanel();
+        });
 
-                if (!isoDate) {
-                    return;
-                }
+        this._apply.addEventListener('click', () => this._applyDraft());
 
-                this._selectDate(isoDate);
-            }
-        );
+        // Clique fora do painel (no backdrop) fecha sem aplicar
+        this._panel.addEventListener('click', (event) => {
+            if (event.target === this._panel) this.close();
+        });
 
+        this._panel.addEventListener('close', () => {
+            this._trigger.setAttribute('aria-expanded', 'false');
+            this._unbindViewport();
+        });
+    }
 
-        this._clear.addEventListener(
-            'click',
-            () => {
-                this._draft = {
-                    startDate: '',
-                    endDate: '',
-                };
+    _bindViewport() {
+        window.addEventListener('resize', this._onViewportChange);
+        window.addEventListener('scroll', this._onViewportChange, true);
+    }
 
-                this._renderCalendar();
-                this._renderSelected();
-            }
-        );
-
-
-        this._apply.addEventListener(
-            'click',
-            () => {
-                this._applyDraft();
-            }
-        );
-
-
-        this._panel.addEventListener(
-            'cancel',
-            () => {
-                this._trigger.setAttribute(
-                    'aria-expanded',
-                    'false'
-                );
-            }
-        );
-
-
-        this._panel.addEventListener(
-            'close',
-            () => {
-                this._trigger.setAttribute(
-                    'aria-expanded',
-                    'false'
-                );
-            }
-        );
+    _unbindViewport() {
+        window.removeEventListener('resize', this._onViewportChange);
+        window.removeEventListener('scroll', this._onViewportChange, true);
     }
 
 
     // ==================================================================
-    // OPEN / CLOSE
+    // OPEN / CLOSE / POSITION
     // ==================================================================
 
     open() {
-        if (this.hasAttribute('disabled')) {
+        if (this.hasAttribute('disabled')) return;
+
+        this._draft = { ...this._committed };
+        this._hoverDate = '';
+        this._error.textContent = '';
+
+        const base = this._draft.startDate ? this._dateFromIso(this._draft.startDate) : new Date();
+        // Com dois meses visíveis, o mês atual fica à direita
+        const showTwo = this._visibleMonths() > 1 && !this._draft.startDate;
+        this._viewDate = new Date(base.getFullYear(), base.getMonth() - (showTwo ? 1 : 0), 1);
+
+        this._renderPanel();
+
+        if (!this._panel.open) this._panel.showModal();
+
+        this._position();
+        this._bindViewport();
+
+        this._trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    close() {
+        if (this._panel?.open) this._panel.close();
+        this._trigger?.setAttribute('aria-expanded', 'false');
+    }
+
+    _visibleMonths() {
+        return window.matchMedia('(max-width: 760px)').matches ? 1 : 2;
+    }
+
+    /** Posiciona o painel junto ao campo; centraliza em telas pequenas. */
+    _position() {
+        const panel = this._panel;
+        if (!panel?.open) return;
+
+        const gap = 6;
+        const margin = 12;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        if (vw <= 560) {
+            panel.classList.remove('is-anchored');
+            panel.style.removeProperty('top');
+            panel.style.removeProperty('left');
             return;
         }
 
-        this._draft = {
-            ...this._committed,
-        };
+        panel.classList.add('is-anchored');
 
+        const anchor = this._trigger.getBoundingClientRect();
+        const { width, height } = panel.getBoundingClientRect();
 
-        if (this._draft.startDate) {
-            this._viewDate =
-                this._dateFromIso(
-                    this._draft.startDate
-                );
-        } else {
-            this._viewDate =
-                new Date();
+        let left = anchor.left;
+        if (left + width > vw - margin) left = Math.max(margin, anchor.right - width);
+        if (left + width > vw - margin) left = Math.max(margin, vw - margin - width);
+
+        let top = anchor.bottom + gap;
+        const spaceBelow = vh - anchor.bottom - gap - margin;
+        const spaceAbove = anchor.top - gap - margin;
+        if (height > spaceBelow && spaceAbove > spaceBelow) {
+            top = Math.max(margin, anchor.top - gap - height);
+        } else if (top + height > vh - margin) {
+            top = Math.max(margin, vh - margin - height);
         }
 
+        panel.style.left = `${Math.round(left)}px`;
+        panel.style.top = `${Math.round(top)}px`;
+    }
 
+
+    // ==================================================================
+    // SELECTION
+    // ==================================================================
+
+    _shiftMonth(step) {
+        this._viewDate = new Date(this._viewDate.getFullYear(), this._viewDate.getMonth() + step, 1);
         this._renderCalendar();
-        this._renderSelected();
-
-
-        if (!this._panel.open) {
-            this._panel.showModal();
-        }
-
-
-        this._trigger.setAttribute(
-            'aria-expanded',
-            'true'
-        );
     }
-
-
-    close() {
-        if (this._panel?.open) {
-            this._panel.close();
-        }
-
-        this._trigger.setAttribute(
-            'aria-expanded',
-            'false'
-        );
-    }
-
-
-    // ==================================================================
-    // DATE SELECTION
-    // ==================================================================
 
     _selectDate(isoDate) {
+        const { startDate, endDate } = this._draft;
 
-        const {
-            startDate,
-            endDate,
-        } = this._draft;
-
-
-        // No start selected yet
-        if (!startDate) {
-            this._draft = {
-                startDate: isoDate,
-                endDate: '',
-            };
+        if (!startDate || endDate) {
+            // Começa um novo intervalo
+            this._draft = { startDate: isoDate, endDate: '' };
+        } else if (isoDate < startDate) {
+            this._draft = { startDate: isoDate, endDate: startDate };
+        } else {
+            this._draft = { startDate, endDate: isoDate };
         }
 
-        // Start exists, waiting for end
-        else if (!endDate) {
+        this._hoverDate = '';
+        this._error.textContent = '';
+        this._renderPanel();
+    }
 
-            if (isoDate < startDate) {
-                this._draft = {
-                    startDate: isoDate,
-                    endDate: startDate,
-                };
-            } else {
-                this._draft.endDate =
-                    isoDate;
-            }
+    _applyShortcut(key) {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = today.getMonth();
+        const d = today.getDate();
+        let start;
+        let end = today;
 
+        switch (key) {
+            case 'today': start = today; break;
+            case 'yesterday': start = new Date(y, m, d - 1); end = start; break;
+            case 'last7': start = new Date(y, m, d - 6); break;
+            case 'last30': start = new Date(y, m, d - 29); break;
+            case 'thisMonth': start = new Date(y, m, 1); end = new Date(y, m + 1, 0); break;
+            case 'lastMonth': start = new Date(y, m - 1, 1); end = new Date(y, m, 0); break;
+            case 'thisYear': start = new Date(y, 0, 1); end = new Date(y, 11, 31); break;
+            default: return;
         }
 
-        // Range already completed:
-        // third click starts a new range
-        else {
-            this._draft = {
-                startDate: isoDate,
-                endDate: '',
-            };
-        }
-
-
+        this._draft = {
+            startDate: this._clampIso(this._toIsoDate(start)),
+            endDate: this._clampIso(this._toIsoDate(end)),
+        };
+        this._hoverDate = '';
         this._error.textContent = '';
 
-        this._renderCalendar();
+        // Mostra o mês final do atalho
+        const months = this._visibleMonths();
+        this._viewDate = new Date(end.getFullYear(), end.getMonth() - (months - 1), 1);
+        if (months > 1 && start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+            this._viewDate = new Date(end.getFullYear(), end.getMonth() - 1, 1);
+        }
 
-        this._renderSelected();
+        this._renderPanel();
+    }
+
+    _onTypedDate(input, key) {
+        // Máscara dd/mm/aaaa
+        const digits = input.value.replace(/\D/g, '').slice(0, 8);
+        let masked = digits;
+        if (digits.length > 4) masked = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+        else if (digits.length > 2) masked = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+        if (masked !== input.value) input.value = masked;
+
+        if (digits.length === 0) {
+            this._draft[key] = '';
+            this._error.textContent = '';
+            this._renderCalendar();
+            this._renderSummary();
+            return;
+        }
+
+        if (digits.length < 8) return;
+
+        const iso = this._parseBr(masked);
+        if (!iso) {
+            this._error.textContent = 'Data inválida. Use dd/mm/aaaa.';
+            return;
+        }
+
+        this._draft[key] = iso;
+        this._error.textContent = '';
+        const months = this._visibleMonths();
+        const date = this._dateFromIso(iso);
+        this._viewDate = new Date(date.getFullYear(), date.getMonth() - (key === 'endDate' ? months - 1 : 0), 1);
+        this._renderCalendar();
+        this._renderSummary();
     }
 
 
@@ -532,46 +508,23 @@ export class DateRangeField extends HTMLElement {
     // ==================================================================
 
     _applyDraft() {
+        const { startDate, endDate } = this._draft;
 
-        const {
-            startDate,
-            endDate,
-        } = this._draft;
-
-
-        if (
-            this.hasAttribute('required') &&
-            (!startDate || !endDate)
-        ) {
-            this._error.textContent =
-                'Selecione as duas datas.';
-
+        if (this.hasAttribute('required') && (!startDate || !endDate)) {
+            this._error.textContent = 'Selecione as duas datas.';
             return;
         }
 
-
-        if (
-            startDate &&
-            endDate &&
-            endDate < startDate
-        ) {
-            this._error.textContent =
-                'A data final deve ser posterior à inicial.';
-
+        if (startDate && endDate && endDate < startDate) {
+            this._error.textContent = 'A data final deve ser igual ou posterior à inicial.';
             return;
         }
 
-
-        this._committed = {
-            startDate,
-            endDate,
-        };
-
+        this._committed = { startDate, endDate };
+        this._draft = { ...this._committed };
 
         this._render();
-
         this._emitChange();
-
         this.close();
     }
 
@@ -582,413 +535,216 @@ export class DateRangeField extends HTMLElement {
 
     _render() {
         this._renderDisplay();
-        this._renderCalendar();
-        this._renderSelected();
+        this._renderPanel();
         this._updateFormValue();
     }
 
-
-    // ==================================================================
-    // DISPLAY
-    // ==================================================================
+    _renderPanel() {
+        this._renderCalendar();
+        this._renderInputs();
+        this._renderSummary();
+    }
 
     _renderDisplay() {
-
-        const {
-            startDate,
-            endDate,
-        } = this._committed;
-
+        const { startDate, endDate } = this._committed;
 
         if (!startDate && !endDate) {
-            this._display.textContent =
-                'Selecione um intervalo';
-
-            this._display.classList.add(
-                'placeholder'
-            );
-
+            this._display.textContent = 'Selecione um período';
+            this._display.classList.add('placeholder');
             return;
         }
 
+        this._display.classList.remove('placeholder');
 
-        this._display.classList.remove(
-            'placeholder'
-        );
+        const start = startDate ? this._formatDate(startDate) : '…';
+        const end = endDate ? this._formatDate(endDate) : '…';
 
-
-        const start =
-            startDate
-                ? this._formatDate(startDate)
-                : '…';
-
-        const end =
-            endDate
-                ? this._formatDate(endDate)
-                : '…';
-
-
-        this._display.textContent =
-            `${start} – ${end}`;
+        this._display.textContent = startDate === endDate ? start : `${start} – ${end}`;
     }
 
+    _renderInputs() {
+        if (document.activeElement !== this._inputStart) {
+            this._inputStart.value = this._draft.startDate ? this._formatDate(this._draft.startDate) : '';
+        }
+        if (document.activeElement !== this._inputEnd) {
+            this._inputEnd.value = this._draft.endDate ? this._formatDate(this._draft.endDate) : '';
+        }
+    }
 
-    // ==================================================================
-    // CALENDAR
-    // ==================================================================
+    _renderSummary() {
+        const { startDate, endDate } = this._draft;
+        let text = '';
+
+        if (startDate && endDate) {
+            const days = Math.round((this._dateFromIso(endDate) - this._dateFromIso(startDate)) / 86400000) + 1;
+            text = days === 1 ? '1 dia selecionado' : `${days} dias selecionados`;
+        } else if (startDate) {
+            text = `A partir de ${this._formatDate(startDate)}`;
+        } else if (endDate) {
+            text = `Até ${this._formatDate(endDate)}`;
+        } else {
+            text = 'Escolha a data inicial';
+        }
+
+        this._summary.textContent = text;
+
+        // Destaca o atalho que corresponde ao período atual
+        for (const button of this._shortcuts.querySelectorAll('[data-shortcut]')) {
+            button.classList.toggle('is-active', this._shortcutMatches(button.dataset.shortcut));
+        }
+    }
+
+    _shortcutMatches(key) {
+        const { startDate, endDate } = this._draft;
+        if (!startDate || !endDate) return false;
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = today.getMonth();
+        const d = today.getDate();
+        const iso = (date) => this._toIsoDate(date);
+        const map = {
+            today: [iso(today), iso(today)],
+            yesterday: [iso(new Date(y, m, d - 1)), iso(new Date(y, m, d - 1))],
+            last7: [iso(new Date(y, m, d - 6)), iso(today)],
+            last30: [iso(new Date(y, m, d - 29)), iso(today)],
+            thisMonth: [iso(new Date(y, m, 1)), iso(new Date(y, m + 1, 0))],
+            lastMonth: [iso(new Date(y, m - 1, 1)), iso(new Date(y, m, 0))],
+            thisYear: [iso(new Date(y, 0, 1)), iso(new Date(y, 11, 31))],
+        };
+        const range = map[key];
+        return Boolean(range) && range[0] === startDate && range[1] === endDate;
+    }
 
     _renderCalendar() {
+        if (!this._monthBlocks?.length) return;
 
-        if (!this._days) {
-            return;
+        const locale = this.getAttribute('locale') || 'pt-BR';
+        const monthFormat = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' });
+        const todayIso = this._toIsoDate(new Date());
+
+        // Fim efetivo do intervalo (inclui a prévia do mouse)
+        const start = this._draft.startDate;
+        let end = this._draft.endDate;
+        let rangeStart = start;
+        let preview = false;
+        if (start && !end && this._hoverDate) {
+            preview = true;
+            if (this._hoverDate < start) {
+                rangeStart = this._hoverDate;
+                end = start;
+            } else {
+                end = this._hoverDate;
+            }
         }
 
+        for (const block of this._monthBlocks) {
+            const offset = Number(block.dataset.offset || 0);
+            const first = new Date(this._viewDate.getFullYear(), this._viewDate.getMonth() + offset, 1);
+            const year = first.getFullYear();
+            const month = first.getMonth();
 
-        const year =
-            this._viewDate.getFullYear();
+            // "novembro de 2026" -> "Novembro de 2026"
+            const title = monthFormat.format(first);
+            block.querySelector('.date-range-field-month').textContent =
+                title.charAt(0).toLocaleUpperCase(locale) + title.slice(1);
 
-        const month =
-            this._viewDate.getMonth();
+            const startWeekDay = (first.getDay() + 6) % 7; // segunda = 0
+            const totalDays = new Date(year, month + 1, 0).getDate();
 
+            let html = '';
+            for (let i = 0; i < startWeekDay; i += 1) {
+                html += '<span class="date-range-field-day-empty"></span>';
+            }
 
-        const locale =
-            this.getAttribute('locale') ||
-            'pt-BR';
+            for (let day = 1; day <= totalDays; day += 1) {
+                const isoDate = this._toIsoDate(new Date(year, month, day));
+                const classes = ['date-range-field-day'];
 
+                if (isoDate === rangeStart) classes.push('is-start');
+                if (end && isoDate === end) classes.push('is-end');
+                if (rangeStart && end && isoDate > rangeStart && isoDate < end) classes.push('is-in-range');
+                if (preview) classes.push('is-preview');
+                if (isoDate === todayIso) classes.push('is-today');
 
-        this._month.textContent =
-            new Intl.DateTimeFormat(
-                locale,
-                {
-                    month: 'long',
-                    year: 'numeric',
-                }
-            ).format(
-                new Date(year, month, 1)
-            );
+                const disabled = this._isDateDisabled(isoDate);
+                if (disabled) classes.push('is-disabled');
 
+                html += `<button type="button" class="${classes.join(' ')}" data-date="${isoDate}"${disabled ? ' disabled' : ''}>${day}</button>`;
+            }
 
-        const firstDay =
-            new Date(year, month, 1);
-
-        const lastDay =
-            new Date(year, month + 1, 0);
-
-
-        // Convert JS Sunday=0 to Monday=0
-        const startWeekDay =
-            (firstDay.getDay() + 6) % 7;
-
-
-        const totalDays =
-            lastDay.getDate();
-
-
-        let html = '';
-
-
-        // Empty cells before first day
-        for (
-            let i = 0;
-            i < startWeekDay;
-            i += 1
-        ) {
-            html += `
-                <span
-                    class="date-range-field-day-empty"
-                ></span>
-            `;
+            block.querySelector('.date-range-field-days').innerHTML = html;
         }
-
-
-        for (
-            let day = 1;
-            day <= totalDays;
-            day += 1
-        ) {
-
-            const date =
-                new Date(
-                    year,
-                    month,
-                    day
-                );
-
-
-            const isoDate =
-                this._toIsoDate(date);
-
-
-            const classes = [
-                'date-range-field-day',
-            ];
-
-
-            if (
-                isoDate ===
-                this._draft.startDate
-            ) {
-                classes.push(
-                    'is-start'
-                );
-            }
-
-
-            if (
-                isoDate ===
-                this._draft.endDate
-            ) {
-                classes.push(
-                    'is-end'
-                );
-            }
-
-
-            if (
-                this._draft.startDate &&
-                this._draft.endDate &&
-                isoDate >
-                this._draft.startDate &&
-                isoDate <
-                this._draft.endDate
-            ) {
-                classes.push(
-                    'is-in-range'
-                );
-            }
-
-
-            if (
-                isoDate ===
-                this._toIsoDate(new Date())
-            ) {
-                classes.push(
-                    'is-today'
-                );
-            }
-
-
-            const disabled =
-                this._isDateDisabled(
-                    isoDate
-                );
-
-
-            if (disabled) {
-                classes.push(
-                    'is-disabled'
-                );
-            }
-
-
-            html += `
-                <button
-                    type="button"
-                    class="${classes.join(' ')}"
-                    data-date="${isoDate}"
-                    ${disabled ? 'disabled' : ''}
-                >
-                    ${day}
-                </button>
-            `;
-        }
-
-
-        this._days.innerHTML =
-            html;
     }
 
 
     // ==================================================================
-    // SELECTED INFO
-    // ==================================================================
-
-    _renderSelected() {
-
-        this._selectedStart.textContent =
-            this._draft.startDate
-                ? this._formatDate(
-                    this._draft.startDate
-                )
-                : '—';
-
-
-        this._selectedEnd.textContent =
-            this._draft.endDate
-                ? this._formatDate(
-                    this._draft.endDate
-                )
-                : '—';
-    }
-
-
-    // ==================================================================
-    // DISABLED DATES
+    // HELPERS
     // ==================================================================
 
     _isDateDisabled(isoDate) {
-
-        const min =
-            this.getAttribute('min');
-
-        const max =
-            this.getAttribute('max');
-
-
-        if (
-            min &&
-            isoDate < min
-        ) {
-            return true;
-        }
-
-
-        if (
-            max &&
-            isoDate > max
-        ) {
-            return true;
-        }
-
-
-        return false;
+        const min = this.getAttribute('min');
+        const max = this.getAttribute('max');
+        return Boolean((min && isoDate < min) || (max && isoDate > max));
     }
 
-
-    // ==================================================================
-    // FORMAT
-    // ==================================================================
+    _clampIso(isoDate) {
+        const min = this.getAttribute('min');
+        const max = this.getAttribute('max');
+        if (min && isoDate < min) return min;
+        if (max && isoDate > max) return max;
+        return isoDate;
+    }
 
     _formatDate(isoDate) {
+        if (!isoDate) return '';
+        const [year, month, day] = isoDate.split('-');
+        return `${day}/${month}/${year}`;
+    }
 
-        if (!isoDate) {
+    _parseBr(text) {
+        const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text || '');
+        if (!match) return '';
+        const [, dd, mm, yyyy] = match;
+        const date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+        if (date.getFullYear() !== Number(yyyy) || date.getMonth() !== Number(mm) - 1 || date.getDate() !== Number(dd)) {
             return '';
         }
-
-
-        const date =
-            this._dateFromIso(
-                isoDate
-            );
-
-
-        const locale =
-            this.getAttribute('locale') ||
-            'pt-BR';
-
-
-        return new Intl.DateTimeFormat(
-            locale
-        ).format(date);
+        const iso = `${yyyy}-${mm}-${dd}`;
+        return this._isDateDisabled(iso) ? '' : iso;
     }
-
 
     _dateFromIso(isoDate) {
-
-        const [
-            year,
-            month,
-            day,
-        ] =
-            isoDate
-                .split('-')
-                .map(Number);
-
-
-        return new Date(
-            year,
-            month - 1,
-            day
-        );
+        const [year, month, day] = isoDate.split('-').map(Number);
+        return new Date(year, month - 1, day);
     }
 
-
     _toIsoDate(date) {
-
-        const year =
-            date.getFullYear();
-
-
-        const month =
-            String(
-                date.getMonth() + 1
-            ).padStart(2, '0');
-
-
-        const day =
-            String(
-                date.getDate()
-            ).padStart(2, '0');
-
-
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     }
 
 
     // ==================================================================
-    // FORM VALUE
+    // FORM VALUE / CHANGE EVENTS
     // ==================================================================
 
     _updateFormValue() {
-
-        const startName =
-            this.getAttribute('name-start') ||
-            'dateFrom';
-
-
-        const endName =
-            this.getAttribute('name-end') ||
-            'dateTo';
-
-
-        const formData =
-            new FormData();
-
-
-        formData.append(
-            startName,
-            this._committed.startDate
-        );
-
-
-        formData.append(
-            endName,
-            this._committed.endDate
-        );
-
-
-        this._internals?.setFormValue(
-            formData
-        );
+        const formData = new FormData();
+        formData.append(this.getAttribute('name-start') || 'dateFrom', this._committed.startDate);
+        formData.append(this.getAttribute('name-end') || 'dateTo', this._committed.endDate);
+        this._internals?.setFormValue(formData);
     }
 
-
-    // ==================================================================
-    // EVENTS
-    // ==================================================================
-
     _emitChange() {
+        this.dispatchEvent(new CustomEvent('range-change', {
+            bubbles: true,
+            composed: true,
+            detail: this.value,
+        }));
 
-        this.dispatchEvent(
-            new CustomEvent(
-                'range-change',
-                {
-                    bubbles: true,
-                    composed: true,
-                    detail: this.value,
-                }
-            )
-        );
-
-
-        this.dispatchEvent(
-            new Event(
-                'change',
-                {
-                    bubbles: true,
-                }
-            )
-        );
+        this.dispatchEvent(new Event('change', { bubbles: true }));
     }
 }
 
@@ -998,10 +754,5 @@ export class DateRangeField extends HTMLElement {
 // ======================================================================
 
 if (!customElements.get('date-range-field')) {
-
-    customElements.define(
-        'date-range-field',
-        DateRangeField
-    );
-
+    customElements.define('date-range-field', DateRangeField);
 }

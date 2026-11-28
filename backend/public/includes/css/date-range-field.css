@@ -22,12 +22,12 @@
 
     /* Default panel size (used when no size utility is provided) */
     --drf-panel-width: 380px;
-    --drf-panel-height: auto;
+    --drf-panel-min-height: 0;
 
-    /* Height scale */
-    --drf-height-1: 340px;
-    --drf-height-2: 380px;
-    --drf-height-3: 380px;
+    /* Height scale (altura mínima) */
+    --drf-height-1: 0px;
+    --drf-height-2: 0px;
+    --drf-height-3: 0px;
     --drf-height-4: 460px;
     --drf-height-5: 500px;
 
@@ -151,89 +151,233 @@ date-range-field {
     stroke-width: 1.8;
 }
 
+/* ======================================================================
+   PANEL (popover junto ao campo)
+   Aberto com showModal() para ficar na camada superior (nunca é cortado
+   por containers com overflow). O JS posiciona logo abaixo do campo
+   (classe .is-anchored); sem ela, fica centralizado (telas pequenas).
+   A altura acompanha o conteúdo (fit-content): sem espaço vazio.
+   ====================================================================== */
+
 .date-range-field-panel {
     box-sizing: border-box;
 
-    width: min(var(--drf-panel-width),
-            calc(100vw - 24px));
-
-    height: var(--drf-panel-height);
-
+    width: fit-content;
+    min-width: min(var(--drf-panel-width), calc(100vw - 24px));
     max-width: calc(100vw - 24px);
-    max-height: calc(100vh - 32px);
+
+    height: fit-content;
+    min-height: var(--drf-panel-min-height, 0);
+    max-height: calc(100vh - 24px);
+
+    margin: auto;
+    padding: 0;
 
     overflow-x: hidden;
     overflow-y: auto;
 
-    padding: 18px;
-
-    border: 1px solid rgba(174, 187, 208, 0.72);
+    border: 1px solid var(--drf-border);
     border-radius: var(--drf-panel-radius);
 
-    background: var(--drf-surface);
-    color: var(--drf-ink);
+    background: #fff;
+    color: #26344a;
 
     box-shadow: var(--drf-shadow);
+}
 
-    backdrop-filter: blur(18px) saturate(135%);
-    -webkit-backdrop-filter: blur(18px) saturate(135%);
+.date-range-field-panel.is-anchored {
+    position: fixed;
+    inset: auto;
+    margin: 0;
 }
 
 .date-range-field-panel[open] {
-    animation: drf-panel-in 180ms ease-out;
+    display: flex;
+    flex-direction: column;
+    animation: drf-panel-in 160ms ease-out;
 }
 
+/* Popover: fundo quase transparente (a tela continua visível) */
 .date-range-field-panel::backdrop {
-    background: rgba(15, 23, 42, 0.38);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    background: rgba(15, 23, 42, 0.06);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
-.date-range-field-calendar-header {
+.date-range-field-panel:not(.is-anchored)::backdrop {
+    background: rgba(15, 23, 42, 0.38);
+}
+
+.date-range-field-body {
+    display: flex;
+    min-height: 0;
+}
+
+/* ---------- Atalhos ---------- */
+
+.date-range-field-shortcuts {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 0 0 auto;
+    min-width: 140px;
+    padding: 14px 10px;
+    border-right: 1px solid #e7ebf2;
+    background: var(--drf-surface-soft);
+}
+
+.date-range-field-shortcut {
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #334155;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.date-range-field-shortcut:hover {
+    background: #e6f5f5;
+    color: var(--drf-accent-deep);
+}
+
+.date-range-field-shortcut.is-active {
+    background: var(--drf-accent);
+    color: #fff;
+}
+
+/* ---------- Área principal ---------- */
+
+.date-range-field-main {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    padding: 16px 18px 6px;
+}
+
+.date-range-field-inputs {
     display: grid;
-    grid-template-columns: 36px 1fr 36px;
-    align-items: center;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
     gap: 10px;
-    margin-bottom: 16px;
+}
+
+.date-range-field-input {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.date-range-field-input>span {
+    color: var(--drf-muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.date-range-field-input>input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--drf-border-strong);
+    border-radius: var(--drf-radius);
+    background: #fff;
+    color: #18243a;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.date-range-field-input>input::placeholder {
+    color: #a0abbc;
+    font-weight: 500;
+}
+
+.date-range-field-input>input:focus {
+    outline: none;
+    border-color: var(--drf-accent);
+    box-shadow: var(--drf-ring);
+}
+
+.date-range-field-input-sep {
+    padding-bottom: 8px;
+    color: var(--drf-muted);
+    font-size: 14px;
+}
+
+/* ---------- Meses ---------- */
+
+.date-range-field-months {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, 238px);
+    gap: 24px;
+}
+
+.date-range-field-month-block {
+    min-width: 0;
 }
 
 .date-range-field-month {
-    text-align: center;
-    text-transform: capitalize;
+    display: block;
+    height: 30px;
+    margin-bottom: 6px;
     color: #18243a;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 800;
-    letter-spacing: 0.01em;
+    line-height: 30px;
+    text-align: center;
 }
 
 .date-range-field-nav {
-    width: 36px;
-    height: 36px;
+    position: absolute;
+    top: 0;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
     display: grid;
     place-items: center;
     padding: 0 0 2px;
     border: 1px solid var(--drf-border);
-    border-radius: 10px;
+    border-radius: 8px;
     background: #fff;
     color: #526178;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     cursor: pointer;
-    font-size: 21px;
+    font-size: 19px;
     line-height: 1;
-    transition: color 150ms ease, border-color 150ms ease,
-        background 150ms ease, transform 150ms ease;
+    transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.date-range-field-prev {
+    left: 0;
+}
+
+.date-range-field-next {
+    right: 0;
 }
 
 .date-range-field-nav:hover {
-    border-color: #b7cced;
-    background: var(--drf-accent-soft);
-    color: var(--drf-accent);
-    transform: translateY(-1px);
+    border-color: var(--drf-accent);
+    background: #e6f5f5;
+    color: var(--drf-accent-deep);
 }
 
 .date-range-field-nav:focus-visible,
 .date-range-field-day:focus-visible,
-.date-range-field-action:focus-visible {
+.date-range-field-action:focus-visible,
+.date-range-field-shortcut:focus-visible {
     outline: none;
     box-shadow: var(--drf-ring);
 }
@@ -241,188 +385,213 @@ date-range-field {
 .date-range-field-weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    margin-bottom: 7px;
+    margin-bottom: 4px;
     color: #8a96a9;
     font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.05em;
     text-align: center;
     text-transform: uppercase;
 }
 
-/* ======================================================================
-   DAYS
-   ====================================================================== */
+/* ---------- Dias ---------- */
 
 .date-range-field-days {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-
-    column-gap: 1px;
-    row-gap: 0;
+    row-gap: 2px;
 }
 
 .date-range-field-day,
 .date-range-field-day-empty {
     width: 100%;
-    height: 26px;
-    min-height: 26px;
-
-    aspect-ratio: auto;
+    height: 32px;
 }
 
 .date-range-field-day {
     position: relative;
     z-index: 0;
-
     min-width: 0;
     padding: 0;
-
     border: 0;
-    border-radius: 7px;
-
+    border-radius: 8px;
     background: transparent;
     color: #334155;
-
     cursor: pointer;
-
     font: inherit;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1;
-
-    transition:
-        color 120ms ease,
-        background 120ms ease,
-        transform 120ms ease,
-        box-shadow 120ms ease;
+    font-variant-numeric: tabular-nums;
+    transition: color 100ms ease, background 100ms ease;
 }
 
-.date-range-field-day:hover:not(.is-disabled) {
-    z-index: 2;
-    background: #edf4ff;
-    color: var(--drf-accent);
-    transform: translateY(-1px);
+.date-range-field-day:hover:not(.is-disabled):not(.is-start):not(.is-end) {
+    background: #e6f5f5;
+    color: var(--drf-accent-deep);
 }
 
 .date-range-field-day.is-today {
     color: var(--drf-accent);
-    box-shadow: inset 0 0 0 1px #8db2ed;
+    font-weight: 800;
+    box-shadow: inset 0 0 0 1px var(--drf-accent);
 }
 
+/* Faixa contínua entre De e Até */
 .date-range-field-day.is-in-range {
     border-radius: 0;
-    background: linear-gradient(90deg, #e8f0ff, #f0f5ff);
+    background: #dcf1f1;
     color: var(--drf-accent-deep);
+}
+
+.date-range-field-day.is-in-range.is-preview {
+    background: #edf8f8;
 }
 
 .date-range-field-day.is-start,
 .date-range-field-day.is-end {
     z-index: 1;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--drf-accent-deep), var(--drf-accent));
+    background: var(--drf-accent-deep);
     color: #fff;
     font-weight: 800;
-    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.28);
+    box-shadow: none;
+}
+
+.date-range-field-day.is-start:not(.is-end) {
+    border-radius: 8px 0 0 8px;
+}
+
+.date-range-field-day.is-end:not(.is-start) {
+    border-radius: 0 8px 8px 0;
+}
+
+.date-range-field-day.is-end.is-preview:not(.is-start) {
+    background: var(--drf-accent);
 }
 
 .date-range-field-day.is-disabled {
     color: #aab3c1;
-    opacity: 0.42;
+    opacity: 0.45;
     cursor: not-allowed;
 }
 
-.date-range-field-selected {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 9px;
-    margin-top: 16px;
-    padding-top: 14px;
+/* ---------- Rodapé ---------- */
+
+.date-range-field-footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 12px 18px;
     border-top: 1px solid #e7ebf2;
 }
 
-.date-range-field-selected>div {
-    position: relative;
-    padding: 9px 11px;
-    overflow: hidden;
-    border: 1px solid #dce4f0;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #f9fbfe, #f2f6fb);
-}
-
-.date-range-field-selected>div::before {
-    content: '';
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 2px;
-    background: linear-gradient(180deg, #60a5fa, var(--drf-accent));
-}
-
-.date-range-field-selected span {
-    display: block;
-    margin-bottom: 3px;
+.date-range-field-summary {
     color: var(--drf-muted);
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.date-range-field-selected strong {
-    color: #26344a;
     font-size: 12px;
-    font-weight: 750;
-}
-
-.date-range-field-error {
-    min-height: 15px;
-    margin: 7px 2px 0;
-    color: var(--drf-danger);
-    font-size: 10px;
     font-weight: 600;
 }
 
-.date-range-field-actions {
+.date-range-field-panel .date-range-field-error {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0;
+    color: var(--drf-danger);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.date-range-field-panel .date-range-field-actions {
     display: flex;
-    justify-content: flex-end;
     gap: 8px;
-    margin-top: 5px;
+    margin: 0 0 0 auto;
 }
 
 .date-range-field-action {
-    min-width: 78px;
+    min-width: 84px;
     height: 34px;
-    padding: 0 13px;
+    padding: 0 14px;
     border: 1px solid #cdd6e4;
     border-radius: 9px;
     background: #fff;
     color: #526178;
     cursor: pointer;
     font: inherit;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 750;
-    transition: border-color 150ms ease, color 150ms ease,
-        background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+    transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
 }
 
 .date-range-field-action:hover {
     border-color: #aebdd2;
     background: #f4f7fb;
     color: #253249;
-    transform: translateY(-1px);
 }
 
 .date-range-field-apply {
     border-color: var(--drf-accent-deep);
     background: linear-gradient(135deg, var(--drf-accent-deep), var(--drf-accent));
     color: #fff;
-    box-shadow: 0 5px 13px rgba(37, 99, 235, 0.22);
 }
 
 .date-range-field-apply:hover {
-    border-color: #143566;
-    background: linear-gradient(135deg, #142f5f, #1f5dda);
+    border-color: var(--drf-accent-deep);
+    background: linear-gradient(135deg, #0d2244, #2a9a9e);
     color: #fff;
+}
+
+/* ---------- Telas menores ---------- */
+
+@media (max-width: 760px) {
+    .date-range-field-months {
+        grid-template-columns: 238px;
+    }
+
+    .date-range-field-month-block--second {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .date-range-field-body {
+        flex-direction: column;
+    }
+
+    .date-range-field-shortcuts {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 12px 14px;
+        border-right: 0;
+        border-bottom: 1px solid #e7ebf2;
+    }
+
+    .date-range-field-shortcut {
+        width: auto;
+        padding: 6px 10px;
+        border: 1px solid var(--drf-border);
+        background: #fff;
+    }
+
+    .date-range-field-main {
+        padding: 14px 14px 4px;
+    }
+
+    .date-range-field-months {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .date-range-field-footer {
+        padding: 12px 14px;
+    }
+
+    .date-range-field-panel .date-range-field-actions {
+        width: 100%;
+    }
+
+    .date-range-field-panel .date-range-field-actions>button {
+        flex: 1 1 0;
+    }
 }
 
 .date-range-field-trigger:disabled {
@@ -442,12 +611,6 @@ date-range-field {
     }
 }
 
-@media (max-width: 460px) {
-    .date-range-field-panel {
-        padding: 15px;
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
     .date-range-field-panel[open] {
         animation: none;
@@ -463,31 +626,32 @@ date-range-field {
 
 /* ======================================================================
    HEIGHT UTILITIES
+   Altura mínima do painel (ele sempre cresce até caber o conteúdo).
    Can be placed on <date-range-field> or directly on the panel.
    ====================================================================== */
 
 .drf-height-auto {
-    --drf-panel-height: auto;
+    --drf-panel-min-height: 0;
 }
 
 .drf-height-1 {
-    --drf-panel-height: var(--drf-height-1);
+    --drf-panel-min-height: var(--drf-height-1);
 }
 
 .drf-height-2 {
-    --drf-panel-height: var(--drf-height-2);
+    --drf-panel-min-height: var(--drf-height-2);
 }
 
 .drf-height-3 {
-    --drf-panel-height: var(--drf-height-3);
+    --drf-panel-min-height: var(--drf-height-3);
 }
 
 .drf-height-4 {
-    --drf-panel-height: var(--drf-height-4);
+    --drf-panel-min-height: var(--drf-height-4);
 }
 
 .drf-height-5 {
-    --drf-panel-height: var(--drf-height-5);
+    --drf-panel-min-height: var(--drf-height-5);
 }
 
 
