@@ -2,11 +2,13 @@
 
 'use strict';
 
+import { Modal } from '/public/includes/js/modal.js';
+
 // ======================================================================
 // <date-range-field> — seletor de período (De / Até)
 // ----------------------------------------------------------------------
-// - Abre como popover logo abaixo do campo (ou acima, se faltar espaço);
-//   em telas pequenas fica centralizado.
+// - Abre um modal no padrão modals.css / modal.js (header, body, footer),
+//   com altura ajustada ao conteúdo.
 // - Atalhos: Hoje, Ontem, Últimos 7/30 dias, Este mês, Mês passado,
 //   Este ano.
 // - Dois meses lado a lado (um só em telas estreitas).
@@ -48,65 +50,82 @@ template.innerHTML = `
             </span>
         </button>
 
-        <dialog class="date-range-field-panel">
 
-            <div class="date-range-field-body">
+    </div>
+`;
 
-                <nav class="date-range-field-shortcuts" aria-label="Atalhos de período">
-                    ${SHORTCUTS.map((s) => `
-                        <button type="button" class="date-range-field-shortcut" data-shortcut="${s.key}">${s.label}</button>
-                    `).join('')}
-                </nav>
 
-                <div class="date-range-field-main">
+// Modal no padrão modals.css (.modal > .modal__backdrop + .modal__dialog > .modal__panel)
+// aberto/fechado pelo modal.js. Vai para o <body> para nunca ficar preso
+// em containers com overflow/transform.
+const modalTemplate = document.createElement('template');
 
-                    <div class="date-range-field-inputs">
-                        <label class="date-range-field-input">
-                            <span>De</span>
-                            <input class="date-range-field-input-start" type="text" inputmode="numeric"
-                                placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off">
-                        </label>
-                        <span class="date-range-field-input-sep" aria-hidden="true">→</span>
-                        <label class="date-range-field-input">
-                            <span>Até</span>
-                            <input class="date-range-field-input-end" type="text" inputmode="numeric"
-                                placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off">
-                        </label>
-                    </div>
+modalTemplate.innerHTML = `
+    <div class="modal date-range-field-modal" aria-hidden="true">
+        <div class="modal__backdrop"></div>
 
-                    <div class="date-range-field-months">
-                        <button type="button" class="date-range-field-nav date-range-field-prev" aria-label="Mês anterior">‹</button>
-                        <button type="button" class="date-range-field-nav date-range-field-next" aria-label="Próximo mês">›</button>
-                        <div class="date-range-field-month-block" data-offset="0">
-                            <strong class="date-range-field-month"></strong>
-                            <div class="date-range-field-weekdays">
-                                <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+        <div class="modal__dialog">
+            <div class="modal__panel date-range-field-panel" role="dialog" aria-modal="true">
+
+                <header class="modal__header modal-header-color-3">
+                    <h3 class="modal__title"></h3>
+                    <button type="button" class="modal__close" aria-label="Fechar" title="Fechar">&times;</button>
+                </header>
+
+                <div class="modal__body date-range-field-body">
+
+                    <nav class="date-range-field-shortcuts" aria-label="Atalhos de período">
+                        ${SHORTCUTS.map((s) => `
+                            <button type="button" class="date-range-field-shortcut" data-shortcut="${s.key}">${s.label}</button>
+                        `).join('')}
+                    </nav>
+
+                    <div class="modal-section date-range-field-main">
+
+                        <div class="modal-form-grid modal-form-grid--2">
+                            <div class="fields fields-w-full fields-h-5 fields-font-3">
+                                <label>De</label>
+                                <input class="date-range-field-input-start" type="text" inputmode="numeric"
+                                    placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off">
                             </div>
-                            <div class="date-range-field-days"></div>
-                        </div>
-                        <div class="date-range-field-month-block date-range-field-month-block--second" data-offset="1">
-                            <strong class="date-range-field-month"></strong>
-                            <div class="date-range-field-weekdays">
-                                <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+                            <div class="fields fields-w-full fields-h-5 fields-font-3">
+                                <label>Até</label>
+                                <input class="date-range-field-input-end" type="text" inputmode="numeric"
+                                    placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off">
                             </div>
-                            <div class="date-range-field-days"></div>
                         </div>
+
+                        <div class="date-range-field-months">
+                            <button type="button" class="date-range-field-nav date-range-field-prev" aria-label="Mês anterior">‹</button>
+                            <button type="button" class="date-range-field-nav date-range-field-next" aria-label="Próximo mês">›</button>
+                            <div class="date-range-field-month-block" data-offset="0">
+                                <strong class="date-range-field-month"></strong>
+                                <div class="date-range-field-weekdays">
+                                    <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+                                </div>
+                                <div class="date-range-field-days"></div>
+                            </div>
+                            <div class="date-range-field-month-block date-range-field-month-block--second" data-offset="1">
+                                <strong class="date-range-field-month"></strong>
+                                <div class="date-range-field-weekdays">
+                                    <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+                                </div>
+                                <div class="date-range-field-days"></div>
+                            </div>
+                        </div>
+
                     </div>
-
                 </div>
+
+                <footer class="modal__footer">
+                    <span class="date-range-field-summary"></span>
+                    <p class="date-range-field-error" role="alert"></p>
+                    <button type="button" class="btn btn-cancel btn-sm date-range-field-clear">Limpar</button>
+                    <button type="button" class="btn btn-save btn-sm date-range-field-apply">Aplicar</button>
+                </footer>
+
             </div>
-
-            <div class="date-range-field-footer">
-                <span class="date-range-field-summary"></span>
-                <p class="date-range-field-error" role="alert"></p>
-                <div class="date-range-field-actions">
-                    <button class="date-range-field-action date-range-field-clear" type="button">Limpar</button>
-                    <button class="date-range-field-action date-range-field-apply" type="button">Aplicar</button>
-                </div>
-            </div>
-
-        </dialog>
-
+        </div>
     </div>
 `;
 
@@ -129,6 +148,7 @@ export class DateRangeField extends HTMLElement {
         super();
 
         this.append(template.content.cloneNode(true));
+        this._modal = modalTemplate.content.firstElementChild.cloneNode(true);
 
         this._internals = typeof this.attachInternals === 'function' ? this.attachInternals() : null;
 
@@ -140,8 +160,6 @@ export class DateRangeField extends HTMLElement {
 
         DateRangeField.componentCounter += 1;
         this._componentId = `date-range-field-${DateRangeField.componentCounter}`;
-
-        this._onViewportChange = () => this._position();
     }
 
 
@@ -150,6 +168,7 @@ export class DateRangeField extends HTMLElement {
     // ==================================================================
 
     connectedCallback() {
+        if (!this._modal.isConnected) document.body.append(this._modal);
         this._cacheElements();
         this._configureAccessibility();
         this._syncFromAttributes();
@@ -158,7 +177,8 @@ export class DateRangeField extends HTMLElement {
     }
 
     disconnectedCallback() {
-        this._unbindViewport();
+        if (Modal.isOpen(this._modal)) Modal.close(this._modal);
+        this._modal.remove();
     }
 
     attributeChangedCallback() {
@@ -180,13 +200,17 @@ export class DateRangeField extends HTMLElement {
     // ==================================================================
 
     _cacheElements() {
-        const $ = (selector) => this.querySelector(selector);
+        const own = (selector) => this.querySelector(selector);
+        const $ = (selector) => this._modal.querySelector(selector);
 
-        this._label = $('.date-range-field-label');
-        this._trigger = $('.date-range-field-trigger');
-        this._display = $('.date-range-field-display');
+        this._label = own('.date-range-field-label');
+        this._trigger = own('.date-range-field-trigger');
+        this._display = own('.date-range-field-display');
         this._panel = $('.date-range-field-panel');
-        this._monthBlocks = [...this.querySelectorAll('.date-range-field-month-block')];
+        this._title = $('.modal__title');
+        this._closeBtn = $('.modal__close');
+        this._backdrop = $('.modal__backdrop');
+        this._monthBlocks = [...this._modal.querySelectorAll('.date-range-field-month-block')];
         this._monthsWrap = $('.date-range-field-months');
         this._prev = $('.date-range-field-prev');
         this._next = $('.date-range-field-next');
@@ -202,10 +226,12 @@ export class DateRangeField extends HTMLElement {
     _configureAccessibility() {
         const labelId = `${this._componentId}-label`;
         const panelId = `${this._componentId}-panel`;
+        const titleId = `${this._componentId}-title`;
 
         this._label.id = labelId;
+        this._title.id = titleId;
         this._panel.id = panelId;
-        this._panel.setAttribute('aria-labelledby', labelId);
+        this._panel.setAttribute('aria-labelledby', titleId);
 
         this._trigger.setAttribute('aria-labelledby', labelId);
         this._trigger.setAttribute('aria-controls', panelId);
@@ -218,6 +244,7 @@ export class DateRangeField extends HTMLElement {
 
     _syncFromAttributes() {
         this._label.textContent = this.getAttribute('label') || 'Intervalo';
+        this._title.textContent = this.getAttribute('label') || 'Período';
 
         const startDate = this.getAttribute('start-date') || '';
         const endDate = this.getAttribute('end-date') || '';
@@ -258,7 +285,7 @@ export class DateRangeField extends HTMLElement {
         if (this._eventsBound) return;
         this._eventsBound = true;
 
-        this._trigger.addEventListener('click', () => (this._panel.open ? this.close() : this.open()));
+        this._trigger.addEventListener('click', () => (Modal.isOpen(this._modal) ? this.close() : this.open()));
 
         this._prev.addEventListener('click', () => this._shiftMonth(-1));
         this._next.addEventListener('click', () => this._shiftMonth(1));
@@ -310,30 +337,29 @@ export class DateRangeField extends HTMLElement {
 
         this._apply.addEventListener('click', () => this._applyDraft());
 
-        // Clique fora do painel (no backdrop) fecha sem aplicar
-        this._panel.addEventListener('click', (event) => {
-            if (event.target === this._panel) this.close();
+        // X e clique fora do painel fecham sem aplicar
+        this._closeBtn.addEventListener('click', () => this.close());
+        this._backdrop.addEventListener('click', () => this.close());
+        this._modal.querySelector('.modal__dialog').addEventListener('click', (event) => {
+            if (event.target === event.currentTarget) this.close();
         });
 
-        this._panel.addEventListener('close', () => {
+        // Esc fecha só este modal (não deixa chegar aos handlers da página)
+        this._modal.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') return;
+            event.preventDefault();
+            event.stopPropagation();
+            this.close();
+        });
+
+        this._modal.addEventListener('modal:close', () => {
             this._trigger.setAttribute('aria-expanded', 'false');
-            this._unbindViewport();
         });
-    }
-
-    _bindViewport() {
-        window.addEventListener('resize', this._onViewportChange);
-        window.addEventListener('scroll', this._onViewportChange, true);
-    }
-
-    _unbindViewport() {
-        window.removeEventListener('resize', this._onViewportChange);
-        window.removeEventListener('scroll', this._onViewportChange, true);
     }
 
 
     // ==================================================================
-    // OPEN / CLOSE / POSITION
+    // OPEN / CLOSE
     // ==================================================================
 
     open() {
@@ -350,60 +376,18 @@ export class DateRangeField extends HTMLElement {
 
         this._renderPanel();
 
-        if (!this._panel.open) this._panel.showModal();
-
-        this._position();
-        this._bindViewport();
+        Modal.open(this._modal, { focusSelector: '.date-range-field-apply' });
 
         this._trigger.setAttribute('aria-expanded', 'true');
     }
 
     close() {
-        if (this._panel?.open) this._panel.close();
+        if (this._modal && Modal.isOpen(this._modal)) Modal.close(this._modal);
         this._trigger?.setAttribute('aria-expanded', 'false');
     }
 
     _visibleMonths() {
         return window.matchMedia('(max-width: 760px)').matches ? 1 : 2;
-    }
-
-    /** Posiciona o painel junto ao campo; centraliza em telas pequenas. */
-    _position() {
-        const panel = this._panel;
-        if (!panel?.open) return;
-
-        const gap = 6;
-        const margin = 12;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-
-        if (vw <= 560) {
-            panel.classList.remove('is-anchored');
-            panel.style.removeProperty('top');
-            panel.style.removeProperty('left');
-            return;
-        }
-
-        panel.classList.add('is-anchored');
-
-        const anchor = this._trigger.getBoundingClientRect();
-        const { width, height } = panel.getBoundingClientRect();
-
-        let left = anchor.left;
-        if (left + width > vw - margin) left = Math.max(margin, anchor.right - width);
-        if (left + width > vw - margin) left = Math.max(margin, vw - margin - width);
-
-        let top = anchor.bottom + gap;
-        const spaceBelow = vh - anchor.bottom - gap - margin;
-        const spaceAbove = anchor.top - gap - margin;
-        if (height > spaceBelow && spaceAbove > spaceBelow) {
-            top = Math.max(margin, anchor.top - gap - height);
-        } else if (top + height > vh - margin) {
-            top = Math.max(margin, vh - margin - height);
-        }
-
-        panel.style.left = `${Math.round(left)}px`;
-        panel.style.top = `${Math.round(top)}px`;
     }
 
 

@@ -481,97 +481,10 @@
     outline-offset: 2px;
 }
 
-/* Date range field modal
- * Used by: <dialog class="date-range-field-panel">
- * The component JavaScript opens it with showModal().
+/* Date range field (<date-range-field>)
+ * Usa a estrutura padrão .modal / .modal__panel deste arquivo.
+ * Calendário e atalhos: includes/css/date-range-field.css
  */
-
-.date-range-field-panel {
-    box-sizing: border-box;
-    width: min(var(--modal-width-2), calc(100vw - (var(--modal-space) * 2)));
-    max-width: none;
-    max-height: var(--modal-max-height);
-    padding: var(--modal-body-padding);
-    margin: auto;
-    overflow: auto;
-    color: var(--modal-text);
-    background: var(--modal-surface);
-    border: 1px solid var(--modal-border-color);
-    border-radius: var(--modal-radius);
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
-    overscroll-behavior: contain;
-}
-
-.date-range-field-panel:not([open]) {
-    display: none;
-}
-
-.date-range-field-panel::backdrop {
-    background: rgba(15, 23, 42, 0.45);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-}
-
-.date-range-field-dates {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--modal-grid-gap);
-    align-items: end;
-    min-width: 0;
-}
-
-.date-range-field-date {
-    display: grid;
-    gap: 6px;
-    min-width: 0;
-    color: var(--modal-text);
-}
-
-.date-range-field-start,
-.date-range-field-end {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-}
-
-.date-range-field-error {
-    min-height: 18px;
-    margin: 8px 0 0;
-    color: #b91c1c;
-    font-size: 12px;
-}
-
-.date-range-field-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 12px;
-}
-
-.date-range-field-panel:focus-visible {
-    outline: none;
-}
-
-@media (max-width: 480px) {
-    .date-range-field-panel {
-        width: calc(100vw - 20px);
-        max-height: calc(100vh - 20px);
-        padding: 14px;
-    }
-
-    .date-range-field-dates {
-        grid-template-columns: 1fr;
-    }
-
-    .date-range-field-actions {
-        flex-wrap: wrap;
-    }
-
-    .date-range-field-actions>button {
-        flex: 1 1 auto;
-    }
-}
 
 /* Forms inside modals */
 
